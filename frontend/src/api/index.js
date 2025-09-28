@@ -9,7 +9,7 @@ const BASE_URL = !env || env === "development" ?
 const axiosClient = axios.create({
     baseURL: BASE_URL,
     headers: {"Content-Type": "application/json"},
-    withCredentials: true,
+    // withCredentials: true,
     paramsSerializer: (params) => queryString.stringify(params),
 })
 

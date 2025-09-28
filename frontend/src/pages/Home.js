@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../components/common/ProductCard';
 import Loading from '../components/common/Loading';
 import { productService } from '../services/api';
+import { getCall } from '../services/test';
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -11,8 +12,8 @@ const Home = () => {
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const response = await productService.getFeaturedProducts();
-        setFeaturedProducts(response.data);
+        const response = await getCall();        
+        setFeaturedProducts(response);
       } catch (error) {
         console.error('Error fetching featured products:', error);
       } finally {
@@ -22,7 +23,9 @@ const Home = () => {
 
     fetchFeaturedProducts();
   }, []);
+  
 
+ 
   return (
     <div>
       {/* Hero Section */}
@@ -91,7 +94,7 @@ const Home = () => {
             <Loading size="large" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map(product => (
+              {featuredProducts?.map(product => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>

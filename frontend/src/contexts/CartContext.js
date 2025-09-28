@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getCall } from '../services/test';
 
 const CartContext = createContext();
 
@@ -14,10 +15,17 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
-    }
+    const savedCart = async () => {
+        try {
+          const response = await getCall();
+          console.log("data", response);
+          setCartItems(response);
+    
+        } catch (error) {
+          console.log("loi", error);
+        }
+      };
+savedCart()
   }, []);
 
   useEffect(() => {

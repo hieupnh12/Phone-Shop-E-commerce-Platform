@@ -32,7 +32,7 @@ const ProductCard = ({ product }) => {
         
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-primary-600">
-            ${product.price}
+            ${product?.data?.price}
           </span>
           
           <button
