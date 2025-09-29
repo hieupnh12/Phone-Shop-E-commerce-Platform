@@ -15,8 +15,8 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    // fetchProducts();
+    // fetchCategories();
   }, [filters]);
 
   const fetchProducts = async () => {
