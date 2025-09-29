@@ -1,4 +1,4 @@
-package com.websales.Configuration;
+package com.websales.configuration;
 
 import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Value;
