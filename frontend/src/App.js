@@ -4,12 +4,12 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail';
+// import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import Profile from './pages/Profile';
-import AdminDashboard from './pages/admin/AdminDashboard';
+// import Register from './pages/auth/Register';
+// import Profile from './pages/Profile';
+// import AdminDashboard from './pages/admin/AdminDashboard';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 
@@ -24,12 +24,12 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/products" element={<Products />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
+                {/* <Route path="/products/:id" element={<ProductDetail />} /> */}
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                {/* <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/admin/*" element={<AdminDashboard />} />
+                <Route path="/admin/*" element={<AdminDashboard />} /> */} */}
               </Routes>
             </main>
             <Footer />
