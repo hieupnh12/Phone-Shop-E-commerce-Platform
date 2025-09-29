@@ -1,10 +1,16 @@
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /phoneShop
+
 spring:
   application:
     name: web-sales-backend
   
   # Database Configuration
   datasource:
-    url: mysql-2646241a-myloc203-df70.e.aivencloud.com
+    url:  "jdbc:mysql://mysql-2646241a-myloc203-df70.e.aivencloud.com:24714/phoneShop"
     username: avnadmin
     password: AVNS_HNcbA_yh7QK4UPUikiH
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -37,12 +43,14 @@ spring:
           auth: true
           starttls:
             enable: true
-
-# Server Configuration
-server:
-  port: 8080
   servlet:
-    context-path: /api
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+
+
+
 
 # JWT Configuration
 jwt:
@@ -83,3 +91,12 @@ app:
   admin:
     default-email: admin@websales.com
     default-password: admin123
+
+
+cloudinary:
+  cloud:
+    name: dpf4ph1qu
+  api:
+    key: 756234473817482
+    secret: T5qQXodnthydHuSyQYrF-xk98Eo
+#  T5qQXodnthydHuSyQYrF-xk98Eo
