@@ -4,9 +4,9 @@ spring:
   
   # Database Configuration
   datasource:
-    url: jdbc:mysql://localhost:3306/websales_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
-    username: root
-    password: password
+    url: mysql-2646241a-myloc203-df70.e.aivencloud.com
+    username: avnadmin
+    password: AVNS_HNcbA_yh7QK4UPUikiH
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   # JPA Configuration
