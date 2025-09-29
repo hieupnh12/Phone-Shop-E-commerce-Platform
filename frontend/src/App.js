@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Outlet,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import Home from "./pages/Home";
@@ -37,10 +33,34 @@ const router = createBrowserRouter(
           path: "products",
           element: <Products />,
           children: [
+            { path: ":id", element: <ProductDetail />}
           ],
         },
         { path: "cart", element: <Cart /> },
         { path: "login", element: <Login /> },
+        { path: "signup", element: <Signup /> },
+        { path: "*", element: <NotFound /> },
+      ],
+    },
+    {
+      path: "/admin",
+      element: <AdminRoute />,
+      children: [
+        {
+          element: <AdminLayout />,
+          children: [
+            { index: true, element: <HomeAdmin /> },
+            {
+              path: "products",
+              element: <Products />,
+              children: [],
+            },
+            { path: "customers", element: <Customers /> },
+            { path: "staff", element: <Staff /> },
+            { path: "statistic", element: <Statistic /> },
+            { path: "staff", element: <Staff /> },
+          ],
+        },
       ],
     },
   ],
