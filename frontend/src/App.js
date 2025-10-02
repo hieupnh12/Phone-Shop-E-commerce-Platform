@@ -2,12 +2,18 @@ import React from "react";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
-import Home from "./pages/Home";
-import Products from "./pages/Products";
-import Cart from "./pages/Cart";
+import Home from "./pages/client/Home";
+// import Products from "./pages/Products";
 import Login from "./pages/auth/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import Signup from "./pages/client/Signup";
+import NotFound from "./pages/client/NotFound";
+import AdminRoute from "./routes/AdminRoute";
+import HomeAdmin from "./pages/admin/HomeAdmin";
+import ProductDetail from "./pages/client/Products/ProductDetail";
+import AdminLayout from "./components/layout/AdminLayout";
+import Statistic from "./pages/admin/Statistic";
 
 // Layout chính (Header + Footer)
 function MainLayout() {
@@ -31,15 +37,11 @@ const router = createBrowserRouter(
         { index: true, element: <Home /> }, // "/" -> Home
         {
           path: "products",
-          element: <Products />,
-          children: [
-            { path: ":id", element: <ProductDetail />}
-          ],
+          // element: <Products />,
+          children: [{ path: ":id", element: <ProductDetail /> }],
         },
-        { path: "cart", element: <Cart /> },
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
-        { path: "*", element: <NotFound /> },
       ],
     },
     {
@@ -49,21 +51,21 @@ const router = createBrowserRouter(
         {
           element: <AdminLayout />,
           children: [
-            { index: true, element: <HomeAdmin /> },
-            {
-              path: "products",
-              element: <Products />,
-              children: [],
-            },
-            { path: "customers", element: <Customers /> },
-            { path: "staff", element: <Staff /> },
+            { path: "dashboard", element: <HomeAdmin /> },
+            // {
+            //   path: "products",
+            //   element: <Products />,
+            //   children: [],
+            // },
+            // { path: "customers", element: <Customers /> },
+            // { path: "staff", element: <Staff /> },
             { path: "statistic", element: <Statistic /> },
-            { path: "staff", element: <Staff /> },
           ],
         },
       ],
       
     },
+    { path: "*", element: <NotFound /> },
   ],
   {
     future: {
