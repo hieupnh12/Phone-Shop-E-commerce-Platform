@@ -12,6 +12,7 @@ import NotFound from "./pages/client/NotFound";
 import AdminRoute from "./routes/AdminRoute";
 import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
+import AdminLayout from "./components/layout/AdminLayout";
 
 // Layout chính (Header + Footer)
 function MainLayout() {
@@ -47,7 +48,7 @@ const router = createBrowserRouter(
       element: <AdminRoute />,
       children: [
         {
-          // element: <AdminLayout />,
+          element: <AdminLayout />,
           children: [
             { index: true, element: <HomeAdmin /> },
             // {
