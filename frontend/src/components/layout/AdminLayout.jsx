@@ -11,6 +11,8 @@ import {
   Bell,
   Search,
   User,
+  Menu,
+  ChartNoAxesCombined,
 } from "lucide-react";
 
 export default function AdminLayout() {
@@ -38,7 +40,7 @@ export default function AdminLayout() {
       id: "dashboard",
       icon: Home,
       label: "Dashboard",
-      path: "/admin",
+      path: "/admin/dashboard",
     },
     { id: "users", icon: Users, label: "Người dùng", path: "/admin/users" },
     {
@@ -49,10 +51,10 @@ export default function AdminLayout() {
     },
     { id: "products", icon: Grid, label: "Sản phẩm", path: "/admin/products" },
     {
-      id: "orders",
-      icon: ShoppingBag,
-      label: "Đơn hàng",
-      path: "/admin/orders",
+      id: "statistic",
+      icon: ChartNoAxesCombined,
+      label: "Thống kê",
+      path: "/admin/statistic",
     },
     { id: "profile", icon: User, label: "Hồ sơ", path: "/admin/profile" },
   ];
@@ -72,9 +74,9 @@ export default function AdminLayout() {
   }, [sidebarOpen, isDesktop]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-20">
+      <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -86,7 +88,7 @@ export default function AdminLayout() {
             {isDesktop ? (
               <ArrowLeftFromLine size={24} className="text-gray-700" />
             ) : (
-              <ArrowLeftFromLine size={24} className="text-gray-700" />
+              <Menu  size={24} className="text-gray-700" />
             )}
           </button>
           <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
@@ -127,7 +129,7 @@ export default function AdminLayout() {
         {/* Main Content */}
         <main
           className={`
-            flex-1 p-4 sm:p-6 transition-all duration-300
+            flex-1 p-2 sm:p-4 transition-all duration-300
             ${isDesktop ? (sidebarOpen ? "lg:ml-64" : "lg:ml-20") : ""}
           `}
         >

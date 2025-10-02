@@ -7,6 +7,8 @@ export default function Sidebar({
   isDesktop,
   closeSidebar,
 }) {
+  console.log("sidebarOpen:", sidebarOpen, "isDesktop:", isDesktop);
+
   return (
     <aside
       className={`
@@ -23,6 +25,7 @@ export default function Sidebar({
             lg:${sidebarOpen ? "w-64" : "w-20"}
           `}
     >
+      
       <div className="p-4 h-full flex flex-col">
         {/* {!isDesktop && sidebarOpen && (
           <div className="flex item-center justify-center sm:flex-1 sm:max-w-md sm:mx-4 lg:mx-8">
