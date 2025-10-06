@@ -6,7 +6,6 @@ import {
   Users,
   MessageSquare,
   Grid,
-  ShoppingBag,
   ArrowLeftFromLine,
   Bell,
   Search,
