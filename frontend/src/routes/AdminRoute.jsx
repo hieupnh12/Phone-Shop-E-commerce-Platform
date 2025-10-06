@@ -2,7 +2,7 @@ import React from 'react'
 import { Navigate, Outlet } from 'react-router-dom';
 
 export default function AdminRoute() {
- const role = 12//getUserRole();
+ const role = "ROLE_ADMIN";//getUserRole();
   if (role !== "ROLE_ADMIN") {
     return <Navigate to="/login" replace />;
   }
