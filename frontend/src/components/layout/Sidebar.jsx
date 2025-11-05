@@ -7,7 +7,6 @@ export default function Sidebar({
   isDesktop,
   closeSidebar,
 }) {
-  console.log("sidebarOpen:", sidebarOpen, "isDesktop:", isDesktop);
 
   return (
     <aside

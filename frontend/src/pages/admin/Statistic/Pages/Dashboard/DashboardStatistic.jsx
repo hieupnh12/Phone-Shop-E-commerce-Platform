@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Chart from "./Chart";
 import Table from "./Table";
+import SummaryCards from "./SummaryCards";
 export default function DashboardStatistic() {
   const [data7Day, setData7Day] = useState([]);
 
@@ -64,7 +65,8 @@ export default function DashboardStatistic() {
       {data7Day.length === 0 ? (
         <p>Tải data</p>
       ) : (
-        <div>
+        <div className="w-full">
+        <SummaryCards/>
         <Chart data7Day={data7Day}/>
         <Table data7Day={data7Day}/>
         </div>

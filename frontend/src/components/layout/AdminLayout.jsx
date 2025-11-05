@@ -90,7 +90,7 @@ export default function AdminLayout() {
               <Menu  size={24} className="text-gray-700" />
             )}
           </button>
-          <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
+          <h1 className={`text-xl font-bold text-gray-800 ${!isDesktop? "hidden":""}`}>Admin Dashboard</h1>
         </div>
         
         <div className="sm:flex-1 sm:max-w-md sm:mx-4 lg:mx-8">

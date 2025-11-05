@@ -50,7 +50,7 @@ export default function Table({data7Day}) {
 //     return <div className="p-6 text-center text-red-500">❌ Lỗi tải dữ liệu thống kê</div>;
 
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden mt-6">
+    <div className="bg-white rounded-2xl shadow-md mt-6">
       <div className="p-6 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-800">
           📅 Doanh thu 7 ngày gần nhất
@@ -58,7 +58,7 @@ export default function Table({data7Day}) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
               {[
@@ -86,22 +86,22 @@ export default function Table({data7Day}) {
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedData.map((row, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm text-gray-800">
+                <td className="px-6 py-4 text-sm text-gray-800 whitespace-nowrap">
                   {row.topProduct}
                 </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
                   {row.orders}
                 </td>
-                <td className="px-6 py-4 text-sm font-semibold text-green-600">
+                <td className="px-6 py-4 text-sm font-semibold text-green-600 whitespace-nowrap">
                   {row.revenue.toLocaleString("vi-VN")} ₫
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
+                <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
                   {row.cost.toLocaleString("vi-VN")} ₫
                 </td>
-                <td className="px-6 py-4 text-sm font-semibold text-blue-600">
+                <td className="px-6 py-4 text-sm font-semibold text-blue-600 whitespace-nowrap">
                   {row.benefit.toLocaleString("vi-VN")} ₫
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
+                <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
                   {new Date(row.date).toLocaleDateString("vi-VN")}
                 </td>
               </tr>
