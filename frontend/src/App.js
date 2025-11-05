@@ -7,6 +7,7 @@ import Home from "./pages/client/Home";
 import Login from "./pages/auth/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import Cart from "./pages/client/Cart";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
 import AdminRoute from "./routes/AdminRoute";
@@ -38,6 +39,7 @@ const router = createBrowserRouter(
           // element: <Products />,
           children: [{ path: ":id", element: <ProductDetail /> }],
         },
+        { path: "cart", element: <Cart /> },
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
       ],
