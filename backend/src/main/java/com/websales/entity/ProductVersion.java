@@ -9,57 +9,49 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Builder                 // Tạo builder pattern giúp tạo đối tượng dễ dàng, linh hoạt
-@Entity                  // Đánh dấu class này là entity, ánh xạ tới bảng trong DB
-@Data                    // Tự sinh getter, setter, toString, equals, hashCode
-@NoArgsConstructor       // Tạo constructor không tham số (mặc định)
-@AllArgsConstructor      // Tạo constructor với tất cả các tham số
+@Builder // Tạo builder pattern giúp tạo đối tượng dễ dàng, linh hoạt
+@Entity // Đánh dấu class này là entity, ánh xạ tới bảng trong DB
+@Data // Tự sinh getter, setter, toString, equals, hashCode
+@NoArgsConstructor // Tạo constructor không tham số (mặc định)
+@AllArgsConstructor // Tạo constructor với tất cả các tham số
 @Table(name = "ProductVersion") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class ProductVersion {
     @Id
-//    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name="idProductVersion")
+    // @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "idProductVersion")
     String versionId;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name ="idProduct")
-           Product product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idProduct")
+    Product product;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idRom")
+    Rom rom;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name ="idRom")
-          Rom rom;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idRam")
+    Ram ram;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idColor")
+    Color color;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name="idRam")
-          Ram ram;
-
-
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name="idColor")
-          Color color;
-
-
-    @Column(name ="importPrice")
+    @Column(name = "importPrice")
     BigDecimal importPrice;
 
-
-    @Column(name ="exportPrice")
+    @Column(name = "exportPrice")
     BigDecimal exportPrice;
 
-    @Column(name ="stock_quantity")
+    @Column(name = "stock_quantity")
     Integer stockQuantity;
 
-
-    @Column(name="status")
+    @Column(name = "status")
     Boolean status;
 
-
-    @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-     List<ProductItem> productItems;
-
+    @OneToMany(mappedBy = "version", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<ProductItem> productItems;
 
     static final Map<String, String> PRODUCT_CODE_MAPPING = new HashMap<>();
 
@@ -115,7 +107,7 @@ public class ProductVersion {
         if (versionId == null) {
             String productCode = generateProductCode();
             String ramValue = ram != null ? ram.getName() : "0";
-            String romValue = rom != null ? rom.getRom_size(): "0";
+            String romValue = rom != null ? rom.getRom_size() : "0";
             String colorValue = color != null ? color.getName().toUpperCase() : "UNKNOWN";
             this.versionId = String.format("%s_%s_%s_%s", productCode, ramValue, romValue, colorValue);
         }
@@ -145,6 +137,5 @@ public class ProductVersion {
         String result = code.toString().toUpperCase();
         return result.length() > 10 ? result.substring(0, 10) : result;
     }
-
 
 }
