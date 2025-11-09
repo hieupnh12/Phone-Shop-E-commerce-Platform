@@ -16,7 +16,7 @@ public class OriginRequest {
 
 
     @UniqueName(entity = Origin.class, fieldName = "name")
-    String name;
+    String nameOrigin;
 
     boolean status;
 }

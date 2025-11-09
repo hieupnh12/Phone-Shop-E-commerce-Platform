@@ -10,21 +10,21 @@ import lombok.experimental.FieldDefaults;
 @Data                    // Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
-@Table(name = "Roms") // Đặt tên bảng trong DB là "product"
+@Table(name = "roms") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class Rom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name ="idRom")
-    Long rom_id;
+    @Column(name ="rom_id")
+    Long idRom;
 
-    @Column(name ="romSize")
-    String rom_size;
+    @Column(name ="rom_size")
+    String nameRom ;
 
 
-//    @Column(name ="status",columnDefinition = "TINYINT(1)")
-//    Boolean status;
+    @Column
+    Boolean status;
 
 
 

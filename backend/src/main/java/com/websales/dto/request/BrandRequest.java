@@ -17,5 +17,4 @@ public class BrandRequest {
     @UniqueName(entity = Brand.class, fieldName = "brandName")
     String brandName;
 
-    Boolean  status;
 }

@@ -10,20 +10,20 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "OperatingSystem" )
+@Table(name = "operating_systems" )
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OperatingSystem {
        @Id
        @GeneratedValue(strategy = GenerationType.IDENTITY)
-       @Column(name ="idOperatingSystem")
-       Long id;
+       @Column(name ="operating_system_id")
+       Long idOS;
 
-       @Column(name="nameOperatingSystem")
-       String name;
-
-//       @Column(name="status")
-//       boolean status;
+       @Column(name="operating_system_name")
+       String nameOS;
 //
+//       @Column
+//       boolean status;
+
 
 
 }

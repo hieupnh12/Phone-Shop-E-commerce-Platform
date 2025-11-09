@@ -1,6 +1,9 @@
 package com.websales.service;
 
 
+import com.websales.dto.request.RomRequest;
+import com.websales.dto.response.RomResponse;
+import com.websales.entity.Rom;
 import com.websales.mapper.RomMapper;
 import com.websales.repository.RomRepository;
 import lombok.AccessLevel;
@@ -20,35 +23,34 @@ public class RomService {
     RomRepository romRepo;
     RomMapper romMapper;
 
-//    public Rom createRom(RomRequest request) {
-//        Rom rom = Rom.builder()
-//                .rom_size(request.getName())
-//                .status(request.getStatus())
-//                .build();
-//        return romRepo.save(rom);
-//    }
-//
-//    public List<RomResponse> getAllRoms() {
-//        List<Rom> roms = romRepo.findAll();
-//        return roms.stream()
-//                .map(romMapper::toRomResponse)
-//                .collect(Collectors.toList());
-//    }
-//
-//    public Rom getRomById(Long id) {
-//        return romRepo.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Rom not found"));
-//    }
-//
-//    public void deleteRomById(Long id) {
-//        romRepo.deleteById(id);
-//    }
-//
-//    public RomResponse updateRom(Long id, RomRequest request) {
-//        Rom rom = romRepo.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Rom not found"));
-//        rom.setRom_size(request.getName());
-//        rom.setStatus(request.getStatus());
-//        return romMapper.toRomResponse(romRepo.save(rom));
-//    }
+    public Rom createRom(RomRequest request) {
+        Rom rom = Rom.builder()
+                .nameRom(request.getNameRom())
+                .status(request.getStatus())
+                .build();
+        return romRepo.save(rom);
+    }
+
+    public List<RomResponse> getAllRoms() {
+        List<Rom> roms = romRepo.findAll();
+        return roms.stream()
+                .map(romMapper::toRomResponse)
+                .collect(Collectors.toList());
+    }
+
+    public Rom getRomById(Long id) {
+        return romRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Rom not found"));
+    }
+
+    public void deleteRomById(Long id) {
+        romRepo.deleteById(id);
+    }
+
+    public RomResponse updateRom(Long id, RomRequest request) {
+        Rom rom = romRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Rom not found"));
+        romMapper.updateRomFromRequest(request, rom);
+        return romMapper.toRomResponse(romRepo.save(rom));
+    }
 }
