@@ -13,6 +13,8 @@ import NotFound from "./pages/client/NotFound";
 import AdminRoute from "./routes/AdminRoute";
 import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
+import AdminLayout from "./components/layout/AdminLayout";
+import Statistic from "./pages/admin/Statistic";
 
 // Layout chính (Header + Footer)
 function MainLayout() {
@@ -49,9 +51,9 @@ const router = createBrowserRouter(
       element: <AdminRoute />,
       children: [
         {
-          // element: <AdminLayout />,
+          element: <AdminLayout />,
           children: [
-            { index: true, element: <HomeAdmin /> },
+            { path: "dashboard", element: <HomeAdmin /> },
             // {
             //   path: "products",
             //   element: <Products />,
@@ -59,7 +61,7 @@ const router = createBrowserRouter(
             // },
             // { path: "customers", element: <Customers /> },
             // { path: "staff", element: <Staff /> },
-            // { path: "statistic", element: <Statistic /> },
+            { path: "statistic", element: <Statistic /> },
           ],
         },
       ],

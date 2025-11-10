@@ -1,6 +1,10 @@
 package com.websales.service;
 
 
+import com.websales.dto.request.ColorRequest;
+import com.websales.dto.response.ApiResponse;
+import com.websales.dto.response.ColorResponse;
+import com.websales.entity.Color;
 import com.websales.mapper.ColorMapper;
 import com.websales.repository.ColorRepository;
 import lombok.AccessLevel;
@@ -27,28 +31,40 @@ public class ColorService {
 //                .build();
 //        return colorRepo.save(color);
 //    }
-//
-//    public List<ColorResponse> getAllColors() {
-//        List<Color> colors = colorRepo.findAll();
-//        return colors.stream()
-//                .map(colorMapper::toColorResponse)
-//                .collect(Collectors.toList());
-//    }
-//
-//    public Color getColorById(Long id) {
-//        return colorRepo.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Color not found"));
-//    }
-//
-//    public void deleteColorById(Long id) {
-//        colorRepo.deleteById(id);
-//    }
-//
-//    public ColorResponse updateColor(Long id, ColorRequest request) {
-//        Color color = colorRepo.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Color not found"));
-//        color.setName(request.getName());
+      public Color   createColor(ColorRequest request) {
+          Color color = colorMapper.toColor(request);
+          return colorRepo.save(color);
+      }
+
+
+
+
+
+
+
+    public List<ColorResponse> getAllColors() {
+        List<Color> colors = colorRepo.findAll();
+        return colors.stream()
+                .map(colorMapper::toColorResponse)
+                .collect(Collectors.toList());
+    }
+
+
+
+    public Color getColorById(Long id) {
+        return colorRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Color not found"));
+    }
+
+    public void deleteColorById(Long id) {
+        colorRepo.deleteById(id);
+    }
+
+    public ColorResponse updateColor(Long id, ColorRequest request) {
+        Color color = colorRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Color not found"));
+        color.setNameColor(request.getNameColor());
 //        color.setStatus(request.getStatus());
-//        return colorMapper.toColorResponse(colorRepo.save(color));
-//    }
+        return colorMapper.toColorResponse(colorRepo.save(color));
+    }
 }

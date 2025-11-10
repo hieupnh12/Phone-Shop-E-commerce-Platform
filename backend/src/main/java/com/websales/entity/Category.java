@@ -11,19 +11,19 @@ import lombok.experimental.FieldDefaults;
 @Data                    // Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
-@Table(name = "Category") // Đặt tên bảng trong DB là "product"
+@Table(name = "categories") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idCate")
-    Long id;
+    @Column(name = "category_id")
+    Long idCategory;
 
-    @Column(name = "cateName")
-    String name;
+    @Column(name = "category_name")
+    String nameCategory;
 
-    @Column(name = "cateDes")
-    String description;
+    @Column(name = "category_description")
+    String descriptionCategory;
 
 
 }

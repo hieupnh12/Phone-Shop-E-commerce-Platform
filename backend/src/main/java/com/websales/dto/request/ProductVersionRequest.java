@@ -19,19 +19,19 @@ public class ProductVersionRequest {
 
     @NotNull
     @Positive
-    Long productId;
+        Long idProduct;
 
     @NotNull
     @Positive
-    Long romId;
+        Long idRom;
 
     @NotNull
     @Positive
-    Long ramId;
+        Long idRam;
 
     @NotNull
     @Positive
-    Long colorId;
+        Long idColor;
 
     @NotNull
     @DecimalMin("0.0")

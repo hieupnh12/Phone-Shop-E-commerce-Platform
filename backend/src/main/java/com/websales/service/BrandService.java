@@ -3,6 +3,7 @@ package com.websales.service;
 
 
 import com.websales.dto.request.BrandRequest;
+import com.websales.dto.response.BrandResponse;
 import com.websales.entity.Brand;
 import com.websales.mapper.BrandMapper;
 import com.websales.repository.BrandRepository;
@@ -25,32 +26,39 @@ public class BrandService {
        BrandMapper brandMapper;
 
 //        // Sử dụng cách builder
-//        public Brand CreateBrand(BrandRequest request) {
+//        public Brand createBrand(BrandRequest request) {
 //              Brand brand = Brand.builder()
-//                      .brandName(request.getBrandName())
-//                      .status(request.getStatus())
-//                      .build();
+//                           .nameBrand(request.getBrandName())
+//                           .build();
 //
 //              return brandRepo.save(brand);
 //        }
-//
-//
-//
-//        public List<BrandResponse> GetAllBrands() {
-//             List<Brand> brands = brandRepo.findAll();
-//              return  brands.stream()
-//                      .map(brandMapper ::toBrandResponse)
-//                      .collect(Collectors.toList());
-//        }
-//
-//
-//        public Brand GetBrandById(Long id) {
-//             return brandRepo.findById(id).orElseThrow(()-> new RuntimeException("Not Found "));
-//        }
-//
-//
-//
-//
+
+
+       public Brand createBrand(BrandRequest request) {
+              Brand brand = brandMapper.toBrand(request);
+              return brandRepo.save(brand);
+       }
+
+
+
+
+
+        public List<BrandResponse> GetAllBrands() {
+             List<Brand> brands = brandRepo.findAll();
+              return  brands.stream()
+                      .map(brandMapper ::toBrandResponse)
+                      .collect(Collectors.toList());
+        }
+
+
+        public Brand GetBrandById(int id) {
+             return brandRepo.findById(id).orElseThrow(()-> new RuntimeException("Not Found "));
+        }
+
+
+
+
 ////    @Transactional(readOnly = true)
 ////    public BrandResponse getBrandById(@NotBlank String id) {
 ////        log.info("Đang tìm kiếm thương hiệu với ID: {}", id);
@@ -58,23 +66,23 @@ public class BrandService {
 ////                .orElseThrow(() -> new BrandNotFoundException("Không tìm thấy thương hiệu với ID " + id));
 ////        return brandMapper.toBrandResponse(brand);
 ////    }
-//
-//
-//
-//       public void DeleteBrandById(Long id) {
-//              brandRepo.deleteById(id);
-//       }
-//
-//
-//
-//       public BrandResponse UpdateBrand(Long id ,BrandRequest request) {
-//             Brand brand = brandRepo.findById(id).orElse(null);
-//           // Update the existing brand using the mapper
-//           brandMapper.updateBrandFromRequest(request, brand);
-//
-//
-//           return brandMapper.toBrandResponse(brandRepo.save(brand));
-//       }
+
+
+
+       public void DeleteBrandById(int id) {
+              brandRepo.deleteById(id);
+       }
+
+
+
+       public BrandResponse UpdateBrand(int id ,BrandRequest request) {
+             Brand brand = brandRepo.findById(id).orElse(null);
+           // Update the existing brand using the mapper
+           brandMapper.updateBrandFromRequest(request, brand);
+
+
+           return brandMapper.toBrandResponse(brandRepo.save(brand));
+       }
 
 
 }
