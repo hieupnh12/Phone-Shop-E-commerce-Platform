@@ -2,7 +2,7 @@ import React from "react";
 import ClientLayout from "../../components/layout/ClientLayout";
 import HomeClient from "./HomeClient";
 import { Home } from "lucide-react";
-
+import Footer from "../../components/layout/Footer";
 
 
 
@@ -16,6 +16,7 @@ const ClientHomePage = () => {
         </h1>
         <Home></Home>
         <HomeClient></HomeClient>
+        <Footer></Footer>
     </div>
   );
 };
