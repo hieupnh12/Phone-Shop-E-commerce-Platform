@@ -5,32 +5,32 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "customers")
+@Table(name = "employees")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-public
-class Customer {
+public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long customerId;
-    String fullName;
-    String phoneNumber;
+    Long id;
     String email;
-    Boolean gender;
-    LocalDate birthDate;
-    String address;
+    String passwordHash;
+    String fullName;
+    Boolean isActive;
     @CreationTimestamp
-    LocalDateTime createAt;
+    LocalDateTime createdAt;
     @UpdateTimestamp
-    LocalDateTime updateAt;
-
-
+    LocalDateTime updatedAt;
+    @ManyToMany
+    Set<Role> employeeRoles;
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    Set<AuditLog> auditLogs;
 }

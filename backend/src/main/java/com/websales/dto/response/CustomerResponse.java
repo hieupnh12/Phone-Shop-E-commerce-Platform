@@ -1,10 +1,7 @@
-package com.websales.entity;
+package com.websales.dto.response;
 
-import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,13 +10,8 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "customers")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity
-public
-class Customer {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class CustomerResponse {
     Long customerId;
     String fullName;
     String phoneNumber;
@@ -27,10 +19,6 @@ class Customer {
     Boolean gender;
     LocalDate birthDate;
     String address;
-    @CreationTimestamp
     LocalDateTime createAt;
-    @UpdateTimestamp
     LocalDateTime updateAt;
-
-
 }

@@ -8,30 +8,26 @@ spring:
   application:
     name: web-sales-backend
   
-  # Database Configuration
   datasource:
     url:  "jdbc:mysql://mysql-2646241a-myloc203-df70.e.aivencloud.com:24714/phoneShop"
     username: avnadmin
     password: AVNS_HNcbA_yh7QK4UPUikiH
     driver-class-name: com.mysql.cj.jdbc.Driver
   
-  # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
   
-  # H2 Database (for development/testing)
   h2:
     console:
       enabled: true
       path: /h2-console
   
-  # Mail Configuration
   mail:
     host: smtp.gmail.com
     port: 587
@@ -48,22 +44,16 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
-
-
-
-
-# JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
-  expiration: 86400000 # 24 hours in milliseconds
+  signerKey: "67ff488a1bbe8bf0c5a00082c79869af83b5c4f6714873c382e31f6b44ad333b"
+  expiration: 86400000
+  refreshable-duration: 360000
 
-# File Upload Configuration
 file:
   upload-dir: uploads/
   max-file-size: 10MB
   max-request-size: 10MB
 
-# Logging Configuration
 logging:
   level:
     com.websales: DEBUG
@@ -74,7 +64,6 @@ logging:
   file:
     name: logs/websales.log
 
-# Management Endpoints
 management:
   endpoints:
     web:
@@ -84,7 +73,6 @@ management:
     health:
       show-details: when-authorized
 
-# Custom Application Properties
 app:
   cors:
     allowed-origins: http://localhost:3000,http://localhost:3001
@@ -100,3 +88,12 @@ cloudinary:
     key: 756234473817482
     secret: T5qQXodnthydHuSyQYrF-xk98Eo
 #  T5qQXodnthydHuSyQYrF-xk98Eo
+
+
+esms:
+  apiKey: "4154BC449E116EAD15843453FE59A9"
+  secretKey: "315BEB7A766075F30EAE0F0575592A"
+  url: https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/
+  brandname: PhoneShop
+
+

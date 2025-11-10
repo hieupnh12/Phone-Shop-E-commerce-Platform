@@ -6,10 +6,10 @@ import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum ErrorCode {
-
-    WAREHOUSE_UNAVAILABLE(2001,"Warehouse area is currently unavailable, cannot add product.",HttpStatus.SERVICE_UNAVAILABLE),
-    WAREHOUSE_NOT_EXIST(2002, "Warehouse Not Exist", HttpStatus.NOT_FOUND),
-    WAREHOUSE_INVALID(2003,"Name must be at least 3 characters", HttpStatus.BAD_REQUEST),
+    SMS_FAILED(2000,"Gửi SMS thất bại. Vui lòng thử lại sau",HttpStatus.BAD_REQUEST),
+    NOT_FIND_OTP(2001,"Không tìm thấy OTP",HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(2002,"OTP đã hết hạn hoặc đã sử dụng",HttpStatus.BAD_REQUEST),
+    OTP_WRONG(2003,"OTP không đúng",HttpStatus.BAD_REQUEST),
     PRODUCT_NOT_EXIST(2004,"Product Not Exist", HttpStatus.NOT_FOUND),
     NAME_ALREADY_EXIST(2005,"Name Exist! ", HttpStatus.CONFLICT),
     SUPPLIER_NOT_EXIST(2006,"Supplier Not Exist", HttpStatus.NOT_FOUND),
@@ -36,7 +36,7 @@ public enum ErrorCode {
     ORIGIN_NOT_FOUND(2027, "Origin Not Exist", HttpStatus.NOT_FOUND),
     BRAND_NOT_FOUND(2028, "Brand Not Exist", HttpStatus.NOT_FOUND),
     OPERATING_SYSTEM_NOT_FOUND(2029, "Operating System Not Exist", HttpStatus.NOT_FOUND),
-   RAM_NOT_FOUND(2030, "Ram Not Exist", HttpStatus.NOT_FOUND),
+    RAM_NOT_FOUND(2030, "Ram Not Exist", HttpStatus.NOT_FOUND),
     ROM_NOT_FOUND(2031, "Rom Not Exist", HttpStatus.NOT_FOUND),
     COLOR_NOT_FOUND(2032, "Color Not Exist", HttpStatus.NOT_FOUND),
     IMPORT_RECEIPT_DETAIL_ALREADY_EXISTS(2033, "Import Receipt Detail Already Exists", HttpStatus.CONFLICT),
@@ -49,7 +49,7 @@ public enum ErrorCode {
     ACCOUNT_NOT_EXIST(1002, "Wrong user name or password please try again !", HttpStatus.BAD_REQUEST),
     USERNAME_INVALID(1003,  "Username must be at least {min} characters ", HttpStatus.BAD_REQUEST),
     INVALID_PASSWORD(1004,  "Password  must be at least {min} characters", HttpStatus.BAD_REQUEST),
-    STAFF_NOT_EXIST(1005, "Staff not existed", HttpStatus.NOT_FOUND),
+    EMPLOYEE_NOT_EXIST(1005, "Employee not existed", HttpStatus.NOT_FOUND),
     UNAUTHENTICATED(1006, "UNAUTHENTICATED", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1007, "You do not have permission ", HttpStatus.FORBIDDEN),
     INVALID_DOB(1008, "Staff birth date must be from {min} age to {max}", HttpStatus.BAD_REQUEST),
@@ -77,7 +77,6 @@ public enum ErrorCode {
     PHONE_NUMBER_AVAILABLE(1029, "Phone number available  .",HttpStatus.BAD_REQUEST),
     PASSWORD_WEAK(1030, "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ in hoa, chữ thường, chữ số và ký tự đặc biệt @$!%*?&.",HttpStatus.BAD_REQUEST),
     LONG_USER_NAME(1031, "Cảnh báo: họ và tên không được vượt quá {max} kí tự", HttpStatus.BAD_REQUEST),
-
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
