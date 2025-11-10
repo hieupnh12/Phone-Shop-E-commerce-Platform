@@ -11,19 +11,19 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "Origin" )
+@Table(name = "origins" )
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Origin {
       @Id
       @GeneratedValue(strategy = GenerationType.IDENTITY)
-      @Column(name ="idOrigin")
-      Long id;
+      @Column(name ="origin_id")
+      Long idOrigin;
 
-      @Column(name ="nameOrigin")
-      String name;
+      @Column(name ="origin_name")
+      String nameOrigin;
 
-//      @Column(name ="status")
-//      boolean status;
+      @Column
+      boolean status;
 
 
 

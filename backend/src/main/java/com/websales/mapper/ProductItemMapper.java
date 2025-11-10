@@ -11,7 +11,9 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring")
 public interface ProductItemMapper {
-    ProductItem toProductItem(ProductItemRequest request);
+
+//    @Mapping(target = "status", expression = "java(item.isStatus() ? ItemStatus.ACTIVE : ItemStatus.INACTIVE)")
+//    ProductItem toProductItem(ProductItemRequest request);
 
 //    @Mapping(source = "versionId.versionId", target = "productVersionId" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 //    @Mapping(source = "import_id.import_id", target = "importId" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

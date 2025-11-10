@@ -15,7 +15,7 @@ import lombok.experimental.FieldDefaults;
 public class ColorRequest {
 
     @UniqueName(entity = Color.class, fieldName = "name")
-    String name ;
+    String nameColor ;
     Boolean status;
 
 }
