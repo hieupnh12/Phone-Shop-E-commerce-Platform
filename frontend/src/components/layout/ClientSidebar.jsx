@@ -1,8 +1,15 @@
 import React, { useState } from "react";
-import { User, LayoutDashboard, Package, Box, Settings, LogOut } from "lucide-react";
+import {
+  User,
+  LayoutDashboard,
+  Package,
+  Box,
+  Settings,
+  LogOut,
+} from "lucide-react";
 
 const ClientSidebar = ({ isOpen, onClose }) => {
-  const [activeRoute, setActiveRoute] = useState('/');
+  const [activeRoute, setActiveRoute] = useState("/");
 
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -33,7 +40,6 @@ const ClientSidebar = ({ isOpen, onClose }) => {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex flex-col h-full p-6">
-
           {/* USER INFO */}
           <div className="mb-8 pt-16 sm:pt-12">
             <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border border-cyan-500/20">
@@ -68,9 +74,11 @@ const ClientSidebar = ({ isOpen, onClose }) => {
                       : "text-slate-400 hover:bg-slate-800/50 hover:text-cyan-400"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${
-                    isActive ? 'text-cyan-400' : ''
-                  }`} />
+                  <Icon
+                    className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${
+                      isActive ? "text-cyan-400" : ""
+                    }`}
+                  />
                   <span className="font-medium">{label}</span>
                   {isActive && (
                     <div className="ml-auto w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
@@ -83,8 +91,12 @@ const ClientSidebar = ({ isOpen, onClose }) => {
           {/* FOOTER - UPGRADE CARD */}
           <div className="pt-6 border-t border-slate-800/50">
             <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-600/10 border border-purple-500/20">
-              <p className="text-sm text-slate-300 mb-2 font-semibold">Upgrade to Pro</p>
-              <p className="text-xs text-slate-400 mb-3">Unlock premium features and benefits</p>
+              <p className="text-sm text-slate-300 mb-2 font-semibold">
+                Upgrade to Pro
+              </p>
+              <p className="text-xs text-slate-400 mb-3">
+                Unlock premium features and benefits
+              </p>
               <button className="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
                 Upgrade Now
               </button>
@@ -95,7 +107,5 @@ const ClientSidebar = ({ isOpen, onClose }) => {
     </>
   );
 };
-
-
 
 export default ClientSidebar;

@@ -22,11 +22,9 @@ const ClientLayout = ({ children }) => {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* Header nhận props để bật/tắt sidebar */}
       <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
 
       <div className="flex pt-16 sm:pt-20">
-        {/* Sidebar nhận sự kiện đóng */}
         <ClientSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
