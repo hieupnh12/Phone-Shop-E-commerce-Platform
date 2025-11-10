@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @Setter// Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
-@Table(name = "ProductItem") // Đặt tên bảng trong DB là "product"
+@Table(name = "product_items") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class ProductItem {
 
@@ -21,21 +21,21 @@ public class ProductItem {
     String imei;
 
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="product_version_id")
+    @ToString.Exclude
+    ProductVersion versionId;
+
 //    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name ="idProductVersion")
+//    @JoinColumn(name ="order_detail_id")
 //    @ToString.Exclude
-//    ProductVersion versionId;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name ="idOrderDetail")
-//    @ToString.Exclude
-//    Orders import_id;
-//
-//
-//
-//    @Enumerated(EnumType.STRING)
-//    @Column()
-//    ItemStatus status = ItemStatus.IN_STOCK;
+//    OrderDetail orderDetail;
+
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(name ="status")
+    ItemStatus status = ItemStatus.IN_STOCK;
 
 
 

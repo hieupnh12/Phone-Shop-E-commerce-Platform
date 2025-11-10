@@ -10,17 +10,17 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "WarehouseArea" )
+@Table(name = "warehouse_areas" )
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WarehouseArea {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idArea")
-    Long id;
+    @Column(name = "area_id")
+    Long idWarehouseArea;
 
 
-    @Column(name ="nameArea")
-    String name;
+    @Column(name ="area_name")
+    String nameWarehouseArea;
 
     @Column(name ="note")
     String note;
