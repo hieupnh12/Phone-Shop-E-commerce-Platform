@@ -15,20 +15,26 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductRequest {
 
-    @UniqueName(entity = Product.class, fieldName = "productName")
-    String productName;
+    @UniqueName(entity = Product.class, fieldName = "nameProduct")
+    String nameProduct;
 
-    Long originId;
+    String image;
 
-    String processor;
+          Long idOrigin;
 
-     Integer battery;
+    Integer battery;
+
+    String scanFrequency;
 
     Double screenSize;
 
-    Long operatingSystemId;
+           Long idOperatingSystem;
 
-     Integer chipset;
+    String screenResolution;
+
+    String screenTech;
+
+    Integer chipset;
 
     String rearCamera;
 
@@ -36,11 +42,15 @@ public class ProductRequest {
 
     Integer warrantyPeriod;
 
-    Long  brandId;
+           Long idBrand;
 
-    Long  warehouseAreaId;
+           Long idWarehouseArea;
 
-//    Boolean status;
+    Integer stockQuantity;
+
+    Boolean status;
+
+           Long idCate;
 
 
 

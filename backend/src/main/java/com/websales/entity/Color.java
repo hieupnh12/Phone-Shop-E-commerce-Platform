@@ -10,21 +10,21 @@ import lombok.experimental.FieldDefaults;
 @Data                    // Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
-@Table(name = "Color") // Đặt tên bảng trong DB là "product"
+@Table(name = "colors") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class Color {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name ="idColor")
-    Long id;
+    @Column(name ="color_id")
+    Long idColor;
 
 
-    @Column(name ="nameColor")
-    String name;
+    @Column(name ="color_name")
+    String nameColor;
 
-
-//    @Column(name ="status",columnDefinition = "TINYINT(1)")
+//
+//    @Column
 //    boolean status;
 
 }

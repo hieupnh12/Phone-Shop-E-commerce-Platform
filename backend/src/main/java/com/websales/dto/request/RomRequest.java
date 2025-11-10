@@ -15,6 +15,6 @@ import lombok.experimental.FieldDefaults;
 public class RomRequest {
 
     @UniqueName(entity = Rom.class, fieldName = "rom_size")
-    String name;
+    String nameRom;
     Boolean status;
 }
