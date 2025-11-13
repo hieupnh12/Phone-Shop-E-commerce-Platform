@@ -28,11 +28,18 @@ public class WarehouseAreaService {
     WarehouseAreaMapper warehouseAreaMapper;
 
     public WarehouseArea createWarehouseArea(WarehouseAreaRequest request) {
-        WarehouseArea area = WarehouseArea.builder()
-                .nameWarehouseArea(request.getNameWarehouse())
-                .build();
 
-        return warehouseAreaRepo.save(area);
+        log.info("➡️ [REQUEST] Create WarehouseArea: {}", request);
+
+        WarehouseArea area = warehouseAreaMapper.toWarehouseArea(request);
+
+        log.info("✅ [MAPPED ENTITY] Before save: {}", area);
+
+        WarehouseArea saved = warehouseAreaRepo.save(area);
+
+        log.info("💾 [SAVED ENTITY] After save: {}", saved);
+
+        return saved;
     }
 
     public List<WarehouseAreaResponse> getAllWarehouseAreas() {

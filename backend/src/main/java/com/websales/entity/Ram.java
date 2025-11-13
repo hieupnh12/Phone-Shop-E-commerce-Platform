@@ -21,8 +21,8 @@ public class Ram {
     @Column(name = "ram_size")
     String nameRame;
 
-    @Column
-    Boolean status;
+//    @Column
+//    Boolean status;
 
 
 }

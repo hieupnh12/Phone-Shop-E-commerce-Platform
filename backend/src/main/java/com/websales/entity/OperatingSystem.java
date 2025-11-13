@@ -18,7 +18,7 @@ public class OperatingSystem {
        @Column(name ="operating_system_id")
        Long idOS;
 
-       @Column(name="operating_system_name")
+       @Column(name="operating_system_name",unique=true)
        String nameOS;
 //
 //       @Column

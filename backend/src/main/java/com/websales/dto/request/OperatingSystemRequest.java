@@ -14,9 +14,9 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OperatingSystemRequest {
 
-    @UniqueName(entity = OperatingSystem.class, fieldName = "name")
+//    @UniqueName(entity = OperatingSystem.class, fieldName = "name")
     String nameOS;
 
-    boolean status;
+//    boolean status;
 
 }

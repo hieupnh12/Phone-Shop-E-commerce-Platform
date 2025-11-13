@@ -56,9 +56,9 @@ public class ProductVersion {
     @Column(name="status")
     Boolean status;
 
-//
-//    @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//     List<ProductItem> productItems;
+
+    @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+     List<ProductItem> productItems;
 
 
     static final Map<String, String> PRODUCT_CODE_MAPPING = new HashMap<>();

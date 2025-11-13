@@ -16,13 +16,13 @@ import java.util.List;
 public class ProductVersionResponse {
     String versionId;
 
-    String productName;
+            String productName;
 
-    String romName;
+            String romName;
 
-    String ramName;
+            String ramName;
 
-    String colorName;
+            String colorName;
 
     BigDecimal importPrice;
 
