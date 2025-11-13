@@ -42,6 +42,9 @@ public enum ErrorCode {
     IMPORT_RECEIPT_DETAIL_ALREADY_EXISTS(2033, "Import Receipt Detail Already Exists", HttpStatus.CONFLICT),
     PRODUCT_VERSION_QUANTITY_NOT_ENOUGH_TO_EXPORT(2034, "Product Quantity Not Enough To Export", HttpStatus.BAD_REQUEST),
     ERROR_UPDATE_QUANTITY(2035, "Error Update Quantity", HttpStatus.BAD_REQUEST),
+    PAYMENT_METHOD_NOT_FOUND(2036, "Payment Method Not Exist", HttpStatus.NOT_FOUND),
+    PAYMENT_TRANSACTION_NOT_FOUND(2037, "Payment Transaction Not Exist", HttpStatus.NOT_FOUND),
+    TRANSACTION_CODE_DUPLICATE(2038, "Transaction Code Already Exists", HttpStatus.CONFLICT),
 
 
     INVALID_KEY(1001, "Invalid message key", HttpStatus.BAD_REQUEST),
