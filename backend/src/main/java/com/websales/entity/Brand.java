@@ -10,18 +10,18 @@ import lombok.experimental.FieldDefaults;
 @Data                    // Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
-@Table(name = "Brand") // Đặt tên bảng trong DB là "product"
+@Table(name = "brands") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 
 public class Brand {
           @Id
           @GeneratedValue(strategy = GenerationType.IDENTITY)
-          @Column(name = "idBrand")
+          @Column(name = "brand_id")
           int  idBrand;
 
-          @Column(name = "nameBrand")
-          String brandName;
-//
-//          @Column(name ="status")
+          @Column(name = "brand_name")
+          String nameBrand;
+
+//          @Column
 //          Boolean status;
 }

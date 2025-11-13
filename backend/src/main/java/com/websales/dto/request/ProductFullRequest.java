@@ -13,9 +13,9 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductFullRequest {
 
-    Long productId;
+    Long idProduct;
 
-    ProductsRequest products ;
+    ProductExtraRequest products ;
 
     //them danh sach cac phien ban san pham
      List<ProductVersionRequest> versions;

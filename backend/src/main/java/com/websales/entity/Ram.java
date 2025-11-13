@@ -10,19 +10,19 @@ import lombok.experimental.FieldDefaults;
 @Data                    // Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
-@Table(name = "RAM") // Đặt tên bảng trong DB là "product"
+@Table(name = "rams") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class Ram {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idRam")
-    Long ram_id;
+    @Column(name = "ram_id")
+    Long idRam;
 
-    @Column(name = "ramSize")
-    String name;
+    @Column(name = "ram_size")
+    String nameRame;
 
-//    @Column(name = "status",columnDefinition = "TINYINT(1)")
-//    Boolean status;
+    @Column
+    Boolean status;
 
 
 }

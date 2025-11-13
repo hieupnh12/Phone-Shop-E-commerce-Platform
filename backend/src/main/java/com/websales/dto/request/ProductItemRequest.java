@@ -14,11 +14,7 @@ public class ProductItemRequest {
     @Pattern(regexp = "^\\d{15}$", message = "IMEI must be exactly 15 digits")
     String imei;
 
-    String productVersionId;
-
-    String importId;
-
-    String exportId;
+    String idProductVersion;
 
     @Builder.Default
     boolean status = false; // Default status set to false (equivalent to 0)

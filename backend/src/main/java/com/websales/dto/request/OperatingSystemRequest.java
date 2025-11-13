@@ -15,7 +15,7 @@ import lombok.experimental.FieldDefaults;
 public class OperatingSystemRequest {
 
     @UniqueName(entity = OperatingSystem.class, fieldName = "name")
-    String name;
+    String nameOS;
 
     boolean status;
 

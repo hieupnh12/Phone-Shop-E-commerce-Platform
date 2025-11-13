@@ -2,6 +2,8 @@ package com.websales.mapper;
 
 
 import com.cloudinary.Cloudinary;
+import com.websales.dto.request.ProductRequest;
+import com.websales.entity.Product;
 import org.mapstruct.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,7 +17,7 @@ public interface ProductMapper {
 //    //    @Mapping(source = "firstname", target = "lastname")     cái này tức là cho dữ liệu của firstname giống với lastname
 ////    @Mapping(target = "lastname", ignore = true)       không mapping đối với lastname (tức là không đụng tới nó luôn --> null)
 //    @Mapping(target = "image", ignore = true) // Bỏ qua ánh xạ image, xử lý thủ công
-//    Product toProduct (ProductRequest request);
+    Product toProduct (ProductRequest request);
 //
 //    @Mapping(target = "image", ignore = true) // Bỏ qua ánh xạ image, xử lý thủ công
 //    Product toProductV2 (ProductFullRequest request);

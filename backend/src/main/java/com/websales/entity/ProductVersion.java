@@ -1,5 +1,6 @@
 package com.websales.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -14,16 +15,17 @@ import java.util.Map;
 @Data // Tự sinh getter, setter, toString, equals, hashCode
 @NoArgsConstructor // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor // Tạo constructor với tất cả các tham số
-@Table(name = "ProductVersion") // Đặt tên bảng trong DB là "product"
+@Table(name = "product_versions") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class ProductVersion {
     @Id
     // @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "idProductVersion")
-    String versionId;
+    @Column(name = "product_version_id")
+    String idVersion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idProduct")
+    @JoinColumn(name = "product_id")
+    @JsonBackReference
     Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,7 +33,7 @@ public class ProductVersion {
     Rom rom;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idRam")
+    @JoinColumn(name = "ram_id")
     Ram ram;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,9 +51,12 @@ public class ProductVersion {
 
     @Column(name = "status")
     Boolean status;
+    
 
-    @OneToMany(mappedBy = "version", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    List<ProductItem> productItems;
+    //
+    // @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch =
+    // FetchType.LAZY)
+    // List<ProductItem> productItems;
 
     static final Map<String, String> PRODUCT_CODE_MAPPING = new HashMap<>();
 
@@ -104,21 +109,21 @@ public class ProductVersion {
     @PrePersist
     public void generateVersionId() {
 
-        if (versionId == null) {
+        if (idVersion == null) {
             String productCode = generateProductCode();
-            String ramValue = ram != null ? ram.getName() : "0";
-            String romValue = rom != null ? rom.getRom_size() : "0";
-            String colorValue = color != null ? color.getName().toUpperCase() : "UNKNOWN";
-            this.versionId = String.format("%s_%s_%s_%s", productCode, ramValue, romValue, colorValue);
+            String ramValue = ram != null ? ram.getNameRame() : "0";
+            String romValue = rom != null ? rom.getNameRom() : "0";
+            String colorValue = color != null ? color.getNameColor().toUpperCase() : "UNKNOWN";
+            this.idVersion = String.format("%s_%s_%s_%s", productCode, ramValue, romValue, colorValue);
         }
     }
 
     private String generateProductCode() {
-        if (product == null || product.getProductName() == null) {
+        if (product == null || product.getNameProduct() == null) {
             return "UNKNOWN";
         }
 
-        String name = product.getProductName().toUpperCase();
+        String name = product.getNameProduct().toUpperCase();
         // Kiểm tra ánh xạ từ khóa
         for (Map.Entry<String, String> entry : PRODUCT_CODE_MAPPING.entrySet()) {
             if (name.contains(entry.getKey())) {
@@ -128,7 +133,7 @@ public class ProductVersion {
 
         // Quy tắc mặc định: Lấy ký tự đầu mỗi từ, tối đa 10 ký tự
         StringBuilder code = new StringBuilder();
-        String[] words = product.getProductName().split("\\s+");
+        String[] words = product.getNameProduct().split("\\s+");
         for (String word : words) {
             if (!word.isEmpty()) {
                 code.append(word.charAt(0));

@@ -1,6 +1,9 @@
 package com.websales.controller;
 
 
+import com.websales.dto.request.OriginRequest;
+import com.websales.dto.response.OriginResponse;
+import com.websales.entity.Origin;
 import com.websales.service.OriginService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -20,29 +23,29 @@ public class OriginController {
 
     OriginService originService;
 
-//    @PostMapping
-//    public Origin createOrigin(@RequestBody @Valid OriginRequest request) {
-//        return originService.createOrigin(request);
-//    }
-//
-//    @GetMapping
-//    public List<OriginResponse> getAllOrigins() {
-//        return originService.getAllOrigins();
-//    }
-//
-//    @GetMapping("/{id}")
-//    public Origin getOriginById(@PathVariable Long id) {
-//        return originService.getOriginById(id);
-//    }
-//
-//    @DeleteMapping("/{id}")
-//    public void deleteOrigin(@PathVariable Long id) {
-//        originService.deleteOriginById(id);
-//        System.out.println("Successfully deleted origin");
-//    }
-//
-//    @PutMapping("/{id}")
-//    public OriginResponse updateOrigin(@PathVariable Long id, @RequestBody OriginRequest request) {
-//        return originService.updateOrigin(id, request);
-//    }
+    @PostMapping
+    public Origin createOrigin(@RequestBody @Valid OriginRequest request) {
+        return originService.createOrigin(request);
+    }
+
+    @GetMapping
+    public List<OriginResponse> getAllOrigins() {
+        return originService.getAllOrigins();
+    }
+
+    @GetMapping("/{id}")
+    public Origin getOriginById(@PathVariable Long id) {
+        return originService.getOriginById(id);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteOrigin(@PathVariable Long id) {
+        originService.deleteOriginById(id);
+        System.out.println("Successfully deleted origin");
+    }
+
+    @PutMapping("/{id}")
+    public OriginResponse updateOrigin(@PathVariable Long id, @RequestBody OriginRequest request) {
+        return originService.updateOrigin(id, request);
+    }
 }

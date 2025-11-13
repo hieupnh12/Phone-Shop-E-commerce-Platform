@@ -42,7 +42,7 @@ const subMenuConfig = {
 const SubMenu = ({ parent }) => {
     const subMenuItems = subMenuConfig[parent] || [];
     return (
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-4 border border-spacing-5">
             <div className="flex gap-2 flex-wrap sm:flex-nowrap overflow-x-auto">
                 {subMenuItems.map((child) => (
                     <NavLink

@@ -1,9 +1,5 @@
-import React from "react";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
-import Home from "./pages/client/Home";
-// import Products from "./pages/Products";
+import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -14,6 +10,11 @@ import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
 import AdminLayout from "./components/layout/AdminLayout";
 import Statistic from "./pages/admin/Statistic";
+<<<<<<< frontend/src/App.js
+import UserStatistic from "./pages/admin/Statistic/Pages/Users/UserStatistic";
+import DashboardStatistic from "./pages/admin/Statistic/Pages/Dashboard/DashboardStatistic";
+import Overview from "./pages/admin/Statistic/Pages/Users/SubPages/Overview";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Layout chính (Header + Footer)
 function MainLayout() {
@@ -27,18 +28,21 @@ function MainLayout() {
     </div>
   );
 }
+import ClientHomePage from "./pages/client";
+import Products from "./pages/client/Products";
+
 
 const router = createBrowserRouter(
   [
     {
       path: "/",
-      element: <MainLayout />, // Layout bọc chung
+      element: <ClientHomePage />,
       children: [
-        { index: true, element: <Home /> }, // "/" -> Home
+        { index: true, element: <Home /> },
         {
           path: "products",
-          // element: <Products />,
-          children: [{ path: ":id", element: <ProductDetail /> }],
+          element: <Products />,
+          children: [{ path: "/", element: <Products /> }],
         },
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
@@ -51,6 +55,7 @@ const router = createBrowserRouter(
         {
           element: <AdminLayout />,
           children: [
+            { index: true, element: <HomeAdmin /> },
             { path: "dashboard", element: <HomeAdmin /> },
             // {
             //   path: "products",
@@ -59,10 +64,23 @@ const router = createBrowserRouter(
             // },
             // { path: "customers", element: <Customers /> },
             // { path: "staff", element: <Staff /> },
-            { path: "statistic", element: <Statistic /> },
+            {
+              path: "statistic",
+              element: <Statistic />,
+              children: [
+                { index: true, element: <DashboardStatistic /> },
+                { path: "dashboard", element: <DashboardStatistic /> },
+                {
+                  path: "users",
+                  element: <UserStatistic />,
+                  children: [{ path: "overview", element: <Overview /> }],
+                },
+              ],
+            },
           ],
         },
       ],
+      
     },
     { path: "*", element: <NotFound /> },
   ],
@@ -72,12 +90,15 @@ const router = createBrowserRouter(
     },
   }
 );
+const queryClient = new QueryClient();
 
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <RouterProvider router={router} />
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
       </CartProvider>
     </AuthProvider>
   );
