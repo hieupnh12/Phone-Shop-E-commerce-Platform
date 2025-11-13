@@ -18,18 +18,21 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 public class Employee {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     String email;
     String passwordHash;
     String fullName;
-    Boolean isActive;
+    @Builder.Default
+    Boolean isActive = true;
     @CreationTimestamp
     LocalDateTime createdAt;
     @UpdateTimestamp
     LocalDateTime updatedAt;
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable( name = "employee_roles",
+            joinColumns = @JoinColumn(name = "employee_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id") )
     Set<Role> employeeRoles;
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<AuditLog> auditLogs;

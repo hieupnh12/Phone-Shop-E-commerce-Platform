@@ -14,13 +14,13 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 public class Role {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
     String name;
     String description;
-    @ManyToMany(mappedBy = "employeeRoles")
-    Set<Employee> employees;
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable( name = "role_permissions",
+            joinColumns = @JoinColumn(name = "role_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id") )
     Set<Permission> rolePermissions;
 }

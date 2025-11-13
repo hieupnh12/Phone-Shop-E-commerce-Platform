@@ -4,7 +4,7 @@ import com.websales.dto.request.CustomerCreateRequest;
 import com.websales.dto.response.CustomerResponse;
 import com.websales.entity.Customer;
 import com.websales.mapper.CustomerMapper;
-import com.websales.repository.CustomerRepository;
+import com.websales.repository.CustomerRepo;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CustomerService {
-    CustomerRepository customerRepository;
+    CustomerRepo customerRepository;
     CustomerMapper customerMapper;
 
     public CustomerResponse createCustomer(CustomerCreateRequest request) {

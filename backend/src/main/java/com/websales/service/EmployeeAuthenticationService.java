@@ -30,10 +30,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -50,7 +47,7 @@ public class EmployeeAuthenticationService {
     protected   String SIGNER_KEY;
 
     @NonFinal
-    @Value("${jwt.valid-duration}")
+    @Value("${jwt.expiration}")
     protected   Long VALID_DURATION;
 
     @NonFinal
@@ -87,7 +84,7 @@ public class EmployeeAuthenticationService {
                     .issueTime(new Date())
                     .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                     .jwtID(jwtId)
-                    .claim("scop", buildScope(employee))
+                    .claim("scopes", buildScopeList(employee))
                     .build();
 
             Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -105,34 +102,28 @@ public class EmployeeAuthenticationService {
 
     }
 
-    private String buildScope(Employee employee) {
-        StringJoiner scopeJoiner = new StringJoiner(" ");
-
+    private List<String> buildScopeList(Employee employee) {
+        List<String> scopes = new ArrayList<>();
         Set<Role> roles = employee.getEmployeeRoles();
-        if (roles == null || roles.isEmpty()) {
-            return "";
-        }
+        if (roles == null || roles.isEmpty()) return scopes;
 
         for (Role role : roles) {
-            String roleName = role.getName()
-                    .toUpperCase()
-                    .replace(" ", "_");
-            scopeJoiner.add("ROLE_" + roleName);
+            String roleName = "ROLE_" + role.getName().toUpperCase().replace(" ", "_");
+            scopes.add(roleName);
 
             Set<Permission> permissions = role.getRolePermissions();
-            if (permissions != null && !permissions.isEmpty()) {
-                for (Permission permission : permissions) {
-                    String module = permission.getModule().toUpperCase();
-                    String action = permission.getAction().toUpperCase();
-                    String resource = permission.getResource().toUpperCase().replace(" ", "_");
-
-                    String scopeItem = module + "_" + action + "_" + resource;
-                    scopeJoiner.add(scopeItem);
+            if (permissions != null) {
+                for (Permission p : permissions) {
+                    String scope = String.format("%s_%s_%s",
+                            p.getModule().toUpperCase(),
+                            p.getAction().toUpperCase(),
+                            p.getResource().toUpperCase().replace(" ", "_")
+                    );
+                    scopes.add(scope);
                 }
             }
         }
-
-        return scopeJoiner.toString();
+        return scopes;
     }
 
 

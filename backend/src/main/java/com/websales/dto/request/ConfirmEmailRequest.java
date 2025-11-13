@@ -1,4 +1,4 @@
-package com.websales.dto.response;
+package com.websales.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +8,6 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SendOtpResponse {
-    String message;
+public class ConfirmEmailRequest {
+    String email;
 }
