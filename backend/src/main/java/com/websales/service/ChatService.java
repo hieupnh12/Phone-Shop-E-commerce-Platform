@@ -1,0 +1,96 @@
+package com.websales.service;
+
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+
+import java.util.List;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.stereotype.Service;
+
+import com.websales.dto.request.ChatRequest;
+import com.websales.dto.response.RagResponse;
+import com.websales.entity.Product;
+import com.websales.enums.Intent;
+import com.websales.repository.ProductRepository;
+
+@Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class ChatService {
+    
+    ProductRepository productRepository;
+    ChatClient chatClient;
+    IntentClassifier intentClassifier;
+
+    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier) {
+        this.chatClient = builder.build();
+        this.productRepository = productRepository;
+        this.intentClassifier = intentClassifier;
+    }
+
+    public RagResponse ask(ChatRequest chatRequest) {
+        Intent intent = intentClassifier.classify(chatRequest.message());
+//        Intent intent = Intent.RECOMMEND;
+        return switch (intent) {
+            case PRODUCT_SEARCH -> searchProducts(chatRequest.message());
+            case SALES_STATS -> chatSale(chatRequest.message());
+            case RECOMMEND -> chatRecomment(chatRequest.message());
+            case GENERAL -> chatGeneral(chatRequest.message());
+        };
+    }
+
+    private RagResponse searchProducts(String q) {
+        List<Product> phones = productRepository.findAll();
+
+//        String answer = chatClient.prompt()
+//                        .system("Bạn là trợ lý bán điện thoại WarePhone. Trả lời tự nhiên, thân thiện.")
+//                        .user("Câu hỏi: " + q + "\nDanh sách sản phẩm:\n")
+//                        .call()
+//                        .content();
+
+        return new RagResponse("answer search", phones, null);
+    }
+
+    private RagResponse chatSale(String q) {
+
+        return new RagResponse("sale", productRepository.findAll(), null);
+    }
+
+    private RagResponse chatRecomment(String q) {
+
+        return new RagResponse("answer recommendation", productRepository.findAll(), null);
+    }
+
+    private RagResponse chatGeneral(String message) {
+        SystemMessage systemMessage = new SystemMessage("""
+    Bạn là trợ lý AI của hệ thống quản lý bán điện thoại WarePhone.
+
+    Mục tiêu của bạn:
+    - Hỗ trợ người dùng tra cứu thông tin về sản phẩm, giá, và tồn kho.
+    - Gợi ý điện thoại phù hợp với nhu cầu khách hàng (dựa trên dữ liệu được cung cấp).
+    - Hỗ trợ nhân viên trong quy trình bán hàng và chăm sóc khách hàng.
+    - Trả lời ngắn gọn, chuyên nghiệp, thân thiện.
+
+    Dữ liệu hệ thống được lấy từ cơ sở dữ liệu WarePhone (qua API backend).
+    Bạn chỉ sử dụng dữ liệu được cung cấp trong ngữ cảnh truy vấn — 
+    không tự tạo dữ liệu mới hoặc giả định ngoài dữ liệu có sẵn.
+
+    Khi không có thông tin hoặc dữ liệu không đủ, hãy trả lời: 
+    "Xin lỗi, hiện tôi chưa có dữ liệu cho nội dung này."
+""");
+
+        UserMessage userMessage = new UserMessage(message);
+        Prompt prompt = new Prompt(systemMessage, userMessage);
+        String answer = chatClient
+                .prompt(prompt)
+                .call()
+                .content();
+
+                return new RagResponse(answer, null, null);
+    }
+
+
+}
