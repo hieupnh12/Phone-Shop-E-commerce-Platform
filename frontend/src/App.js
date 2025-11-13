@@ -18,6 +18,8 @@ import UserStatistic from "./pages/admin/Statistic/Pages/Users/UserStatistic";
 import DashboardStatistic from "./pages/admin/Statistic/Pages/Dashboard/DashboardStatistic";
 import Overview from "./pages/admin/Statistic/Pages/Users/SubPages/Overview";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStatistics";
+import Chatbot from "./pages/chatbot";
 
 // Layout chính (Header + Footer)
 function MainLayout() {
@@ -75,6 +77,11 @@ const router = createBrowserRouter(
                   element: <UserStatistic />,
                   children: [{ path: "overview", element: <Overview /> }],
                 },
+                {
+                  path: "products",
+                  element: <ProductStatistic />,
+                  children: [{ path: "overview", element: <Overview /> }],
+                }
               ],
             },
           ],
@@ -97,6 +104,7 @@ function App() {
       <CartProvider>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
+          <Chatbot />
         </QueryClientProvider>
       </CartProvider>
     </AuthProvider>

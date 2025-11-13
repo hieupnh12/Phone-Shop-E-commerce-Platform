@@ -52,9 +52,15 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
-
-
-
+  # AI
+  ai:
+    openai:
+      api-key: AIzaSyBrTipp-3SITKxs3t7cN3eP2crvOG9edfs
+      chat:
+        base-url: https://generativelanguage.googleapis.com
+        completions-path: /v1beta/openai/chat/completions
+        options:
+          model: gemini-2.0-flash
 
 # JWT Configuration
 jwt:
@@ -104,3 +110,5 @@ cloudinary:
     key: 756234473817482
     secret: T5qQXodnthydHuSyQYrF-xk98Eo
 #  T5qQXodnthydHuSyQYrF-xk98Eo
+
+
