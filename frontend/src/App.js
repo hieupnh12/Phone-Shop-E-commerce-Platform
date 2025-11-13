@@ -1,9 +1,5 @@
-import React from "react";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
-import Home from "./pages/client/Home";
-// import Products from "./pages/Products";
+import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
@@ -14,6 +10,7 @@ import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
 import AdminLayout from "./components/layout/AdminLayout";
 import Statistic from "./pages/admin/Statistic";
+<<<<<<< frontend/src/App.js
 import UserStatistic from "./pages/admin/Statistic/Pages/Users/UserStatistic";
 import DashboardStatistic from "./pages/admin/Statistic/Pages/Dashboard/DashboardStatistic";
 import Overview from "./pages/admin/Statistic/Pages/Users/SubPages/Overview";
@@ -31,18 +28,21 @@ function MainLayout() {
     </div>
   );
 }
+import ClientHomePage from "./pages/client";
+import Products from "./pages/client/Products";
+
 
 const router = createBrowserRouter(
   [
     {
       path: "/",
-      element: <MainLayout />, // Layout bọc chung
+      element: <ClientHomePage />,
       children: [
-        { index: true, element: <Home /> }, // "/" -> Home
+        { index: true, element: <Home /> },
         {
           path: "products",
-          // element: <Products />,
-          children: [{ path: ":id", element: <ProductDetail /> }],
+          element: <Products />,
+          children: [{ path: "/", element: <Products /> }],
         },
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
@@ -80,6 +80,7 @@ const router = createBrowserRouter(
           ],
         },
       ],
+      
     },
     { path: "*", element: <NotFound /> },
   ],
