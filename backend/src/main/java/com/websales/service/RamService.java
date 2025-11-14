@@ -25,7 +25,7 @@ public class RamService {
 
     public Ram createRam(RamRequest request) {
         Ram ram = Ram.builder()
-                .nameRame(request.getNameRam())
+                .nameRam(request.getNameRam())
 //                .status(request.getStatus())
                 .build();
         return ramRepo.save(ram);

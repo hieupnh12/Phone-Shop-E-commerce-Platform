@@ -24,30 +24,30 @@ public interface ProductVersionMapper {
 
     List<ProductVersion> ToProductVersions (List<ProductVersionRequest> requests);
 
-    @Mapping(source= "ram.name", target="ramName")
-    @Mapping(source ="rom.rom_size", target = "romName")
-    @Mapping(source = "color.name" , target="colorName")
-    @Mapping(source = "product.productName", target ="productName")
+    @Mapping(source= "ram.nameRam", target="ramName")
+    @Mapping(source ="rom.nameRom", target = "romName")
+    @Mapping(source = "color.nameColor" , target="colorName")
+    @Mapping(source = "product.nameProduct", target ="productName")
     @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
     ProductVersionResponse ToProductVersionResponse (ProductVersion productVersion);
 
 
-    @Mapping(source= "ram.name", target="ramName")
-    @Mapping(source ="rom.rom_size", target = "romName")
-    @Mapping(source = "color.name" , target="colorName")
-    @Mapping(source = "product.productName", target ="productName")
-    @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
-    @Mapping(source = "product", target ="product")
-    ProductVerResponse ToProductVerResponse (ProductVersion productVersion);
+//    @Mapping(source= "ram.nameRam", target="ramName")
+//    @Mapping(source ="rom.nameRom", target = "romName")
+//    @Mapping(source = "color.nameColor" , target="colorName")
+//    @Mapping(source = "product.nameProduct", target ="productName")
+//    @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
+//    @Mapping(source = "product", target ="product")
+//    ProductVerResponse ToProductVerResponse (ProductVersion productVersion);
 
 
 
-    @Mapping(source= "ram.name", target="ramName")
-    @Mapping(source ="rom.rom_size", target = "romName")
-    @Mapping(source = "color.name" , target="colorName")
-    @Mapping(source = "product.productName", target ="productName")
-    @Mapping(source = "product", target ="product")
-    VersionResponse ToVersionResponse (ProductVersion productVersion);
+//    @Mapping(source= "ram.name", target="ramName")
+//    @Mapping(source ="rom.rom_size", target = "romName")
+//    @Mapping(source = "color.name" , target="colorName")
+//    @Mapping(source = "product.productName", target ="productName")
+//    @Mapping(source = "product", target ="product")
+//    VersionResponse ToVersionResponse (ProductVersion productVersion);
 
 
 
@@ -79,7 +79,9 @@ public interface ProductVersionMapper {
             return Collections.emptyList();
         }
         return productItems.stream()
-                .map(item -> ImeiResponse.builder().imei(item.getImei()).build())
+                .map(item -> ImeiResponse.builder()
+                                                     .imei(item.getImei())
+                                                      .build())
                 .collect(Collectors.toList());
     }
 

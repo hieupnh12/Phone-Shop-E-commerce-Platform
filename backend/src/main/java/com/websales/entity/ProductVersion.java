@@ -53,6 +53,10 @@ public class ProductVersion {
     Integer stockQuantity;
 
 
+    @Column(name ="picture")
+    String picture;
+
+
     @Column(name="status")
     Boolean status;
 
@@ -114,7 +118,7 @@ public class ProductVersion {
 
         if (idVersion == null) {
             String productCode = generateProductCode();
-            String ramValue = ram != null ? ram.getNameRame() : "0";
+            String ramValue = ram != null ? ram.getNameRam() : "0";
             String romValue = rom != null ? rom.getNameRom(): "0";
             String colorValue = color != null ? color.getNameColor().toUpperCase() : "UNKNOWN";
             this.idVersion = String.format("%s_%s_%s_%s", productCode, ramValue, romValue, colorValue);

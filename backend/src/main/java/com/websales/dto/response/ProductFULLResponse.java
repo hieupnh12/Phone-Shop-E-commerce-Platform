@@ -45,6 +45,8 @@ public class ProductFULLResponse {
 
           String  warehouseAreaName;
 
+          String  categoryName;
+
     Integer stockQuantity;
 
     Boolean status;

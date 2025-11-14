@@ -49,14 +49,14 @@ public class WarehouseAreaService {
                 .collect(Collectors.toList());
     }
 
-    public WarehouseArea getWarehouseAreaById(Long id) {
+    public WarehouseArea getWarehouseAreaById(String id) {
         return warehouseAreaRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Warehouse area not found"));
     }
 
 
 
-    public void deleteWarehouseAreaById(Long id) {
+    public void deleteWarehouseAreaById(String id) {
         boolean exists = warehouseAreaRepo.existsById(id);
 
         //Nếu không tồn tại thì báo lỗi ngay
@@ -69,7 +69,7 @@ public class WarehouseAreaService {
 
 
 
-    public WarehouseAreaResponse UpdateWarehouseAreaAttribute (Long id, WarehouseUpdateRequest request) {
+    public WarehouseAreaResponse UpdateWarehouseAreaAttribute (String id, WarehouseUpdateRequest request) {
         WarehouseArea area = warehouseAreaRepo.findById(id).orElse(null);
         warehouseAreaMapper.updateWarehouseArea(request,area);
         return warehouseAreaMapper.toWarehouseAreaResponse(warehouseAreaRepo.save(area));

@@ -16,12 +16,12 @@ public class ProductExtraRequest {
     @Size(max = 255, message = "Product name must be less than 255 characters")
     String nameProduct;
 
-    @NotBlank(message = "Image URL must not be blank")
-    @Size(max = 255, message = "Image URL must be less than 255 characters")
-    String image;
+//    @NotBlank(message = "Image URL must not be blank")
+//    @Size(max = 255, message = "Image URL must be less than 255 characters")
+//    String image;
 
-    @NotNull(message = "Origin ID must not be null")
-    Long originId;
+          @NotNull(message = "Origin ID must not be null")
+          Long originId;
 
     @NotNull(message = "Battery capacity is required")
     @Positive(message = "Battery must be a positive number")
@@ -35,8 +35,8 @@ public class ProductExtraRequest {
     @DecimalMin(value = "0.1", message = "Screen size must be greater than 0")
     Double screenSize;
 
-    @NotNull(message = "Operating system ID is required")
-    Long operatingSystemId;
+          @NotNull(message = "Operating system ID is required")
+          Long operatingSystemId;
 
     @NotBlank(message = "Screen resolution must not be blank")
     @Size(max = 100, message = "Screen resolution must be less than 100 characters")
@@ -62,15 +62,18 @@ public class ProductExtraRequest {
     @PositiveOrZero(message = "Warranty period must be non-negative")
     Integer warrantyPeriod;
 
-    @NotNull(message = "Brand ID must not be null")
-    Long brandId;
+            @NotNull(message = "Brand ID must not be null")
+            Integer brandId;
 
-    @NotNull(message = "Warehouse area ID must not be null")
-    Long warehouseAreaId;
+             @NotNull(message = "Warehouse area ID must not be null")
+             String warehouseAreaId;
 
     @NotNull(message = "Stock quantity must not be null")
     @PositiveOrZero(message = "Stock quantity cannot be negative")
     Integer stockQuantity;
+
+
+             Long categoryId;
 
     @NotNull(message = "Status must not be null")
     Boolean status;

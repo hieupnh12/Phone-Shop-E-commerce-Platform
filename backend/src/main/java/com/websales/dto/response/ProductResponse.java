@@ -16,7 +16,7 @@ public class ProductResponse {
 
     String image;
 
-    String  originName;
+                String  originName;
 
     Integer battery;
 
@@ -24,7 +24,7 @@ public class ProductResponse {
 
     Double screenSize;
 
-    String  operatingSystemName;
+               String  operatingSystemName;
 
     String screenResolution;
 
@@ -38,9 +38,11 @@ public class ProductResponse {
 
     Integer warrantyPeriod;
 
-    String brandName;
+                 String brandName;
 
-    String  warehouseAreaName;
+                  String  warehouseAreaName;
+
+                  String  categoryName;
 
     Integer stockQuantity;
 
