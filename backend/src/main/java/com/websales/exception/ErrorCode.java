@@ -45,6 +45,8 @@ public enum ErrorCode {
     PAYMENT_METHOD_NOT_FOUND(2036, "Payment Method Not Exist", HttpStatus.NOT_FOUND),
     PAYMENT_TRANSACTION_NOT_FOUND(2037, "Payment Transaction Not Exist", HttpStatus.NOT_FOUND),
     TRANSACTION_CODE_DUPLICATE(2038, "Transaction Code Already Exists", HttpStatus.CONFLICT),
+    ORDER_NOT_FOUND(2039, "Order Not Exist", HttpStatus.NOT_FOUND),
+    PAYMENT_NOT_COMPLETED(2040, "Payment Not Completed", HttpStatus.BAD_REQUEST),
 
 
     INVALID_KEY(1001, "Invalid message key", HttpStatus.BAD_REQUEST),

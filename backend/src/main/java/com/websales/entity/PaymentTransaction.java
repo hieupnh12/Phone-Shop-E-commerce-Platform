@@ -49,6 +49,9 @@ public class PaymentTransaction {
     @Column(name = "response_message", columnDefinition = "TEXT")
     String responseMessage;
 
+    @Column(name = "address", length = 500)
+    String address;
+
     @PrePersist
     protected void onCreate() {
         if (paymentTime == null) {

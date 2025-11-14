@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.websales.entity.Order;
+import com.websales.enums.OrderStatus;
+import com.websales.repository.OrderRepository;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -33,10 +37,12 @@ public class PaymentTransactionService {
     PaymentTransactionRepository paymentTransactionRepository;
     PaymentTransactionMapper paymentTransactionMapper;
     PaymentMethodService paymentMethodService;
+    OrderRepository orderRepository;
 
     @Transactional
     public PaymentTransactionResponse createPaymentTransaction(PaymentTransactionRequest request) {
         log.info("Creating payment transaction for order: {}", request.getOrderId());
+        log.info("Payment method ID from request: {}", request.getPaymentMethodId());
         
         // Generate transaction ID if not provided
         String transactionId = UUID.randomUUID().toString();
@@ -50,14 +56,28 @@ public class PaymentTransactionService {
         // Get payment method
         PaymentMethod paymentMethod = null;
         if (request.getPaymentMethodId() != null) {
-            paymentMethod = paymentMethodService.getPaymentMethodEntityById(request.getPaymentMethodId());
+            try {
+                paymentMethod = paymentMethodService.getPaymentMethodEntityById(request.getPaymentMethodId());
+                log.info("Found payment method: id={}, type={}, provider={}", 
+                    paymentMethod.getPaymentMethodId(), 
+                    paymentMethod.getPaymentMethodType(), 
+                    paymentMethod.getProvider());
+            } catch (AppException e) {
+                log.error("Payment method not found with id: {}", request.getPaymentMethodId());
+                throw e;
+            }
+        } else {
+            log.warn("Payment method ID is null in request");
         }
         
         // Create transaction
         PaymentTransaction transaction = paymentTransactionMapper.toPaymentTransaction(request);
         transaction.setTransactionId(transactionId);
-        transaction.setPaymentMethod(paymentMethod);
+        transaction.setPaymentMethod(paymentMethod);  // Set paymentMethod here
         transaction.setPaymentTime(LocalDateTime.now());
+        
+        log.info("Transaction before save - paymentMethodId: {}", 
+            transaction.getPaymentMethod() != null ? transaction.getPaymentMethod().getPaymentMethodId() : "NULL");
         
         // Set default values if not provided
         if (transaction.getPaymentStatus() == null) {
@@ -68,7 +88,22 @@ public class PaymentTransactionService {
         }
         
         PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
-        return paymentTransactionMapper.toPaymentTransactionResponse(savedTransaction);
+        
+        log.info("Transaction after save - paymentMethodId: {}", 
+            savedTransaction.getPaymentMethod() != null ? savedTransaction.getPaymentMethod().getPaymentMethodId() : "NULL");
+        
+        // Fetch lại transaction với paymentMethod để tránh LAZY loading issue
+        PaymentTransaction transactionWithMethod = paymentTransactionRepository
+            .findById(savedTransaction.getTransactionId())
+            .orElse(savedTransaction);
+        
+        // Trigger LAZY load nếu cần
+        if (transactionWithMethod.getPaymentMethod() != null) {
+            transactionWithMethod.getPaymentMethod().getPaymentMethodId();
+            transactionWithMethod.getPaymentMethod().getPaymentMethodType();
+        }
+        
+        return paymentTransactionMapper.toPaymentTransactionResponse(transactionWithMethod);
     }
 
     public PaymentTransactionResponse getPaymentTransactionById(String transactionId) {
@@ -134,12 +169,27 @@ public class PaymentTransactionService {
         PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND));
         
+        PaymentStatus oldStatus = transaction.getPaymentStatus();
         transaction.setPaymentStatus(status);
         if (responseMessage != null) {
             transaction.setResponseMessage(responseMessage);
         }
         
         PaymentTransaction updatedTransaction = paymentTransactionRepository.save(transaction);
+        
+        // Update Order status khi thanh toán thành công
+        if (status == PaymentStatus.SUCCESS && oldStatus != PaymentStatus.SUCCESS && transaction.getOrderId() != null) {
+            Order order = orderRepository.findById(transaction.getOrderId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+            
+            order.setStatus(OrderStatus.PAID);
+            order.setIsPaid(true);
+            order.setEndDatetime(LocalDateTime.now());
+            orderRepository.save(order);
+            
+            log.info("Order {} status updated to PAID after successful payment", order.getOrderId());
+        }
+        
         return paymentTransactionMapper.toPaymentTransactionResponse(updatedTransaction);
     }
 

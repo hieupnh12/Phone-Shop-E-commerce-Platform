@@ -34,5 +34,11 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     Page<PaymentTransaction> findByPaymentStatus(PaymentStatus paymentStatus, Pageable pageable);
     
     Page<PaymentTransaction> findByOrderId(Integer orderId, Pageable pageable);
+
+    @Query("SELECT pt FROM PaymentTransaction pt LEFT JOIN FETCH pt.paymentMethod WHERE pt.transactionId = :transactionId")
+    Optional<PaymentTransaction> findByIdWithPaymentMethod(@Param("transactionId") String transactionId);
+
+    @Query("SELECT pt FROM PaymentTransaction pt LEFT JOIN FETCH pt.paymentMethod WHERE pt.transactionCode = :transactionCode")
+    Optional<PaymentTransaction> findByTransactionCodeWithPaymentMethod(@Param("transactionCode") String transactionCode);
 }
 
