@@ -10,28 +10,16 @@ import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
 import AdminLayout from "./components/layout/AdminLayout";
 import Statistic from "./pages/admin/Statistic";
-<<<<<<< frontend/src/App.js
 import UserStatistic from "./pages/admin/Statistic/Pages/Users/UserStatistic";
 import DashboardStatistic from "./pages/admin/Statistic/Pages/Dashboard/DashboardStatistic";
 import Overview from "./pages/admin/Statistic/Pages/Users/SubPages/Overview";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStatistics";
 import Chatbot from "./pages/chatbot";
-
-// Layout chính (Header + Footer)
-function MainLayout() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
-      <main className="flex-grow">
-        <Outlet /> {/* 👈 chỗ render trang con */}
-      </main>
-      <Footer />
-    </div>
-  );
-}
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
+
+
 
 
 const router = createBrowserRouter(
@@ -44,12 +32,21 @@ const router = createBrowserRouter(
         {
           path: "products",
           element: <Products />,
-          children: [{ path: "/", element: <Products /> }],
+          children: [{ path: "abc", element: <Products /> }],
         },
-        { path: "login", element: <Login /> },
-        { path: "signup", element: <Signup /> },
+        // { path: "login", element: <Login /> },
+        // { path: "signup", element: <Signup /> },
       ],
     },
+    {
+    path: "/login",
+    element: <Login />,
+  },
+
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
     {
       path: "/admin",
       element: <AdminRoute />,
