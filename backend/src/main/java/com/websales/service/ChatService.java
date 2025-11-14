@@ -1,6 +1,8 @@
 package com.websales.service;
 
+import com.websales.service.chatbot.RecommendService;
 import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
@@ -24,11 +26,13 @@ public class ChatService {
     ProductRepository productRepository;
     ChatClient chatClient;
     IntentClassifier intentClassifier;
+    RecommendService recommendService;
 
-    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier) {
+    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier, RecommendService recommendService) {
         this.chatClient = builder.build();
         this.productRepository = productRepository;
         this.intentClassifier = intentClassifier;
+        this.recommendService = recommendService;
     }
 
     public RagResponse ask(ChatRequest chatRequest) {
@@ -37,7 +41,7 @@ public class ChatService {
         return switch (intent) {
             case PRODUCT_SEARCH -> searchProducts(chatRequest.message());
             case SALES_STATS -> chatSale(chatRequest.message());
-            case RECOMMEND -> chatRecomment(chatRequest.message());
+            case RECOMMEND -> recommendService.recommend(chatRequest.message());
             case GENERAL -> chatGeneral(chatRequest.message());
         };
     }
@@ -59,10 +63,6 @@ public class ChatService {
         return new RagResponse("sale", productRepository.findAll(), null);
     }
 
-    private RagResponse chatRecomment(String q) {
-
-        return new RagResponse("answer recommendation", productRepository.findAll(), null);
-    }
 
     private RagResponse chatGeneral(String message) {
         SystemMessage systemMessage = new SystemMessage("""
