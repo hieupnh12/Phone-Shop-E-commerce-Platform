@@ -1,7 +1,6 @@
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
-import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -30,7 +29,7 @@ const router = createBrowserRouter(
         {
           path: "products",
           element: <Products />,
-          children: [{ path: "/", element: <Products /> }],
+          // children: [{ path: "/", element: <Products /> }],
         },
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
@@ -38,7 +37,7 @@ const router = createBrowserRouter(
     },
     {
       path: "/admin",
-      element: <AdminRoute />,
+      element: <AdminRoute allowedRoles={'ROLE_ADMIN'}/>,
       children: [
         {
           element: <AdminLayout />,
@@ -87,14 +86,12 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <AuthProvider>
       <CartProvider>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
           <Chatbot />
         </QueryClientProvider>
       </CartProvider>
-    </AuthProvider>
   );
 }
 
