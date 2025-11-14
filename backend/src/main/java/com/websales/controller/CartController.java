@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.*;
-
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/cart")
 public class CartController {
@@ -23,8 +23,8 @@ public class CartController {
     private final ProductItemRepository productItemRepository;
 
     public CartController(CartRepository cartRepository,
-                          CartItemRepository cartItemRepository,
-                          ProductItemRepository productItemRepository) {
+            CartItemRepository cartItemRepository,
+            ProductItemRepository productItemRepository) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productItemRepository = productItemRepository;
@@ -38,48 +38,51 @@ public class CartController {
                     "success", false,
                     "message", "User not logged in",
                     "cartItems", Collections.emptyList(),
-                    "grandTotal", 0
-            ));
+                    "grandTotal", 0));
         }
 
-        // Lấy TẤT CẢ cart của user (tuỳ bạn dùng chỉ ACTIVE thì đổi sang findFirstByUserIdAndStatus(userId, true))
+        // Lấy TẤT CẢ cart của user (tuỳ bạn dùng chỉ ACTIVE thì đổi sang
+        // findFirstByUserIdAndStatus(userId, true))
         List<Cart> cartList = cartRepository.findByUserId(userId);
 
         List<CartItemResponse> cartItemsResp = new ArrayList<>();
         double grandTotal = 0;
 
         for (Cart cart : cartList) {
-            if (cart.getCartItems() == null) continue;
+            if (cart.getCartItems() == null)
+                continue;
             for (CartItem item : cart.getCartItems()) {
                 ProductItem pi = item.getProductItem();
-                if (pi == null || pi.getVersion() == null || pi.getVersion().getProduct() == null) continue;
+                if (pi == null || pi.getVersion() == null || pi.getVersion().getProduct() == null)
+                    continue;
 
                 ProductVersion pv = pi.getVersion();
                 Product product = pv.getProduct();
 
                 double price = 0.0;
                 BigDecimal exportPrice = pv.getExportPrice();
-                if (exportPrice != null) price = exportPrice.doubleValue();
+                if (exportPrice != null)
+                    price = exportPrice.doubleValue();
 
                 int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
                 CartItemResponse resp = new CartItemResponse(
-                        product.getProductId(),
-                        product.getProductName(),
+                        pi.getImei(), // 👈 thêm IMEI
+                        product.getIdProduct(),
+                        product.getNameProduct(),
                         product.getImage(),
                         price,
-                        qty
-                );
+                        qty);
                 cartItemsResp.add(resp);
                 grandTotal += price * qty;
             }
+
         }
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "cartItems", cartItemsResp,
-                "grandTotal", grandTotal
-        ));
+                "grandTotal", grandTotal));
     }
 
     // --- THÊM / CẬP NHẬT SẢN PHẨM VÀO GIỎ HÀNG (theo IMEI) ---
@@ -87,21 +90,18 @@ public class CartController {
     @Transactional
     public ResponseEntity<?> addToCart(
             @SessionAttribute(name = "userId", required = false) String userId,
-            @RequestBody CartItemRequest request
-    ) {
+            @RequestBody CartItemRequest request) {
         if (userId == null) {
             return ResponseEntity.status(401).body(Map.of(
                     "success", false,
-                    "message", "User not logged in"
-            ));
+                    "message", "User not logged in"));
         }
 
         String imei = request.getImei();
         if (imei == null || imei.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "IMEI is required"
-            ));
+                    "message", "IMEI is required"));
         }
 
         // Lấy ProductItem theo IMEI
@@ -109,8 +109,7 @@ public class CartController {
         if (piOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "ProductItem (IMEI) not found"
-            ));
+                    "message", "ProductItem (IMEI) not found"));
         }
 
         // Lấy/ tạo cart ACTIVE cho user
@@ -142,8 +141,7 @@ public class CartController {
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Đã thêm vào giỏ hàng"
-        ));
+                "message", "Đã thêm vào giỏ hàng"));
     }
 
     // --- XÓA SẢN PHẨM KHỎI GIỎ HÀNG (theo IMEI) ---
@@ -151,27 +149,23 @@ public class CartController {
     @Transactional
     public ResponseEntity<?> removeCartItem(
             @SessionAttribute(name = "userId", required = false) String userId,
-            @RequestBody CartItemRequest request
-    ) {
+            @RequestBody CartItemRequest request) {
         if (userId == null) {
             return ResponseEntity.status(401).body(Map.of(
                     "success", false,
-                    "message", "User not logged in"
-            ));
+                    "message", "User not logged in"));
         }
         String imei = request.getImei();
         if (imei == null || imei.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "IMEI is required"
-            ));
+                    "message", "IMEI is required"));
         }
 
         cartItemRepository.deleteByUserIdAndImei(userId, imei);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Đã xóa sản phẩm khỏi giỏ hàng"
-        ));
+                "message", "Đã xóa sản phẩm khỏi giỏ hàng"));
     }
 }
