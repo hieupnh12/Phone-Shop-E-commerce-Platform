@@ -1,6 +1,5 @@
 package com.websales.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -14,18 +13,19 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WarehouseArea {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "area_id")
-    Long idWarehouseArea;
+    String idWarehouseArea;
 
 
-    @Column(name ="area_name")
+    @Column(name = "area_name")
     String nameWarehouseArea;
 
-    @Column(name ="note")
+    @Column(name = "note")
     String note;
 
-    @Column(name ="status")
-    boolean  status;
+    @Column(name = "status")
+    boolean status;
 
 }
+

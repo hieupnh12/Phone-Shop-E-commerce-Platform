@@ -1,65 +1,82 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useCart } from '../../contexts/CartContext';
+import React, { useState, useEffect } from 'react';
+import { Search, User, ShoppingCart, Menu, X } from 'lucide-react';
 
-const Header = () => {
-  const { user, logout } = useAuth();
-  const { cartItems } = useCart();
+const Header = ({ onToggleSidebar, isSidebarOpen }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const navItems = ["Home", "Products", "Solutions", "Pricing", "Contact"];
 
   return (
-    <header className="bg-white shadow-md">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-primary-600">
-            TunasMin
-          </Link>
+    <header
+      className="fixed top-0 left-0 w-full z-50 backdrop-blur-sm bg-transparent"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           
-          <nav className="hidden md:flex space-x-6">
-            <Link to="/" className="text-gray-700 hover:text-primary-600">
-              Home
-            </Link>
-            <Link to="/products" className="text-gray-700 hover:text-primary-600">
-              Products
-            </Link>
-          </nav>
-          
-          <div className="flex items-center space-x-4">
-            <Link to="/cart" className="relative">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5-6m0 0h15.5M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6" />
-              </svg>
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
+          {/* LEFT: LOGO + TOGGLE */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/60 transition-all duration-300 hover:scale-105"
+              aria-label="Toggle sidebar"
+            >
+              {isSidebarOpen ? (
+                <X className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+              ) : (
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
               )}
-            </Link>
-            
-            {user ? (
-              <div className="flex items-center space-x-2">
-                <Link to="/profile" className="text-gray-700 hover:text-primary-600">
-                  {user.name}
-                </Link>
-                <button onClick={logout} className="btn-secondary">
-                  Logout
-                </button>
+            </button>
+
+            <div className="flex items-center gap-2 group cursor-pointer">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white rounded-md" />
               </div>
-            ) : (
-              <div className="space-x-2">
-                <Link to="/login" className="btn-primary">
-                  Login
-                </Link>
-                <Link to="/register" className="btn-secondary">
-                  Register
-                </Link>
-              </div>
-            )}
+              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                FShop
+              </span>
+            </div>
+          </div>
+
+          {/* CENTER: NAVIGATION */}
+          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+            {navItems.map((item) => (
+              <a
+                key={item}
+                href="#"
+                className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-slate-300 hover:text-cyan-400 transition-all duration-300 group"
+              >
+                {item}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 group-hover:w-full transition-all duration-300" />
+              </a>
+            ))}
+          </nav>
+
+          {/* RIGHT: ACTION ICONS */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button className="p-2 sm:p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/60 transition-all duration-300 hover:scale-105 group">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+            </button>
+
+            <button className="p-2 sm:p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/60 transition-all duration-300 hover:scale-105 group">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+            </button>
+
+            <button className="relative p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 hover:from-cyan-500/30 hover:to-blue-600/30 transition-all duration-300 hover:scale-105 group">
+              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full text-white text-xs flex items-center justify-center font-semibold">
+                3
+              </span>
+            </button>
           </div>
         </div>
       </div>
     </header>
   );
 };
-
 export default Header;

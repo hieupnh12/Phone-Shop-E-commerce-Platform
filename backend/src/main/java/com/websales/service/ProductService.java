@@ -3,6 +3,19 @@ package com.websales.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.websales.dto.request.*;
+import com.websales.dto.response.ProductFULLResponse;
+import com.websales.dto.response.ProductItemResponse;
+import com.websales.dto.response.ProductResponse;
+import com.websales.dto.response.ProductVersionResponse;
+import com.websales.entity.*;
+import com.websales.enums.ItemStatus;
+import com.websales.exception.AppException;
+import com.websales.exception.ErrorCode;
+import com.websales.mapper.ProductItemMapper;
+import com.websales.mapper.ProductMapper;
+import com.websales.mapper.ProductVersionMapper;
+import com.websales.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -15,9 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -28,148 +39,257 @@ import java.util.stream.Collectors;
 public class ProductService {
 
 
-//    ProductVersionMapper productVersionMapper;
-//    ProductRepository productRepository;
-//    ProductMapper productMapper;
-//    OriginService originService;
-//    WarehouseAreaService warehouseAreaService;
-//    BrandService brandService;
-//    OperatingSystemService operatingSystemService;
-//    ProductVersionRepository productVersionRepository;
-//    Cloudinary cloudinary;
-//    OriginRepository originRepo;
-//    WarehouseAreaRepository warehouseAreaRepo;
-//    BrandRepository brandRepo;
-//    OperatingSystemRepository operatingSystemRepo;
-//    RamRepository ramRepo;
-//    RomRepository romRepo;
-//    ColorRepository colorRepo;
-//     ProductItemRepository productItemRepository;
-//     ProductItemMapper productItemMapper;
-//    ImportReceiptRepository importReceiptRepository;
-//    ExportReceiptRepository exportReceiptRepository;
-//    ImportReceiptDetailsRespository importReceiptDetailsRespository;
-//    ExportReceiptDetailsRepository exportReceiptDetailsRepository;
-//
-//
-//    @Transactional
-//    public ProductFULLResponse initProduct() {
-//        // Tạo sản phẩm với giá trị mặc định
-//        Product product = productMapper.toDefaultProduct();
-//
-//        // Lưu sản phẩm vào cơ sở dữ liệu
-//        Product savedProduct;
-//        try {
-//            savedProduct = productRepository.save(product);
-//        } catch (HibernateOptimisticLockingFailureException e) {
-//            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
-//        }
-//
-//        // Trả về response
-//        return productMapper.toProductFULLResponse(savedProduct);
-//    }
-//
-//
-//    @Transactional
-//    public ProductFULLResponse createProductFull(ProductFullRequest request, MultipartFile image) throws IOException {
-//        // Kiểm tra đầu vào
-//        if (request == null || request.getProducts() == null || request.getVersions() == null || request.getVersions().isEmpty()) {
-//            throw new AppException(ErrorCode.INVALID_REQUEST);
-//        }
-//
-//        Long productId = request.getProductId();
-//        if (productId == null) {
-//            throw new AppException(ErrorCode.PRODUCT_NOT_EXIST);
-//        }
-//
-//        // Tìm sản phẩm theo ID
-//        Product product = productRepository.findById(productId)
-//                .filter(i -> i.getStatus() ==  false )
-//                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
-//
-//        // Lấy thông tin từ ProductsRequest
-//        ProductsRequest productRequest = request.getProducts();
-//
-//        // Kiểm tra và lấy các thực thể liên quan
-//        Origin origin = originRepo.findById(productRequest.getOriginId())
-//                .orElseThrow(() -> new AppException(ErrorCode.ORIGIN_NOT_FOUND));
-//        WarehouseArea wa = warehouseAreaRepo.findById(productRequest.getWarehouseAreaId())
-//                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_EXIST));
-//        if (!wa.isStatus()) {
-//            throw new AppException(ErrorCode.WAREHOUSE_UNAVAILABLE);
-//        }
-//        Brand br = brandRepo.findById(productRequest.getBrandId())
-//                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
-//        OperatingSystem os = operatingSystemRepo.findById(productRequest.getOperatingSystemId())
-//                .orElseThrow(() -> new AppException(ErrorCode.OPERATING_SYSTEM_NOT_FOUND));
-//
-//        // Sử dụng mapper để cập nhật sản phẩm
-//        product = productMapper.toProductFull(request, origin, os, br, wa);
-//
-//        // Xử lý ảnh nếu có
-//        if (image != null && !image.isEmpty()) {
-//            ImageRequest imageRequest = ImageRequest.builder().image(image).build();
-//            Product updatedProduct = productMapper.toImageProduct(imageRequest, cloudinary);
-//            product.setImage(updatedProduct.getImage());
-//        }
-//
-//        // Lưu sản phẩm
-//        Product savedProduct;
-//        try {
-//            savedProduct = productRepository.save(product);
-//        } catch (HibernateOptimisticLockingFailureException e) {
-//            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
-//        }
-//
-//        // Xử lý các phiên bản sản phẩm
-//        List<ProductVersionResponse> savedVersions = new ArrayList<>();
-//        List<ProductVersionRequest> versionRequests = request.getVersions();
-//        for (ProductVersionRequest versionRequest : versionRequests) {
-//            // Kiểm tra thông tin phiên bản
-//            if (versionRequest.getRamId() == null || versionRequest.getRomId() == null || versionRequest.getColorId() == null) {
-//                throw new AppException(ErrorCode.INVALID_REQUEST);
-//            }
-//
-//            // Lấy các thực thể liên quan
-//            // Lấy các thực thể liên quan
-//            Ram ram =  ramRepo.findById(versionRequest.getRamId()).orElseThrow(() -> new AppException(ErrorCode.RAM_NOT_FOUND));
-//            Rom rom = romRepo.findById(versionRequest.getRomId()).orElseThrow(() -> new AppException(ErrorCode.ROM_NOT_FOUND));
-//            Color color = colorRepo.findById(versionRequest.getColorId()).orElseThrow(() -> new AppException(ErrorCode.COLOR_NOT_FOUND));
-//
-//            if (ram == null || rom == null || color == null) {
-//                throw new AppException(ErrorCode.INVALID_REQUEST);
-//            }
-//
-//            // Tạo và lưu phiên bản sản phẩm bằng mapper
-//            versionRequest.setProductId(savedProduct.getProductId()); // Gán productId cho versionRequest
-//            ProductVersion productVersion = productVersionMapper.ToProducVersionMakeName(versionRequest, ram, rom, color, savedProduct);
-//
-//            ProductVersion savedVersion;
-//            try {
-//                savedVersion = productVersionRepository.save(productVersion);
-//            } catch (HibernateOptimisticLockingFailureException e) {
-//                throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
-//            }
-//
-//            // Chuyển đổi sang response và thêm vào danh sách
-//            ProductVersionResponse versionResponse = productVersionMapper.ToProductVersionResponse(savedVersion);
-//            savedVersions.add(versionResponse);
-//        }
-//
-////        // Cập nhật số lượng tồn kho
-////        updateProductStockQuantity(savedProduct.getProductId());
-//
-//        // Tạo và trả về response
-//        ProductFULLResponse response = productMapper.toProductFULLResponse(savedProduct);
-//        response.setProductVersionResponses(savedVersions);
-//        response.setStatus(true);
-//
-//        return response;
-//    }
-//
-//
-//
-//
+    ProductVersionMapper productVersionMapper;
+    ProductRepository productRepository;
+    ProductMapper productMapper;
+    OriginService originService;
+    WarehouseAreaService warehouseAreaService;
+    BrandService brandService;
+    OperatingSystemService operatingSystemService;
+    ProductVersionRepository productVersionRepository;
+    Cloudinary cloudinary;
+    OriginRepository originRepo;
+    WarehouseAreaRepository warehouseAreaRepo;
+    BrandRepository brandRepo;
+    OperatingSystemRepository operatingSystemRepo;
+    RamRepository ramRepo;
+    RomRepository romRepo;
+    ColorRepository colorRepo;
+    CategoryRepository categoryRepo;
+    ProductItemRepository productItemRepository;
+    ProductItemMapper productItemMapper;
+
+
+    //tạo sản phẩm với id có trước để khi tạo productFUll sẽ lấy id này gán vô đó
+    @Transactional
+    public ProductFULLResponse initProduct() {
+        // Tạo sản phẩm với giá trị mặc định
+        Product product = productMapper.toDefaultProduct();
+
+        // Lưu sản phẩm vào cơ sở dữ liệu
+        Product savedProduct;
+        try {
+            savedProduct = productRepository.save(product);
+        } catch (HibernateOptimisticLockingFailureException e) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
+
+        // Trả về response
+        return productMapper.toProductFULLResponse(savedProduct);
+    }
+
+
+    @Transactional
+    public ProductFULLResponse createProductFull(ProductFullRequest request, MultipartFile imageProduct) throws IOException {
+        // Kiểm tra đầu vào
+        if (request == null || request.getProducts() == null /*|| request.getVersions() == null || request.getVersions().isEmpty()*/) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        Long productId = request.getIdProduct();
+        if (productId == null) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_EXIST);
+        }
+
+        // Tìm sản phẩm theo ID
+        Product product = productRepository.findById(productId)
+                .filter(i -> i.getStatus() == false)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
+
+        // Lấy thông tin từ ProductExtraRequest
+        ProductExtraRequest productRequest = request.getProducts();
+
+        // Kiểm tra và lấy các thực thể liên quan
+        Origin origin = originRepo.findById(productRequest.getOriginId())
+                .orElseThrow(() -> new AppException(ErrorCode.ORIGIN_NOT_FOUND));
+        WarehouseArea wa = warehouseAreaRepo.findById(productRequest.getWarehouseAreaId())
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_EXIST));
+        if (!wa.isStatus()) {
+            throw new AppException(ErrorCode.WAREHOUSE_UNAVAILABLE);
+        }
+        Brand br = brandRepo.findById(productRequest.getBrandId())
+                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
+        OperatingSystem os = operatingSystemRepo.findById(productRequest.getOperatingSystemId())
+                .orElseThrow(() -> new AppException(ErrorCode.OPERATING_SYSTEM_NOT_FOUND));
+
+        Category ct = categoryRepo.findById(productRequest.getCategoryId())
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        // Sử dụng mapper để cập nhật sản phẩm
+        product = productMapper.toProductFull(request, origin, os, br, wa, ct);
+
+        // Xử lý ảnh nếu có
+        if (imageProduct != null && !imageProduct.isEmpty()) {
+            ImageRequest imageRequest = ImageRequest.builder()
+                    .image(imageProduct)
+                    .build();
+
+            Product updatedProduct = productMapper.toImageProduct(imageRequest, cloudinary);
+            product.setImage(updatedProduct.getImage());
+        }
+
+        // Lưu sản phẩm
+        Product savedProduct;
+        try {
+            savedProduct = productRepository.save(product);
+        } catch (HibernateOptimisticLockingFailureException e) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
+
+        // Xử lý các phiên bản sản phẩm
+        List<ProductVersionResponse> savedVersions = new ArrayList<>();
+        List<ProductVersionRequest> versionRequests = request.getVersions();
+        for (ProductVersionRequest versionRequest : versionRequests) {
+            // Kiểm tra thông tin phiên bản
+            if (versionRequest.getIdRam() == null || versionRequest.getIdRom() == null || versionRequest.getIdColor() == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+
+            // Lấy các thực thể liên quan
+            Ram ram = ramRepo.findById(versionRequest.getIdRam()).orElseThrow(() -> new AppException(ErrorCode.RAM_NOT_FOUND));
+            Rom rom = romRepo.findById(versionRequest.getIdRom()).orElseThrow(() -> new AppException(ErrorCode.ROM_NOT_FOUND));
+            Color color = colorRepo.findById(versionRequest.getIdColor()).orElseThrow(() -> new AppException(ErrorCode.COLOR_NOT_FOUND));
+
+            if (ram == null || rom == null || color == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+
+            // Tạo và lưu phiên bản sản phẩm bằng mapper
+            versionRequest.setIdProduct(savedProduct.getIdProduct()); // Gán productId cho versionRequest
+            ProductVersion productVersion = productVersionMapper.ToProducVersionMakeName(versionRequest, ram, rom, color, savedProduct);
+
+            ProductVersion savedVersion;
+            try {
+                savedVersion = productVersionRepository.save(productVersion);
+            } catch (HibernateOptimisticLockingFailureException e) {
+                throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+            }
+
+
+            int quantity = versionRequest.getStockQuantity();
+
+            if (quantity > 0) {
+                //xử lý các imei của productVersion
+                List<ProductItemRequest> itemRequests = versionRequest.getItems();
+                List<ProductItem> itemsToSave = new ArrayList<>();  // Batch để hiệu suất
+                Set<String> imeis = new HashSet<>();
+
+                String imeiNew = createImei();
+                Long baseNumber;
+                if (!imeiNew.isEmpty()) {
+                }
+                try {
+                    baseNumber = Long.parseLong(imeiNew.substring(0, 14));
+                } catch (NumberFormatException e) {
+                    throw new AppException(ErrorCode.INVALID_REQUEST);
+                }
+                log.info("IMEI first to generated: {}", imeiNew);
+
+                for (int i = 0; i < quantity; i++) {
+//                    String currentImei = String.valueOf(Long.parseLong(imeiNew)+1);
+                    String currentImei = generateSequentialImei(baseNumber, i);
+                    log.info("IMEI generated: {}", currentImei);
+
+                    // Check format (15 digits)
+                    if (currentImei.length() != 15) {
+                        throw new AppException(ErrorCode.WRONG_FORM_IMEI);
+                    }
+                    log.info("Sequential IMEI generated: {} (offset: {})", currentImei, i);
+                    if (productItemRepository.existsById(currentImei)) {
+                        log.warn("IMEI duplicate phát hiện: {}", currentImei);  // Log cảnh báo nếu duplicate
+                        throw new AppException(ErrorCode.IMEI_DUPLICATE);
+                    }
+                    if (!imeis.add(currentImei)) {
+                        log.warn("IMEI duplicate phát hiện number : {}", currentImei);  // Log cảnh báo nếu duplicate
+                        throw new AppException(ErrorCode.IMEI_DUPLICATE);
+                    }
+
+                    ProductItemRequest itemRequest = new ProductItemRequest();
+
+                    itemRequest.setImei(currentImei);
+                    itemRequest.setIdProductVersion(savedVersion.getIdVersion());
+                    itemRequest.setStatus(ItemStatus.IN_STOCK);
+
+                    ProductItem productItem = productItemMapper.ToProducItemcreate(itemRequest, savedVersion);
+
+                    itemsToSave.add(productItem);
+
+                }
+                // Save batch - Hibernate sẽ persist với ID manual
+                productItemRepository.saveAll(itemsToSave);
+            }
+
+
+            // Chuyển đổi sang response và thêm vào danh sách
+            ProductVersionResponse versionResponse = productVersionMapper.ToProductVersionResponse(savedVersion);
+            savedVersions.add(versionResponse);
+        }
+
+//        // Cập nhật số lượng tồn kho
+//        updateProductStockQuantity(savedProduct.getProductId());
+
+        // Tạo và trả về response
+        ProductFULLResponse response = productMapper.toProductFULLResponse(savedProduct);
+        response.setProductVersionResponses(savedVersions);
+        response.setStatus(true);
+
+        return response;
+    }
+
+
+    public String createImei() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+        int randomNumber = 15;
+        int sum = 0;
+        boolean doubleDigit = true; //bat dau tu vi tri 2 tu phai
+
+        for (int i = 0; i < randomNumber - 1; i++) {
+            sb.append(random.nextInt(10));
+        }
+        for (int i = sb.length() - 1; i >= 0; i--) {
+            int c = Character.getNumericValue(sb.charAt(i));
+            if (doubleDigit) {
+                c *= 2;
+                if (c > 9) {
+                    c -= 9;
+                }
+            }
+            sum += c;
+            doubleDigit = !doubleDigit;
+        }
+        int cd = (10 - (sum % 10)) % 10;
+
+        sb.append(cd);
+
+        return sb.toString();
+    }
+
+
+    private String generateSequentialImei(long baseNumber, int offset) {
+        // Tạo 14 digits từ base + offset, pad zero nếu cần
+        String numStr = String.format("%014d", baseNumber + offset);
+
+        // Tính check digit Luhn (tương tự hàm createImei gốc)
+        int sum = 0;
+        boolean doubleDigit = true;  // Bắt đầu từ vị trí 2 từ phải (như code gốc)
+        for (int i = numStr.length() - 1; i >= 0; i--) {
+            int c = Character.getNumericValue(numStr.charAt(i));
+            if (doubleDigit) {
+                c *= 2;
+                if (c > 9) {
+                    c -= 9;
+                }
+            }
+            sum += c;
+            doubleDigit = !doubleDigit;
+        }
+        int checkDigit = (10 - (sum % 10)) % 10;
+
+        return numStr + checkDigit;  // 15 digits
+    }
+
+
 //    @Transactional
 //    public ProductResponse createImageProduct(ImageRequest request, Long id) throws IOException {
 //        Product product = productRepository.findById(id)
@@ -187,35 +307,33 @@ public class ProductService {
 //        Product savedProduct = productRepository.save(product);
 //        return productMapper.toProductResponse(savedProduct);
 //    }
-//
-//
-//
+
 //
 //    public Page<ProductFULLResponse> getAllProducts(Pageable pageable) {
-//        Page<Product> products = productRepository.findAllWithRelations(pageable);
+//        Page<Product> products = productRepository.findProductsWithRelations(pageable);
 //        return products.map(productMapper::toProductFULLResponse);
 //    }
 //
-//
-//
-//    public Page<ProductFULLResponse> listAllProducts(Pageable pageable) {
-//        Page<Product> products = productRepository.findProductsWithRelations(pageable);
-//        products.forEach(product -> {
-//            product.getProductVersion().forEach(version -> {
-//                // Lọc ProductItem với export_id IS NULL
-//                version.setProductItems(
-//                        version.getProductItems().stream()
-//                                .filter(pi -> pi.getExport_id() == null)
-//                                .collect(Collectors.toList())
-//                );
-//            });
-//        });
-//        return products
-//                .map(productMapper::toProductFULLResponse);
-//    }
-//
-//
-//
+
+
+    public Page<ProductFULLResponse> listAllProducts(Pageable pageable) {
+        Page<Product> products = productRepository.findProductsWithRelations(pageable);
+        products.forEach(product -> {
+            product.getProductVersion().forEach(version -> {
+                // Lọc ProductItem với export_id IS NULL
+                version.setProductItems(
+                        version.getProductItems().stream()
+//                                .filter(pi -> pi.get == null)
+                                .collect(Collectors.toList())
+                );
+            });
+        });
+        return products
+                .map(productMapper::toProductFULLResponse);
+    }
+
+
+
 //    public Product getProductById(Long id) {
 //        long start = System.nanoTime();
 //        Product product = productRepository.findById(id)

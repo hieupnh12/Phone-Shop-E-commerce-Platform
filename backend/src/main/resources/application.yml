@@ -20,6 +20,7 @@ spring:
         enabled: false
 
   # JPA Configuration
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -52,14 +53,21 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 
-
-
-
+  # AI
+  ai:
+    openai:
+      api-key: AIzaSyBrTipp-3SITKxs3t7cN3eP2crvOG9edfs
+      chat:
+        base-url: https://generativelanguage.googleapis.com
+        completions-path: /v1beta/openai/chat/completions
+        options:
+          model: gemini-2.0-flash
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
-  expiration: 86400000 # 24 hours in milliseconds
+  signerKey: "67ff488a1bbe8bf0c5a00082c79869af83b5c4f6714873c382e31f6b44ad333b"
+  expiration: 86400000
+  refreshable-duration: 360000
 
 # File Upload Configuration
 file:
@@ -104,3 +112,5 @@ cloudinary:
     key: 756234473817482
     secret: T5qQXodnthydHuSyQYrF-xk98Eo
 #  T5qQXodnthydHuSyQYrF-xk98Eo
+
+

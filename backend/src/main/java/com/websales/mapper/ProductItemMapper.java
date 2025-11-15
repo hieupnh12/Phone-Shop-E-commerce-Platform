@@ -15,21 +15,18 @@ public interface ProductItemMapper {
 //    @Mapping(target = "status", expression = "java(item.isStatus() ? ItemStatus.ACTIVE : ItemStatus.INACTIVE)")
 //    ProductItem toProductItem(ProductItemRequest request);
 
-//    @Mapping(source = "versionId.versionId", target = "productVersionId" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-//    @Mapping(source = "import_id.import_id", target = "importId" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-//    @Mapping(source = "export_id.export_id", target = "exportId" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+//    @Mapping(source = "versionId.idVersion", target = "productVersionId" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+////    @Mapping(source = "orderDetail.", target = "orderDetail.id" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 //    ProductItemResponse toProductItemResponse(ProductItem productItem);
 
-//    default ProductItem ToProducItemcreate(ProductItemRequest request, ProductVersion version, ImportReceipt imports, ExportReceipt exports) {
-//        ProductItem item = new ProductItem();
-//        item.setImei(request.getImei());
-//        item.setVersionId(version);
-//        item.setImport_id(imports);
-//        item.setExport_id(exports);
-//        item.setStatus(request.isStatus()); // Nếu có
-//        return item;
-//    }
-//
+    default ProductItem ToProducItemcreate(ProductItemRequest request, ProductVersion version /*, OrderDetail order*/) {
+        ProductItem item = new ProductItem();
+        item.setImei(request.getImei());
+        item.setVersionId(version);
+        item.setStatus(request.getStatus()); // Nếu có
+        return item;
+    }
+
 //    default ProductItem ToProducItemcreateFULL(String imei, ProductVersion version, ImportReceipt imports, ExportReceipt exports) {
 //        ProductItem item = new ProductItem();
 //        item.setImei(imei);
