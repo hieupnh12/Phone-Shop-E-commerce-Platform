@@ -20,6 +20,7 @@ spring:
         enabled: false
 
   # JPA Configuration
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -64,8 +65,9 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
-  expiration: 86400000 # 24 hours in milliseconds
+  signerKey: "67ff488a1bbe8bf0c5a00082c79869af83b5c4f6714873c382e31f6b44ad333b"
+  expiration: 86400000
+  refreshable-duration: 360000
 
 # File Upload Configuration
 file:
