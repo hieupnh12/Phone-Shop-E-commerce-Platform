@@ -1,6 +1,5 @@
 package com.websales.repository;
 
-
 import com.websales.entity.Brand;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
