@@ -14,7 +14,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ColorRequest {
 
-    @UniqueName(entity = Color.class, fieldName = "name")
+//    @UniqueName(entity = Color.class, fieldName = "name")
     String nameColor ;
     Boolean status;
 

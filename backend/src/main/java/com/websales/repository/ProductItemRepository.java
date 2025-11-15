@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Repository
 public interface ProductItemRepository extends JpaRepository<ProductItem, String> {
-
+    boolean existsByImei(String imei);  // Nếu cần query riêng, nhưng existsById sẽ dùng được vì ID=imei
 //    // New query to find all imei by productVersionId
 //    @Query("SELECT p.imei FROM ProductItem p WHERE p.versionId.versionId = :productVersionId")
 //    List<String> findImeiByProductVersionId(@Param("productVersionId") String productVersionId);

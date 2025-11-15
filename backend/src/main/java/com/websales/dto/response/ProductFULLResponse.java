@@ -1,6 +1,7 @@
 package com.websales.dto.response;
 
 
+import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -12,23 +13,27 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductFULLResponse {
-    Long productId;
+    Long idProduct;
 
-    String productName;
+          String nameProduct;
 
     String image;
 
-    String originName;
+          String  originName;
 
-    String processor;
+    String battery;
 
-    Integer battery;
+    String scanFrequency;
 
-    Double screenSize;
+    String screenSize;
 
-    String operatingSystemName;
+         String  operatingSystemName;
 
-    Integer chipset;
+    String screenResolution;
+
+    String screenTech;
+
+    String chipset;
 
     String rearCamera;
 
@@ -36,9 +41,11 @@ public class ProductFULLResponse {
 
     Integer warrantyPeriod;
 
-    String  brandName;
+          String brandName;
 
-    String  warehouseAreaName;
+          String  warehouseAreaName;
+
+          String  categoryName;
 
     Integer stockQuantity;
 

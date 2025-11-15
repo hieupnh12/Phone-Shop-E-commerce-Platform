@@ -19,10 +19,10 @@ public class Ram {
     Long idRam;
 
     @Column(name = "ram_size")
-    String nameRame;
+    String nameRam;
 
-    @Column
-    Boolean status;
+//    @Column
+//    Boolean status;
 
 
 }
