@@ -80,6 +80,8 @@ app:
     default-email: admin@websales.com
     default-password: admin123
 
+speedsms:
+  access_token: "J8B5DfjoJBM3zxIT44zHGjQ-B4VtzAyL"
 
 cloudinary:
   cloud:
@@ -95,5 +97,8 @@ esms:
   secretKey: "315BEB7A766075F30EAE0F0575592A"
   url: https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/
   brandname: PHONESHOP
+
+
+
 
 

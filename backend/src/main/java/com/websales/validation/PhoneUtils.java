@@ -8,30 +8,25 @@ public final class PhoneUtils {
             "^(\\+?84|0)(3|5|7|8|9)([0-9]{8})$"
     );
 
-    private PhoneUtils() {} // prevent instantiation
+    private PhoneUtils() {}
 
     public static String normalize(String rawPhone) {
         if (rawPhone == null || rawPhone.isBlank()) {
             throw new IllegalArgumentException("Số điện thoại không được để trống");
         }
 
-        String cleaned = rawPhone.replaceAll("\\D", ""); // xóa dấu cách, dấu chấm, gạch ngang
-
-        if (cleaned.startsWith("84") && cleaned.length() == 11) {
-            return "+84" + cleaned.substring(2);
-        }
+        String cleaned = rawPhone.replaceAll("\\D", "");
 
         if (cleaned.startsWith("0") && cleaned.length() == 10) {
-            return "+84" + cleaned.substring(1);
+            return "84" + cleaned.substring(1);
         }
 
-        if (cleaned.startsWith("+84") && cleaned.length() == 12) {
+        if (cleaned.startsWith("84") && cleaned.length() == 11) {
             return cleaned;
         }
 
         throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + rawPhone);
     }
-
 
     public static boolean isValidVietnamPhone(String phone) {
         try {

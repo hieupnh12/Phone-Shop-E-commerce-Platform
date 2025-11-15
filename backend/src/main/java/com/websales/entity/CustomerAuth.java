@@ -16,6 +16,7 @@ import lombok.experimental.FieldDefaults;
 @Entity
 public class CustomerAuth {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long authId;
     Long customerId;
     String provider;

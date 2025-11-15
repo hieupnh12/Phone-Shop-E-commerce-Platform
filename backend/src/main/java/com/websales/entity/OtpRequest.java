@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 public class OtpRequest {
     @Id
     String phoneNumber;
-    String otpHash;
+    String otpHash; 
     LocalDateTime expiresAt;
     @Column(name = "verified", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     boolean verified = false;
@@ -28,7 +28,7 @@ public class OtpRequest {
     int  attemptCount = 0;
     @Column(name = "sent_count", columnDefinition = "TINYINT DEFAULT 1")
     int sentCount = 1 ;
-    @CreationTimestamp
+
     LocalDateTime lastSentAt;
 
     public OtpRequest(String phoneNumber) {

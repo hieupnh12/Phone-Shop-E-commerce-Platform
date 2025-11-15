@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface OtpRepo extends JpaRepository<OtpRequest, String> {
     Optional<OtpRequest> findFirstByPhoneNumberOrderByLastSentAtDesc(String phone);
 
+    Optional<OtpRequest> findByPhoneNumber(String phone);
 }

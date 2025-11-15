@@ -1,6 +1,7 @@
 package com.websales.controller;
 
 import com.websales.dto.request.SendOtpRequest;
+import com.websales.dto.request.VerifyOtpRequest;
 import com.websales.dto.response.ApiResponse;
 import com.websales.dto.request.CustomerCreateRequest;
 import com.websales.dto.response.CustomerResponse;
@@ -33,6 +34,12 @@ public class CustomerController {
         return  ApiResponse.<String>builder()
                 .result("Opt da gui thanh cong")
                 .build();
+     }
+    @PostMapping("/auth_verify_otp")
+     public ApiResponse<String> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        return   ApiResponse.<String>builder()
+                 .result(cusAuthService.verifyOtp(request))
+                 .build();
      }
 }
 
