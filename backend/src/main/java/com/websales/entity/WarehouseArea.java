@@ -1,6 +1,5 @@
 package com.websales.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,13 +18,14 @@ public class WarehouseArea {
     String idWarehouseArea;
 
 
-    @Column(name ="area_name")
+    @Column(name = "area_name")
     String nameWarehouseArea;
 
-    @Column(name ="note")
+    @Column(name = "note")
     String note;
 
-    @Column(name ="status")
-    boolean  status;
+    @Column(name = "status")
+    boolean status;
 
 }
+

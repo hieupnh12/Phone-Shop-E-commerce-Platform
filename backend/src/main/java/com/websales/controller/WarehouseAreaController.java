@@ -1,7 +1,7 @@
 package com.websales.controller;
 
 
-import com.websales.dto.request.ApiResponse;
+import com.websales.dto.response.ApiResponse;
 import com.websales.dto.request.WarehouseAreaRequest;
 import com.websales.dto.request.WarehouseUpdateRequest;
 import com.websales.dto.response.WarehouseAreaResponse;

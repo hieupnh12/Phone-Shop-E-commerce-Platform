@@ -1,6 +1,4 @@
 package com.websales.mapper;
-
-
 import com.websales.dto.request.ColorRequest;
 import com.websales.dto.response.ColorResponse;
 import com.websales.entity.Color;

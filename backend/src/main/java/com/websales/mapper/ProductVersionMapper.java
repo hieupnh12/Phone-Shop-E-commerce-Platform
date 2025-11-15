@@ -4,9 +4,7 @@ package com.websales.mapper;
 
 import com.websales.dto.request.ProductVersionRequest;
 import com.websales.dto.response.ImeiResponse;
-import com.websales.dto.response.ProductVerResponse;
 import com.websales.dto.response.ProductVersionResponse;
-import com.websales.dto.response.VersionResponse;
 import com.websales.entity.*;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;

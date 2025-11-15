@@ -3,16 +3,11 @@ package com.websales.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.List;
-
-@Data
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProductInfoCountAreaResponse {
-    Long areaCount;
-    Long productInCount;
-    List<ProductInfoResponse> productInfoResponses;
-
+public class CheckTokenResponse {
+    boolean valid;
 }
