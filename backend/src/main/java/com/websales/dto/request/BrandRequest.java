@@ -14,7 +14,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class BrandRequest {
 
-    @UniqueName(entity = Brand.class, fieldName = "brandName")
-    String brandName;
+//    @UniqueName(entity = Brand.class, fieldName = "brandName")
+    String nameBrand;
 
 }

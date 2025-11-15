@@ -40,18 +40,18 @@ public class WarehouseAreaController {
     }
 
     @GetMapping("/{id}")
-    public WarehouseArea getWarehouseAreaById(@PathVariable Long id) {
+    public WarehouseArea getWarehouseAreaById(@PathVariable String id) {
         return warehouseAreaService.getWarehouseAreaById(id);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteWarehouseArea(@PathVariable Long id) {
+    public void deleteWarehouseArea(@PathVariable String id) {
         warehouseAreaService.deleteWarehouseAreaById(id);
         System.out.println("Successfully deleted warehouse area");
     }
 
     @PutMapping("/{id}")
-    public WarehouseAreaResponse updateWarehouseArea(@PathVariable Long id, @RequestBody WarehouseUpdateRequest request) {
+    public WarehouseAreaResponse updateWarehouseArea(@PathVariable String id, @RequestBody WarehouseUpdateRequest request) {
         return warehouseAreaService.UpdateWarehouseAreaAttribute(id , request);
     }
 

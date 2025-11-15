@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import java.util.List;
 
 import java.math.BigDecimal;
 
@@ -37,11 +38,19 @@ public class ProductVersionRequest {
     @DecimalMin("0.0")
     BigDecimal importPrice;
 
+
+    Integer stockQuantity;
+
+
     @NotNull
     @DecimalMin("0.0")
     BigDecimal exportPrice;
 
     @NotNull
     Boolean status;
+
+
+    //thêm các imei tương ứng với từng sản pham version
+    List<ProductItemRequest> Items;
 
 }

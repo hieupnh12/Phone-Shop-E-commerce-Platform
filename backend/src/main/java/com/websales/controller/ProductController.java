@@ -2,6 +2,9 @@ package com.websales.controller;
 
 
 
+import com.websales.dto.request.ProductFullRequest;
+import com.websales.dto.response.ApiResponse;
+import com.websales.dto.response.ProductFULLResponse;
 import com.websales.service.CountQuantityOfAll;
 import com.websales.service.ProductService;
 import jakarta.validation.Valid;
@@ -30,26 +33,26 @@ public class ProductController {
     private ProductService productService;
     CountQuantityOfAll countQuantityOfAll;
 
-//        @PostMapping("/init")
-//        public ApiResponse<ProductFULLResponse> InitProduct(){
-//             return ApiResponse.<ProductFULLResponse>builder()
-//                     .result(productService.initProduct())
-//                     .build();
-//        }
-//
-//
-//
-//        // Tạo mới Product với ảnh, sử dụng multipart/form-data
-//        @PostMapping(value="/full/confirm",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//        public ApiResponse<ProductFULLResponse> addProduct(
-//                @RequestPart(value = "product") @Valid ProductFullRequest request,
-//                @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
-//            return ApiResponse.<ProductFULLResponse>builder()
-//                              .result(productService.createProductFull(request,image))
-//                              .build();
-//        }
-//
-//
+        @PostMapping("/init")
+        public ApiResponse<ProductFULLResponse> InitProduct(){
+             return ApiResponse.<ProductFULLResponse>builder()
+                     .result(productService.initProduct())
+                     .build();
+        }
+
+
+
+        // Tạo mới Product với ảnh, sử dụng multipart/form-data
+        @PostMapping(value="/full/confirm",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ApiResponse<ProductFULLResponse> addProduct(
+                @RequestPart(value = "product") @Valid ProductFullRequest request,
+                @RequestPart(value = "image", required = false) MultipartFile image) throws IOException {
+            return ApiResponse.<ProductFULLResponse>builder()
+                              .result(productService.createProductFull(request,image))
+                              .build();
+        }
+
+
 //    @PutMapping(value = "/upload_image/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 //    public ApiResponse<ProductResponse> updateImageProduct(@PathVariable("id") Long id,
 //                                                           @RequestPart("image") MultipartFile image) {
@@ -82,18 +85,18 @@ public class ProductController {
 //        resp.setResult(productService.getAllProducts(pageable));
 //        return resp;
 //    }
-//
-//
-//    @GetMapping("/All")
-//     ApiResponse<Page<ProductFULLResponse>> getAllProduct(@RequestParam(defaultValue = "0") int page,
-//                                                   @RequestParam(defaultValue = "10") int size) {
-//
-//        Pageable pageable = PageRequest.of(page, size);
-//        return ApiResponse.<Page<ProductFULLResponse>>builder()
-//                .result(productService.listAllProducts(pageable))
-//                .build();
-//    }
-//
+
+
+    @GetMapping()
+     ApiResponse<Page<ProductFULLResponse>> getAllProduct(@RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return ApiResponse.<Page<ProductFULLResponse>>builder()
+                .result(productService.listAllProducts(pageable))
+                .build();
+    }
+
 //    @GetMapping("/{idproduct}")
 //    Product getProduct(@PathVariable("idproduct") Long idproduct) {
 //        return productService.getProductById(idproduct);
@@ -184,5 +187,11 @@ public class ProductController {
 //                .result(countQuantityOfAll.calculateProductStats())
 //                .build();
 //    }
+
+
+
+
+
+
 
 }
