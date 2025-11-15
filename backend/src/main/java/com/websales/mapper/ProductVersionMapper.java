@@ -63,15 +63,15 @@ public interface ProductVersionMapper {
 
 
 
-//    default ProductVersion ToUpdateProductVersion (ProductVersionRequest request, ProductVersion version ,Ram ram , Rom rom , Color color, Product product) {
-//        // Cập nhật các trường liên quan
-//        version.setRam(ram);
-//        version.setRom(rom);
-//        version.setColor(color);
-//        version.setProduct(product);
-//        return version;
-//    }
-//
+    default ProductVersion ToUpdateProductVersion (ProductVersionRequest request, ProductVersion version ,Ram ram , Rom rom , Color color, Product product) {
+        // Cập nhật các trường liên quan
+        version.setRam(ram);
+        version.setRom(rom);
+        version.setColor(color);
+        version.setProduct(product);
+        return version;
+    }
+
 
     @Named("mapProductItemsToImei")
     default List<ImeiResponse> mapProductItemsToImei(List<ProductItem> productItems) {

@@ -18,11 +18,11 @@ public class ProductResponse {
 
                 String  originName;
 
-    Integer battery;
+    String battery;
 
     String scanFrequency;
 
-    Double screenSize;
+    String screenSize;
 
                String  operatingSystemName;
 
@@ -30,7 +30,7 @@ public class ProductResponse {
 
     String screenTech;
 
-    Integer chipset;
+    String chipset;
 
     String rearCamera;
 

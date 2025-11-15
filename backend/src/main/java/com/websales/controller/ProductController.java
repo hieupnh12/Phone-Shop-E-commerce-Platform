@@ -3,8 +3,10 @@ package com.websales.controller;
 
 
 import com.websales.dto.request.ProductFullRequest;
+import com.websales.dto.request.ProductUpdateRequest;
 import com.websales.dto.response.ApiResponse;
 import com.websales.dto.response.ProductFULLResponse;
+import com.websales.dto.response.ProductResponse;
 import com.websales.service.CountQuantityOfAll;
 import com.websales.service.ProductService;
 import jakarta.validation.Valid;
@@ -101,17 +103,17 @@ public class ProductController {
 //    Product getProduct(@PathVariable("idproduct") Long idproduct) {
 //        return productService.getProductById(idproduct);
 //    }
-//
-//
-//    @PutMapping("/{idproduct}")
-//    ApiResponse<ProductResponse> updateProduct(@PathVariable("idproduct") Long idproduct, @RequestBody ProductUpdateRequest request) {
-//
-//        ApiResponse<ProductResponse> api = new ApiResponse<>();
-//        api.setResult(productService.updateProduct(idproduct, request));
-//        return api;
-//    }
-//
-//
+
+
+    @PatchMapping("/{idproduct}")
+    ApiResponse<ProductResponse> updateProduct(@PathVariable("idproduct") Long idproduct, @RequestBody ProductUpdateRequest request) {
+
+        ApiResponse<ProductResponse> api = new ApiResponse<>();
+        api.setResult(productService.updateProduct(idproduct, request));
+        return api;
+    }
+
+
 //    @DeleteMapping("/{idproduct}")
 //    public ApiResponse<Void> deleteProduct(@PathVariable("idproduct") Long idproduct) {
 //        productService.deleteProduct(idproduct);
@@ -119,8 +121,8 @@ public class ProductController {
 //                .message("DELETE PRODUCT SUCCESSFULLY")
 //                .build();
 //    }
-//
-//
+
+
 //    //test ket hop productversion va product
 //
 //
@@ -146,23 +148,23 @@ public class ProductController {
 //        api.setMessage(imageUrl);
 //        return api;
 //    }
-//
-//
-//    @GetMapping("/search")
-//    public Page<ProductFULLResponse> searchProducts(
-//            @RequestParam(required = false) String brandName,
-//            @RequestParam(required = false) String warehouseAreaName,
-//            @RequestParam(required = false) String originName,
-//            @RequestParam(required = false) String operatingSystemName,
-//            @RequestParam(required = false) String productName,
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size) {
-//        Pageable pageable = PageRequest.of(page, size);
-//        return productService.SearchProduct(
-//                brandName, warehouseAreaName, originName, operatingSystemName, productName, pageable);
-//    }
-//
-//
+
+
+    @GetMapping("/search")
+    public Page<ProductFULLResponse> searchProducts(
+            @RequestParam(required = false) String brandName,
+            @RequestParam(required = false) String warehouseAreaName,
+            @RequestParam(required = false) String originName,
+            @RequestParam(required = false) String operatingSystemName,
+            @RequestParam(required = false) String productName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productService.SearchProduct(
+                brandName, warehouseAreaName, originName, operatingSystemName, productName, pageable);
+    }
+
+
 //    @GetMapping("/imei/{imei}")
 //    public ApiResponse<ProductFULLResponse> getProductByImei(@PathVariable("imei") String imei) {
 //        return  ApiResponse.<ProductFULLResponse>builder()
