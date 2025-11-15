@@ -85,18 +85,18 @@ public class ProductController {
 //        resp.setResult(productService.getAllProducts(pageable));
 //        return resp;
 //    }
-//
-//
-//    @GetMapping("/All")
-//     ApiResponse<Page<ProductFULLResponse>> getAllProduct(@RequestParam(defaultValue = "0") int page,
-//                                                   @RequestParam(defaultValue = "10") int size) {
-//
-//        Pageable pageable = PageRequest.of(page, size);
-//        return ApiResponse.<Page<ProductFULLResponse>>builder()
-//                .result(productService.listAllProducts(pageable))
-//                .build();
-//    }
-//
+
+
+    @GetMapping()
+     ApiResponse<Page<ProductFULLResponse>> getAllProduct(@RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return ApiResponse.<Page<ProductFULLResponse>>builder()
+                .result(productService.listAllProducts(pageable))
+                .build();
+    }
+
 //    @GetMapping("/{idproduct}")
 //    Product getProduct(@PathVariable("idproduct") Long idproduct) {
 //        return productService.getProductById(idproduct);

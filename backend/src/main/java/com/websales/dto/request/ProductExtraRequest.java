@@ -24,16 +24,13 @@ public class ProductExtraRequest {
           Long originId;
 
     @NotNull(message = "Battery capacity is required")
-    @Positive(message = "Battery must be a positive number")
-    Integer battery;
+    String battery;
 
     @NotBlank(message = "Scan frequency must not be blank")
-    @Size(max = 100, message = "Scan frequency must be less than 100 characters")
     String scanFrequency;
 
     @NotNull(message = "Screen size is required")
-    @DecimalMin(value = "0.1", message = "Screen size must be greater than 0")
-    Double screenSize;
+    String screenSize;
 
           @NotNull(message = "Operating system ID is required")
           Long operatingSystemId;
@@ -48,7 +45,7 @@ public class ProductExtraRequest {
 
     @NotNull(message = "Chipset is required")
     @Positive(message = "Chipset must be a positive number")
-    Integer chipset;
+    String chipset;
 
     @NotBlank(message = "Rear camera must not be blank")
     @Size(max = 255, message = "Rear camera info must be less than 255 characters")

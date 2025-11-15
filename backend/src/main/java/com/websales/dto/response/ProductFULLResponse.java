@@ -15,17 +15,17 @@ import java.util.List;
 public class ProductFULLResponse {
     Long idProduct;
 
-    String nameProduct;
+          String nameProduct;
 
     String image;
 
           String  originName;
 
-    Integer battery;
+    String battery;
 
     String scanFrequency;
 
-    Double screenSize;
+    String screenSize;
 
          String  operatingSystemName;
 
@@ -33,7 +33,7 @@ public class ProductFULLResponse {
 
     String screenTech;
 
-    Integer chipset;
+    String chipset;
 
     String rearCamera;
 

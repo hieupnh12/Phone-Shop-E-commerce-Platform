@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class ProductVersionResponse {
-    String versionId;
+    String idVersion;
 
             String productName;
 

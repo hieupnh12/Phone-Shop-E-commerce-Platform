@@ -31,14 +31,14 @@ public class Product {
 
 
     @Column(name = "battery")
-     Integer battery;
+     String battery;
 
     @Column(name ="scanFrequency")
      String scanFrequency;
 
 
     @Column(name = "screenSize")
-     Double screenSize;
+     String screenSize;
 
           @ManyToOne(fetch = FetchType.LAZY)
           @JoinColumn(name = "operating_system_id")
@@ -52,7 +52,7 @@ public class Product {
     String screenTech;
 
     @Column(name = "chipset")
-     Integer chipset;
+     String chipset;
 
     @Column(name = "rearCamera", length = 255)
      String rearCamera;

@@ -308,12 +308,12 @@ public class ProductService {
 //        return productMapper.toProductResponse(savedProduct);
 //    }
 
-
+//
 //    public Page<ProductFULLResponse> getAllProducts(Pageable pageable) {
-//        Page<Product> products = productRepository.findAllWithRelations(pageable);
+//        Page<Product> products = productRepository.findProductsWithRelations(pageable);
 //        return products.map(productMapper::toProductFULLResponse);
 //    }
-
+//
 
 
     public Page<ProductFULLResponse> listAllProducts(Pageable pageable) {

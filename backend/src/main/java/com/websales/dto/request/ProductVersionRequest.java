@@ -38,7 +38,9 @@ public class ProductVersionRequest {
     @DecimalMin("0.0")
     BigDecimal importPrice;
 
+
     Integer stockQuantity;
+
 
     @NotNull
     @DecimalMin("0.0")
