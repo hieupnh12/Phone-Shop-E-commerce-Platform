@@ -49,14 +49,19 @@ public class ProductVersion {
     @Column(name = "stock_quantity")
     Integer stockQuantity;
 
-    @Column(name = "status")
+
+    @Column(name ="picture")
+    String picture;
+
+
+    @Column(name="status")
     Boolean status;
     
 
-    //
-    // @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch =
-    // FetchType.LAZY)
-    // List<ProductItem> productItems;
+
+    @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+     List<ProductItem> productItems;
+
 
     static final Map<String, String> PRODUCT_CODE_MAPPING = new HashMap<>();
 
@@ -111,8 +116,8 @@ public class ProductVersion {
 
         if (idVersion == null) {
             String productCode = generateProductCode();
-            String ramValue = ram != null ? ram.getNameRame() : "0";
-            String romValue = rom != null ? rom.getNameRom() : "0";
+            String ramValue = ram != null ? ram.getNameRam() : "0";
+            String romValue = rom != null ? rom.getNameRom(): "0";
             String colorValue = color != null ? color.getNameColor().toUpperCase() : "UNKNOWN";
             this.idVersion = String.format("%s_%s_%s_%s", productCode, ramValue, romValue, colorValue);
         }

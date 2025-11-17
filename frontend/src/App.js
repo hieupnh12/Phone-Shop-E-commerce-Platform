@@ -15,6 +15,8 @@ import UserStatistic from "./pages/admin/Statistic/Pages/Users/UserStatistic";
 import DashboardStatistic from "./pages/admin/Statistic/Pages/Dashboard/DashboardStatistic";
 import Overview from "./pages/admin/Statistic/Pages/Users/SubPages/Overview";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStatistics";
+import Chatbot from "./pages/chatbot";
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
 import Cart from "./pages/client/Cart";
@@ -29,6 +31,8 @@ import Cart from "./pages/client/Cart";
 // Bypass login check tạm thời
 const ProtectedRoute = ({ children }) => children;
 
+
+
 const router = createBrowserRouter(
   [
     {
@@ -41,14 +45,19 @@ const router = createBrowserRouter(
           element: <Products />,
           children: [{ path: "abc", element: <Products /> }],
         },
-        { 
-          path: "cart", 
-          element: <ProtectedRoute><Cart /></ProtectedRoute>
-        }, 
-        { path: "login", element: <Login /> },
-        { path: "signup", element: <Signup /> },
+        // { path: "login", element: <Login /> },
+        // { path: "signup", element: <Signup /> },
       ],
     },
+    {
+    path: "/login",
+    element: <Login />,
+  },
+
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
     {
       path: "/admin",
       element: <AdminRoute />,
@@ -76,6 +85,11 @@ const router = createBrowserRouter(
                   element: <UserStatistic />,
                   children: [{ path: "overview", element: <Overview /> }],
                 },
+                {
+                  path: "products",
+                  element: <ProductStatistic />,
+                  children: [{ path: "overview", element: <Overview /> }],
+                }
               ],
             },
           ],
@@ -99,6 +113,7 @@ function App() {
       <CartProvider>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
+          <Chatbot />
         </QueryClientProvider>
       </CartProvider>
     </AuthProvider>

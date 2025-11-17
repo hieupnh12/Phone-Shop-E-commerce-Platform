@@ -10,36 +10,42 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductResponse {
-    Long productId;
+    Long idProduct;
 
-   String productName;
+    String nameProduct;
 
-     String image;
+    String image;
 
-     String originName;
+                String  originName;
 
-    String processor;
+    Integer battery;
 
-     Integer battery;
+    String scanFrequency;
 
-     Double screenSize;
+    Double screenSize;
 
-   String operatingSystemName;
+               String  operatingSystemName;
 
-     Integer chipset;
+    String screenResolution;
+
+    String screenTech;
+
+    Integer chipset;
 
     String rearCamera;
 
     String frontCamera;
 
-   Integer warrantyPeriod;
+    Integer warrantyPeriod;
 
-  String  brandName;
+                 String brandName;
 
-    String  warehouseAreaName;
+                  String  warehouseAreaName;
+
+                  String  categoryName;
 
     Integer stockQuantity;
 
-     Boolean status;
+    Boolean status;
 
 }

@@ -25,10 +25,7 @@ public class OriginService {
     OriginMapper originMapper;
 
     public Origin createOrigin(OriginRequest request) {
-        Origin origin = Origin.builder()
-                .nameOrigin(request.getNameOrigin())
-                .status(request.isStatus())
-                .build();
+        Origin origin =  originMapper.toOrigin(request);
 
         return originRepo.save(origin);
     }

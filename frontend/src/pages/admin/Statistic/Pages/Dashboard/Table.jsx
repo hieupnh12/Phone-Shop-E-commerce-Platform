@@ -57,7 +57,7 @@ export default function Table({data7Day}) {
         </h3>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto w-full">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>

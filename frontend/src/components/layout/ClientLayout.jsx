@@ -144,7 +144,7 @@ const ClientLayout = ({ children, showHero = true }) => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-0" />
 
             {/* slogan slide */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[16%]">
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[19%]">
               {slogans.map((slogan, index) => (
                 <div
                   key={index}
@@ -154,7 +154,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                       : "opacity-0 translate-y-10 pointer-events-none"
                   }`}
                 >
-                  <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white mb-4 drop-shadow-2xl">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
                     {" "}
                     {slogan.title}{" "}
                   </h1>{" "}

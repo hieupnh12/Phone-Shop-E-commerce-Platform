@@ -33,8 +33,8 @@ public class Product {
        @Column(name = "price")
        private Double price;
 
-       @Column(name = "battery")
-       Integer battery;
+    @Column(name = "battery")
+     String battery;
 
        @Column(name = "scanFrequency")
        String scanFrequency;
@@ -42,9 +42,8 @@ public class Product {
        @Column(name = "screenSize")
        Double screenSize;
 
-       @ManyToOne(fetch = FetchType.LAZY)
-       @JoinColumn(name = "operating_system_id")
-       OperatingSystem operatingSystem;
+    @Column(name = "screenSize")
+     String screenSize;
 
        @Column(name = "screenTech")
        String screenTech;
@@ -58,8 +57,8 @@ public class Product {
        @Column(name = "frontCamera", length = 255)
        String frontCamera;
 
-       @Column(name = "warranty_period")
-       Integer warrantyPeriod;
+    @Column(name = "chipset")
+     String chipset;
 
        @ManyToOne(fetch = FetchType.LAZY)
        @JoinColumn(name = "brand_id")
