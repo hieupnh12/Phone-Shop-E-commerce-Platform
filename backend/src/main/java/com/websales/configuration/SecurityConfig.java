@@ -31,6 +31,7 @@ public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS =
             {"/employee/auth", "/customer/auth", "/employee", "/role", "/employee/auth_set_password","/customer/auth_verify_otp"
+            ,"/payment/transaction"
             };
 
 

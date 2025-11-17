@@ -1,5 +1,6 @@
 package com.websales.controller;
 
+<<<<<<< HEAD
 import com.websales.dto.request.CartItemRequest;
 import com.websales.dto.response.CartItemResponse;
 import com.websales.entity.*;
@@ -168,4 +169,8 @@ public class CartController {
                 "success", true,
                 "message", "Đã xóa sản phẩm khỏi giỏ hàng"));
     }
+=======
+public class CartController {
+    
+>>>>>>> cuong
 }
