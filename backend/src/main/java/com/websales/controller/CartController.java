@@ -54,10 +54,10 @@ public class CartController {
                 continue;
             for (CartItem item : cart.getCartItems()) {
                 ProductItem pi = item.getProductItem();
-                if (pi == null || pi.getVersion() == null || pi.getVersion().getProduct() == null)
+                if (pi == null || pi.getVersionId() == null || pi.getVersionId().getProduct() == null)
                     continue;
 
-                ProductVersion pv = pi.getVersion();
+                ProductVersion pv = pi.getVersionId();
                 Product product = pv.getProduct();
 
                 double price = 0.0;

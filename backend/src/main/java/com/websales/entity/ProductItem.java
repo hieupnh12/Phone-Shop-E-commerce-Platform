@@ -19,9 +19,6 @@ public class ProductItem {
     @Column(name = "imei", length = 255)
     String imei;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idProductVersion")
-    ProductVersion version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name ="product_version_id")

@@ -72,29 +72,29 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 //        )
 //    """)
 //    boolean hasProductItems(Long productId);
-//
-//    @Query("SELECT p FROM Product p " +
-//            "LEFT JOIN FETCH p.origin o " +
-//            "LEFT JOIN FETCH p.brand  b " +
-//            "LEFT JOIN FETCH p.operatingSystem os " +
-//            "LEFT JOIN FETCH p.warehouseArea  w " +
-//            "LEFT JOIN FETCH p.productVersion  pv " +
-//           "WHERE (:brandName IS NULL OR LOWER( b.brandName) LIKE LOWER(CONCAT('%', :brandName, '%')))  " +
-//            "AND (:warehouseAreaName IS NULL OR LOWER(w.name) LIKE LOWER(CONCAT('%', :warehouseAreaName, '%'))) " +
-//            "AND (:originName IS NULL OR LOWER(o.name) LIKE LOWER(CONCAT('%', :originName, '%')))" +
-//            "AND (:operatingSystemName IS NULL OR LOWER(os.name) LIKE LOWER(CONCAT('%', :operatingSystemName, '%'))) " +
-//            "AND (:productName IS NULL OR LOWER(p.productName) LIKE LOWER(CONCAT('%', :productName, '%')))"  +
-//             "ORDER BY p.productId DESC ")
-//    Page<Product> findProductsWithFilters(
-//            @Param("brandName")String brandName ,
-//            @Param("warehouseAreaName") String warehouseAreaName ,
-//            @Param("originName") String originName ,
-//            @Param("operatingSystemName") String operatingSystemName ,
-//            @Param("productName") String productName,
-//            Pageable pageable
-//    );
-//
-//
+
+    @Query("SELECT p FROM Product p " +
+            "LEFT JOIN FETCH p.origin o " +
+            "LEFT JOIN FETCH p.brand  b " +
+            "LEFT JOIN FETCH p.operatingSystem os " +
+            "LEFT JOIN FETCH p.warehouseArea  w " +
+            "LEFT JOIN FETCH p.productVersion  pv " +
+           "WHERE (:brandName IS NULL OR LOWER( b.nameBrand) LIKE LOWER(CONCAT('%', :brandName, '%')))  " +
+            "AND (:warehouseAreaName IS NULL OR LOWER(w.nameWarehouseArea) LIKE LOWER(CONCAT('%', :warehouseAreaName, '%'))) " +
+            "AND (:originName IS NULL OR LOWER(o.nameOrigin) LIKE LOWER(CONCAT('%', :originName, '%')))" +
+            "AND (:operatingSystemName IS NULL OR LOWER(os.nameOS) LIKE LOWER(CONCAT('%', :operatingSystemName, '%'))) " +
+            "AND (:productName IS NULL OR LOWER(p.nameProduct) LIKE LOWER(CONCAT('%', :productName, '%')))"  +
+             "ORDER BY p.idProduct DESC ")
+    Page<Product> findProductsWithFilters(
+            @Param("brandName")String brandName ,
+            @Param("warehouseAreaName") String warehouseAreaName ,
+            @Param("originName") String originName ,
+            @Param("operatingSystemName") String operatingSystemName ,
+            @Param("productName") String productName,
+            Pageable pageable
+    );
+
+
 //    @Query("SELECT DISTINCT p FROM Product p " +
 //            "LEFT JOIN FETCH p.origin " +
 //            "LEFT JOIN FETCH p.brand " +

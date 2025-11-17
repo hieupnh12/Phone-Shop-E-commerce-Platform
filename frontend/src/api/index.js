@@ -24,11 +24,22 @@ axiosClient.interceptors.request.use((config) => {
 
 axiosClient.interceptors.response.use(
     (response) => response.data,
-    (error) => {
-        if (error.response.status === 401) {
-             // Token hết hạn → logout hoặc refresh
-            Cookie.remove("token");
-            window.location.href = "/login";
+    async (error) => {
+        const originalRequest = error.config;
+        if (error.response.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            const refreshToken = Cookie.get("refreshToken");
+            if (refreshToken) {
+                try {
+                    const res = await axios.post(`${BASE_URL}/login/refresh_token`, { refresh_token: refreshToken });
+                    Cookie.set("token", res.data.accessToken);
+                    originalRequest.headers["Authorization"] = `Bearer ${res.data.accessToken}`;
+                    return axiosClient(originalRequest); // retry request
+                } catch (err) {
+                    Cookie.remove("token");
+                    window.location.href = "/login";
+                }
+            }
         }
         return Promise.reject(error);
     }

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { ShoppingCart, Outlet } from "lucide-react";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
 import Header from "./Header";
 import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
+import { useAuth } from "../../reducers";
 
 const ClientLayout = ({ children, showHero = true }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { data: isAuth } = useAuth();
 
   const slogans = [
     {
@@ -105,7 +105,7 @@ const ClientLayout = ({ children, showHero = true }) => {
   };
 
   const handleAddToCart = () => {
-    if (!user) {
+    if (!isAuth) {
       navigate("/login");
     }
     // TODO: Thêm logic thêm vào giỏ hàng ở đây

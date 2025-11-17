@@ -29,7 +29,7 @@ public class ProductVersion {
     Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idRom")
+    @JoinColumn(name = "rom_id")
     Rom rom;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,7 +37,7 @@ public class ProductVersion {
     Ram ram;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idColor")
+    @JoinColumn(name = "color_id")
     Color color;
 
     @Column(name = "importPrice")
