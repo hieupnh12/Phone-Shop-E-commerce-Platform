@@ -1,6 +1,5 @@
 package com.websales.entity;
 
-
 import com.websales.enums.ItemStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,9 +16,12 @@ import lombok.experimental.FieldDefaults;
 public class ProductItem {
 
     @Id
-    @Column(name ="imei", unique = true)
+    @Column(name = "imei", length = 255)
     String imei;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "idProductVersion")
+    ProductVersion version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name ="product_version_id")

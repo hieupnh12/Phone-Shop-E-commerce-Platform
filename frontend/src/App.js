@@ -1,7 +1,8 @@
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
+import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -18,7 +19,17 @@ import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStati
 import Chatbot from "./pages/chatbot";
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
+import Cart from "./pages/client/Cart";
 
+// Protected Route Component (Tạm comment để test cart)
+// const ProtectedRoute = ({ children }) => {
+//   const { user } = useAuth();
+//   if (!user) return <Navigate to="/login" replace />;
+//   return children;
+// };
+
+// Bypass login check tạm thời
+const ProtectedRoute = ({ children }) => children;
 
 
 
