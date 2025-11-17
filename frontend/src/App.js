@@ -19,6 +19,8 @@ import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
 
 
+
+
 const router = createBrowserRouter(
   [
     {
@@ -29,12 +31,21 @@ const router = createBrowserRouter(
         {
           path: "products",
           element: <Products />,
-          // children: [{ path: "/", element: <Products /> }],
+          children: [{ path: "abc", element: <Products /> }],
         },
-        { path: "login", element: <Login /> },
-        { path: "signup", element: <Signup /> },
+        // { path: "login", element: <Login /> },
+        // { path: "signup", element: <Signup /> },
       ],
     },
+    {
+    path: "/login",
+    element: <Login />,
+  },
+
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
     {
       path: "/admin",
       element: <AdminRoute allowedRoles={'ROLE_ADMIN'}/>,
