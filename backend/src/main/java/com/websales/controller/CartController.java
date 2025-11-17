@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.*;
+
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/cart")
@@ -67,16 +68,15 @@ public class CartController {
                 int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
                 CartItemResponse resp = new CartItemResponse(
-                        pi.getImei(), // 👈 thêm IMEI
+                        pi.getImei(), // IMEI
                         product.getIdProduct(),
                         product.getNameProduct(),
-                        product.getImage(),
+product.getImage(),
                         price,
                         qty);
                 cartItemsResp.add(resp);
                 grandTotal += price * qty;
             }
-
         }
 
         return ResponseEntity.ok(Map.of(
@@ -144,6 +144,61 @@ public class CartController {
                 "message", "Đã thêm vào giỏ hàng"));
     }
 
+    // --- CẬP NHẬT SỐ LƯỢNG (theo IMEI) ---
+    @PostMapping(value = "/update-quantity", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+public ResponseEntity<?> updateQuantity(
+            @SessionAttribute(name = "userId", required = false) String userId,
+            @RequestBody Map<String, Object> request) {
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "User not logged in"));
+        }
+
+        String imei = (String) request.get("imei");
+        Integer quantity = (Integer) request.get("quantity");
+
+        if (imei == null || imei.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "IMEI is required"));
+        }
+
+        if (quantity == null || quantity < 1) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Quantity must be at least 1"));
+        }
+
+        // Tìm cart active của user
+        Optional<Cart> cartOpt = cartRepository.findFirstByUserIdAndStatus(userId, true);
+        if (cartOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Cart not found"));
+        }
+
+        // Tìm CartItem theo cart và IMEI
+        Optional<CartItem> itemOpt = cartItemRepository.findByCart_IdCartAndProductItem_Imei(
+                cartOpt.get().getIdCart(), imei);
+
+        if (itemOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Item not found in cart"));
+        }
+
+        // Cập nhật quantity
+        CartItem item = itemOpt.get();
+        item.setQuantity(quantity);
+        cartItemRepository.save(item);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đã cập nhật số lượng"));
+    }
+
     // --- XÓA SẢN PHẨM KHỎI GIỎ HÀNG (theo IMEI) ---
     @PostMapping(value = "/remove", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
@@ -167,5 +222,68 @@ public class CartController {
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã xóa sản phẩm khỏi giỏ hàng"));
+    }
+// --- TẠO ĐƠN HÀNG (CHECKOUT) ---
+    @PostMapping(value = "/checkout", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
+    public ResponseEntity<?> checkout(
+            @SessionAttribute(name = "userId", required = false) String userId,
+            @RequestBody Map<String, Object> orderData) {
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "success", false,
+                    "message", "User not logged in"));
+        }
+
+        // Lấy cart active của user
+        Optional<Cart> cartOpt = cartRepository.findFirstByUserIdAndStatus(userId, true);
+        if (cartOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Cart not found"));
+        }
+
+        Cart cart = cartOpt.get();
+        if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Cart is empty"));
+        }
+
+        // TODO: Tạo Order entity và lưu vào database
+        // Bạn cần tạo Order entity và OrderItem entity nếu chưa có
+        // 
+        // Order order = Order.builder()
+        //     .userId(userId)
+        //     .totalAmount((Number) orderData.get("total")).doubleValue())
+        //     .shippingFee(((Number) orderData.get("shippingFee")).doubleValue())
+        //     .orderDate(new Date())
+        //     .status("PENDING")
+        //     .build();
+        // orderRepository.save(order);
+
+        // TODO: Chuyển CartItems thành OrderItems
+        // for (CartItem item : cart.getCartItems()) {
+        //     OrderItem orderItem = OrderItem.builder()
+        //         .order(order)
+        //         .productItem(item.getProductItem())
+        //         .quantity(item.getQuantity())
+        //         .price(item.getProductItem().getVersion().getExportPrice())
+        //         .build();
+        //     orderItemRepository.save(orderItem);
+        // }
+
+        // Xóa cart sau khi tạo order thành công
+        cartItemRepository.deleteAll(cart.getCartItems());
+        cart.setStatus(false); // Đánh dấu cart là không active
+        cartRepository.save(cart);
+
+        // Tạo mã đơn hàng giả (sau này thay bằng order.getIdOrder())
+        String orderId = "ORD" + System.currentTimeMillis();
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "orderId", orderId,
+                "message", "Đặt hàng thành công!"));
     }
 }
