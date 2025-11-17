@@ -35,47 +35,46 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
 
 
-//    @Query("SELECT COALESCE(SUM(pv.stockQuantity), 0) FROM ProductVersion pv WHERE pv.product = :product")
-//    int calculateStockQuantity(@Param("product") Product product);
-//
-//
-//@Modifying
-//@Transactional
-//@Query(value = """
-//            DELETE FROM ProductItem pi
-//            WHERE pi.versionId IN (
-//                SELECT pv.idVersion
-//                FROM ProductVersion pv
-//                WHERE pv.product.idProduct = :productId
-//            )
-//        """)
-//void deleteSafeProductItems(Long productId);
-//
-//    // Query 2: Xóa PV không có orderDetail (sau khi xóa PI)
-//    @Modifying
-//    @Transactional
-//    @Query(value = """
-//            DELETE FROM ProductVersion pv
-//            WHERE pv.product.idProduct = :productId
-//        """)
-//    void deleteSafeProductVersions(Long productId);
-//
-//
-//    @Modifying
-//    @Transactional
-//    @Query("DELETE FROM Product p WHERE p.idProduct = :productId")
-//    void deleteProductById(Long productId);
-//
-//    @Query("""
-//                SELECT COUNT(pi) > 0
-//                FROM ProductItem pi
-//                WHERE pi.orderDetailId IS NOT NULL AND pi.versionId IN (
-//                    SELECT pv FROM ProductVersion pv
-//                    WHERE pv.product.idProduct = :productId
-//                )
-//            """)
-//    boolean hasOrderDetails(Long productId);
+    @Query("SELECT COALESCE(SUM(pv.stockQuantity), 0) FROM ProductVersion pv WHERE pv.product = :product")
+    int calculateStockQuantity(@Param("product") Product product);
 
+
+@Modifying
+@Transactional
+@Query(value = """
+            DELETE FROM ProductItem pi
+            WHERE pi.versionId.idVersion IN (
+                SELECT pv.idVersion
+                FROM ProductVersion pv
+                WHERE pv.product.idProduct = :productId
+            )
+        """)
+void deleteSafeProductItems(Long productId);
+
+    // Query 2: Xóa PV không có orderDetail (sau khi xóa PI)
+    @Modifying
+    @Transactional
+    @Query(value = """
+            DELETE FROM ProductVersion pv
+            WHERE pv.product.idProduct = :productId
+        """)
+    void deleteSafeProductVersions(Long productId);
+
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Product p WHERE p.idProduct = :productId")
+    void deleteProductById(Long productId);
+
+    @Query("""
+            SELECT COUNT(pi) > 0
+            FROM ProductItem pi
+            WHERE pi.orderDetail IS NOT NULL AND pi.versionId.idVersion IN (
+                SELECT pv.idVersion FROM ProductVersion pv
+                WHERE pv.product.idProduct = :productId
+            )
+        """)
+    boolean hasOrderDetails(Long productId);
 
 
 

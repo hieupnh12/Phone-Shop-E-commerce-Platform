@@ -382,19 +382,19 @@ public class ProductService {
 
 
 
-//    @Transactional
-//    public void deleteProduct(Long productId) {
-//        // Kiểm tra xem sản phẩm có ProductItem liên quan không
-//        if (productRepository.hasOrderDetails(productId)) {
-//            throw new IllegalStateException("Không thể xóa sản phẩm vì  ProductItem liên quan đã được bán ra.");
-//        }
-//        //xóa các productItem
-//        productRepository.deleteSafeProductItems(productId);
-//        // Xóa các ProductVersion
-//        productRepository.deleteSafeProductVersions(productId);
-//        // Xóa sản phẩm
-//        productRepository.deleteProductById(productId);
-//    }
+    @Transactional
+    public void deleteProduct(Long productId) {
+        // Kiểm tra xem sản phẩm có ProductItem liên quan không
+        if (productRepository.hasOrderDetails(productId)) {
+            throw new IllegalStateException("Không thể xóa sản phẩm vì  ProductItem liên quan đã được bán ra.");
+        }
+        //xóa các productItem
+        productRepository.deleteSafeProductItems(productId);
+        // Xóa các ProductVersion
+        productRepository.deleteSafeProductVersions(productId);
+        // Xóa sản phẩm
+        productRepository.deleteProductById(productId);
+    }
 
 
 
@@ -446,22 +446,22 @@ public class ProductService {
 //
 //
 //
-//
-//    // Phương thức tính stock_quantity cho Product
-//    public int calculateStockQuantity(Product product) {
-//        return productRepository.calculateStockQuantity(product);
-//    }
-//
-//
-//    // Phương thức cập nhật stock_quantity cho Product
-//    @Transactional
-//    public void updateProductStockQuantity(Long productId) {
-//        Product product = getProductById(productId);
-//        int totalStock = calculateStockQuantity(product);
-//        product.setStockQuantity(totalStock);
-//        productRepository.save(product);
-//    }
-//
+
+    // Phương thức tính stock_quantity cho Product
+    public int calculateStockQuantity(Product product) {
+        return productRepository.calculateStockQuantity(product);
+    }
+
+
+    // Phương thức cập nhật stock_quantity cho Product
+    @Transactional
+    public void updateProductStockQuantity(Long productId) {
+        Product product = getProductById(productId);
+        int totalStock = calculateStockQuantity(product);
+        product.setStockQuantity(totalStock);
+        productRepository.save(product);
+    }
+
 //
 //    // Phương thức mới để cập nhật stock_quantity cho tất cả Product
 //    @Transactional

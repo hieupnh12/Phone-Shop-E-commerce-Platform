@@ -114,13 +114,13 @@ public class ProductController {
     }
 
 
-//    @DeleteMapping("/{idproduct}")
-//    public ApiResponse<Void> deleteProduct(@PathVariable("idproduct") Long idproduct) {
-//        productService.deleteProduct(idproduct);
-//        return  ApiResponse.<Void>builder()
-//                .message("DELETE PRODUCT SUCCESSFULLY")
-//                .build();
-//    }
+    @DeleteMapping("/{idproduct}")
+    public ApiResponse<Void> deleteProduct(@PathVariable("idproduct") Long idproduct) {
+        productService.deleteProduct(idproduct);
+        return  ApiResponse.<Void>builder()
+                .message("DELETE PRODUCT SUCCESSFULLY")
+                .build();
+    }
 
 
 //    //test ket hop productversion va product
