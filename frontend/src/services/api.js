@@ -74,6 +74,19 @@ export const cartService = {
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
+    // ✅ THÊM MỚI: POST /api/cart/update-quantity  body: { imei, quantity }
+  updateQuantity: async (imei, quantity) => {
+    const res = await api.post('/cart/update-quantity', { imei, quantity }).then(r => r.data);
+    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
+    return res;
+  },
+
+  // ✅ THÊM MỚI: POST /api/cart/checkout  body: { items, subtotal, shippingFee, total, orderDate }
+  createOrder: async (orderData) => {
+    const res = await api.post('/cart/checkout', orderData).then(r => r.data);
+    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
+    return res;
+  },
 
   // Không có API clearCart -> gọi remove cho từng item, dùng removeByImei để phát event
   clearCart: async () => {

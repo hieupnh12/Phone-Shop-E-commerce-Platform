@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { ShoppingCart, Outlet } from "lucide-react";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
+import { getUserRole } from "../../contexts/AuthContext";
 import Header from "./Header";
 import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
+
 
 const ClientLayout = ({ children, showHero = true }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = getUserRole();
 
   const slogans = [
     {
