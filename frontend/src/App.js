@@ -8,7 +8,7 @@ import {
 import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
-// import { AuthProvider, useAuth} from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
@@ -118,12 +118,14 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <CartProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Chatbot />
-      </QueryClientProvider>
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+          <Chatbot />
+        </QueryClientProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 
