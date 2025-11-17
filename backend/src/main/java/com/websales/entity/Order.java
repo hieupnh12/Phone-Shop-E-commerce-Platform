@@ -1,9 +1,5 @@
 package com.websales.entity;
 
-<<<<<<< HEAD
-public class Order {
-    
-=======
 import com.websales.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -63,5 +59,4 @@ public class Order {
             isPaid = false;
         }
     }
->>>>>>> cuong
 }
