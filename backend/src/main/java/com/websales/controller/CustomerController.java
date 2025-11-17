@@ -1,5 +1,7 @@
 package com.websales.controller;
 
+import com.cloudinary.Api;
+import com.websales.dto.request.CustomerUpdateRequest;
 import com.websales.dto.request.SendOtpRequest;
 import com.websales.dto.request.VerifyOtpRequest;
 import com.websales.dto.response.ApiResponse;
@@ -7,13 +9,11 @@ import com.websales.dto.request.CustomerCreateRequest;
 import com.websales.dto.response.CustomerResponse;
 import com.websales.service.CustomerAuthenticationService;
 import com.websales.service.CustomerService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/customer")
@@ -41,5 +41,12 @@ public class CustomerController {
                  .result(cusAuthService.verifyOtp(request))
                  .build();
      }
+    @PutMapping("/update/{id}")
+     public ApiResponse<CustomerResponse> updateCustomer(@PathVariable Long id, @Valid @RequestBody  CustomerUpdateRequest request) {
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.updateCustomer(id,request))
+                .build();
+     }
+
 }
 

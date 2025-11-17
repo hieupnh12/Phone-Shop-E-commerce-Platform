@@ -1,5 +1,8 @@
 package com.websales.service;
 
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.websales.dto.request.SendOtpRequest;
 import com.websales.dto.request.VerifyOtpRequest;
 import com.websales.entity.Customer;
@@ -27,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.Key;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
@@ -65,6 +69,18 @@ public class CustomerAuthenticationService {
         String otp = String.valueOf((int)(Math.random() * 900000 + 100000));
 
 
+        otpReq.setVerified(false);
+
+        if (otpReq.getLastSentAt() != null &&
+                otpReq.getLastSentAt().isAfter(LocalDateTime.now().minusSeconds(30))) {
+            throw new AppException(ErrorCode.OTP_SEND_TOO_FAST);
+        }
+
+        if (otpReq.getSentCount() >= 5 &&
+                otpReq.getLastSentAt().isAfter(LocalDateTime.now().minusMinutes(10))) {
+            throw new AppException(ErrorCode.OTP_SEND_LIMIT);
+        }
+
         boolean sent = speedSmsService.sendVerificationCode(phone, otp);
         if(!sent) {
             throw new RuntimeException("Gửi OTP thất bại");
@@ -72,7 +88,10 @@ public class CustomerAuthenticationService {
         otpReq.setOtpHash(passwordEncoder.encode(otp));
         otpReq.setExpiresAt(LocalDateTime.now().plusMinutes(5));
         otpReq.setLastSentAt(LocalDateTime.now());
+        otpReq.incrementSentCount();
+        otpReq.resetAttempt();
         otpRepo.save(otpReq);
+
     }
 
     @Transactional
@@ -82,12 +101,16 @@ public class CustomerAuthenticationService {
         OtpRequest otpReq = otpRepo.findByPhoneNumber(phone)
                 .orElseThrow(() -> new AppException(ErrorCode.OTP_WRONG));
 
+        if (otpReq.getAttemptCount() >= 5) {
+            throw new AppException(ErrorCode.OTP_TOO_MANY_ATTEMPTS);
+        }
+
         if (otpReq.isExpired()) {
             throw new AppException(ErrorCode.OTP_EXPIRED);
         }
 
         if (otpReq.isVerified()) {
-            throw new AppException(ErrorCode.OTP_EXPIRED);
+            throw new AppException(ErrorCode.OTP_VERIFY);
         }
 
         boolean correct = passwordEncoder.matches(request.getOtpCode(), otpReq.getOtpHash());
@@ -98,7 +121,7 @@ public class CustomerAuthenticationService {
         }
         otpReq.setVerified(true);
         otpReq.setExpiresAt(LocalDateTime.now());
-
+        otpRepo.save(otpReq);
 
         Customer customer = customerRepo.getCustomerByPhoneNumber(phone)
                 .orElseGet(()
@@ -112,27 +135,51 @@ public class CustomerAuthenticationService {
                    .build());
        }
 
-        return generate(customer.getCustomerId());
+        return generateCustomerToken(customer.getCustomerId());
     }
 
 
-    public String generate(Long customerId) {
-        Instant now = Instant.now();
-        Instant expiry = now.plusSeconds(VALID_DURATION);
+//    public String generate(Long customerId) {
+//        Instant now = Instant.now();
+//        Instant expiry = now.plusSeconds(VALID_DURATION);
+//
+//        return Jwts.builder()
+//                .setIssuer("PHONESHOP")
+//                .setSubject(customerId.toString())
+//                .claim("role", "USER")
+//                .setIssuedAt(Date.from(now))
+//                .setExpiration(Date.from(expiry))
+//                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+//                .compact();
+//    }
+//
+//    private Key getSigningKey() {
+//        byte[] keyBytes = Base64.getDecoder().decode(SIGNER_KEY);
+//        return Keys.hmacShaKeyFor(keyBytes);
+//    }
 
-        return Jwts.builder()
-                .setIssuer("PHONESHOP")
-                .setSubject(customerId.toString())
+    public String generateCustomerToken(Long customerId) {
+        JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
+
+        String jwtId = UUID.randomUUID().toString();
+        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+                .subject(customerId.toString())
+                .issuer("PHONESHOP")
+                .issueTime(new Date())
+                .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .jwtID(jwtId)
                 .claim("role", "USER")
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiry))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
+                .build();
 
-    private Key getSigningKey() {
-        byte[] keyBytes = Base64.getDecoder().decode(SIGNER_KEY);
-        return Keys.hmacShaKeyFor(keyBytes);
+        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+        JWSObject jwsObject = new JWSObject(jwsHeader, payload);
+
+        try {
+            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Cannot create customer token", e);
+        }
     }
 
 }

@@ -40,8 +40,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:your-email@gmail.com}
-    password: ${MAIL_PASSWORD:your-app-password}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -65,7 +65,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  signerKey: "67ff488a1bbe8bf0c5a00082c79869af83b5c4f6714873c382e31f6b44ad333b"
+  signerKey: "4fenEIft8k/ii3gdEbIEiNzAz8A6SHw4gmq98FuMVbYffeCwLUFwKkcx8g7mZqWV0ZtPMFzEw1yKfF3pHoREXOznR2a/4PCFQWQxUTH3Zrb1QT1sBqenm3/UdM1PWAFS"
   expiration: 86400000
   refreshable-duration: 360000
 
