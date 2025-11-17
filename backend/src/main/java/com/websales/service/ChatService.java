@@ -96,7 +96,7 @@ public class ChatService {
 
         if ("result".equals(aiResponse.getType())) {
             List<ProductFULLResponse> matched = matchProductsByNames(aiResponse.getProductNames(), listPhones.toList());
-            return new RagResponse(aiResponse.getMessage() + answer +"có" + aiResponse.getProductNames().get(0), matched, null);
+            return new RagResponse(aiResponse.getMessage() + answer +"có" + aiResponse.getProductNames(), matched, null);
         } else {
             return new RagResponse(aiResponse.getMessage(), null, null);
         }
