@@ -1,8 +1,11 @@
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
+import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import Cart from "./pages/client/Cart";
+import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
 import AdminRoute from "./routes/AdminRoute";
@@ -18,6 +21,19 @@ import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStati
 import Chatbot from "./pages/chatbot";
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
+import Cart from "./pages/client/Cart";
+import CartLayout from "./components/layout/CartLayout";
+
+// Protected Route Component (Tạm comment để test cart)
+// const ProtectedRoute = ({ children }) => {
+//   const { user } = useAuth();
+//   if (!user) return <Navigate to="/login" replace />;
+//   return children;
+// };
+
+// Bypass login check tạm thời
+const ProtectedRoute = ({ children }) => children;
+
 
 
 const router = createBrowserRouter(
@@ -35,6 +51,21 @@ const router = createBrowserRouter(
         { path: "login", element: <Login /> },
         { path: "signup", element: <Signup /> },
       ],
+    },
+    {
+      path: "/cart",
+      element: <CartLayout />,
+      children: [
+        { index: true, element: <Cart /> },
+      ],
+    },
+    {
+      path: "/login",
+      element: <Login />,
+    },
+    {
+      path: "/signup",
+      element: <Signup />,
     },
     {
       path: "/admin",

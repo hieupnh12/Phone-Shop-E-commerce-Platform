@@ -17,32 +17,32 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "product_id", length = 255)
-     Long idProduct;
+    Long idProduct;
 
     @Column(name = "product_name", length = 255)
     String nameProduct;
 
     @Column(name = "picture", length = 255)
-     String image;
+    String image;
 
-          @ManyToOne
-          @JoinColumn(name = "origin_id") // 👈 ánh xạ cột origin (kiểu String chứa ID)
-           Origin origin;
+    @ManyToOne
+    @JoinColumn(name = "origin_id") // 👈 ánh xạ cột origin (kiểu String chứa ID)
+    Origin origin;
 
 
     @Column(name = "battery")
-     String battery;
+    String battery;
 
     @Column(name ="scanFrequency")
-     String scanFrequency;
+    String scanFrequency;
 
 
     @Column(name = "screenSize")
-     String screenSize;
+    String screenSize;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name = "operating_system_id")
-           OperatingSystem operatingSystem;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operating_system_id")
+    OperatingSystem operatingSystem;
 
 
     @Column(name  ="screenResolution")
@@ -52,10 +52,10 @@ public class Product {
     String screenTech;
 
     @Column(name = "chipset")
-     String chipset;
+    String chipset;
 
     @Column(name = "rearCamera", length = 255)
-     String rearCamera;
+    String rearCamera;
 
     @Column(name = "frontCamera", length = 255)
     String frontCamera;
@@ -63,26 +63,26 @@ public class Product {
     @Column(name = "warranty_period")
     Integer warrantyPeriod;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name = "brand_id")
-           Brand brand;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    Brand brand;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name = "warehouse_area_id")
-           WarehouseArea warehouseArea;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_area_id")
+    WarehouseArea warehouseArea;
 
     @Column(name = "stockQuantity")
-     Integer stockQuantity;
+    Integer stockQuantity;
 
     @Column(name = "status")
-        Boolean status;
+    Boolean status;
 
 
-           @ManyToOne(fetch = FetchType.LAZY)
-           @JoinColumn(name ="category_id")
-           Category category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="category_id")
+    Category category;
 
-          @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-          @JsonManagedReference
-          List<ProductVersion> productVersion;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    List<ProductVersion> productVersion;
 }

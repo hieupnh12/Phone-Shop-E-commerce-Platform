@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { ShoppingCart, Outlet } from "lucide-react";
+import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import Header from "./Header";
 import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
 
-const ClientLayout = ({ children }) => {
+const ClientLayout = ({ children, showHero = true }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const slogans = [
     {
@@ -99,6 +104,13 @@ const ClientLayout = ({ children }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  const handleAddToCart = () => {
+    if (!user) {
+      navigate("/login");
+    }
+    // TODO: Thêm logic thêm vào giỏ hàng ở đây
+  };
+
   // cal do mo video khi scroll
   const videoOpacity = Math.max(1 - scrollY / 400, 0);
 
@@ -113,7 +125,9 @@ const ClientLayout = ({ children }) => {
         />
 
         <main className="flex-1 overflow-x-hidden">
-          <div className="relative h-screen flex items-center justify-center group overflow-hidden">
+          {showHero && (
+            <>
+              <div className="relative h-screen flex items-center justify-center group overflow-hidden">
             <video
               autoPlay
               loop
@@ -130,7 +144,7 @@ const ClientLayout = ({ children }) => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-0" />
 
             {/* slogan slide */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[16%]">
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[19%]">
               {slogans.map((slogan, index) => (
                 <div
                   key={index}
@@ -140,7 +154,7 @@ const ClientLayout = ({ children }) => {
                       : "opacity-0 translate-y-10 pointer-events-none"
                   }`}
                 >
-                  <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white mb-4 drop-shadow-2xl">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
                     {" "}
                     {slogan.title}{" "}
                   </h1>{" "}
@@ -174,8 +188,11 @@ const ClientLayout = ({ children }) => {
               ))}
             </div>
           </div>
+            </>
+          )}
 
           {/* Hot product */}
+          {showHero && (
           <div className="relative py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-950 to-gray-900">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-10">
@@ -219,9 +236,16 @@ const ClientLayout = ({ children }) => {
                       {product.price}
                     </p>
 
-                    <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 rounded-lg text-sm font-medium transition-all duration-300 opacity-0 group-hover:opacity-100">
-                      Xem chi tiết
-                    </button>
+                    <div className="space-y-2">
+                      <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 rounded-lg text-sm font-medium transition-all duration-300">
+                        Xem chi tiết
+                      </button>
+                      <button 
+                        onClick={handleAddToCart}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center justify-center">
+                        <ShoppingCart className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -233,11 +257,11 @@ const ClientLayout = ({ children }) => {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Original Children Content */}
-          <div className="p-4 sm:p-6 lg:p-8 bg-gray-900">
-            <div className="max-w-7xl mx-auto">{children}</div>
-          </div>
+          {/* Route Content via Outlet */}
+          {children}
+          <RouterOutlet />
         </main>
       </div>
     </div>

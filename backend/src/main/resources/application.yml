@@ -40,8 +40,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:your-email@gmail.com}
-    password: ${MAIL_PASSWORD:your-app-password}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -112,5 +112,9 @@ cloudinary:
     key: 756234473817482
     secret: T5qQXodnthydHuSyQYrF-xk98Eo
 #  T5qQXodnthydHuSyQYrF-xk98Eo
+
+
+speedsms:
+  access_token: "J8B5DfjoJBM3zxIT44zHGjQ-B4VtzAyL"
 
 
