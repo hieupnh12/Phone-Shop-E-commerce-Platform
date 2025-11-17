@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { CartProvider } from "./contexts/CartContext";
@@ -17,6 +17,9 @@ import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStati
 import Chatbot from "./pages/chatbot";
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
+import Settings from "./pages/admin/Statistic/Pages/Setting";
+import OrderStatistic from "./pages/admin/Statistic/Pages/Order";
+import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
 
 
 
@@ -66,18 +69,12 @@ const router = createBrowserRouter(
               path: "statistic",
               element: <Statistic />,
               children: [
-                { index: true, element: <DashboardStatistic /> },
+                { index: true, element: <Navigate to="dashboard" replace /> },
                 { path: "dashboard", element: <DashboardStatistic /> },
-                {
-                  path: "users",
-                  element: <UserStatistic />,
-                  children: [{ path: "overview", element: <Overview /> }],
-                },
-                {
-                  path: "products",
-                  element: <ProductStatistic />,
-                  children: [{ path: "overview", element: <Overview /> }],
-                }
+                { path: "products",element: <ProductStatistic /> },
+                { path: "orders",element: <OrderStatistic /> },
+                { path: "revenue",element: <RevenueStatistic /> },
+                { path: "setting",element: <Settings /> },
               ],
             },
           ],

@@ -12,6 +12,9 @@ import {
   Zap,
   TrendingUp,
 } from "lucide-react";
+import loginApi from "../../services/loginService";
+import Cookies from 'js-cookie'
+import { Navigate } from "react-router-dom";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,13 +46,31 @@ const Login = () => {
     }, 1000);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+  try {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      alert(isLogin ? "Đăng nhập thành công!" : "Đăng ký thành công!");
-    }, 1500);
-  };
+
+    const account = {
+      email: "nguyennhattrinhbs@gmail.com",
+      password: "13022004",
+    };
+
+    const res = await loginApi.postLogin(account);
+    if (res.code === 1000) {
+      <Navigate to={"/"} replace/>
+    }
+    console.log("res", res);
+
+    // Lưu token
+    Cookies.set("token", res?.result?.token);
+    // Cookie.set("refreshToken", res?.refreshToken);
+
+  } catch (error) {
+    console.error("Login error:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSocialLogin = (provider) => {
     alert(`Đăng nhập bằng ${provider}`);
@@ -59,15 +80,15 @@ const Login = () => {
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/*Video*/}
       <div className="absolute inset-0 z-0">
-{/* <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+        {/* <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
   <source src="/video/17series.mp4" type="video/mp4" />
 </video> */}
 
         <img
-  className="absolute inset-0 w-full h-full object-cover"
-  src="/image/loginbg.jpg"
-  alt="Background"
-/>
+          className="absolute inset-0 w-full h-full object-cover"
+          src="/image/loginbg.jpg"
+          alt="Background"
+        />
 
         <div className="absolute inset-0 opacity-10">
           <div

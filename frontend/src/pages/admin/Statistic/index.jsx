@@ -8,9 +8,6 @@ export default function Statistic() {
   return (
     <div className="w-full min-h-screen p-2">
       <div className="mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-3">
-          Hệ Thống Thống Kê
-        </h1>
         <MainMenu />
         {/* <SubMenu parent={parent} /> */}
         <Outlet />

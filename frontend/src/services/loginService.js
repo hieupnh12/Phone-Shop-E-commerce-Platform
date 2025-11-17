@@ -3,13 +3,13 @@ import constants from "../constants";
 import { GET, POST } from "../constants/httpMethod";
 import Cookies from 'js-cookie'
 
-const LOGIN_API_ENDPOINT = '/login';
+const LOGIN_API_ENDPOINT = '/employee';
 
 const loginApi = {
 
-  // login thông thường
+  // admin/ staff và manager login thông thường
   postLogin: (account) => {
-    return axiosClient[POST](LOGIN_API_ENDPOINT, account);
+    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/auth`, account);
   },
 
   // login với Google
@@ -17,10 +17,15 @@ const loginApi = {
     return axiosClient[POST](`${LOGIN_API_ENDPOINT}/gg`, accessToken);
   },
 
+  // Customer login với SDT
+  postLoginWithSDT: (sdt) => {
+    return axiosClient[POST](`customer/auth`, sdt);
+  },
+
   // kiểm tra auth
   getAuth: () => {
     const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
-    return axiosClient[GET](`${LOGIN_API_ENDPOINT}/auth`, {
+    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/auth`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
   },

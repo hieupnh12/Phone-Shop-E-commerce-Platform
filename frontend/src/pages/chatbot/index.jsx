@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { sendMessage } from "../../services/chatBotService";
+import chatsApi, { sendMessage } from "../../services/chatBotService";
 
 export default function Chatbot() {
   const [messages, setMessages] = useState([
@@ -158,7 +158,7 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      const response = await sendMessage(input);
+      const response = await chatsApi.sendMessage(input);
       const { message, Product, Order } = response;
       const botText = message || "Cảm ơn bạn! Tôi đã nhận được tin nhắn.";
       streamText(botText, (fullText) => {

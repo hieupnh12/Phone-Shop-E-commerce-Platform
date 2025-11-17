@@ -6,6 +6,7 @@ import {
   DollarSign,
   Package,
   TrendingUp,
+  Settings,
 } from "lucide-react";
 
 const MainMenu = () => {
@@ -20,7 +21,6 @@ const MainMenu = () => {
       icon: BarChart3,
       path: `${prefix}/dashboard`,
     },
-    users: { label: "Người Dùng", icon: Users, path: `${prefix}/users` },
     orders: { label: "Đơn Hàng", icon: ShoppingCart, path: `${prefix}/orders` },
     revenue: {
       label: "Doanh Thu",
@@ -29,14 +29,14 @@ const MainMenu = () => {
     },
     products: { label: "Sản Phẩm", icon: Package, path: `${prefix}/products` },
     growth: {
-      label: "Tăng Trưởng",
-      icon: TrendingUp,
-      path: `${prefix}/growth`,
+      label: "Setting",
+      icon: Settings,
+      path: `${prefix}/setting`,
     },
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-8">
+    <div className="bg-white rounded-lg shadow-md p-1 mb-8">
       <div className="flex items-center overflow-x-auto p-2 flex-wrap">
         {Object.entries(menuConfig).map(([key, config]) => {
           const Icon = config.icon;
