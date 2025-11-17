@@ -1,6 +1,14 @@
-import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  Navigate,
+} from "react-router-dom";
+
+import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -21,9 +29,18 @@ import Settings from "./pages/admin/Statistic/Pages/Setting";
 import OrderStatistic from "./pages/admin/Statistic/Pages/Order";
 import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
 import AuthRedirect from "./routes/AuthRedirect";
+import Cart from "./pages/client/Cart";
+import CartLayout from "./components/layout/CartLayout";
 
+// Protected Route Component (Tạm comment để test cart)
+// const ProtectedRoute = ({ children }) => {
+//   const { user } = useAuth();
+//   if (!user) return <Navigate to="/login" replace />;
+//   return children;
+// };
 
-
+// Bypass login check tạm thời
+const ProtectedRoute = ({ children }) => children;
 
 const router = createBrowserRouter(
   [
@@ -42,21 +59,25 @@ const router = createBrowserRouter(
       ],
     },
     {
-    path: "/login",
-    element:(
-    <AuthRedirect>
-        <Login />
-    </AuthRedirect>
-    ), 
-  },
-
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
+      path: "/cart",
+      element: <CartLayout />,
+      children: [{ index: true, element: <Cart /> }],
+    },
+    {
+      path: "/login",
+      element: (
+        <AuthRedirect>
+          <Login />
+        </AuthRedirect>
+      ),
+    },
+    {
+      path: "/signup",
+      element: <Signup />,
+    },
     {
       path: "/admin",
-      element: <AdminRoute allowedRoles={'ROLE_ADMIN'}/>,
+      element: <AdminRoute allowedRoles={"ROLE_ADMIN"} />,
       children: [
         {
           element: <AdminLayout />,
@@ -76,16 +97,15 @@ const router = createBrowserRouter(
               children: [
                 { index: true, element: <Navigate to="dashboard" replace /> },
                 { path: "dashboard", element: <DashboardStatistic /> },
-                { path: "products",element: <ProductStatistic /> },
-                { path: "orders",element: <OrderStatistic /> },
-                { path: "revenue",element: <RevenueStatistic /> },
-                { path: "setting",element: <Settings /> },
+                { path: "products", element: <ProductStatistic /> },
+                { path: "orders", element: <OrderStatistic /> },
+                { path: "revenue", element: <RevenueStatistic /> },
+                { path: "setting", element: <Settings /> },
               ],
             },
           ],
         },
       ],
-      
     },
     { path: "*", element: <NotFound /> },
   ],
@@ -99,12 +119,12 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-      <CartProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <Chatbot />
-        </QueryClientProvider>
-      </CartProvider>
+    <CartProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Chatbot />
+      </QueryClientProvider>
+    </CartProvider>
   );
 }
 
