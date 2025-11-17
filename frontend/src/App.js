@@ -22,6 +22,7 @@ import Chatbot from "./pages/chatbot";
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
 import Cart from "./pages/client/Cart";
+import CartLayout from "./components/layout/CartLayout";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -52,14 +53,20 @@ const router = createBrowserRouter(
       ],
     },
     {
-    path: "/login",
-    element: <Login />,
-  },
-
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
+      path: "/cart",
+      element: <CartLayout />,
+      children: [
+        { index: true, element: <Cart /> },
+      ],
+    },
+    {
+      path: "/login",
+      element: <Login />,
+    },
+    {
+      path: "/signup",
+      element: <Signup />,
+    },
     {
       path: "/admin",
       element: <AdminRoute />,

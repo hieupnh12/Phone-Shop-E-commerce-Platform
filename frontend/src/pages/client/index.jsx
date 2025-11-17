@@ -4,7 +4,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import HomeClient from "./HomeClient";
 import { Home } from "lucide-react";
 import Footer from "../../components/layout/Footer";
-import { Outlet } from "react-router-dom";
 
 
 
