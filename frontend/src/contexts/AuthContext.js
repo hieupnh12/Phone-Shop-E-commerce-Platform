@@ -113,3 +113,6 @@ export const getUserRole = () => {
     return null;
   }
 };
+
+// Named export for direct context access in route wrappers
+export { AuthContext };
