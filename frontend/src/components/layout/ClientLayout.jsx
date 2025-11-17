@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ShoppingCart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ShoppingCart, Outlet } from "lucide-react";
+import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import Header from "./Header";
 import ClientSidebar from "./ClientSidebar";
@@ -261,6 +261,7 @@ const ClientLayout = ({ children, showHero = true }) => {
 
           {/* Route Content via Outlet */}
           {children}
+          <RouterOutlet />
         </main>
       </div>
     </div>
