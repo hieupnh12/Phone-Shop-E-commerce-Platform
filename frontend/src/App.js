@@ -20,6 +20,7 @@ import Products from "./pages/client/Products";
 import Settings from "./pages/admin/Statistic/Pages/Setting";
 import OrderStatistic from "./pages/admin/Statistic/Pages/Order";
 import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
+import AuthRedirect from "./routes/AuthRedirect";
 
 
 
@@ -42,7 +43,11 @@ const router = createBrowserRouter(
     },
     {
     path: "/login",
-    element: <Login />,
+    element:(
+    <AuthRedirect>
+        <Login />
+    </AuthRedirect>
+    ), 
   },
 
   {

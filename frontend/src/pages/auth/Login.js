@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import loginApi from "../../services/loginService";
 import Cookies from 'js-cookie'
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -30,7 +30,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-
+  const navigate = useNavigate();
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -57,7 +57,7 @@ const Login = () => {
 
     const res = await loginApi.postLogin(account);
     if (res.code === 1000) {
-      <Navigate to={"/"} replace/>
+      navigate("/");
     }
     console.log("res", res);
 
