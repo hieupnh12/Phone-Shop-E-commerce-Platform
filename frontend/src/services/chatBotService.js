@@ -1,7 +1,15 @@
 import axiosClient from "../api"
-import { GET } from "../constants/httpMethod"
+import { GET, POST } from "../constants/httpMethod"
 
-export const sendMessage = ((text) => {
-    const response = axiosClient[GET]("/api/chats", text);
-    return response;
-})
+const LOGIN_API_ENDPOINT = '/api/chats';
+
+const chatsApi = {
+    
+    // send Message 
+    sendMessage: (message) => {
+        return axiosClient[POST](`${LOGIN_API_ENDPOINT}`, message)
+    }
+
+}
+
+export default chatsApi;

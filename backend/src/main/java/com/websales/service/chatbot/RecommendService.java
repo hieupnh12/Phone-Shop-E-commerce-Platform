@@ -1,12 +1,16 @@
 package com.websales.service.chatbot;
 
 import com.websales.dto.response.HotMarketResponse;
+import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.RagResponse;
 import com.websales.entity.Product;
+import com.websales.repository.ProductRepository;
+import com.websales.service.ProductService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -19,14 +23,15 @@ import java.util.stream.IntStream;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RecommendService {
     ChatClient.Builder chatClientBuilder;
+    ProductRepository productRepository;
 
     public RagResponse recommend(String message) {
         // DÙNG OBJECT TỪ AI
         HotMarketResponse hot = getHotPhonesAsObject();
 
-        // SO SÁNH VỚI DB
-//        List<Product> shopProducts = hot.hotPhones().stream()
-//                .flatMap(name -> productRepository.findByNameContainingIgnoreCase(name).stream())
+//         SO SÁNH VỚI DB
+//        Page<ProductFULLResponse> shopProducts = hot.hotPhones().stream()
+//                .flatMap(name -> productRepository.findProductsWithRelations().(name).stream())
 //                .distinct()
 //                .sorted(Comparator.comparingDouble(Product::getRating).reversed())
 //                .limit(5)

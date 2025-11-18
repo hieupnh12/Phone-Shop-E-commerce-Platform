@@ -1,4 +1,10 @@
-import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  Navigate,
+} from "react-router-dom";
+
 import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
@@ -20,6 +26,10 @@ import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStati
 import Chatbot from "./pages/chatbot";
 import ClientHomePage from "./pages/client";
 import Products from "./pages/client/Products";
+import Settings from "./pages/admin/Statistic/Pages/Setting";
+import OrderStatistic from "./pages/admin/Statistic/Pages/Order";
+import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
+import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 
@@ -33,8 +43,6 @@ import CartLayout from "./components/layout/CartLayout";
 // Bypass login check tạm thời
 const ProtectedRoute = ({ children }) => children;
 
-
-
 const router = createBrowserRouter(
   [
     {
@@ -47,20 +55,20 @@ const router = createBrowserRouter(
           element: <Products />,
           children: [{ path: "", element: <Products /> }],
         },
-        { path: "login", element: <Login /> },
-        { path: "signup", element: <Signup /> },
       ],
     },
     {
       path: "/cart",
       element: <CartLayout />,
-      children: [
-        { index: true, element: <Cart /> },
-      ],
+      children: [{ index: true, element: <Cart /> }],
     },
     {
       path: "/login",
-      element: <Login />,
+      element: (
+        <AuthRedirect>
+          <Login />
+        </AuthRedirect>
+      ),
     },
     {
       path: "/signup",
@@ -68,7 +76,7 @@ const router = createBrowserRouter(
     },
     {
       path: "/admin",
-      element: <AdminRoute />,
+      element: <AdminRoute allowedRoles={"ROLE_ADMIN"} />,
       children: [
         {
           element: <AdminLayout />,
@@ -86,24 +94,17 @@ const router = createBrowserRouter(
               path: "statistic",
               element: <Statistic />,
               children: [
-                { index: true, element: <DashboardStatistic /> },
+                { index: true, element: <Navigate to="dashboard" replace /> },
                 { path: "dashboard", element: <DashboardStatistic /> },
-                {
-                  path: "users",
-                  element: <UserStatistic />,
-                  children: [{ path: "overview", element: <Overview /> }],
-                },
-                {
-                  path: "products",
-                  element: <ProductStatistic />,
-                  children: [{ path: "overview", element: <Overview /> }],
-                }
+                { path: "products", element: <ProductStatistic /> },
+                { path: "orders", element: <OrderStatistic /> },
+                { path: "revenue", element: <RevenueStatistic /> },
+                { path: "setting", element: <Settings /> },
               ],
             },
           ],
         },
       ],
-      
     },
     { path: "*", element: <NotFound /> },
   ],

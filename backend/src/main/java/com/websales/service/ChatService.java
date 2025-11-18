@@ -1,16 +1,31 @@
 package com.websales.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.websales.dto.response.AiProductResponse;
+import com.websales.dto.response.HotMarketResponse;
+import com.websales.dto.response.ProductFULLResponse;
 import com.websales.service.chatbot.RecommendService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.document.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.websales.dto.request.ChatRequest;
@@ -27,12 +42,14 @@ public class ChatService {
     ChatClient chatClient;
     IntentClassifier intentClassifier;
     RecommendService recommendService;
+    ProductService productService;
 
-    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier, RecommendService recommendService) {
+    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier, RecommendService recommendService, ProductService productService) {
         this.chatClient = builder.build();
         this.productRepository = productRepository;
         this.intentClassifier = intentClassifier;
         this.recommendService = recommendService;
+        this.productService = productService;
     }
 
     public RagResponse ask(ChatRequest chatRequest) {
@@ -47,20 +64,73 @@ public class ChatService {
     }
 
     private RagResponse searchProducts(String q) {
-        List<Product> phones = productRepository.findAll();
+        Page<ProductFULLResponse> listPhones = productService.listAllProducts(PageRequest.of(0, 20));
+        Document document = new Document(listPhones.toString());
+        String answer = chatClient.prompt()
+                        .system("""
+                                Bạn là trợ lý bán điện thoại WarePhone.
+                                
+                                          - Khi khách hàng chưa cung cấp đủ thông tin, trả về:
+                                          {
+                                            "type": "clarify",
+                                            "message": "string",    // ví dụ: "Bạn muốn iPhone hay Samsung?"
+                                            "productNames": []
+                                          }
+                                
+                                          - Khi khách hàng đã xác định được sản phẩm trong cửa hàng, trả về:
+                                          {
+                                            "type": "result",
+                                            "message": "string",
+                                            "productNames": [productNames1, productNames2, ...]   // các sản phẩm thật trong DB
+                                          }
+                                
+                                          - Luôn trả JSON hợp lệ, không thêm text ngoài JSON.
+                                
+                                
+                        """)
+                        .user("Câu hỏi: " + q + "\nDanh sách sản phẩm:\n" + document)
+                        .call()
+                        .content();
 
-//        String answer = chatClient.prompt()
-//                        .system("Bạn là trợ lý bán điện thoại WarePhone. Trả lời tự nhiên, thân thiện.")
-//                        .user("Câu hỏi: " + q + "\nDanh sách sản phẩm:\n")
-//                        .call()
-//                        .content();
+        AiProductResponse aiResponse = parseAiJson(answer);
 
-        return new RagResponse("answer search", phones, null);
+        if ("result".equals(aiResponse.getType())) {
+            List<ProductFULLResponse> matched = matchProductsByNames(aiResponse.getProductNames(), listPhones.toList());
+            return new RagResponse(aiResponse.getMessage() + answer +"có" + aiResponse.getProductNames(), matched, null);
+        } else {
+            return new RagResponse(aiResponse.getMessage(), null, null);
+        }
     }
+
+    private AiProductResponse parseAiJson(String answer) {
+        try {
+            String cleaned = answer.replaceAll("(?s)```json|```", "").trim();
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(cleaned, AiProductResponse.class);
+        } catch (Exception e) {
+            return new AiProductResponse(
+                    "clarify",
+                    "Bạn có thể mô tả kỹ hơn nhu cầu không ạ?",
+                    Collections.emptyList()
+            );
+        }
+    }
+
+    private List<ProductFULLResponse> matchProductsByNames(List<String> aiNames,
+                                                           List<ProductFULLResponse> databaseProducts) {
+        if (aiNames == null || aiNames.isEmpty()) return Collections.emptyList();
+
+        return databaseProducts.stream()
+                .filter(db -> aiNames.stream()
+                        .anyMatch(ai -> db.getNameProduct().toLowerCase().contains(ai.toLowerCase())))
+                .collect(Collectors.toList());
+    }
+
+
 
     private RagResponse chatSale(String q) {
 
-        return new RagResponse("sale", productRepository.findAll(), null);
+        return new RagResponse("sale", null, null);
     }
 
 

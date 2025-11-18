@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
+import { jwtDecode } from "jwt-decode";
+import constants from '../constants/index.js';
 import { authService } from '../services/api';
 
 const AuthContext = createContext();
@@ -11,14 +14,15 @@ export const useAuth = () => {
   return context;
 };
 
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check token on mount và lấy user info
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = Cookies.get(constants.ACCESS_TOKEN_KEY) || localStorage.getItem('token');
     if (token) {
-      // Verify token and get user info
       getCurrentUser();
     } else {
       setLoading(false);
@@ -28,9 +32,12 @@ export const AuthProvider = ({ children }) => {
   const getCurrentUser = async () => {
     try {
       const response = await authService.getCurrentUser();
-      setUser(response.data);
+      setUser(response?.data || response?.user || response);
     } catch (error) {
+      // Token invalid, clear it
+      Cookies.remove(constants.ACCESS_TOKEN_KEY);
       localStorage.removeItem('token');
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -38,35 +45,47 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const response = await authService.login(email, password);
-    const { token, user } = response.data;
+    const token = response?.data?.token || response?.token;
+    const userData = response?.data?.user || response?.user || response?.data;
     
-    localStorage.setItem('token', token);
-    setUser(user);
-    
+    if (token) {
+      Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+      localStorage.setItem('token', token);
+    }
+    if (userData) {
+      setUser(userData);
+    }
     return response;
   };
 
   const register = async (userData) => {
     const response = await authService.register(userData);
-    const { token, user } = response.data;
+    const token = response?.data?.token || response?.token;
+    const user = response?.data?.user || response?.user || response?.data;
     
-    localStorage.setItem('token', token);
-    setUser(user);
-    
+    if (token) {
+      Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+      localStorage.setItem('token', token);
+    }
+    if (user) {
+      setUser(user);
+    }
     return response;
   };
 
   const logout = () => {
+    Cookies.remove(constants.ACCESS_TOKEN_KEY);
     localStorage.removeItem('token');
     setUser(null);
   };
 
   const value = {
     user,
+    loading,
     login,
     register,
     logout,
-    loading
+    getCurrentUser,
   };
 
   return (
@@ -75,3 +94,18 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+
+export const getUserRole = () => {
+  const token = Cookies.get(constants.ACCESS_TOKEN_KEY) || localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const decoded = jwtDecode(token);
+    return decoded.roles?.[0] || decoded.role || null;
+  } catch (e) {
+    return null;
+  }
+};
+
+// Named export for direct context access in route wrappers
+export { AuthContext };
