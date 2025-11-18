@@ -62,6 +62,7 @@ const router = createBrowserRouter(
       element: <CartLayout />,
       children: [{ index: true, element: <Cart /> }],
     },
+    
     {
       path: "/login",
       element: (
@@ -70,6 +71,11 @@ const router = createBrowserRouter(
         </AuthRedirect>
       ),
     },
+    {
+      path: "/payment",
+      element: <Payment />,
+    },
+
     {
       path: "/signup",
       element: <Signup />,
