@@ -2,6 +2,7 @@ package com.websales.configuration;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,26 +24,24 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-@RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS =
-            {"/employee/auth", "/customer/auth", "/employee", "/role", "/employee/auth_set_password","/customer/auth_verify_otp", "/api/chats", "api/statistic","/product"
+            {"/employee/auth", "/customer/auth","/role", "/employee/auth_set_password","/employee","/employee/auth_refresh",
+                    "/customer/auth_verify_otp", "/employee/auth_check_valid"
             };
+//, "/customer/update/{id}"
 
-
-
-    private CustomJwtDecoder customJwtDecoder;
+    private  CustomJwtDecoder customJwtDecoder;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)
             throws Exception {
         httpSecurity
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(requests ->
-                        requests.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                            requests.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
 
                                 .anyRequest().authenticated());
 

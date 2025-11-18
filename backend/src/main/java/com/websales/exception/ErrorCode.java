@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatusCode;
 public enum ErrorCode {
     SMS_FAILED(2000,"Gửi SMS thất bại. Vui lòng thử lại sau",HttpStatus.BAD_REQUEST),
     NOT_FIND_OTP(2001,"Không tìm thấy OTP",HttpStatus.BAD_REQUEST),
-    OTP_EXPIRED(2002,"OTP đã hết hạn hoặc đã sử dụng",HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(2002,"OTP đã hết hạn",HttpStatus.BAD_REQUEST),
     OTP_WRONG(2003,"OTP không đúng",HttpStatus.BAD_REQUEST),
     PRODUCT_NOT_EXIST(2004,"Product Not Exist", HttpStatus.NOT_FOUND),
     NAME_ALREADY_EXIST(2005,"Name Exist! ", HttpStatus.CONFLICT),
@@ -86,6 +86,12 @@ public enum ErrorCode {
     WAREHOUSE_NOT_EXIST(1032, "Khong ton tai ", HttpStatus.BAD_REQUEST),
     WAREHOUSE_UNAVAILABLE(1033, "Khong ton tai ", HttpStatus.BAD_REQUEST),
     UNCATEGORIZE_EXCEPTION(1034, "Khong ton tai ", HttpStatus.BAD_REQUEST),
+    OTP_VERIFY(1035,"OTP đã su dung",HttpStatus.BAD_REQUEST),
+    OTP_ALREADY_VERIFIED(1036,"OTP already verified",HttpStatus.BAD_REQUEST),
+    OTP_TOO_MANY_ATTEMPTS(1037,"OTP nhap sai qua 5 lan",HttpStatus.BAD_REQUEST),
+    OTP_SEND_TOO_FAST(1038,"OTP gui qua nhanh",HttpStatus.BAD_REQUEST),
+    OTP_SEND_LIMIT(1039,"OTP co the gui toi da 5 lan tren 10 phut",HttpStatus.BAD_REQUEST),
+
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
