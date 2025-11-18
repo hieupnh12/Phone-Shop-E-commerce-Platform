@@ -34,14 +34,14 @@ import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 
 // Protected Route Component (Tạm comment để test cart)
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-};
+// const ProtectedRoute = ({ children }) => {
+//   const { user } = useAuth();
+//   if (!user) return <Navigate to="/login" replace />;
+//   return children;
+// };
 
 // Bypass login check tạm thời
-// const ProtectedRoute = ({ children }) => children;
+const ProtectedRoute = ({ children }) => children;
 
 const router = createBrowserRouter(
   [
@@ -118,12 +118,14 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <CartProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Chatbot />
-      </QueryClientProvider>
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+          <Chatbot />
+        </QueryClientProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

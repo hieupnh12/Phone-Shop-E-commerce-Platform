@@ -78,7 +78,7 @@ export const cartService = {
   updateQuantity: async (imei, quantity) => {
     const res = await api.post('/cart/update-quantity', { imei, quantity }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
-return res;
+    return res;
   },
 
   // ✅ THÊM MỚI: POST /api/cart/checkout  body: { items, subtotal, shippingFee, total, orderDate }
@@ -140,7 +140,7 @@ export const adminService = {
   updateUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }).then(r => r.data),
 
   // Dashboard
-getDashboardStats: () => api.get('/admin/dashboard/stats').then(r => r.data),
+  getDashboardStats: () => api.get('/admin/dashboard/stats').then(r => r.data),
 };
 
 export default api;
