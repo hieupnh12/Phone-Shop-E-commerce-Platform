@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   Mail,
   Lock,
@@ -13,8 +13,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import loginApi from "../../services/loginService";
-import Cookies from 'js-cookie'
+import Cookies from "js-cookie";
 import { Navigate, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../contexts/AuthContext";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,9 +28,10 @@ const Login = () => {
     password: "",
     otp: "",
   });
-  const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const { loading, loginEmployee, sendOtp, verifyOtp } = useContext(AuthContext);
+
   const navigate = useNavigate();
   const handleChange = (e) => {
     setFormData({
@@ -38,39 +40,43 @@ const Login = () => {
     });
   };
 
-  const handleSendOTP = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setOtpSent(true);
-      setLoading(false);
-    }, 1000);
+  const handleSendOTP = async () => {
+    try {
+      const response = await sendOtp(formData?.phone);
+      console.log("gọi otp", response);
+      
+      if (response?.code === 1000) {
+        setOtpSent(true);
+      }
+    } catch (error) {
+      console.log("lỗi dn sdt", error);
+    }
   };
+  console.log("dđ", loginMethod);
 
   const handleSubmit = async () => {
-  try {
-    setLoading(true);
-
-    const account = {
-      email: "nguyennhattrinhbs@gmail.com",
-      password: "13022004",
-    };
-
-    const res = await loginApi.postLogin(account);
-    if (res.code === 1000) {
-      navigate("/");
+    try {
+      if (loginMethod === "phone") {
+        const account = {
+          rawPhone: formData?.phone,
+          otpCode: formData?.otp
+        }
+        const response = await verifyOtp(account);
+        console.log("Login success customer", response);
+        navigate("/");
+      } else if (loginMethod === "email") {
+        const account = {
+          email: "nguyennhattrinhbs@gmail.com",
+          password: "13022004",
+        };
+        const res = await loginEmployee(account);
+        console.log("Login success admin", res);
+        navigate("/admin");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
     }
-    console.log("res", res);
-
-    // Lưu token
-    Cookies.set("token", res?.result?.token);
-    // Cookie.set("refreshToken", res?.refreshToken);
-
-  } catch (error) {
-    console.error("Login error:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleSocialLogin = (provider) => {
     alert(`Đăng nhập bằng ${provider}`);
