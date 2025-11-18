@@ -6,9 +6,6 @@ import { authService } from '../services/api';
 
 const AuthContext = createContext();
 
-/**
- * Hook để lấy auth state & methods
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -17,9 +14,7 @@ export const useAuth = () => {
   return context;
 };
 
-/**
- * AuthProvider component - cung cấp auth state cho toàn bộ app
- */
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -100,9 +95,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-/**
- * Helper function để lấy role từ token (cookie hoặc localStorage)
- */
+
 export const getUserRole = () => {
   const token = Cookies.get(constants.ACCESS_TOKEN_KEY) || localStorage.getItem('token');
   if (!token) return null;

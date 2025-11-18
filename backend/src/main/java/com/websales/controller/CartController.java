@@ -71,7 +71,7 @@ public class CartController {
                         pi.getImei(), // IMEI
                         product.getIdProduct(),
                         product.getNameProduct(),
-product.getImage(),
+                        product.getImage(),
                         price,
                         qty);
                 cartItemsResp.add(resp);
@@ -147,7 +147,7 @@ product.getImage(),
     // --- CẬP NHẬT SỐ LƯỢNG (theo IMEI) ---
     @PostMapping(value = "/update-quantity", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
-public ResponseEntity<?> updateQuantity(
+    public ResponseEntity<?> updateQuantity(
             @SessionAttribute(name = "userId", required = false) String userId,
             @RequestBody Map<String, Object> request) {
         if (userId == null) {
@@ -223,7 +223,8 @@ public ResponseEntity<?> updateQuantity(
                 "success", true,
                 "message", "Đã xóa sản phẩm khỏi giỏ hàng"));
     }
-// --- TẠO ĐƠN HÀNG (CHECKOUT) ---
+
+    // --- TẠO ĐƠN HÀNG (CHECKOUT) ---
     @PostMapping(value = "/checkout", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
     public ResponseEntity<?> checkout(
