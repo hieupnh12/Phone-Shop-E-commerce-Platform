@@ -11,7 +11,7 @@ import Login from "./pages/auth/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import Payment from "./pages/client/Payment";
-import Signup from "./pages/client/Signup";
+import Signup from "./pages/client/Signup";    
 import NotFound from "./pages/client/NotFound";
 import AdminRoute from "./routes/AdminRoute";
 import HomeAdmin from "./pages/admin/HomeAdmin";
@@ -32,6 +32,7 @@ import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
 import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
+
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {

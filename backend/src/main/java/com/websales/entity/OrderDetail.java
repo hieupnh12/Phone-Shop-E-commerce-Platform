@@ -28,10 +28,11 @@ public class OrderDetail {
             @JoinColumn(name = "order_id")
             Order order;
 
-//
-//            @OneToMany(mappedBy = "orderDetail" , cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//            @JoinColumn(name = "product_version_id")
-//            List<ProductItem> productItem;
+    @Column(name = "product_version_id")
+    String productVersionId;
+
+            @OneToMany(mappedBy = "orderDetail" , cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+            List<ProductItem> productItem;
 
     @Column(name = "unit_price_before", precision = 15, scale = 2)
     BigDecimal unitPriceBefore;
