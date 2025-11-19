@@ -6,8 +6,8 @@ export default function Sidebar({
   menuItems,
   isDesktop,
   closeSidebar,
+  logOut,
 }) {
-
   return (
     <aside
       className={`
@@ -24,7 +24,6 @@ export default function Sidebar({
             lg:${sidebarOpen ? "w-64" : "w-20"}
           `}
     >
-      
       <div className="p-4 h-full flex flex-col">
         {/* {!isDesktop && sidebarOpen && (
           <div className="flex item-center justify-center sm:flex-1 sm:max-w-md sm:mx-4 lg:mx-8">
@@ -77,7 +76,10 @@ export default function Sidebar({
         <div className="mt-auto pt-8 border-t">
           <button
             className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            onClick={() => !isDesktop && closeSidebar()}
+            onClick={() => {
+              if (!isDesktop) closeSidebar();
+              logOut();
+            }}
           >
             <LogOut size={20} className="flex-shrink-0" />
             <span

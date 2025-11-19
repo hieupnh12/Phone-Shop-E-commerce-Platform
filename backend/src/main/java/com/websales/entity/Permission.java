@@ -20,7 +20,6 @@ public class Permission {
     String module;
     String action;
     String resource;
-//    @ManyToMany(mappedBy = "rolePermissions")
-//    Set<Role> roles;
+
 
 }
