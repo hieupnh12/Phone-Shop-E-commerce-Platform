@@ -22,12 +22,18 @@ const loginApi = {
     return axiosClient[POST](`customer/auth`, sdt);
   },
 
+  verifySDT: (otp) => {
+    return axiosClient[POST](`customer/auth_verify_otp`, otp);
+  },
+
   // kiểm tra auth
   getAuth: () => {
     const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
-    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/auth`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/auth_check_valid`, token);
+  },
+
+  getInfo: () => {
+    return axiosClient[GET](`${LOGIN_API_ENDPOINT}/get_infor`);
   },
 
   // refresh token
@@ -38,9 +44,7 @@ const loginApi = {
   // logout
   postLogout: () => {
     const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
-    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/logout`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/auth_logout`, token);
   },
 }
 

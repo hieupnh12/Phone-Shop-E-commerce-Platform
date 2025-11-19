@@ -7,7 +7,7 @@ const chatsApi = {
     
     // send Message 
     sendMessage: (message) => {
-        return axiosClient[POST](`${LOGIN_API_ENDPOINT}`, message)
+        return axiosClient[POST](`${LOGIN_API_ENDPOINT}`, {message})
     }
 
 }
