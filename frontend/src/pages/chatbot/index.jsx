@@ -159,8 +159,10 @@ export default function Chatbot() {
 
     try {
       const response = await chatsApi.sendMessage(input);
-      const { message, Product, Order } = response;
-      const botText = message || "Cảm ơn bạn! Tôi đã nhận được tin nhắn.";
+      console.log(response);
+      
+      const { answer, Product, Order } = response;
+      const botText = answer || "Cảm ơn bạn! Tôi đã nhận được tin nhắn.";
       streamText(botText, (fullText) => {
         const botMessage = {
           id: `bot-${Date.now()}`,

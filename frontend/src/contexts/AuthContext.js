@@ -1,19 +1,18 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
-import constants from '../constants/index.js';
-import { authService } from '../services/api';
+import constants from "../constants/index.js";
+import loginApi from "../services/loginService.js";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
-
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -21,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check token on mount và lấy user info
   useEffect(() => {
-    const token = Cookies.get(constants.ACCESS_TOKEN_KEY) || localStorage.getItem('token');
+    const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
     if (token) {
       getCurrentUser();
     } else {
@@ -31,77 +30,81 @@ export const AuthProvider = ({ children }) => {
 
   const getCurrentUser = async () => {
     try {
-      const response = await authService.getCurrentUser();
-      setUser(response?.data || response?.user || response);
+      const response = await loginApi.getInfo();
+      setUser(response?.result);
     } catch (error) {
       // Token invalid, clear it
       Cookies.remove(constants.ACCESS_TOKEN_KEY);
-      localStorage.removeItem('token');
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email, password) => {
-    const response = await authService.login(email, password);
-    const token = response?.data?.token || response?.token;
-    const userData = response?.data?.user || response?.user || response?.data;
-    
+  const loginEmployee = async (account) => {
+    const response = await loginApi.postLogin(account);
+    const token = response?.result?.token || response?.token;
+
     if (token) {
       Cookies.set(constants.ACCESS_TOKEN_KEY, token);
-      localStorage.setItem('token', token);
     }
+    const responseInfo = await loginApi.getInfo();
+    const userData = responseInfo?.result;
     if (userData) {
       setUser(userData);
     }
     return response;
   };
 
-  const register = async (userData) => {
-    const response = await authService.register(userData);
-    const token = response?.data?.token || response?.token;
-    const user = response?.data?.user || response?.user || response?.data;
-    
-    if (token) {
-      Cookies.set(constants.ACCESS_TOKEN_KEY, token);
-      localStorage.setItem('token', token);
-    }
-    if (user) {
-      setUser(user);
-    }
+  const logout = async () => {
+    const response = await loginApi.postLogout();
+    Cookies.remove(constants.ACCESS_TOKEN_KEY);
+    setUser(null);
     return response;
   };
 
-  const logout = () => {
+  const logoutCustomer = async () => {
     Cookies.remove(constants.ACCESS_TOKEN_KEY);
-    localStorage.removeItem('token');
     setUser(null);
   };
+
+  const sendOtp = async (sdt) => {
+    const response = await loginApi.postLoginWithSDT(sdt);
+    return response;
+  };
+
+  const verifyOtp = async (info) => {
+    const response = await loginApi.verifySDT(info);
+    const token = response?.result;
+
+    if (token) {
+      Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+      setUser(info?.rawPhone);
+    }
+    return response;
+  }
 
   const value = {
     user,
     loading,
-    login,
-    register,
+    loginEmployee,
     logout,
     getCurrentUser,
+    logoutCustomer,
+    sendOtp,
+    verifyOtp
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-
 export const getUserRole = () => {
-  const token = Cookies.get(constants.ACCESS_TOKEN_KEY) || localStorage.getItem('token');
+  const token =
+    Cookies.get(constants.ACCESS_TOKEN_KEY);
   if (!token) return null;
   try {
     const decoded = jwtDecode(token);
-    return decoded.roles?.[0] || decoded.role || null;
+    return decoded.scopes?.[0] || decoded.role || null;
   } catch (e) {
     return null;
   }
