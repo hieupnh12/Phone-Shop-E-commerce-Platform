@@ -134,7 +134,6 @@ public class CustomerAuthenticationService {
                            .provider("phone")
                    .build());
        }
-
         return generateCustomerToken(customer.getCustomerId());
     }
 
