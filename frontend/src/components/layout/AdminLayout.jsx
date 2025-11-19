@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import {
   Home,
@@ -13,10 +13,13 @@ import {
   Menu,
   ChartNoAxesCombined,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -24,6 +27,12 @@ export default function AdminLayout() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const handLogout = async () => {
+    const response = await logout();
+    if (response) {
+      navigate("/login", { replace: true });
+    }
+  }
   useEffect(() => {
     if (windowWidth >= 1024) {
       // lg breakpoint
@@ -60,6 +69,7 @@ export default function AdminLayout() {
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
+console.log(user);
 
   // Click outside để đóng sidebar trên mobile
   useEffect(() => {
@@ -117,13 +127,13 @@ export default function AdminLayout() {
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
               A
             </div>
-            <span className="text-sm font-medium hidden sm:block">Admin</span>
+            <span className="text-sm font-medium hidden sm:block">{user?.fullName}</span>
           </div>
         </div>
       </nav>
 
       <div className="flex flex-1 pt-16">
-        <Sidebar sidebarOpen={sidebarOpen} menuItems={menuItems} isDesktop={isDesktop} closeSidebar={closeSidebar}/>
+        <Sidebar sidebarOpen={sidebarOpen} menuItems={menuItems} isDesktop={isDesktop} closeSidebar={closeSidebar} logOut={handLogout}/>
 
         {/* Main Content */}
         <main

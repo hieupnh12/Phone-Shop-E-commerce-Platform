@@ -3,20 +3,19 @@ package com.websales.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CustomerResponse {
-    Long customerId;
+public class EmployeeResponse {
+    Long id;
     String fullName;
-    String phoneNumber;
     String email;
-    Boolean gender;
-    LocalDate birthDate;
-    String address;
+    LocalDateTime createdAt;
+    Boolean isActive ;
+    Set<RoleResponse> roles;
 }

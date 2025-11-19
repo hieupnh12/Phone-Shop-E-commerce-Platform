@@ -75,7 +75,7 @@ public class EmployeeAuthenticationService {
     }
 
     public String generateToken(Employee employee) {
-            JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS256);
+            JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
 
             String jwtId = UUID.randomUUID().toString();
             JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
