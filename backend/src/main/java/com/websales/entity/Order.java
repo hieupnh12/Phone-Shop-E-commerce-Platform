@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
 @Entity
@@ -46,6 +47,9 @@ public class Order {
     
     @Column(name = "is_paid")
     Boolean isPaid;
+    
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<OrderDetail> orderDetails;
     
     @PrePersist
     protected void onCreate() {
