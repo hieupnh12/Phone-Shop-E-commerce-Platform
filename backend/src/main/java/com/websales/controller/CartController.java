@@ -1,81 +1,111 @@
 package com.websales.controller;
 
 import com.websales.dto.request.CartItemRequest;
+import com.websales.dto.request.OrderRequest;
 import com.websales.dto.response.CartItemResponse;
 import com.websales.entity.*;
+import com.websales.enums.OrderStatus;
+import com.websales.enums.PaymentStatus;
+import com.websales.enums.TransactionType;
 import com.websales.repository.CartItemRepository;
 import com.websales.repository.CartRepository;
-import com.websales.repository.ProductItemRepository;
+import com.websales.repository.PaymentMethodRepository;
+import com.websales.repository.PaymentTransactionRepository;
+import com.websales.repository.ProductVersionRepository;
+import com.websales.service.OrderService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/cart")
 public class CartController {
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-    private final ProductItemRepository productItemRepository;
+    private final ProductVersionRepository productVersionRepository;
+    private final OrderService orderService;
+    private final PaymentMethodRepository paymentMethodRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
 
     public CartController(CartRepository cartRepository,
             CartItemRepository cartItemRepository,
-            ProductItemRepository productItemRepository) {
+            ProductVersionRepository productVersionRepository,
+            OrderService orderService,
+            PaymentMethodRepository paymentMethodRepository,
+            PaymentTransactionRepository paymentTransactionRepository) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
-        this.productItemRepository = productItemRepository;
+        this.productVersionRepository = productVersionRepository;
+        this.orderService = orderService;
+        this.paymentMethodRepository = paymentMethodRepository;
+        this.paymentTransactionRepository = paymentTransactionRepository;
     }
 
     // --- GET GIỎ HÀNG ---
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getCart(@SessionAttribute(name = "userId", required = false) String userId) {
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "User not logged in",
-                    "cartItems", Collections.emptyList(),
-                    "grandTotal", 0));
-        }
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getCart(@AuthenticationPrincipal Jwt jwt) {
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
 
-        // Lấy TẤT CẢ cart của user (tuỳ bạn dùng chỉ ACTIVE thì đổi sang
-        // findFirstByUserIdAndStatus(userId, true))
-        List<Cart> cartList = cartRepository.findByUserId(userId);
-
+        // Lấy cart ACTIVE của customer với cart items được eager fetch
+        Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
+        
         List<CartItemResponse> cartItemsResp = new ArrayList<>();
         double grandTotal = 0;
 
-        for (Cart cart : cartList) {
-            if (cart.getCartItems() == null)
-                continue;
-            for (CartItem item : cart.getCartItems()) {
-                ProductItem pi = item.getProductItem();
-                if (pi == null || pi.getVersionId() == null || pi.getVersionId().getProduct() == null)
-                    continue;
+        if (cartOpt.isPresent()) {
+            Cart cart = cartOpt.get();
+            // Force load cart items nếu chưa được load
+            if (cart.getCartItems() != null && !cart.getCartItems().isEmpty()) {
+                for (CartItem item : cart.getCartItems()) {
+                    // Chỉ lấy items có status = true
+                    if (item.getStatus() == null || !item.getStatus()) {
+                        continue;
+                    }
+                    
+                    ProductVersion pv = item.getProductVersion();
+                    if (pv == null) {
+                        continue;
+                    }
+                    
+                    // Force load product từ productVersion
+                    Product product = pv.getProduct();
+                    if (product == null) {
+                        continue;
+                    }
 
-                ProductVersion pv = pi.getVersionId();
-                Product product = pv.getProduct();
+                    double price = 0.0;
+                    BigDecimal exportPrice = pv.getExportPrice();
+                    if (exportPrice != null) {
+                        price = exportPrice.doubleValue();
+                    }
 
-                double price = 0.0;
-                BigDecimal exportPrice = pv.getExportPrice();
-                if (exportPrice != null)
-                    price = exportPrice.doubleValue();
+                    int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
-                int qty = item.getQuantity() != null ? item.getQuantity() : 1;
+                    // Lấy image từ productVersion nếu có, nếu không thì lấy từ product
+                    String image = (pv.getPicture() != null && !pv.getPicture().isEmpty()) 
+                            ? pv.getPicture() 
+                            : (product.getImage() != null ? product.getImage() : "");
 
-                CartItemResponse resp = new CartItemResponse(
-                        pi.getImei(), // IMEI
-                        product.getIdProduct(),
-                        product.getNameProduct(),
-                        product.getImage(),
-                        price,
-                        qty);
-                cartItemsResp.add(resp);
-                grandTotal += price * qty;
+                    CartItemResponse resp = new CartItemResponse(
+                            pv.getIdVersion(), // product_version_id
+                            product.getIdProduct(),
+                            product.getNameProduct(),
+                            image,
+                            price,
+                            qty);
+                    cartItemsResp.add(resp);
+                    grandTotal += price * qty;
+                }
             }
         }
 
@@ -85,84 +115,89 @@ public class CartController {
                 "grandTotal", grandTotal));
     }
 
-    // --- THÊM / CẬP NHẬT SẢN PHẨM VÀO GIỎ HÀNG (theo IMEI) ---
+    // --- THÊM / CẬP NHẬT SẢN PHẨM VÀO GIỎ HÀNG (theo product_version_id) ---
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
     public ResponseEntity<?> addToCart(
-            @SessionAttribute(name = "userId", required = false) String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody CartItemRequest request) {
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "User not logged in"));
-        }
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
 
-        String imei = request.getImei();
-        if (imei == null || imei.isBlank()) {
+        String productVersionId = request.getProductVersionId();
+        if (productVersionId == null || productVersionId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "IMEI is required"));
+                    "message", "Product version ID is required"));
         }
 
-        // Lấy ProductItem theo IMEI
-        Optional<ProductItem> piOpt = productItemRepository.findById(imei);
-        if (piOpt.isEmpty()) {
+        // Lấy ProductVersion theo productVersionId
+        Optional<ProductVersion> pvOpt = productVersionRepository.findById(productVersionId);
+        if (pvOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "ProductItem (IMEI) not found"));
+                    "message", "Product version not found"));
         }
 
-        // Lấy/ tạo cart ACTIVE cho user
-        Cart cart = cartRepository.findFirstByUserIdAndStatus(userId, true)
+        // Lấy/ tạo cart ACTIVE cho customer
+        Cart cart = cartRepository.findFirstByCustomerIdAndStatus(customerId, true)
                 .orElseGet(() -> {
                     Cart c = Cart.builder()
-                            .userId(userId)
+                            .customerId(customerId)
                             .status(true)
+                            .createDate(LocalDateTime.now())
+                            .updateDate(LocalDateTime.now())
                             .build();
                     return cartRepository.save(c);
                 });
 
         // Kiểm tra item đã có trong cart chưa
-        Optional<CartItem> existed = cartItemRepository.findByCart_IdCartAndProductItem_Imei(cart.getIdCart(), imei);
+        Optional<CartItem> existed = cartItemRepository.findByCart_IdCartAndProductVersion_IdVersion(
+                cart.getIdCart(), productVersionId);
         if (existed.isPresent()) {
-            // Vì IMEI đơn chiếc → quantity luôn = 1
+            // Cập nhật quantity
             CartItem item = existed.get();
-            item.setQuantity(1);
+            int newQuantity = request.getQuantity() > 0 ? request.getQuantity() : 1;
+            item.setQuantity(newQuantity);
+            item.setStatus(true); // Đảm bảo status = true
             cartItemRepository.save(item);
         } else {
+            // Tạo cart item mới
+            int quantity = request.getQuantity() > 0 ? request.getQuantity() : 1;
             CartItem newItem = CartItem.builder()
                     .cart(cart)
-                    .productItem(piOpt.get())
-                    .quantity(1) // IMEI đơn chiếc
+                    .productVersion(pvOpt.get())
+                    .quantity(quantity)
                     .status(true)
                     .build();
             cartItemRepository.save(newItem);
         }
+
+        // Cập nhật update_date của cart
+        cart.setUpdateDate(LocalDateTime.now());
+        cartRepository.save(cart);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã thêm vào giỏ hàng"));
     }
 
-    // --- CẬP NHẬT SỐ LƯỢNG (theo IMEI) ---
+    // --- CẬP NHẬT SỐ LƯỢNG (theo product_version_id) ---
     @PostMapping(value = "/update-quantity", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
     public ResponseEntity<?> updateQuantity(
-            @SessionAttribute(name = "userId", required = false) String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody Map<String, Object> request) {
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "User not logged in"));
-        }
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
 
-        String imei = (String) request.get("imei");
+        String productVersionId = (String) request.get("productVersionId");
         Integer quantity = (Integer) request.get("quantity");
 
-        if (imei == null || imei.isBlank()) {
+        if (productVersionId == null || productVersionId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "IMEI is required"));
+                    "message", "Product version ID is required"));
         }
 
         if (quantity == null || quantity < 1) {
@@ -171,17 +206,17 @@ public class CartController {
                     "message", "Quantity must be at least 1"));
         }
 
-        // Tìm cart active của user
-        Optional<Cart> cartOpt = cartRepository.findFirstByUserIdAndStatus(userId, true);
+        // Tìm cart active của customer
+        Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
         if (cartOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Cart not found"));
         }
 
-        // Tìm CartItem theo cart và IMEI
-        Optional<CartItem> itemOpt = cartItemRepository.findByCart_IdCartAndProductItem_Imei(
-                cartOpt.get().getIdCart(), imei);
+        // Tìm CartItem theo cart và productVersionId
+        Optional<CartItem> itemOpt = cartItemRepository.findByCart_IdCartAndProductVersion_IdVersion(
+                cartOpt.get().getIdCart(), productVersionId);
 
         if (itemOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -189,35 +224,48 @@ public class CartController {
                     "message", "Item not found in cart"));
         }
 
-        // Cập nhật quantity
+        // Cập nhật quantity và update_date của cart
         CartItem item = itemOpt.get();
         item.setQuantity(quantity);
         cartItemRepository.save(item);
+        
+        // Cập nhật update_date của cart
+        Cart cart = cartOpt.get();
+        cart.setUpdateDate(LocalDateTime.now());
+        cartRepository.save(cart);
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Đã cập nhật số lượng"));
     }
 
-    // --- XÓA SẢN PHẨM KHỎI GIỎ HÀNG (theo IMEI) ---
+    // --- XÓA SẢN PHẨM KHỎI GIỎ HÀNG (theo product_version_id) ---
     @PostMapping(value = "/remove", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
     public ResponseEntity<?> removeCartItem(
-            @SessionAttribute(name = "userId", required = false) String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody CartItemRequest request) {
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "User not logged in"));
-        }
-        String imei = request.getImei();
-        if (imei == null || imei.isBlank()) {
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
+
+        String productVersionId = request.getProductVersionId();
+        if (productVersionId == null || productVersionId.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "message", "IMEI is required"));
+                    "message", "Product version ID is required"));
         }
 
-        cartItemRepository.deleteByUserIdAndImei(userId, imei);
+        // Tìm cart active để cập nhật update_date
+        Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
+        
+        cartItemRepository.deleteByCustomerIdAndProductVersionId(customerId, productVersionId);
+        
+        // Cập nhật update_date của cart
+        if (cartOpt.isPresent()) {
+            Cart cart = cartOpt.get();
+            cart.setUpdateDate(LocalDateTime.now());
+            cartRepository.save(cart);
+        }
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -228,16 +276,13 @@ public class CartController {
     @PostMapping(value = "/checkout", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
     public ResponseEntity<?> checkout(
-            @SessionAttribute(name = "userId", required = false) String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody Map<String, Object> orderData) {
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of(
-                    "success", false,
-                    "message", "User not logged in"));
-        }
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
 
-        // Lấy cart active của user
-        Optional<Cart> cartOpt = cartRepository.findFirstByUserIdAndStatus(userId, true);
+        // Lấy cart active của customer
+        Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
         if (cartOpt.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
@@ -251,40 +296,120 @@ public class CartController {
                     "message", "Cart is empty"));
         }
 
-        // TODO: Tạo Order entity và lưu vào database
-        // Bạn cần tạo Order entity và OrderItem entity nếu chưa có
-        // 
-        // Order order = Order.builder()
-        //     .userId(userId)
-        //     .totalAmount((Number) orderData.get("total")).doubleValue())
-        //     .shippingFee(((Number) orderData.get("shippingFee")).doubleValue())
-        //     .orderDate(new Date())
-        //     .status("PENDING")
-        //     .build();
-        // orderRepository.save(order);
+        // Lấy total amount từ orderData hoặc tính từ cart
+        BigDecimal totalAmount;
+        if (orderData.get("total") != null) {
+            Object totalObj = orderData.get("total");
+            if (totalObj instanceof Number) {
+                totalAmount = BigDecimal.valueOf(((Number) totalObj).doubleValue());
+            } else {
+                totalAmount = new BigDecimal(totalObj.toString());
+            }
+        } else {
+            // Tính từ cart items
+            totalAmount = BigDecimal.ZERO;
+            for (CartItem item : cart.getCartItems()) {
+                if (item.getStatus() != null && item.getStatus() && item.getProductVersion() != null) {
+                    BigDecimal price = item.getProductVersion().getExportPrice();
+                    if (price != null) {
+                        int qty = item.getQuantity() != null ? item.getQuantity() : 1;
+                        totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(qty)));
+                    }
+                }
+            }
+        }
 
-        // TODO: Chuyển CartItems thành OrderItems
-        // for (CartItem item : cart.getCartItems()) {
-        //     OrderItem orderItem = OrderItem.builder()
-        //         .order(order)
-        //         .productItem(item.getProductItem())
-        //         .quantity(item.getQuantity())
-        //         .price(item.getProductItem().getVersion().getExportPrice())
-        //         .build();
-        //     orderItemRepository.save(orderItem);
-        // }
+        // Lấy note từ orderData
+        String note = (String) orderData.get("note");
+        
+        // Lấy payment method và address từ orderData
+        String paymentMethodStr = (String) orderData.get("paymentMethod");
+        if (paymentMethodStr == null || paymentMethodStr.isEmpty()) {
+            paymentMethodStr = "cod"; // Mặc định là COD
+        }
+        final String finalPaymentMethodStr = paymentMethodStr; // Make it final for lambda
+        String address = (String) orderData.get("address");
+        
+        // Lấy hoặc tạo PaymentMethod
+        PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodType(finalPaymentMethodStr)
+                .orElseGet(() -> {
+                    // Tạo payment method mới nếu chưa tồn tại
+                    PaymentMethod newMethod = PaymentMethod.builder()
+                            .paymentMethodType(finalPaymentMethodStr)
+                            .provider(finalPaymentMethodStr.equals("cod") ? "COD" : "BANK")
+                            .status(true)
+                            .build();
+                    return paymentMethodRepository.save(newMethod);
+                });
+        
+        // Xác định payment status dựa trên payment method
+        boolean isPaid = "bank".equals(finalPaymentMethodStr); // Nếu là bank transfer thì coi như đã thanh toán
+        OrderStatus status = isPaid ? OrderStatus.PAID : OrderStatus.PENDING;
+        PaymentStatus paymentStatus = isPaid ? PaymentStatus.SUCCESS : PaymentStatus.PENDING;
 
-        // Xóa cart sau khi tạo order thành công
-        cartItemRepository.deleteAll(cart.getCartItems());
-        cart.setStatus(false); // Đánh dấu cart là không active
+        // Tạo OrderRequest từ cart items
+        List<OrderRequest.OrderDetailRequest> orderDetails = cart.getCartItems().stream()
+                .filter(item -> item.getStatus() != null && item.getStatus()) // Chỉ lấy items active
+                .map(item -> {
+                    ProductVersion pv = item.getProductVersion();
+                    BigDecimal exportPrice = pv != null ? pv.getExportPrice() : BigDecimal.ZERO;
+                    BigDecimal importPrice = pv != null ? pv.getImportPrice() : BigDecimal.ZERO;
+                    
+                    return OrderRequest.OrderDetailRequest.builder()
+                            .productVersionId(pv != null ? pv.getIdVersion() : null)
+                            .unitPriceBefore(importPrice)
+                            .unitPriceAfter(exportPrice)
+                            .quantity(item.getQuantity() != null ? item.getQuantity() : 1)
+                            .build();
+                })
+                .filter(detail -> detail.getProductVersionId() != null) // Lọc bỏ null
+                .toList();
+
+        // Tạo Order
+        OrderRequest orderRequest = OrderRequest.builder()
+                .customerId(customerId)
+                .employeeId(null) // Có thể set sau nếu cần
+                .note(note)
+                .totalAmount(totalAmount)
+                .status(status)
+                .isPaid(isPaid)
+                .orderDetails(orderDetails)
+                .build();
+
+        // Lưu Order và OrderDetails
+        Order order = orderService.createOrder(orderRequest);
+
+        // Tạo PaymentTransaction
+        String transactionId = "TXN-" + System.currentTimeMillis() + "-" + order.getOrderId();
+        String transactionCode = "CODE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        
+        PaymentTransaction paymentTransaction = PaymentTransaction.builder()
+                .transactionId(transactionId)
+                .transactionCode(transactionCode)
+                .orderId(order.getOrderId())
+                .paymentMethod(paymentMethod)
+                .amountUsed(totalAmount)
+                .paymentStatus(paymentStatus)
+                .transactionType(TransactionType.PAYMENT)
+                .responseMessage(isPaid ? "Thanh toán thành công" : "Chờ thanh toán khi nhận hàng")
+                .address(address)
+                .paymentTime(LocalDateTime.now())
+                .build();
+        
+        paymentTransactionRepository.save(paymentTransaction);
+
+        // Xóa cart items sau khi tạo order thành công
+        // Sử dụng orphanRemoval: clear collection và save cart sẽ tự động xóa cart items
+        // Giữ cart status = true để cart luôn active
+        cart.getCartItems().clear();
+        cart.setUpdateDate(LocalDateTime.now());
         cartRepository.save(cart);
-
-        // Tạo mã đơn hàng giả (sau này thay bằng order.getIdOrder())
-        String orderId = "ORD" + System.currentTimeMillis();
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
-                "orderId", orderId,
+                "orderId", order.getOrderId(),
+                "transactionId", transactionId,
+                "transactionCode", transactionCode,
                 "message", "Đặt hàng thành công!"));
     }
 }

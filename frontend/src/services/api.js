@@ -94,15 +94,15 @@ export const cartService = {
     return res;
   },
 
-  // POST /api/cart/remove  body: { imei }
-  removeByImei: async (imei) => {
-    const res = await api.post('/cart/remove', { imei }).then(r => r.data);
+  // POST /cart/remove  body: { productVersionId }
+  removeByProductVersionId: async (productVersionId) => {
+    const res = await api.post('/cart/remove', { productVersionId }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
-    // ✅ THÊM MỚI: POST /api/cart/update-quantity  body: { imei, quantity }
-  updateQuantity: async (imei, quantity) => {
-    const res = await api.post('/cart/update-quantity', { imei, quantity }).then(r => r.data);
+    // ✅ THÊM MỚI: POST /cart/update-quantity  body: { productVersionId, quantity }
+  updateQuantity: async (productVersionId, quantity) => {
+    const res = await api.post('/cart/update-quantity', { productVersionId, quantity }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
@@ -114,12 +114,12 @@ export const cartService = {
     return res;
   },
 
-  // Không có API clearCart -> gọi remove cho từng item, dùng removeByImei để phát event
+  // Không có API clearCart -> gọi remove cho từng item, dùng removeByProductVersionId để phát event
   clearCart: async () => {
     const data = await api.get('/cart').then(r => r.data);
     const items = data?.cartItems || [];
     for (const it of items) {
-      await api.post('/cart/remove', { imei: it.imei }).then(r => r.data);
+      await api.post('/cart/remove', { productVersionId: it.productVersionId }).then(r => r.data);
     }
     // một lần notify sau khi clear xong
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
@@ -133,6 +133,12 @@ export const orderService = {
   getMyOrders: () => api.get('/orders/me').then(r => r.data), // Get orders for current logged-in customer
   getOrder: (id) => api.get(`/orders/${id}`).then(r => r.data),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(r => r.data),
+};
+
+// Customer services
+export const customerService = {
+  getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
+  updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
 };
 
 // User services

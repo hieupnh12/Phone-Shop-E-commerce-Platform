@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class CartItemRequest {
-    private String imei;   // 👈 thay cho productId
-    private int quantity;  // sẽ ép >=1, nhưng IMEI là đơn chiếc → dùng =1
+    private String productVersionId;   // 👈 product_version_id từ cart_items table
+    private int quantity;  // số lượng sản phẩm
 }
