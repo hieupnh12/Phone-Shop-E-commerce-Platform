@@ -28,6 +28,7 @@ import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
 import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
+import AdminLogin from "./pages/auth/AdminLogin";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -72,8 +73,8 @@ const router = createBrowserRouter(
       ),
     },
     {
-      path: "/signup",
-      element: <Signup />,
+      path: "/admin-login",
+      element: <AdminLogin />,
     },
     {
       path: "/admin",
