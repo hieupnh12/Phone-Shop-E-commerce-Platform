@@ -15,4 +15,8 @@ public interface CustomerRepo extends JpaRepository<Customer, Long> {
     select * from customers where phone_number = ?
     """, nativeQuery = true)
     Optional<Customer> getCustomerByPhoneNumber(String phoneNumber);
+
+    boolean existsByEmail(String email);
+
+    Optional<Customer> findCustomerByEmail(String email);
 }

@@ -20,24 +20,29 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class GoogleAuthController {
 
-    GoogleAuthService authService;
-
-
-    @GetMapping("/callback")
-    public ResponseEntity<?> googleCallback(@RequestParam("code") String code,
-                                            @RequestParam(value = "state", required = false) String state) {
-
-        // 1. Xử lý logic nghiệp vụ: Trao đổi code lấy tokens
-        try {
-            Map<String, Object> tokens = authService.exchangeCodeForTokens(code);
-
-            String accessToken = (String) tokens.get("access_token");
-
-
-            return ResponseEntity.ok("Google Login Successful. Access Token received: " + accessToken);
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Google Auth Failed: " + e.getMessage());
-        }
-    }
+//    GoogleAuthService authService;
+//
+//    @GetMapping
+//    public ApiResponse<Void> loginWithGoogle() {
+//        return ApiResponse.<Void>builder()
+//                .build();
+//    }
+//
+//    @GetMapping("/callback")
+//    public ResponseEntity<?> googleCallback(@RequestParam("code") String code,
+//                                            @RequestParam(value = "state", required = false) String state) {
+//
+//        // 1. Xử lý logic nghiệp vụ: Trao đổi code lấy tokens
+//        try {
+//            Map<String, Object> tokens = authService.exchangeCodeForTokens(code);
+//
+//            String accessToken = (String) tokens.get("access_token");
+//
+//
+//            return ResponseEntity.ok("Google Login Successful. Access Token received: " + accessToken);
+//
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Google Auth Failed: " + e.getMessage());
+//        }
+//    }
 }

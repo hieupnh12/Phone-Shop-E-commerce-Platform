@@ -7,7 +7,19 @@ server:
 spring:
   application:
     name: web-sales-backend
-  
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "271448374588-jjece2dljonhoikvcog3nfiborcjjv3o.apps.googleusercontent.com"
+            client-secret: "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"
+            redirect-uri: "http://localhost:8080/phoneShop/login/oauth2/code/google"
+            scope:
+              - email
+              - profile
+
   datasource:
     url:  "jdbc:mysql://mysql-2646241a-myloc203-df70.e.aivencloud.com:24714/phoneShop"
     username: avnadmin
@@ -62,6 +74,7 @@ jwt:
   signerKey: "4fenEIft8k/ii3gdEbIEiNzAz8A6SHw4gmq98FuMVbYffeCwLUFwKkcx8g7mZqWV0ZtPMFzEw1yKfF3pHoREXOznR2a/4PCFQWQxUTH3Zrb1QT1sBqenm3/UdM1PWAFS"
   expiration: 86400000
   refreshable-duration: 360000
+  temp-expiration: 300
 
 file:
   upload-dir: uploads/
@@ -103,16 +116,7 @@ cloudinary:
     key: 756234473817482
     secret: T5qQXodnthydHuSyQYrF-xk98Eo
 #  T5qQXodnthydHuSyQYrF-xk98Eo
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: "271448374588-jjece2dljonhoikvcog3nfiborcjjv3o.apps.googleusercontent.com"
-            client-secret: "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"
-            scope:
-              - email
-              - profile
+
 
 speedsms:
   access_token: "J8B5DfjoJBM3zxIT44zHGjQ-B4VtzAyL"

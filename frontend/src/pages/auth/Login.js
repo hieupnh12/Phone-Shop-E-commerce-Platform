@@ -79,7 +79,7 @@ const Login = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    alert(`Đăng nhập bằng ${provider}`);
+    window.location.href = "http://localhost:8080/phoneShop/oauth2/authorization/google";
   };
 
   return (

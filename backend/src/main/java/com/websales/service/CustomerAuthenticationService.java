@@ -3,13 +3,16 @@ package com.websales.service;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.websales.dto.request.CusAuthUpdateRequest;
 import com.websales.dto.request.SendOtpRequest;
 import com.websales.dto.request.VerifyOtpRequest;
+import com.websales.dto.response.CompleteProfileResponse;
 import com.websales.entity.Customer;
 import com.websales.entity.CustomerAuth;
 import com.websales.entity.OtpRequest;
 import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
+import com.websales.mapper.CustomerMapper;
 import com.websales.repository.AuthRepo;
 import com.websales.repository.CustomerRepo;
 import com.websales.repository.OtpRepo;
@@ -23,6 +26,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +49,7 @@ public class CustomerAuthenticationService {
     PasswordEncoder passwordEncoder;
     OtpRepo otpRepo;
     AuthRepo authRepo;
+    CustomerMapper customerMapper;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -53,6 +58,10 @@ public class CustomerAuthenticationService {
     @NonFinal
     @Value("${jwt.expiration}")
     protected   Long VALID_DURATION;
+
+    @NonFinal
+    @Value("${jwt.temp-expiration}")
+    protected Long TEMP_VALID_DURATION;
 
 
 
@@ -137,26 +146,6 @@ public class CustomerAuthenticationService {
         return generateCustomerToken(customer.getCustomerId());
     }
 
-
-//    public String generate(Long customerId) {
-//        Instant now = Instant.now();
-//        Instant expiry = now.plusSeconds(VALID_DURATION);
-//
-//        return Jwts.builder()
-//                .setIssuer("PHONESHOP")
-//                .setSubject(customerId.toString())
-//                .claim("role", "USER")
-//                .setIssuedAt(Date.from(now))
-//                .setExpiration(Date.from(expiry))
-//                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-//                .compact();
-//    }
-//
-//    private Key getSigningKey() {
-//        byte[] keyBytes = Base64.getDecoder().decode(SIGNER_KEY);
-//        return Keys.hmacShaKeyFor(keyBytes);
-//    }
-
     public String generateCustomerToken(Long customerId) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
 
@@ -179,6 +168,58 @@ public class CustomerAuthenticationService {
         } catch (JOSEException e) {
             throw new RuntimeException("Cannot create customer token", e);
         }
+    }
+
+    public String generateTemporaryToken(Long customerId) {
+        JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
+
+        String jwtId = UUID.randomUUID().toString();
+
+        JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
+                .subject(customerId.toString())
+                .issuer("PHONESHOP")
+                .issueTime(new Date())
+                .expirationTime(new Date(Instant.now().plus(TEMP_VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
+                .jwtID(jwtId)
+                .claim("role", "PROFILE_UPDATER")
+                .build();
+
+        Payload payload = new Payload(jwtClaimsSet.toJSONObject());
+        JWSObject jwsObject = new JWSObject(jwsHeader, payload);
+
+        try {
+            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+            return jwsObject.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Cannot create temporary token", e);
+        }
+    }
+
+    public CompleteProfileResponse cusAuthUpdate(CusAuthUpdateRequest request) {
+        var context = SecurityContextHolder.getContext();
+
+        if (context.getAuthentication() == null || !context.getAuthentication().isAuthenticated()) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        Long customerId = Long.valueOf(context.getAuthentication().getName());
+
+        var customer = customerRepo.findById(customerId).orElseThrow(
+                () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
+        );
+        customer.setPhoneNumber(request.getPhoneNumber());
+        if (request.getFullName() != null) {
+            customer.setFullName(request.getFullName());
+        }
+        if (request.getBirthDate() != null) {
+            customer.setBirthDate(request.getBirthDate());
+        }
+      Customer cus =  customerRepo.save(customer);
+        return CompleteProfileResponse.builder()
+                .token(generateCustomerToken(customer.getCustomerId()))
+                .customerResponse(customerMapper.toCustomerResponse(cus))
+                .build();
+
+
     }
 
 }

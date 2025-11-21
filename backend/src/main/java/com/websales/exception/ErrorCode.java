@@ -91,6 +91,7 @@ public enum ErrorCode {
     OTP_TOO_MANY_ATTEMPTS(1037,"OTP nhap sai qua 5 lan",HttpStatus.BAD_REQUEST),
     OTP_SEND_TOO_FAST(1038,"OTP gui qua nhanh",HttpStatus.BAD_REQUEST),
     OTP_SEND_LIMIT(1039,"OTP co the gui toi da 5 lan tren 10 phut",HttpStatus.BAD_REQUEST),
+    EMAIL_NEW(1040,"Email chua dang ki",HttpStatus.CONTINUE),
 
     ;
 

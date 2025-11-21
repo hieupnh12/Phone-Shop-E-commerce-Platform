@@ -1,15 +1,14 @@
 package com.websales.configuration;
 
 
+import com.websales.handler.OAuth2LoginSuccessHandler;
+import com.websales.service.GoogleAuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -26,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS =
@@ -33,8 +33,10 @@ public class SecurityConfig {
                     "/customer/auth_verify_otp", "/employee/auth_check_valid"
             };
 //, "/customer/update/{id}"
-
-    private  CustomJwtDecoder customJwtDecoder;
+    @Lazy
+    private final OAuth2LoginSuccessHandler loginSuccessHandler;
+    private final GoogleAuthService googleAuthService;
+    CustomJwtDecoder customJwtDecoder;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)
             throws Exception {
@@ -42,8 +44,14 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(requests ->
                             requests.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-
+                                    .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                                 .anyRequest().authenticated());
+
+        httpSecurity.oauth2Login(oauth2 -> oauth2.loginPage("/customer-login")
+                .successHandler(loginSuccessHandler)
+                .failureUrl("/login?error")
+                .userInfoEndpoint(userInfo -> userInfo.userService(googleAuthService)   )
+        );
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder)
@@ -76,10 +84,6 @@ public class SecurityConfig {
         return new CorsFilter(source);
     }
 
-    @Bean
-    PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(10);
-    }
 
     @Bean
     JwtAuthenticationConverter jwtConverter() {

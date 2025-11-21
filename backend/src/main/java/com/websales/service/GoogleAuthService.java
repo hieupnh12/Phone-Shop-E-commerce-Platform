@@ -1,11 +1,21 @@
 package com.websales.service;
 
+import com.websales.entity.Customer;
+import com.websales.entity.CustomerAuth;
+import com.websales.exception.AppException;
+import com.websales.exception.ErrorCode;
+import com.websales.repository.AuthRepo;
+import com.websales.repository.CustomerRepo;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -16,42 +26,63 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class GoogleAuthService {
+public class GoogleAuthService extends DefaultOAuth2UserService {
 
-    ClientRegistrationRepository clientRegistrationRepository;
+    CustomerRepo customerRepo;
+    AuthRepo authRepo;
 
-    static final String REDIRECT_URI = "http://localhost:8080/phoneShop/auth/google/callback";
+    @Override
+    public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        OAuth2User oauth2User = super.loadUser(userRequest);
 
-    public Map<String, Object> exchangeCodeForTokens(String code) {
+        String googleId = oauth2User.getName();
+        String email = oauth2User.getAttribute("email");
+        String name = oauth2User.getAttribute("name");
+        String provider = userRequest.getClientRegistration().getRegistrationId(); // "google"
 
-        ClientRegistration google = clientRegistrationRepository.findByRegistrationId("google");
+        var authOptional = authRepo.findByProviderAndProviderUserId(provider, googleId);
 
-        String tokenUri = google.getProviderDetails().getTokenUri();
-        String clientId = google.getClientId();
-        String clientSecret = google.getClientSecret();
+        var customerByEmailOptional = customerRepo.findCustomerByEmail(email);
 
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("code", code);
-        params.add("client_id", clientId);
-        params.add("client_secret", clientSecret);
-        params.add("redirect_uri", REDIRECT_URI);
-        params.add("grant_type", "authorization_code");
+        Customer customer;
 
-        try {
-            Map<String, Object> dummyResponse = new HashMap<>();
-            dummyResponse.put("access_token", "dummy_access_token_123");
-            dummyResponse.put("id_token", "dummy_id_token_xyz");
 
-            System.out.println("Tokens fetched using ClientRegistration.");
-            return dummyResponse;
+        if (authOptional.isPresent()) {
+            CustomerAuth customerAuth = authOptional.get();
+            customer = customerRepo.findById(customerAuth.getCustomerId())
+                    .orElseThrow(() -> new OAuth2AuthenticationException("Customer không tồn tại."));
 
-        } catch (Exception e) {
-            throw new RuntimeException("Error exchanging code for tokens: " + e.getMessage());
+        } else if (customerByEmailOptional.isPresent()) {
+            customer = customerByEmailOptional.get();
+
+            authRepo.save(CustomerAuth.builder()
+                    .customerId(customer.getCustomerId())
+                    .provider(provider)
+                    .providerUserId(googleId)
+                    .build());
+
+        } else {
+            customer = customerRepo.save(Customer.builder()
+                    .email(email)
+                    .fullName(name)
+                    .build());
+
+            authRepo.save(CustomerAuth.builder()
+                    .customerId(customer.getCustomerId())
+                    .provider(provider)
+                    .providerUserId(googleId)
+                    .build());
         }
-    }
 
-    public Map<String, Object> fetchUserInfo(String accessToken) {
-        return new HashMap<>();
+        boolean requiresProfileUpdate = (customer.getPhoneNumber() == null || customer.getPhoneNumber().isEmpty());
+
+        return new CustomOAuth2User(
+                oauth2User.getAuthorities(),
+                oauth2User.getAttributes(),
+                "sub",
+                customer.getCustomerId(),
+                requiresProfileUpdate
+        );
     }
 
 }

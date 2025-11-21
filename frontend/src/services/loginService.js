@@ -17,6 +17,18 @@ const loginApi = {
     return axiosClient[POST](`${LOGIN_API_ENDPOINT}/gg`, accessToken);
   },
 
+  postCompleteProfile: (data, tempToken) => {
+    return axiosClient[POST](
+        `customer/complete-profile`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${tempToken}`,
+          },
+        }
+    );
+  },
+
   // Customer login với SDT
   postLoginWithSDT: (sdt) => {
     return axiosClient[POST](`customer/auth`, sdt);
