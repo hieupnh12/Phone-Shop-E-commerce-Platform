@@ -46,7 +46,7 @@ public class CustomerController {
                 .build();
      }
 
-     @PostMapping("/complete-profile")
+     @PutMapping("/complete-profile")
     public ApiResponse<CompleteProfileResponse> cusAuthUpdate(@RequestBody @Valid CusAuthUpdateRequest request) {
         return ApiResponse.<CompleteProfileResponse>builder()
                 .result(cusAuthService.cusAuthUpdate(request))

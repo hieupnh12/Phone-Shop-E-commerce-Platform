@@ -33,6 +33,11 @@ import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 import UpdateInfor from "./pages/auth/UpdateInfor";
+import ProfilePage from "./pages/client/Profile/ProfilePage";
+import OrderHistoryPage from "./components/profile/OrderHistoryPage";
+import PersonalInfoForm from "./components/profile/PersonalInfoForm";
+import ProfilePageLayout from './components/profile/ProfilePageLayout';
+
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -79,6 +84,25 @@ const router = createBrowserRouter(
       path: "/update",
       element: <UpdateInfor />,
     },
+      {
+          path: "/profile",
+          element: (
+              <ProtectedRoute>
+                  <ProfilePageLayout />
+              </ProtectedRoute>
+          ),
+          children: [
+              { index: true, element: <Navigate to="info" replace /> }, // Tự động chuyển đến /profile/info
+
+              { path: "info", element: <PersonalInfoForm /> },
+
+              { path: "order", element: <OrderHistoryPage /> },
+
+              // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
+              //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
+      ],
+      },
+
     {
       path: "/admin",
       element: <AdminRoute allowedRoles={"ROLE_SALE"} />,
@@ -120,6 +144,7 @@ const router = createBrowserRouter(
   }
 );
 const queryClient = new QueryClient();
+
 
 function App() {
   return (
