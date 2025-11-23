@@ -15,14 +15,7 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     //JPA tự động general code cho các interface trong này , trừ các yêu cầu đặt biệt ra thì các tạo mới , thêm , xóa, .... có code sẵn hết
-//    @Query("SELECT p FROM Product p " +
-//            "LEFT JOIN FETCH p.origin " +
-//            "LEFT JOIN FETCH p.brand " +
-//            "LEFT JOIN FETCH p.operatingSystem " +
-//            "LEFT JOIN FETCH p.warehouseArea " +
-//            "LEFT JOIN FETCH p.productVersion " +
-//            " ORDER BY p.productId DESC" )
-//    Page<Product> findAllWithRelations(Pageable pageable);
+
 
 
     @Query("SELECT p FROM Product p " +
@@ -42,36 +35,52 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
 
 
-//    @Query("SELECT COALESCE(SUM(pv.stockQuantity), 0) FROM ProductVersion pv WHERE pv.product = :product")
-//    int calculateStockQuantity(@Param("product") Product product);
-//
-//
-//    @Modifying
-//    @Transactional
-//    @Query(value = """
-//        DELETE FROM product_version pv
-//        WHERE pv.product_id = :productId
-//        AND NOT EXISTS (
-//            SELECT 1 FROM product_item pi
-//            WHERE pi.product_version_id = pv.version_id
-//        )
-//    """, nativeQuery = true)
-//    void deleteProductVersionsWithoutItems(Long productId);
-//
-//    @Modifying
-//    @Transactional
-//    @Query("DELETE FROM Product p WHERE p.productId = :productId")
-//    void deleteProductById(Long productId);
-//
-//    @Query("""
-//        SELECT COUNT(pi) > 0
-//        FROM ProductItem pi
-//        WHERE pi.versionId IN (
-//            SELECT pv FROM ProductVersion pv
-//            WHERE pv.product.productId = :productId
-//        )
-//    """)
-//    boolean hasProductItems(Long productId);
+    @Query("SELECT COALESCE(SUM(pv.stockQuantity), 0) FROM ProductVersion pv WHERE pv.product = :product")
+    int calculateStockQuantity(@Param("product") Product product);
+
+
+@Modifying
+@Transactional
+@Query(value = """
+            DELETE FROM ProductItem pi
+            WHERE pi.versionId.idVersion IN (
+                SELECT pv.idVersion
+                FROM ProductVersion pv
+                WHERE pv.product.idProduct = :productId
+            )
+        """)
+void deleteSafeProductItems(Long productId);
+
+    // Query 2: Xóa PV không có orderDetail (sau khi xóa PI)
+    @Modifying
+    @Transactional
+    @Query(value = """
+            DELETE FROM ProductVersion pv
+            WHERE pv.product.idProduct = :productId
+        """)
+    void deleteSafeProductVersions(Long productId);
+
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Product p WHERE p.idProduct = :productId")
+    void deleteProductById(Long productId);
+
+    @Query("""
+            SELECT COUNT(pi) > 0
+            FROM ProductItem pi
+            WHERE pi.orderDetail IS NOT NULL AND pi.versionId.idVersion IN (
+                SELECT pv.idVersion FROM ProductVersion pv
+                WHERE pv.product.idProduct = :productId
+            )
+        """)
+    boolean hasOrderDetails(Long productId);
+
+
+
+
+
+
 
     @Query("SELECT p FROM Product p " +
             "LEFT JOIN FETCH p.origin o " +

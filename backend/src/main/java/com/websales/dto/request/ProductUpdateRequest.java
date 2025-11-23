@@ -18,11 +18,11 @@ public class ProductUpdateRequest {
 
             Long idOrigin;
 
-    Integer battery;
+    String battery;
 
     String scanFrequency;
 
-    Double screenSize;
+    String screenSize;
 
              Long idOperatingSystem;
 
@@ -30,7 +30,7 @@ public class ProductUpdateRequest {
 
     String screenTech;
 
-    Integer chipset;
+    String chipset;
 
     String rearCamera;
 
@@ -38,15 +38,14 @@ public class ProductUpdateRequest {
 
     Integer warrantyPeriod;
 
-               Long idBrand;
+               Integer idBrand;
 
-               Long idWarehouseArea;
+               String idWarehouseArea;
 
     Integer stockQuantity;
 
-    Boolean status;
-
-               Long idCate;
-
 //    Boolean status;
+
+//               Long idCate;
+
 }

@@ -3,13 +3,11 @@ package com.websales.mapper;
 
 
 import com.websales.dto.request.ProductVersionRequest;
+import com.websales.dto.request.ProductVersionUpdateRequest;
 import com.websales.dto.response.ImeiResponse;
 import com.websales.dto.response.ProductVersionResponse;
 import com.websales.entity.*;
-import org.mapstruct.Context;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.mapstruct.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -61,15 +59,14 @@ public interface ProductVersionMapper {
 
 
 
-//    default ProductVersion ToUpdateProductVersion (ProductVersionRequest request, ProductVersion version ,Ram ram , Rom rom , Color color, Product product) {
-//        // Cập nhật các trường liên quan
-//        version.setRam(ram);
-//        version.setRom(rom);
-//        version.setColor(color);
-//        version.setProduct(product);
-//        return version;
-//    }
-//
+    default ProductVersion ToUpdateProductVersion (ProductVersionUpdateRequest request, @MappingTarget ProductVersion version , Ram ram , Rom rom , Color color) {
+        // Cập nhật các trường liên quan
+        version.setRam(ram);
+        version.setRom(rom);
+        version.setColor(color);
+        return version;
+    }
+
 
     @Named("mapProductItemsToImei")
     default List<ImeiResponse> mapProductItemsToImei(List<ProductItem> productItems) {

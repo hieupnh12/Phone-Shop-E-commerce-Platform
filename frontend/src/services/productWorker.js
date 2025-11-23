@@ -4,42 +4,12 @@
  * Backend API Base: /api/product (or /product if no /api prefix)
  */
 
-import axios from 'axios';
+import axiosClient from "../api";
+import { GET, POST } from "../constants/httpMethod";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = '/product'; // Adjust if needed
 
-// Create axios instance for product API
-const productAPI = axios.create({
-  baseURL: `${API_BASE_URL}/product`,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
-// Add auth token to requests
-productAPI.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Handle 401 errors
-productAPI.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
 /**
  * Cache management
@@ -75,20 +45,24 @@ const clearCache = (key) => {
 /**
  * Transform backend ProductFULLResponse to frontend format
  * Backend fields → Frontend fields mapping
+ * Updated to match actual backend response (e.g., exportPrice, idVersion, imei array)
  */
-const transformProductResponse = (backendProduct) => {
+export const transformProductResponse = (backendProduct) => {
   if (!backendProduct) return null;
+
+  // Extract first version for default values (price, etc.)
+  const firstVersion = backendProduct.productVersionResponses?.[0];
 
   return {
     id: backendProduct.idProduct,
     name: backendProduct.nameProduct,
-    image: backendProduct.image,
-    price: backendProduct.productVersionResponses?.[0]?.price || 0,
-    discount: backendProduct.productVersionResponses?.[0]?.discount || 0,
-    rating: backendProduct.productVersionResponses?.[0]?.rating || 0,
-    reviewCount: backendProduct.productVersionResponses?.[0]?.reviewCount || 0,
-    inStock: backendProduct.stockQuantity > 0,
-    stockQuantity: backendProduct.stockQuantity,
+    image: backendProduct.image || backendProduct.picture || '',
+    price: firstVersion?.exportPrice || firstVersion?.price || 0,
+    discount: firstVersion?.discount || 0,
+    rating: firstVersion?.rating || 0,
+    reviewCount: firstVersion?.reviewCount || 0,
+    inStock: (backendProduct.stockQuantity || 0) > 0,
+    stockQuantity: backendProduct.stockQuantity || 0,
     status: backendProduct.status,
     
     // Full details
@@ -112,15 +86,17 @@ const transformProductResponse = (backendProduct) => {
       'Warranty Period': backendProduct.warrantyPeriod ? `${backendProduct.warrantyPeriod} months` : 'N/A',
     },
 
-    // Version details
+    // Version details - Updated to match backend fields
     versions: backendProduct.productVersionResponses?.map((v) => ({
-      id: v.idProductVersion,
+      id: v.idVersion || v.idProductVersion || null,
       ram: v.ramName,
       rom: v.romName,
       color: v.colorName,
-      price: v.price,
-      discount: v.discount,
-      imei: v.imei,
+      price: v.exportPrice || v.price || 0,
+      discount: v.discount || 0,
+      imei: v.imei?.[0]?.imei || null,
+      stockQuantity: v.stockQuantity,
+      status: v.status,
     })) || [],
 
     // Raw backend data (for reference)
@@ -140,7 +116,6 @@ export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
     // Check cache for default parameters
     if (!filters || Object.keys(filters).length === 0) {
       if (isCacheValid(cache.products)) {
-        console.log('✓ Products from cache');
         return cache.products.data;
       }
     }
@@ -151,15 +126,20 @@ export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
       ...filters,
     };
 
-    console.log('📡 Fetching products:', params);
-    const response = await productAPI.get('/', { params });
+    const response = await axiosClient[GET](`${API_BASE_URL}`, { params });
+    console.log('✓ Products API response received',response);
 
     // Handle response: backend returns ApiResponse wrapper
-    const result = response.data?.result || response.data;
+    const result = response?.result ;
+    // ← FIX: Guard cho result undefined (từ 404 hoặc invalid response)
+    if (!result) {
+      console.warn('⚠ No data in API response:', response.data);
+      throw new Error('Invalid API response: No paginated data found');
+    }
 
-    // Transform paginated response
+    // Transform paginated response - Updated to handle Spring Boot Page format (content, totalElements, etc.)
     const transformedData = {
-      products: (result.content || result.products || []).map(transformProductResponse),
+      products: (result.content || result.products || result || []).map(transformProductResponse),
       total: result.totalElements || result.total || 0,
       page: result.number || page,
       size: result.size || size,
@@ -171,80 +151,30 @@ export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
       cache.products.data = transformedData;
       cache.products.timestamp = Date.now();
     }
-
-    console.log('✓ Products fetched:', transformedData.products.length);
     return transformedData;
   } catch (error) {
-    console.error('❌ Error fetching products:', error);
-    throw error;
-  }
-};
-
-/**
- * Fetch single product by ID
- * @param {number} productId - Product ID (idProduct)
- * @returns {Promise<Object>} Transformed product object
- */
-export const fetchProductById = async (productId) => {
-  try {
-    // Check detail cache
-    if (cache.productDetail[productId] && isCacheValid(cache.productDetail[productId])) {
-      console.log('✓ Product detail from cache');
-      return cache.productDetail[productId].data;
+    // ← FIX: Handle 404 cụ thể + log chi tiết
+    if (error.response?.status === 404) {
+      throw new Error('Product list not available: Endpoint not found');
     }
-
-    console.log('📡 Fetching product by ID:', productId);
-    
-    // Try different endpoint variations
-    let response;
-    try {
-      // Try: GET /api/product/{id}
-      response = await productAPI.get(`/${productId}`);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        // Try alternative: GET /api/products/{id}
-        console.log('Trying alternative endpoint...');
-        const alt = axios.create({ baseURL: `${API_BASE_URL}/products` });
-        response = await alt.get(`/${productId}`);
-      } else {
-        throw err;
-      }
-    }
-
-    const result = response.data?.result || response.data;
-    const transformed = transformProductResponse(result);
-
-    // Cache the result
-    cache.productDetail[productId] = {
-      data: transformed,
-      timestamp: Date.now(),
-      ttl: 10 * 60 * 1000, // 10 minutes
-    };
-
-    console.log('✓ Product fetched:', transformed.name);
-    return transformed;
-  } catch (error) {
-    console.error('❌ Error fetching product detail:', error);
-    throw error;
+    console.error('❌ Error fetching products:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    throw error; // No fallback - let component handle error (e.g., show empty list or error message)
   }
 };
 
-/**
- * Fetch product by IMEI (unique identifier)
- * @param {string} imei - IMEI code
- * @returns {Promise<Object>} Transformed product object
- */
-export const fetchProductByImei = async (imei) => {
-  try {
-    console.log('📡 Fetching product by IMEI:', imei);
-    const response = await productAPI.get(`/imei/${imei}`);
-    const result = response.data?.result || response.data;
-    return transformProductResponse(result);
-  } catch (error) {
-    console.error('❌ Error fetching product by IMEI:', error);
-    throw error;
-  }
-};
+
+
+
+
+
+
+
+
+
 
 /**
  * Search products
@@ -261,7 +191,7 @@ export const fetchProductByImei = async (imei) => {
 export const searchProducts = async (filters, page = 0, size = 10) => {
   try {
     console.log('📡 Searching products:', filters);
-    const response = await productAPI.get('/search', {
+    const response = await axiosClient[GET]('/search', {
       params: { ...filters, page, size },
     });
     const result = response.data?.result || response.data;
@@ -277,40 +207,7 @@ export const searchProducts = async (filters, page = 0, size = 10) => {
   }
 };
 
-/**
- * Fetch product categories (if endpoint exists)
- * @returns {Promise<Array>} List of categories
- */
-export const fetchCategories = async () => {
-  try {
-    // Check cache
-    if (isCacheValid(cache.categories)) {
-      console.log('✓ Categories from cache');
-      return cache.categories.data;
-    }
 
-    // Try common endpoints for categories
-    let response;
-    try {
-      response = await axios.get(`${API_BASE_URL}/categories`);
-    } catch {
-      // Fallback
-      response = await axios.get(`${API_BASE_URL}/category`);
-    }
-
-    const categories = response.data?.result || response.data || [];
-
-    // Cache result
-    cache.categories.data = categories;
-    cache.categories.timestamp = Date.now();
-
-    console.log('✓ Categories fetched:', categories.length);
-    return categories;
-  } catch (error) {
-    console.error('❌ Error fetching categories:', error);
-    return [];
-  }
-};
 
 /**
  * Initialize/fetch product statistics (if endpoint exists)
@@ -319,7 +216,7 @@ export const fetchCategories = async () => {
 export const fetchProductStats = async () => {
   try {
     console.log('📡 Fetching product stats...');
-    const response = await productAPI.get('/countProduct');
+    const response = await axiosClient[GET]('/countProduct');
     const result = response.data?.result || response.data;
     console.log('✓ Stats fetched:', result);
     return result;
@@ -336,7 +233,7 @@ export const fetchProductStats = async () => {
 export const initializeProducts = async () => {
   try {
     console.log('📡 Initializing products...');
-    const response = await productAPI.post('/init');
+    const response = await axiosClient[POST]('product/init');
     const result = response.data?.result || response.data;
     clearCache('products');
     console.log('✓ Products initialized');
@@ -367,14 +264,14 @@ export const invalidateProductsCache = () => {
 
 const productWorkerExport = {
   fetchAllProducts,
-  fetchProductById,
-  fetchProductByImei,
+  // fetchProductById,
+  // fetchProductByImei,
   searchProducts,
-  fetchCategories,
   fetchProductStats,
   initializeProducts,
   clearAllCache,
   invalidateProductsCache,
+  transformProductResponse,
 };
 
 export default productWorkerExport;

@@ -8,6 +8,8 @@ import backgroundVideo from "../../video/17series.mp4";
 import { useAuth } from "../../reducers";
 
 
+
+
 const ClientLayout = ({ children, showHero = true }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -112,6 +114,16 @@ const ClientLayout = ({ children, showHero = true }) => {
     }
     // TODO: Thêm logic thêm vào giỏ hàng ở đây
   };
+
+// THÊM MỚI: Handler cho button "Xem Tất Cả Sản Phẩm" - navigate đến trang Products (/products)
+  const handleViewAllProducts = () => {
+    navigate("/products"); // Route đến Products/index.jsx (cấu hình trong router)
+  };
+
+
+
+
+
 
   // cal do mo video khi scroll
   const videoOpacity = Math.max(1 - scrollY / 400, 0);
@@ -252,8 +264,13 @@ const ClientLayout = ({ children, showHero = true }) => {
                 ))}
               </div>
 
+
+
+            {/* THÊM MỚI: onClick cho button "Xem Tất Cả Sản Phẩm" */}       
               <div className="text-center mt-8">
-                <button className="bg-white/10 backdrop-blur-lg hover:bg-white/20 text-white px-8 py-3 rounded-full font-semibold border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105">
+                <button
+                onClick={handleViewAllProducts}
+                 className="bg-white/10 backdrop-blur-lg hover:bg-white/20 text-white px-8 py-3 rounded-full font-semibold border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105">
                   Xem Tất Cả Sản Phẩm →
                 </button>
               </div>
