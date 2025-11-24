@@ -2,8 +2,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Hardcode baseURL để đảm bảo đúng - ignore env variable nếu có vấn đề
-// Nếu cần dùng env variable, uncomment dòng dưới và comment dòng hardcode
+
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/phoneShop';
 const API_BASE_URL = 'http://localhost:8080/phoneShop';
 

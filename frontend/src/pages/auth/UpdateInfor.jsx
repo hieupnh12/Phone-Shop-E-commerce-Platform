@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import loginService from "../../services/loginService";
+import Cookies from "js-cookie";
+import constants from "../../constants";
 
 export default function RegistrationForm() {
     const location = useLocation();
@@ -59,15 +61,28 @@ export default function RegistrationForm() {
 
             const response = await loginService.postCompleteProfile(requestData, tempToken);
 
-            const finalJwt = response.data.token;
+            const finalJwt = response.result.token;
 
-            localStorage.setItem('jwtToken', finalJwt);
+           // localStorage.setItem('jwtToken', finalJwt)
 
-            navigate('/dashboard', { replace: true });
+             Cookies.set(constants.ACCESS_TOKEN_KEY, finalJwt);
+            console.log(finalJwt + "")
+
+
+            navigate('/', { replace: true });
 
         } catch (error) {
-            console.error('Lỗi cập nhật hồ sơ:', error.response ? error.response.data : error.message);
-            alert('Cập nhật thất bại: ' + (error.response?.data?.message || 'Lỗi không xác định'));
+
+            let errorMessage = 'Lỗi không xác định.';
+
+            if (error.response && error.response.data) {
+                errorMessage = error.response.data.message || error.response.data.error || 'Lỗi xử lý nghiệp vụ.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            console.error('Lỗi cập nhật hồ sơ:', error);
+            alert('Cập nhật thất bại: ' + errorMessage);
         }
     };
 
