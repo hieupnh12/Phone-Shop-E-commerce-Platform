@@ -18,12 +18,3 @@ public class StatisticSummaryResponse {
     private BigDecimal benefit;
     private String topProduct;
 }
-
-//public record StatisticSummaryResponse(
-//        LocalDate date,
-//        Long orders,
-//        BigDecimal revenue,
-//        BigDecimal cost,
-//        BigDecimal benefit,
-//        String topProduct
-//) {}

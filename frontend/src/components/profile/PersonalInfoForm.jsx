@@ -4,13 +4,13 @@ import InputField  from "../common/InputField";
 import AddressBook  from "./AddressBook";
 import {  useOutletContext } from 'react-router-dom';
 import { profileService} from "../../services/api";
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuthFullOptions } from '../../contexts/AuthContext';
 
 
 
 
 const PersonalInfoForm = () => {
-    const { getCurrentUser } = useAuth();
+    const { getCurrentUser } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
 
     const [formData, setFormData] = useState({});

@@ -1,7 +1,9 @@
 package com.websales.repository;
 
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -18,81 +20,94 @@ import com.websales.entity.Product;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface StatisticRepository extends JpaRepository<Order, Long> {
+public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.StatsProcedure, Long> {
     
      @Procedure(name = "sp_GetSalesReportByDays")
      List<StatisticSummaryResponse> getSaleReportByDays(@Param("p_days") int days);
 
+     private String calcPercent(Long current, Long previous) {
+          if (previous == 0) return "+100%";
+          double percent = ((double)(current - previous) / previous) * 100;
+          return String.format("%+.1f%%", percent);
+     }
+
+
      // 1. Summary + Best Seller
      @Query(value = """
-        WITH params AS (
-            SELECT :startDate::date AS start_d, :endDate::date AS end_d,
-                   :catId AS cat_filter, :payId AS pay_filter
-        ),
-        filtered AS (
-            SELECT o.*
-            FROM orders o, params p
-            WHERE DATE(o.create_datetime) BETWEEN p.start_d AND p.end_d
-              AND o.status IN ('PAID','SHIPPED','DELIVERED')
-              AND o.is_paid = true
-        ),
-        details AS (
-            SELECT od.*, pv.import_price, p.product_name, p.category_id
-            FROM order_details od
-            JOIN product_versions pv ON od.product_version_id = pv.product_version_id
-            JOIN products p ON pv.product_id = p.product_id
-            JOIN filtered o ON od.order_id = o.order_id
-            WHERE (:catId IS NULL OR p.category_id = :catId)
-        ),
-        best AS (
-            SELECT p.product_name, SUM(od.quantity) units
-            FROM details od
-            JOIN products p ON od.product_id = pv.product_id
-            GROUP BY p.product_name ORDER BY units DESC LIMIT 1
-        )
-        SELECT
-            COALESCE(SUM(o.total_amount), 0) AS totalRevenue,
-            COUNT(DISTINCT o.order_id) AS totalOrders,
-            COALESCE(SUM((od.unit_price_after - pv.import_price) * od.quantity), 0) AS totalProfit,
-            COALESCE(b.product_name, 'N/A') AS bestSellerName,
-            COALESCE(b.units, 0) AS bestSellerUnits
-        FROM filtered o
-        JOIN order_details od ON o.order_id = od.order_id
-        JOIN product_versions pv ON od.product_version_id = pv.product_version_id
-        CROSS JOIN best b
-        """, nativeQuery = true)
+    SELECT 
+        COALESCE(SUM(od.unit_price_after * od.quantity), 0) AS totalRevenue,
+        COUNT(DISTINCT o.order_id) AS totalOrders,
+        COALESCE(SUM((od.unit_price_after - pv.import_price) * od.quantity), 0) AS totalProfit,
+        (
+            SELECT p.product_name
+            FROM orders o2
+            JOIN order_details od2 ON o2.order_id = od2.order_id
+            JOIN product_versions pv2 ON od2.product_version_id = pv2.product_version_id
+            JOIN products p ON pv2.product_id = p.product_id
+            WHERE o2.is_paid = 1 AND o2.status = 'DELIVERED'
+              AND (:fromDate IS NULL OR :fromDate = '' OR DATE(o2.end_datetime) >= :fromDate)
+              AND (:toDate IS NULL OR :toDate = '' OR DATE(o2.end_datetime) < :toDate)
+            GROUP BY p.product_id, p.product_name
+            ORDER BY SUM(od2.quantity) DESC, SUM(od2.unit_price_after * od2.quantity) DESC
+            LIMIT 1
+        ) AS bestSellerName,
+        (
+            SELECT SUM(od2.quantity)
+            FROM orders o2
+            JOIN order_details od2 ON o2.order_id = od2.order_id
+            JOIN product_versions pv2 ON od2.product_version_id = pv2.product_version_id
+            JOIN products p ON pv2.product_id = p.product_id
+            WHERE o2.is_paid = 1 AND o2.status = 'DELIVERED'
+              AND (:fromDate IS NULL OR :fromDate = '' OR DATE(o2.end_datetime) >= :fromDate)
+              AND (:toDate IS NULL OR :toDate = '' OR DATE(o2.end_datetime) < :toDate)
+            GROUP BY p.product_id, p.product_name
+            ORDER BY SUM(od2.quantity) DESC
+            LIMIT 1
+        ) AS bestSellerUnits
+    FROM orders o
+    JOIN order_details od ON o.order_id = od.order_id
+    JOIN product_versions pv ON od.product_version_id = pv.product_version_id
+    WHERE o.is_paid = 1 
+      AND o.status IN ('DELIVERED')
+      AND (:fromDate IS NULL OR :fromDate = '' OR DATE(o.end_datetime) >= :fromDate)
+      AND (:toDate IS NULL OR :toDate = '' OR DATE(o.end_datetime) < :toDate)
+""", nativeQuery = true)
      Map<String, Object> getSummary(
-             @Param("startDate") String startDate,
-             @Param("endDate") String endDate,
-             @Param("catId") Long catId,
-             @Param("payId") Long payId
+             @Param("fromDate") String startDate,
+             @Param("toDate") String endDate
      );
+
 
      // 2. Chart theo ngày
      @Query(value = """
-        SELECT TO_CHAR(o.create_datetime, 'DD/MM') AS date,
-               SUM(o.total_amount) AS revenue,
-               COUNT(*) AS orders
+        SELECT DATE_FORMAT(order_day, '%d/%m/%Y') AS date,
+            SUM(total_amount) AS revenue,
+            COUNT(*) AS orders
+        FROM (
+            SELECT DATE(o.create_datetime) AS order_day,
+                        o.total_amount
         FROM orders o
-        WHERE DATE(o.create_datetime) BETWEEN :start AND :end
-          AND o.status IN ('PAID','SHIPPED','DELIVERED')
-          AND o.is_paid = true
-        GROUP BY DATE(o.create_datetime)
-        ORDER BY DATE(o.create_datetime)
+        WHERE o.end_datetime >= :start
+        AND o.end_datetime < :end
+        AND o.status IN ('DELIVERED')
+        AND o.is_paid = true
+        ) t
+        GROUP BY order_day
+        ORDER BY order_day                            
         """, nativeQuery = true)
      List<Object[]> getChartData(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
      // 3. Top 5 sản phẩm
      @Query(value = """
-        SELECT p.product_name || ' ' || pv.color_id || ' ' || pv.ram_id || '/' || pv.rom_id,
+        SELECT CONCAT(p.product_name, ' ', pv.color_id, ' ', pv.ram_id, '/', pv.rom_id),
                SUM(od.unit_price_after * od.quantity),
                SUM(od.quantity)
         FROM orders o
         JOIN order_details od ON o.order_id = od.order_id
         JOIN product_versions pv ON od.product_version_id = pv.product_version_id
         JOIN products p ON pv.product_id = p.product_id
-        WHERE DATE(o.create_datetime) BETWEEN :start AND :end
-          AND o.status IN ('PAID','SHIPPED','DELIVERED') AND o.is_paid = true
+        WHERE DATE(o.end_datetime) BETWEEN :start AND :end
+          AND o.status IN ('DELIVERED') AND o.is_paid = true
         GROUP BY p.product_name, pv.color_id, pv.ram_id, pv.rom_id
         ORDER BY SUM(od.quantity) DESC LIMIT 5
         """, nativeQuery = true)
@@ -105,7 +120,7 @@ public interface StatisticRepository extends JpaRepository<Order, Long> {
         FROM orders o
         JOIN payment_transactions pt ON pt.order_id = o.order_id
         JOIN payment_methods pm ON pt.payment_method_id = pm.payment_method_id
-        WHERE DATE(o.create_datetime) BETWEEN :start AND :end
+        WHERE DATE(o.end_datetime) BETWEEN :start AND :end
           AND o.status IN ('PAID','SHIPPED','DELIVERED')
           AND pt.payment_status = 'SUCCESS'
           AND (:payId IS NULL OR pt.payment_method_id = :payId)
@@ -119,27 +134,42 @@ public interface StatisticRepository extends JpaRepository<Order, Long> {
 
      // 5. Danh sách đơn hàng + phân trang + tìm kiếm + sort
      @Query(value = """
-        SELECT o.order_id,
-               TO_CHAR(o.create_datetime, 'DD/MM/YYYY'),
-               p.product_name || ' ' || pv.color_id || ' ' || pv.ram_id || '/' || pv.rom_id,
-               od.quantity,
-               od.unit_price_after,
-               od.unit_price_after * od.quantity,
-               (od.unit_price_after - pv.import_price) * od.quantity,
-               o.status,
-               COALESCE(pm.payment_method_type, 'Khác')
-        FROM orders o
-        JOIN order_details od ON o.order_id = od.order_id
-        JOIN product_versions pv ON od.product_version_id = pv.product_version_id
-        JOIN products p ON pv.product_id = p.product_id
-        LEFT JOIN payment_transactions pt ON pt.order_id = o.order_id AND pt.payment_status = 'SUCCESS'
-        LEFT JOIN payment_methods pm ON pt.payment_method_id = pm.payment_method_id
-        WHERE DATE(o.create_datetime) BETWEEN :start AND :end
-          AND o.status IN ('PAID','SHIPPED','DELIVERED')
-          AND o.is_paid = true
-          AND (:search IS NULL OR :search = '' OR o.order_id::text LIKE '%'||:search||'%')
-        """,
-             countQuery = "SELECT COUNT(DISTINCT o.order_id) FROM orders o ... (tương tự điều kiện)",
+SELECT o.order_id,
+       DATE_FORMAT(o.create_datetime, '%d/%m/%Y') AS createDate,
+       CONCAT(p.product_name, ' ', pv.color_id, ' ', pv.ram_id, '/', pv.rom_id) AS productName,
+       od.quantity,
+       pv.import_price,
+       od.unit_price_after * od.quantity AS totalPrice,
+       (od.unit_price_after - pv.import_price) * od.quantity AS profit,
+       o.status,
+       COALESCE(pm.payment_method_type, 'Khác') AS paymentMethod
+FROM orders o
+JOIN order_details od ON o.order_id = od.order_id
+JOIN product_versions pv ON od.product_version_id = pv.product_version_id
+JOIN products p ON pv.product_id = p.product_id
+LEFT JOIN payment_transactions pt ON pt.order_id = o.order_id AND pt.payment_status = 'SUCCESS'
+LEFT JOIN payment_methods pm ON pt.payment_method_id = pm.payment_method_id
+WHERE o.end_datetime >= :start
+  AND o.end_datetime < :end
+  AND o.status IN ('DELIVERED')
+  AND o.is_paid = true
+  AND (:search IS NULL OR :search = '' OR CAST(o.order_id AS CHAR) LIKE CONCAT('%', :search, '%'))
+ORDER BY o.end_datetime DESC
+""",
+             countQuery = """
+SELECT COUNT(DISTINCT o.order_id)
+FROM orders o
+JOIN order_details od ON o.order_id = od.order_id
+JOIN product_versions pv ON od.product_version_id = pv.product_version_id
+JOIN products p ON pv.product_id = p.product_id
+LEFT JOIN payment_transactions pt ON pt.order_id = o.order_id AND pt.payment_status = 'SUCCESS'
+LEFT JOIN payment_methods pm ON pt.payment_method_id = pm.payment_method_id
+WHERE o.end_datetime >= :start
+  AND o.end_datetime < :end
+  AND o.status IN ('DELIVERED')
+  AND o.is_paid = true
+  AND (:search IS NULL OR :search = '' OR CAST(o.order_id AS CHAR) LIKE CONCAT('%', :search, '%'))
+""",
              nativeQuery = true)
      Page<Object[]> getOrderDetailsPage(
              @Param("start") LocalDate start,
@@ -147,4 +177,5 @@ public interface StatisticRepository extends JpaRepository<Order, Long> {
              @Param("search") String search,
              Pageable pageable
      );
+
 }
