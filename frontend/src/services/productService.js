@@ -29,10 +29,9 @@ const productService = {
 
   createProduct: async (productData, imageFile) => {
     const formData = new FormData();
-    
 
-    formData.append("product", new Blob([JSON.stringify(productData.product)], { type: "application/json" }));
-    
+    // Gửi toàn bộ payload productData (gồm idProduct, products, versions)
+    formData.append("product", new Blob([JSON.stringify(productData)], { type: "application/json" }));
 
     if (imageFile) {
       formData.append("image", imageFile);
@@ -42,7 +41,7 @@ const productService = {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    }).then(r => r.data);
+    });
   },
 
 

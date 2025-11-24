@@ -9,11 +9,9 @@ const BASE_URL = !env || env === "development" ?
 const axiosClient = axios.create({
     baseURL: BASE_URL,
     headers: {"Content-Type": "application/json"},
-    // withCredentials: true,
     paramsSerializer: (params) => queryString.stringify(params),
 })
 
-// interceptors
 axiosClient.interceptors.request.use((config) => {
     const token = Cookie.get("token");
     if (token) {
@@ -34,7 +32,7 @@ axiosClient.interceptors.response.use(
                     const res = await axios.post(`${BASE_URL}/login/refresh_token`, { refresh_token: refreshToken });
                     Cookie.set("token", res.data.accessToken);
                     originalRequest.headers["Authorization"] = `Bearer ${res.data.accessToken}`;
-                    return axiosClient(originalRequest); // retry request
+                    return axiosClient(originalRequest);
                 } catch (err) {
                     Cookie.remove("token");
                     window.location.href = "/login";

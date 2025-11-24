@@ -5,9 +5,7 @@ import ProductForm from '../../../components/admin/ProductForm';
 import productService from '../../../services/productService';
 import axiosClient from '../../../api';
 
-/**
- * Trang sửa sản phẩm
- */
+
 const EditProduct = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -17,7 +15,7 @@ const EditProduct = () => {
   const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
 
-  // State cho dữ liệu dropdown
+
   const [dropdownData, setDropdownData] = useState({
     brands: [],
     origins: [],
@@ -29,52 +27,87 @@ const EditProduct = () => {
     colors: [],
   });
 
-  // Fetch dữ liệu khi component mount
   useEffect(() => {
     fetchAllData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchAllData = async () => {
     try {
       setIsLoadingData(true);
 
-      // Lấy dữ liệu dropdown
       const [
         brandsRes,
         originsRes,
         osRes,
         warehousesRes,
-        categoriesRes,
         ramsRes,
         romsRes,
         colorsRes,
+        categoriesRes,
       ] = await Promise.all([
-        axiosClient.get('/api/brand'),
-        axiosClient.get('/api/origin'),
-        axiosClient.get('/api/operating-system'),
-        axiosClient.get('/api/warehouse'),
-        axiosClient.get('/api/category'),
-        axiosClient.get('/api/ram'),
-        axiosClient.get('/api/rom'),
-        axiosClient.get('/api/color'),
+        axiosClient.get('/brand'),
+        axiosClient.get('/origin'),
+        axiosClient.get('/os'),
+        axiosClient.get('/warehouse_area'),
+        axiosClient.get('/ram'),
+        axiosClient.get('/rom'),
+        axiosClient.get('/color'),
+        axiosClient.get('/category'),
       ]);
 
+      const normalizeCategories = (res) => {
+        const data = res?.result ?? res;
+        if (Array.isArray(data)) return data;
+        return data ? [data] : [];
+      };
+
+      const mapBrands = (res) => ((res?.result ?? res) || []).map(b => ({
+        idBrand: b.idBrand ?? b.id,
+        nameBrand: b.nameBrand ?? b.brandName ?? b.name,
+      }));
+      const mapOrigins = (res) => ((res?.result ?? res) || []).map(o => ({
+        idOrigin: o.idOrigin ?? o.id,
+        nameOrigin: o.nameOrigin ?? o.name,
+      }));
+      const mapOperatingSystems = (res) => ((res?.result ?? res) || []).map(o => ({
+        idOS: o.idOS ?? o.id,
+        nameOS: o.nameOS ?? o.name,
+      }));
+      const mapWarehouses = (res) => ((res?.result ?? res) || []).map(w => ({
+        idWarehouse: w.idWarehouseArea ?? w.id,
+        nameWarehouse: w.nameWarehouseArea ?? w.name,
+      }));
+      const mapRams = (res) => ((res?.result ?? res) || []).map(r => ({
+        idRam: r.idRam ?? r.ram_id ?? r.id,
+        nameRam: r.nameRam ?? r.name,
+      }));
+      const mapRoms = (res) => ((res?.result ?? res) || []).map(r => ({
+        idRom: r.idRom ?? r.rom_id ?? r.id,
+        nameRom: r.nameRom ?? r.rom_size ?? r.name,
+      }));
+      const mapColors = (res) => ((res?.result ?? res) || []).map(c => ({
+        idColor: c.idColor ?? c.id,
+        nameColor: c.nameColor ?? c.name,
+      }));
+
       setDropdownData({
-        brands: brandsRes.result || brandsRes || [],
-        origins: originsRes.result || originsRes || [],
-        operatingSystems: osRes.result || osRes || [],
-        warehouses: warehousesRes.result || warehousesRes || [],
-        categories: categoriesRes.result || categoriesRes || [],
-        rams: ramsRes.result || ramsRes || [],
-        roms: romsRes.result || romsRes || [],
-        colors: colorsRes.result || colorsRes || [],
+        brands: mapBrands(brandsRes),
+        origins: mapOrigins(originsRes),
+        operatingSystems: mapOperatingSystems(osRes),
+        warehouses: mapWarehouses(warehousesRes),
+        categories: normalizeCategories(categoriesRes),
+        rams: mapRams(ramsRes),
+        roms: mapRoms(romsRes),
+        colors: mapColors(colorsRes),
       });
 
-      // Lấy thông tin sản phẩm
-      const productRes = await axiosClient.get(`/api/product/${id}`);
-      if (productRes.result) {
-        setProduct(productRes.result);
+      const listRes = await axiosClient.get('/product', { params: { page: 0, size: 1000 } });
+      const list = listRes.result?.content || listRes.content || [];
+      const found = list.find(p => String(p.idProduct) === String(id));
+      if (found) {
+        setProduct(found);
+      } else {
+        setToast({ type: 'error', message: 'Không tìm thấy sản phẩm' });
       }
     } catch (error) {
       console.error('Fetch data error:', error);
@@ -91,7 +124,6 @@ const EditProduct = () => {
     try {
       setIsLoading(true);
 
-      // Sửa sản phẩm (chỉ cập nhật các trường cơ bản, không phải full create)
       await productService.updateProduct(id, formData.payload.products);
 
       setToast({

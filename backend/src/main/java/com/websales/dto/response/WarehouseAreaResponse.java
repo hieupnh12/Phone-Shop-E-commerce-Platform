@@ -9,10 +9,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WarehouseAreaResponse {
-    String id;
-    String name;
+    String idWarehouseArea;
+    String nameWarehouseArea;
 
     String note;
 
-    boolean status;
+//    boolean status;
 }

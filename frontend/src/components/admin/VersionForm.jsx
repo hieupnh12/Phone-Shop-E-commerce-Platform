@@ -6,10 +6,6 @@ import InputField from '../common/InputField';
 import Modal from '../common/Modal';
 import Toast from '../common/Toast';
 
-/**
- * Component quản lý phiên bản sản phẩm (Version)
- * Cho phép thêm, sửa, xóa các phiên bản khi tạo/sửa sản phẩm
- */
 const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = [], colorList = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -104,7 +100,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       exportPrice: parseFloat(formData.exportPrice),
       stockQuantity: parseInt(formData.stockQuantity),
       status: formData.status,
-      Items: [], // Trống ban đầu, backend sẽ tạo IMEI
+      Items: [],
     };
 
     if (editingIndex !== null) {
@@ -267,7 +263,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
           <div className="grid grid-cols-3 gap-4">
             <InputField
               label="Giá Nhập (VND)"
-              name="idRam"
+              name="importPrice"
               type="number"
               placeholder="0"
               value={formData.importPrice}
@@ -277,7 +273,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
             <InputField
               label="Giá Bán (VND)"
-              name="idRam"
+              name="exportPrice"
               type="number"
               placeholder="0"
               value={formData.exportPrice}
@@ -287,7 +283,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
             <InputField
               label="Số Lượng"
-              name="idRam"
+              name="stockQuantity"
               type="number"
               placeholder="0"
               value={formData.stockQuantity}

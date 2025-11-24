@@ -8,20 +8,17 @@ import Pagination from '../../../components/common/Pagination';
 import Toast from '../../../components/common/Toast';
 import productService from '../../../services/productService';
 
-/**
- * Trang danh sách sản phẩm cho Admin
- * Hiển thị bảng sản phẩm với lọc, tìm kiếm, phân trang
- */
+
 const ListProduct = () => {
   const navigate = useNavigate();
 
-  // State cho dữ liệu
+
   const [products, setProducts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  // State cho tìm kiếm & lọc
+
   const [searchFilters, setSearchFilters] = useState({
     productName: '',
     brandName: '',
@@ -30,17 +27,17 @@ const ListProduct = () => {
     warehouseAreaName: '',
   });
 
-  // State cho UI
+
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, productId: null, productName: '' });
 
-  // Fetch danh sách sản phẩm
+
   const fetchProducts = async (page = 0, filters = {}) => {
     try {
       setIsLoading(true);
 
-      // Kiểm tra nếu có filter nào được điền
+
       const hasFilters = Object.values(filters).some(v => v && v.trim());
 
       let response;
@@ -65,10 +62,9 @@ const ListProduct = () => {
     }
   };
 
-  // Load danh sách khi component mount
+
   useEffect(() => {
     fetchProducts(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = (e) => {
@@ -140,7 +136,7 @@ const ListProduct = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Quản Lý Sản Phẩm</h1>
         <Button
@@ -152,7 +148,7 @@ const ListProduct = () => {
         </Button>
       </div>
 
-      {/* Bộ Lọc */}
+      {/* filter */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Tìm Kiếm & Lọc</h3>
 
@@ -213,7 +209,7 @@ const ListProduct = () => {
         </form>
       </div>
 
-      {/* Bảng Sản Phẩm */}
+      {/* produc lít */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {isLoading && products.length === 0 ? (
           <div className="flex items-center justify-center p-8">
@@ -266,7 +262,7 @@ const ListProduct = () => {
                     <td className="px-6 py-4 text-center">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                         (product.stockQuantity || 0) > 0
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-orange-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {product.stockQuantity || 0}
@@ -278,7 +274,7 @@ const ListProduct = () => {
                           ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {product.status ? '✅ Hoạt động' : '❌ Tắt'}
+                        {product.status ? 'Hoạt động' : 'Tắt'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -307,7 +303,7 @@ const ListProduct = () => {
         )}
       </div>
 
-      {/* Phân Trang */}
+      {/* pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center">
           <Pagination
@@ -318,7 +314,7 @@ const ListProduct = () => {
         </div>
       )}
 
-      {/* Modal Xác Nhận Xóa */}
+      {/* modal deleteee */}
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, productId: null, productName: '' })}

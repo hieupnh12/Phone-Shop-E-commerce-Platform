@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RomResponse {
-    Long rom_id ;
-    String rom_size ;
+    Long idRom ;
+    String nameRom ;
     Boolean status;
 }
