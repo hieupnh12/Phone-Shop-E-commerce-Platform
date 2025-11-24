@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import { Clock, ShoppingCart, DollarSign } from 'lucide-react';
+import useFetchTotalInfo from "../../hooks/useFetchTotalInfo";
+
+const MOCK_CUSTOMER_ID = 11;
 
 const ProfileHeaderInfo = ({ customer }) => {
-    const defaultCustomer = {
+
+
+    const { data: customerStats, loading } = useFetchTotalInfo(MOCK_CUSTOMER_ID)
+
+    const defaultData = {
         name: 'Nguyễn Nhất Sinh',
         phone: '098******94',
         rank: 'S-MEM',
-        nextRank: 'S-VIP',
         lastUpdate: '01/01/2026',
-        totalOrders: 3,
-        totalSavings: 17157000,
-        requiredToNextRank: 32843000,
+        totalOrders: 0,
+        totalSavings: 0,
     };
-
-    const data = customer || defaultCustomer;
+    const data = {
+        ...defaultData,
+        totalOrders: customerStats?.totalOrders || defaultData.totalOrders,
+        totalSavings: customerStats?.totalAmount || defaultData.totalSavings, // totalAmount từ API sẽ là totalSavings
+    };
 
     const formatCurrency = (amount) => {
         return amount.toLocaleString('vi-VN') + 'đ';

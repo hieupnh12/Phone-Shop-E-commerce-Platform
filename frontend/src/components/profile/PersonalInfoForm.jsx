@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Edit, Plus, Save, X } from 'lucide-react';
-// Đảm bảo đường dẫn này chính xác so với vị trí của InputField
 import InputField  from "../common/InputField";
+import AddressBook  from "./AddressBook";
+
 
 
 
@@ -152,7 +153,6 @@ const PersonalInfoForm = () => {
                             <div className="hidden md:block"></div>
                         </>
                     ) : (
-                        // View Mode
                         <>
                             <InfoDisplayItem label="Họ và tên" value={customerInfo.fullName} />
                             <InfoDisplayItem label="Số điện thoại" value={customerInfo.phone} />
@@ -167,29 +167,7 @@ const PersonalInfoForm = () => {
 
 
             {/* Phần Sổ địa chỉ */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <div className="flex items-center justify-between border-b pb-4 mb-6">
-                    <h3 className="text-xl font-bold text-gray-800">Sổ địa chỉ</h3>
-                    <button
-                        type="button" // Luôn là type button trong form khi không submit
-                        onClick={handleAddAddressClick}
-                        className="flex items-center text-red-500 hover:text-red-600 transition-colors"
-                    >
-                        <Plus size={18} className="mr-2" />
-                        Thêm địa chỉ
-                    </button>
-                </div>
-
-                {/* Trạng thái chưa có địa chỉ */}
-                <div className="flex flex-col items-center justify-center py-8 text-center text-gray-500">
-                    <img
-                        src="https://via.placeholder.com/150/FFDDC1/FF6B6B?text=No+Address"
-                        alt="No Address"
-                        className="w-40 h-40 mb-4 object-contain"
-                    />
-                    <p>Bạn chưa có địa chỉ nào được tạo</p>
-                </div>
-            </div>
+            <AddressBook />
         </form>
     );
 };

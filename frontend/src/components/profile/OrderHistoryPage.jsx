@@ -1,13 +1,15 @@
+// file OrderHistoryPage
 import React, { useState } from 'react';
-import { Search, Calendar, ChevronRight } from 'lucide-react'; // Dùng lucide-react cho icons
+import { Search, Calendar, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom'; // ✅ Đã thêm import Link
 
 const orderTabs = [
     { id: 'all', label: 'Tất cả' },
-    { id: 'pending', label: 'Chờ xác nhận' },
-    { id: 'confirmed', label: 'Đã xác nhận' },
+    { id: 'pending', label: 'Đang xử lý' },
     { id: 'shipping', label: 'Đang vận chuyển' },
     { id: 'delivered', label: 'Đã giao hàng' },
     { id: 'cancelled', label: 'Đã hủy' },
+    { id: 'returned', label: 'Trả hàng' }, // Đã đổi 'paid' thành 'returned' cho rõ ràng
 ];
 
 const mockOrders = [
@@ -34,7 +36,7 @@ const mockOrders = [
     {
         id: '#02434S2503001293',
         date: '24/03/2025',
-        status: 'delivered',
+        status: 'shipping', // Đã đổi status để test
         products: [
             {
                 image: 'https://via.placeholder.com/60/ccc?text=MacbookAir',
@@ -76,18 +78,28 @@ const OrderHistoryPage = () => {
     const getStatusDisplay = (status) => {
         switch (status) {
             case 'delivered':
-                return <span className="text-green-600 bg-green-100 px-3 py-1 rounded-full text-xs font-medium">Đã nhận hàng</span>;
+                return <span className="text-green-600 bg-green-100 px-3 py-1 rounded-full text-xs font-medium">Đã giao hàng</span>;
             case 'cancelled':
                 return <span className="text-red-600 bg-red-100 px-3 py-1 rounded-full text-xs font-medium">Đã hủy</span>;
+            case 'shipping':
+                return <span className="text-blue-600 bg-blue-100 px-3 py-1 rounded-full text-xs font-medium">Đang vận chuyển</span>;
+            case 'pending':
+                return <span className="text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full text-xs font-medium">Đang xử lý</span>;
             default:
-                return <span className="text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">Đang xử lý</span>;
+                return <span className="text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">Trả hàng</span>;
         }
     };
 
     const filteredOrders = mockOrders.filter(order => {
         if (activeTab === 'all') return true;
+
+        // ✅ Cập nhật logic lọc để khớp với các ID/Status mới
         if (activeTab === 'delivered' && order.status === 'delivered') return true;
         if (activeTab === 'cancelled' && order.status === 'cancelled') return true;
+        if (activeTab === 'pending' && order.status === 'pending') return true;
+        if (activeTab === 'shipping' && order.status === 'shipping') return true;
+        if (activeTab === 'returned' && order.status === 'returned') return true;
+
         return false;
     }).filter(order => {
         if (searchTerm === '') return true;
@@ -115,7 +127,7 @@ const OrderHistoryPage = () => {
             </div>
 
             {/* Các tab lọc trạng thái (Mẫu 1 & 2) */}
-            <div className="flex items-center space-x-6 overflow-x-auto pb-4 mb-6 border-b border-gray-200 hide-scrollbar">
+            <div className="flex items-center space-x-20 overflow-x-auto pb-4 mb-6 border-b border-gray-200 hide-scrollbar">
                 {orderTabs.map((tab) => (
                     <button
                         key={tab.id}
@@ -167,10 +179,15 @@ const OrderHistoryPage = () => {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-red-500 font-bold text-lg">{formatCurrency(order.totalAmount)}</p>
-                                        <a href={`/profile/orders/${order.id}`} className="text-blue-600 hover:text-blue-800 text-sm flex items-center mt-1">
+
+                                        <Link
+
+                                            to={`/profile/order/order-detail/${order.id.replace('#', '')}`}
+                                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center mt-1"
+                                        >
                                             Xem chi tiết
                                             <ChevronRight size={14} className="ml-1" />
-                                        </a>
+                                        </Link>
                                     </div>
                                 </div>
                             ))}

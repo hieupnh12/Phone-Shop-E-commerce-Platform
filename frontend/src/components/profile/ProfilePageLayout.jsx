@@ -1,4 +1,4 @@
-
+//file ProfilePageLayout
 import React from 'react';
 import ProfileSidebar from './ProfileSidebar';
 import ProfileHeaderInfo from './ProfileHeaderInfo';

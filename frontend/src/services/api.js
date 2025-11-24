@@ -143,4 +143,24 @@ export const adminService = {
   getDashboardStats: () => api.get('/admin/dashboard/stats').then(r => r.data),
 };
 
+export const cusAuth = {
+  getCustomer:() => api.get('/customer').then(res => res.data.result)
+}
+
+export const profileService = {
+  getTotalOrders: (customerId) =>
+      api
+          .get(`/customer/total_orders/${customerId}`)
+          .then(res => res.data.result),
+
+  getOrdersByCustomer: (customerId) =>
+      api
+          .get(`/customer/order/${customerId}`)
+          .then(res => res.data.result),
+
+  getOrderDetail: (orderId) =>
+      api
+          .get(`/customer/order_detail/${orderId}`)
+          .then(res => res.data.result),
+};
 export default api;

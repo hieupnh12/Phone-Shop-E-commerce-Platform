@@ -33,11 +33,10 @@ import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 import UpdateInfor from "./pages/auth/UpdateInfor";
-import ProfilePage from "./pages/client/Profile/ProfilePage";
 import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
 import ProfilePageLayout from './components/profile/ProfilePageLayout';
-
+import OrderDetailPage from "./components/profile/OrderDetailPage";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -97,6 +96,7 @@ const router = createBrowserRouter(
               { path: "info", element: <PersonalInfoForm /> },
 
               { path: "order", element: <OrderHistoryPage /> },
+              { path: "order/order-detail/:orderId", element: <OrderDetailPage /> },
 
               // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
               //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
