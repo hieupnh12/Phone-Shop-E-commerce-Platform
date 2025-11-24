@@ -107,6 +107,12 @@ export const cartService = {
     return res;
   },
 
+  // ✅ THÊM MỚI: POST /api/cart/preview-payment  body: { total, subtotal, shippingFee, paymentMethod, note }
+  previewPayment: async (orderData) => {
+    const res = await api.post('/cart/preview-payment', orderData).then(r => r.data);
+    return res;
+  },
+
   // ✅ THÊM MỚI: POST /api/cart/checkout  body: { items, subtotal, shippingFee, total, orderDate }
   createOrder: async (orderData) => {
     const res = await api.post('/cart/checkout', orderData).then(r => r.data);

@@ -13,6 +13,8 @@ import com.websales.repository.PaymentMethodRepository;
 import com.websales.repository.PaymentTransactionRepository;
 import com.websales.repository.ProductVersionRepository;
 import com.websales.service.OrderService;
+import com.websales.service.PayOSService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,19 +36,22 @@ public class CartController {
     private final OrderService orderService;
     private final PaymentMethodRepository paymentMethodRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PayOSService payOSService;
 
     public CartController(CartRepository cartRepository,
             CartItemRepository cartItemRepository,
             ProductVersionRepository productVersionRepository,
             OrderService orderService,
             PaymentMethodRepository paymentMethodRepository,
-            PaymentTransactionRepository paymentTransactionRepository) {
+            PaymentTransactionRepository paymentTransactionRepository,
+            PayOSService payOSService) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productVersionRepository = productVersionRepository;
         this.orderService = orderService;
         this.paymentMethodRepository = paymentMethodRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
+        this.payOSService = payOSService;
     }
 
     // --- GET GIỎ HÀNG ---
@@ -272,12 +277,94 @@ public class CartController {
                 "message", "Đã xóa sản phẩm khỏi giỏ hàng"));
     }
 
+    // --- PREVIEW PAYMENT (TẠO PAYMENT LINK PREVIEW CHO QR CODE) ---
+    @PostMapping(value = "/preview-payment", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> previewPayment(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody Map<String, Object> orderData,
+            HttpServletRequest request) {
+        try {
+            // Lấy customerId từ JWT token
+            Long customerId = Long.valueOf(jwt.getSubject());
+
+            // Lấy cart active của customer
+            Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
+            if (cartOpt.isEmpty() || cartOpt.get().getCartItems() == null || cartOpt.get().getCartItems().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Cart is empty"));
+            }
+
+            Cart cart = cartOpt.get();
+
+            // Tính total amount
+            BigDecimal totalAmount;
+            if (orderData.get("total") != null) {
+                Object totalObj = orderData.get("total");
+                if (totalObj instanceof Number) {
+                    totalAmount = BigDecimal.valueOf(((Number) totalObj).doubleValue());
+                } else {
+                    totalAmount = new BigDecimal(totalObj.toString());
+                }
+            } else {
+                totalAmount = BigDecimal.ZERO;
+                for (CartItem item : cart.getCartItems()) {
+                    if (item.getStatus() != null && item.getStatus() && item.getProductVersion() != null) {
+                        BigDecimal price = item.getProductVersion().getExportPrice();
+                        if (price != null) {
+                            int qty = item.getQuantity() != null ? item.getQuantity() : 1;
+                            totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(qty)));
+                        }
+                    }
+                }
+            }
+
+            // Tạo order code tạm thời (sẽ dùng order ID thật khi checkout)
+            long tempOrderCode = System.currentTimeMillis() / 1000;
+
+            // Tạo base URL
+            String baseUrl = payOSService.getBaseUrl(
+                    request.getScheme(),
+                    request.getServerName(),
+                    request.getServerPort());
+
+            String returnUrl = baseUrl + "/payment/success";
+            String cancelUrl = baseUrl + "/payment/cancel";
+            String description = "Thanh toán đơn hàng #" + tempOrderCode;
+
+            // Tạo payment link từ PayOS
+            vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = payOSService.createPaymentLink(
+                    tempOrderCode,
+                    totalAmount,
+                    description,
+                    returnUrl,
+                    cancelUrl
+            );
+
+            // Trả về QR code và payment link
+            Map<String, Object> response = new java.util.HashMap<>();
+            response.put("success", true);
+            response.put("paymentLink", payOSResponse.getCheckoutUrl());
+            if (payOSResponse.getQrCode() != null) {
+                response.put("qrCode", payOSResponse.getQrCode());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Không thể tạo payment link: " + e.getMessage()));
+        }
+    }
+
     // --- TẠO ĐƠN HÀNG (CHECKOUT) ---
     @PostMapping(value = "/checkout", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional
     public ResponseEntity<?> checkout(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody Map<String, Object> orderData) {
+            @RequestBody Map<String, Object> orderData,
+            HttpServletRequest request) {
         // Lấy customerId từ JWT token
         Long customerId = Long.valueOf(jwt.getSubject());
 
@@ -336,16 +423,56 @@ public class CartController {
                     // Tạo payment method mới nếu chưa tồn tại
                     PaymentMethod newMethod = PaymentMethod.builder()
                             .paymentMethodType(finalPaymentMethodStr)
-                            .provider(finalPaymentMethodStr.equals("cod") ? "COD" : "BANK")
+                            .provider(finalPaymentMethodStr.equals("cod") ? "COD" : "PAYOS")
                             .status(true)
                             .build();
                     return paymentMethodRepository.save(newMethod);
                 });
         
         // Xác định payment status dựa trên payment method
-        boolean isPaid = "bank".equals(finalPaymentMethodStr); // Nếu là bank transfer thì coi như đã thanh toán
-        OrderStatus status = isPaid ? OrderStatus.PAID : OrderStatus.PENDING;
-        PaymentStatus paymentStatus = isPaid ? PaymentStatus.SUCCESS : PaymentStatus.PENDING;
+        // Với PayOS, order sẽ ở trạng thái PENDING cho đến khi webhook xác nhận thanh toán thành công
+        boolean isPaid = false; // PayOS: chưa thanh toán, chờ webhook
+        OrderStatus status = OrderStatus.PENDING; // Tất cả đều PENDING ban đầu
+        PaymentStatus paymentStatus = PaymentStatus.PENDING; // Chờ thanh toán
+        
+        String payOSPaymentLink = null;
+        Long payOSOrderCode = null;
+        
+        // Nếu là bank (PayOS), tạo payment link
+        if ("bank".equals(finalPaymentMethodStr)) {
+            try {
+                // Tạo order code từ order ID (sẽ tạo sau khi có order)
+                // Tạm thời dùng timestamp, sẽ cập nhật sau
+                payOSOrderCode = System.currentTimeMillis() / 1000;
+                
+                // Tạo base URL
+                String baseUrl = payOSService.getBaseUrl(
+                        request.getScheme(),
+                        request.getServerName(),
+                        request.getServerPort());
+                
+                String returnUrl = baseUrl + "/payment/success?orderId=";
+                String cancelUrl = baseUrl + "/payment/cancel?orderId=";
+                String description = "Thanh toán đơn hàng";
+                
+                // Tạo payment link từ PayOS (sẽ cập nhật order code sau)
+                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = 
+                        payOSService.createPaymentLink(
+                                payOSOrderCode,
+                                totalAmount,
+                                description,
+                                returnUrl + "{orderId}",
+                                cancelUrl + "{orderId}"
+                        );
+                
+                payOSPaymentLink = payOSResponse.getCheckoutUrl();
+            } catch (Exception e) {
+                // Nếu không tạo được PayOS link, vẫn tạo order nhưng báo lỗi
+                return ResponseEntity.status(500).body(Map.of(
+                        "success", false,
+                        "message", "Không thể tạo payment link từ PayOS: " + e.getMessage()));
+            }
+        }
 
         // Tạo OrderRequest từ cart items
         List<OrderRequest.OrderDetailRequest> orderDetails = cart.getCartItems().stream()
@@ -379,9 +506,48 @@ public class CartController {
         // Lưu Order và OrderDetails
         Order order = orderService.createOrder(orderRequest);
 
+        // Nếu là PayOS, cập nhật lại payment link với order ID thật
+        if ("bank".equals(finalPaymentMethodStr) && payOSOrderCode != null) {
+            try {
+                // Hủy payment link cũ nếu cần (optional)
+                // Tạo payment link mới với order ID thật
+                long realOrderCode = order.getOrderId().longValue();
+                
+                String baseUrl = payOSService.getBaseUrl(
+                        request.getScheme(),
+                        request.getServerName(),
+                        request.getServerPort());
+                
+                String returnUrl = baseUrl + "/payment/success?orderId=" + order.getOrderId();
+                String cancelUrl = baseUrl + "/payment/cancel?orderId=" + order.getOrderId();
+                String description = "Thanh toán đơn hàng #" + order.getOrderId();
+                
+                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = 
+                        payOSService.createPaymentLink(
+                                realOrderCode,
+                                totalAmount,
+                                description,
+                                returnUrl,
+                                cancelUrl
+                        );
+                
+                payOSPaymentLink = payOSResponse.getCheckoutUrl();
+                payOSOrderCode = realOrderCode;
+            } catch (Exception e) {
+                // Log lỗi nhưng vẫn tiếp tục
+                System.err.println("Error updating PayOS payment link: " + e.getMessage());
+            }
+        }
+
         // Tạo PaymentTransaction
         String transactionId = "TXN-" + System.currentTimeMillis() + "-" + order.getOrderId();
-        String transactionCode = "CODE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String transactionCode = payOSOrderCode != null 
+                ? "PAYOS-" + payOSOrderCode 
+                : "CODE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        
+        String responseMessage = "bank".equals(finalPaymentMethodStr) 
+                ? "Chờ thanh toán qua PayOS. Order Code: " + payOSOrderCode
+                : "Chờ thanh toán khi nhận hàng";
         
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
                 .transactionId(transactionId)
@@ -391,25 +557,41 @@ public class CartController {
                 .amountUsed(totalAmount)
                 .paymentStatus(paymentStatus)
                 .transactionType(TransactionType.PAYMENT)
-                .responseMessage(isPaid ? "Thanh toán thành công" : "Chờ thanh toán khi nhận hàng")
+                .responseMessage(responseMessage)
                 .address(address)
                 .paymentTime(LocalDateTime.now())
                 .build();
         
         paymentTransactionRepository.save(paymentTransaction);
 
-        // Xóa cart items sau khi tạo order thành công
-        // Sử dụng orphanRemoval: clear collection và save cart sẽ tự động xóa cart items
-        // Giữ cart status = true để cart luôn active
-        cart.getCartItems().clear();
-        cart.setUpdateDate(LocalDateTime.now());
-        cartRepository.save(cart);
+        // Chỉ xóa cart items khi thanh toán thành công
+        // - COD: xóa ngay vì không cần thanh toán online
+        // - PayOS: KHÔNG xóa, sẽ xóa khi webhook xác nhận thanh toán thành công
+        // Nếu hủy thanh toán, cart sẽ được giữ nguyên để user có thể thanh toán lại
+        if ("cod".equals(finalPaymentMethodStr)) {
+            // COD: xóa cart ngay vì đã xác nhận đặt hàng
+            cart.getCartItems().clear();
+            cart.setUpdateDate(LocalDateTime.now());
+            cartRepository.save(cart);
+        }
+        // PayOS: giữ nguyên cart, sẽ xóa khi webhook xác nhận thanh toán thành công
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "orderId", order.getOrderId(),
-                "transactionId", transactionId,
-                "transactionCode", transactionCode,
-                "message", "Đặt hàng thành công!"));
+        // Tạo response
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("success", true);
+        response.put("orderId", order.getOrderId());
+        response.put("transactionId", transactionId);
+        response.put("transactionCode", transactionCode);
+        response.put("message", "Đặt hàng thành công!");
+        
+        // Nếu là PayOS, thêm payment link và requiresPayment flag
+        if ("bank".equals(finalPaymentMethodStr) && payOSPaymentLink != null) {
+            response.put("requiresPayment", true);
+            response.put("paymentLink", payOSPaymentLink);
+        } else {
+            response.put("requiresPayment", false);
+        }
+        
+        return ResponseEntity.ok(response);
     }
 }

@@ -117,4 +117,11 @@ cloudinary:
 speedsms:
   access_token: "keZn3M1sLGxNoLXAokT814YRisuw0L47"
 
+# PayOS Configuration
+payos:
+  client-id: ${PAYOS_CLIENT_ID:1e486ec0-9fac-4d03-9f38-c30f9987e1f0}
+  api-key: ${PAYOS_API_KEY:0993fd87-b82f-4d17-8ebc-e47deb600a9a}
+  checksum-key: ${PAYOS_CHECKSUM_KEY:882ff1d4a906a720c4c4ac414a2def108b0eea3f2735950dc96e80315502a8c7}
+  log-level: ${PAYOS_LOG_LEVEL:INFO} # DEBUG | INFO | NONE
+
 

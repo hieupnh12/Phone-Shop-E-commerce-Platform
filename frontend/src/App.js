@@ -33,6 +33,8 @@ import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 import OrderHistory from "./pages/client/OrderHistory";
+import PaymentSuccess from "./pages/client/PaymentSuccess";
+import PaymentCancel from "./pages/client/PaymentCancel";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -75,6 +77,14 @@ const router = createBrowserRouter(
     {
       path: "/payment",
       element: <Payment />,
+    },
+    {
+      path: "/payment/success",
+      element: <PaymentSuccess />,
+    },
+    {
+      path: "/payment/cancel",
+      element: <PaymentCancel />,
     },
     {
       path: "/orders",
