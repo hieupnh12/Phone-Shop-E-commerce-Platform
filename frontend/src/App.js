@@ -34,6 +34,9 @@ import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 import { getUserRole } from "./contexts/AuthContext";
 import AdminLogin from "./pages/auth/AdminLogin";
+import ListProduct from "./pages/admin/Products/ListProduct";
+import AddProduct from "./pages/admin/Products/AddProduct";
+import EditProduct from "./pages/admin/Products/EditProduct";
 // Protected Route Component - check JWT token via getUserRole
 // const ProtectedRoute = ({ children }) => {
 //   const role = getUserRole();
@@ -94,13 +97,14 @@ const router = createBrowserRouter(
           children: [
             { index: true, element: <HomeAdmin /> },
             { path: "dashboard", element: <HomeAdmin /> },
-            // {
-            //   path: "products",
-            //   element: <Products />,
-            //   children: [],
-            // },
-            // { path: "customers", element: <Customers /> },
-            // { path: "staff", element: <Staff /> },
+            {
+              path: "products",
+              children: [
+                { index: true, element: <ListProduct /> },
+                { path: "create", element: <AddProduct /> },
+                { path: ":id/edit", element: <EditProduct /> },
+              ],
+            },
             {
               path: "statistic",
               element: <Statistic />,
