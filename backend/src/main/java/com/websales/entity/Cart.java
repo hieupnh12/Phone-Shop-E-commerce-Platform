@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "Carts")
+@Table(name = "carts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,20 +15,21 @@ public class Cart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "cart_id")
     private Integer idCart;
 
-    // DB: Carts.idAccount (VARCHAR)
-    @Column(name = "idAccount")
-    private String userId;
+    // DB: carts.customer_id (BIGINT)
+    @Column(name = "customer_id")
+    private Long customerId;
 
-    // DB: tinyint(1)
+    // DB: tinyint(1) -> BOOLEAN
     @Column(name = "status")
     private Boolean status;
 
-    @Column(name = "createDate")
+    @Column(name = "create_date")
     private LocalDateTime createDate;
 
-    @Column(name = "updateDate")
+    @Column(name = "update_date")
     private LocalDateTime updateDate;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)

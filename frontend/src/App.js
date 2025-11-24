@@ -34,6 +34,9 @@ import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
 import { getUserRole } from "./contexts/AuthContext";
 // Protected Route Component - check JWT token via getUserRole
+import OrderHistory from "./pages/client/OrderHistory";
+
+// Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
 //   const role = getUserRole();
 //   if (!role) {
@@ -67,6 +70,7 @@ const router = createBrowserRouter(
       ),
       children: [{ index: true, element: <Cart /> }],
     },
+    
     {
       path: "/login",
       element: (
@@ -74,6 +78,14 @@ const router = createBrowserRouter(
           <Login />
         </AuthRedirect>
       ),
+    },
+    {
+      path: "/payment",
+      element: <Payment />,
+    },
+    {
+      path: "/orders",
+      element: <OrderHistory />,
     },
     {
       path: "/signup",
