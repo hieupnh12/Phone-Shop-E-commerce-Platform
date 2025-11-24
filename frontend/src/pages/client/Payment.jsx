@@ -19,6 +19,9 @@ export default function Payment() {
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState('');
+  const [payOSQRCode, setPayOSQRCode] = useState('');
+  const [payOSLink, setPayOSLink] = useState('');
+  const [loadingQR, setLoadingQR] = useState(false);
   
   const [cartItems, setCartItems] = useState([]);
   const [customerInfo, setCustomerInfo] = useState({
@@ -78,8 +81,56 @@ export default function Payment() {
   const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
   const total = subtotal + shippingFee;
 
-  const handlePaymentChange = (method) => {
+  const handlePaymentChange = async (method) => {
     setPaymentMethod(method);
+    
+    // Nếu chọn bank, tạo payment link preview để lấy QR code
+    if (method === 'bank' && cartItems.length > 0) {
+      setLoadingQR(true);
+      try {
+        const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
+        const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
+        const total = subtotal + shippingFee;
+        
+        const orderData = {
+          total: total,
+          subtotal: subtotal,
+          shippingFee: shippingFee,
+          paymentMethod: 'bank',
+          note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.'
+        };
+        
+        console.log('Calling previewPayment with:', orderData);
+        const response = await cartService.previewPayment(orderData);
+        console.log('Preview payment response:', response);
+        
+        if (response?.success) {
+          if (response?.qrCode) {
+            console.log('QR Code received:', response.qrCode.substring(0, 50) + '...');
+            setPayOSQRCode(response.qrCode);
+            setPayOSLink(response.paymentLink);
+          } else if (response?.paymentLink) {
+            // Nếu không có QR code nhưng có payment link, vẫn lưu link
+            console.log('Payment link received (no QR):', response.paymentLink);
+            setPayOSLink(response.paymentLink);
+            setPayOSQRCode('');
+          } else {
+            console.warn('No QR code or payment link in response');
+          }
+        } else {
+          console.error('Preview payment failed:', response?.message);
+        }
+      } catch (e) {
+        console.error('Error creating payment preview:', e);
+        setError('Không thể tạo mã QR. Vui lòng thử lại.');
+      } finally {
+        setLoadingQR(false);
+      }
+    } else {
+      // Reset khi chọn COD
+      setPayOSQRCode('');
+      setPayOSLink('');
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -104,8 +155,13 @@ export default function Payment() {
       const response = await cartService.createOrder(orderData);
       
       if (response?.success) {
-        // Navigate to orders page
-        navigate('/orders');
+        // Nếu có paymentLink (PayOS), redirect đến trang thanh toán
+        if (response.requiresPayment && response.paymentLink) {
+          window.location.href = response.paymentLink;
+        } else {
+          // Navigate to orders page cho COD hoặc nếu PayOS link không có
+          navigate('/orders');
+        }
       } else {
         setError(response?.message || 'Không thể đặt hàng');
       }
@@ -242,14 +298,37 @@ export default function Payment() {
               {/* QR Code */}
               {paymentMethod === 'bank' && (
                 <div className="mt-4 text-center">
-                  <div className="inline-block p-2 border border-gray-200 rounded-lg bg-white">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=PaymentInfo`} 
-                      alt="QR Code"
-                      className="w-[120px] h-[120px] rounded"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">Quét mã QR bằng ứng dụng ngân hàng</p>
+                  {loadingQR ? (
+                    <div className="py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500">Đang tạo mã QR...</p>
+                    </div>
+                  ) : payOSQRCode ? (
+                    <>
+                      <div className="inline-block p-2 border border-gray-200 rounded-lg bg-white">
+                        <img 
+                          src={payOSQRCode} 
+                          alt="PayOS QR Code"
+                          className="w-[200px] h-[200px] rounded"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
+                      {payOSLink && (
+                        <a 
+                          href={payOSLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs text-rose-600 hover:text-rose-700 underline"
+                        >
+                          Hoặc mở link thanh toán
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-4">
+                      <p className="text-xs text-gray-500">Nhấn "Đặt hàng" để tạo mã QR thanh toán</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
