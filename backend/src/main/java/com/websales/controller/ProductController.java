@@ -99,10 +99,13 @@ public class ProductController {
                 .build();
     }
 
-//    @GetMapping("/{idproduct}")
-//    Product getProduct(@PathVariable("idproduct") Long idproduct) {
-//        return productService.getProductById(idproduct);
-//    }
+    @GetMapping("/{idproduct}")
+    ApiResponse<ProductFULLResponse> getProduct(@PathVariable("idproduct") Long idproduct) {
+        return ApiResponse.<ProductFULLResponse>builder()
+                .result(productService.getProductFULLById(idproduct))
+                .build();
+
+    }
 
 
     @PatchMapping("/{idproduct}")

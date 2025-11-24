@@ -92,17 +92,25 @@ export const transformProductResponse = (backendProduct) => {
       ram: v.ramName,
       rom: v.romName,
       color: v.colorName,
+      picture: v.images || 'NotFound.jpg',
       price: v.exportPrice || v.price || 0,
       discount: v.discount || 0,
       imei: v.imei?.[0]?.imei || null,
       stockQuantity: v.stockQuantity,
       status: v.status,
     })) || [],
+     
+       
 
     // Raw backend data (for reference)
     _raw: backendProduct,
   };
 };
+
+
+
+
+
 
 /**
  * Fetch all products with pagination and filtering
@@ -170,6 +178,23 @@ export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
 
 
 
+/** 
+@param {string} filters.idProduct - Product ID (exact match)
+*/
+export const fetchProductById = async (idProduct) => {
+  try {
+    console.log(`📡 Fetching product by ID: ${idProduct}`)  
+    const response = await axiosClient[GET](`${API_BASE_URL}/${idProduct}`)
+    
+    console.log('✓ Product by ID API response received',response);
+
+    const result = response?.result;
+      return transformProductResponse(result)   
+      } catch (error) {
+          console.error('❌ Error fetching product by ID:', error)
+          throw error
+      }
+};
 
 
 
@@ -264,7 +289,7 @@ export const invalidateProductsCache = () => {
 
 const productWorkerExport = {
   fetchAllProducts,
-  // fetchProductById,
+  fetchProductById,
   // fetchProductByImei,
   searchProducts,
   fetchProductStats,

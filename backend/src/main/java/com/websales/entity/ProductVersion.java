@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,10 @@ public class ProductVersion {
 
 
     @Column(name ="picture")
-    String picture;
+//    String image ;
+
+    @OneToMany(mappedBy = "productVersionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<ProductVersionImage> images;
 
 
     @Column(name="status")
