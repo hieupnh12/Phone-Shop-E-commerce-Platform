@@ -1,11 +1,19 @@
 package com.websales.dto.response;
 
+import lombok.Builder;
+import lombok.Data;
+
 import java.math.BigDecimal;
 
-public interface OrderDetailResponse {
-    Integer getOrderId();
-    BigDecimal getUnitPriceBefore();
-    String getProductName();
-    String getPicture();
-    Integer getRemainingProducts();
+@Data
+@Builder
+public class OrderDetailResponse {
+    Integer orderDetailId;
+    String productVersionId;
+    String productName;
+    BigDecimal unitPriceBefore;
+    BigDecimal unitPriceAfter;
+    Integer quantity;
+    BigDecimal subtotal;
 }
+

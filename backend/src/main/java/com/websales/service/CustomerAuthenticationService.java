@@ -68,9 +68,9 @@ public class CustomerAuthenticationService {
     public void sendOtp(SendOtpRequest request) {
         String phone = PhoneUtils.normalize(request.getPhoneNumber());
 
-        if (!PhoneUtils.isValidVietnamPhone(request.getPhoneNumber())) {
-            throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + request.getPhoneNumber());
-        }
+        // if (!PhoneUtils.isValidVietnamPhone(request.getPhoneNumber())) {
+        //     throw new IllegalArgumentException("Số điện thoại không hợp lệ: " + request.getPhoneNumber());
+        // }
         OtpRequest otpReq = otpRepo.findById(phone)
                 .orElse(new OtpRequest(phone));
 
