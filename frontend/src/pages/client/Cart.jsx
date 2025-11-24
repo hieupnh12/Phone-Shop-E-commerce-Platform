@@ -87,7 +87,7 @@ export default function ShoppingCart() {
   const removeItem = async (productVersionId) => {
     try {
       setRemovingProductVersionId(productVersionId);
-      const res = await cartService.removeByProductVersionId(productVersionId);
+      const res = await cartService.removeItem(productVersionId);
       if (res?.success) {
         setItems(prev => prev.filter(x => x.productVersionId !== productVersionId));
       } else {

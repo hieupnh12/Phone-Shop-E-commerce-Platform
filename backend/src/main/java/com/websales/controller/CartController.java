@@ -62,7 +62,7 @@ public class CartController {
         log.info("Customer ID: {}", customerId);
         // Lấy cart ACTIVE của customer với cart items được eager fetch
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
-        
+
         List<CartItemResponse> cartItemsResp = new ArrayList<>();
         double grandTotal = 0;
 
@@ -75,12 +75,12 @@ public class CartController {
                     if (item.getStatus() == null || !item.getStatus()) {
                         continue;
                     }
-                    
+
                     ProductVersion pv = item.getProductVersion();
                     if (pv == null) {
                         continue;
                     }
-                    
+
                     // Force load product từ productVersion
                     Product product = pv.getProduct();
                     if (product == null) {
@@ -96,8 +96,8 @@ public class CartController {
                     int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
                     // Lấy image từ productVersion nếu có, nếu không thì lấy từ product
-                    String image = (pv.getPicture() != null && !pv.getPicture().isEmpty()) 
-                            ? pv.getPicture() 
+                    String image = (pv.getImages() != null && !pv.getImages().isEmpty())
+                            ? pv.getImage()
                             : (product.getImage() != null ? product.getImage() : "");
 
                     CartItemResponse resp = new CartItemResponse(
@@ -159,11 +159,14 @@ public class CartController {
         Optional<CartItem> existed = cartItemRepository.findByCart_IdCartAndProductVersion_IdVersion(
                 cart.getIdCart(), productVersionId);
         if (existed.isPresent()) {
-            // Cập nhật quantity
             CartItem item = existed.get();
-            int newQuantity = request.getQuantity() > 0 ? request.getQuantity() : 1;
-            item.setQuantity(newQuantity);
-            item.setStatus(true); // Đảm bảo status = true
+
+            // Mỗi lần FE gửi quantity=1 → backend tự +1
+            int add = request.getQuantity() > 0 ? request.getQuantity() : 1;
+
+            item.setQuantity(item.getQuantity() + add);
+            item.setStatus(true);
+
             cartItemRepository.save(item);
         } else {
             // Tạo cart item mới
@@ -232,7 +235,7 @@ public class CartController {
         CartItem item = itemOpt.get();
         item.setQuantity(quantity);
         cartItemRepository.save(item);
-        
+
         // Cập nhật update_date của cart
         Cart cart = cartOpt.get();
         cart.setUpdateDate(LocalDateTime.now());
@@ -261,9 +264,9 @@ public class CartController {
 
         // Tìm cart active để cập nhật update_date
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
-        
+
         cartItemRepository.deleteByCustomerIdAndProductVersionId(customerId, productVersionId);
-        
+
         // Cập nhật update_date của cart
         if (cartOpt.isPresent()) {
             Cart cart = cartOpt.get();
@@ -325,7 +328,7 @@ public class CartController {
 
         // Lấy note từ orderData
         String note = (String) orderData.get("note");
-        
+
         // Lấy payment method và address từ orderData
         String paymentMethodStr = (String) orderData.get("paymentMethod");
         if (paymentMethodStr == null || paymentMethodStr.isEmpty()) {
@@ -333,7 +336,7 @@ public class CartController {
         }
         final String finalPaymentMethodStr = paymentMethodStr; // Make it final for lambda
         String address = (String) orderData.get("address");
-        
+
         // Lấy hoặc tạo PaymentMethod
         PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodType(finalPaymentMethodStr)
                 .orElseGet(() -> {
@@ -345,7 +348,7 @@ public class CartController {
                             .build();
                     return paymentMethodRepository.save(newMethod);
                 });
-        
+
         // Xác định payment status dựa trên payment method
         boolean isPaid = "bank".equals(finalPaymentMethodStr); // Nếu là bank transfer thì coi như đã thanh toán
         OrderStatus status = isPaid ? OrderStatus.PAID : OrderStatus.PENDING;
@@ -358,7 +361,7 @@ public class CartController {
                     ProductVersion pv = item.getProductVersion();
                     BigDecimal exportPrice = pv != null ? pv.getExportPrice() : BigDecimal.ZERO;
                     BigDecimal importPrice = pv != null ? pv.getImportPrice() : BigDecimal.ZERO;
-                    
+
                     return OrderRequest.OrderDetailRequest.builder()
                             .productVersionId(pv != null ? pv.getIdVersion() : null)
                             .unitPriceBefore(importPrice)
@@ -386,7 +389,7 @@ public class CartController {
         // Tạo PaymentTransaction
         String transactionId = "TXN-" + System.currentTimeMillis() + "-" + order.getOrderId();
         String transactionCode = "CODE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        
+
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
                 .transactionId(transactionId)
                 .transactionCode(transactionCode)
@@ -399,11 +402,12 @@ public class CartController {
                 .address(address)
                 .paymentTime(LocalDateTime.now())
                 .build();
-        
+
         paymentTransactionRepository.save(paymentTransaction);
 
         // Xóa cart items sau khi tạo order thành công
-        // Sử dụng orphanRemoval: clear collection và save cart sẽ tự động xóa cart items
+        // Sử dụng orphanRemoval: clear collection và save cart sẽ tự động xóa cart
+        // items
         // Giữ cart status = true để cart luôn active
         cart.getCartItems().clear();
         cart.setUpdateDate(LocalDateTime.now());

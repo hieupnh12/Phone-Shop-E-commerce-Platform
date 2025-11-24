@@ -30,7 +30,7 @@ public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS =
             {"/employee/auth", "/customer/auth","/role", "/employee/auth_set_password","/employee/auth_refresh",
-                    "/customer/auth_verify_otp", "/employee/auth_check_valid",
+                    "/customer/auth_verify_otp", "/employee/auth_check_valid", "/product",
                     "/customer/total_orders/{id}",
                     "/customer/order/{id}",
                     "/customer/order_detail/{id}"

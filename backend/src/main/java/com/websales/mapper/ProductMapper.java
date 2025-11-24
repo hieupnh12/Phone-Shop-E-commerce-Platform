@@ -2,10 +2,7 @@ package com.websales.mapper;
 
 
 import com.cloudinary.Cloudinary;
-import com.websales.dto.request.ImageRequest;
-import com.websales.dto.request.ProductExtraRequest;
-import com.websales.dto.request.ProductFullRequest;
-import com.websales.dto.request.ProductRequest;
+import com.websales.dto.request.*;
 import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductResponse;
 import com.websales.entity.*;
@@ -28,11 +25,11 @@ public interface ProductMapper {
     @Mapping(target = "image", ignore = true) // Bỏ qua ánh xạ image, xử lý thủ công
     Product toProductV2 (ProductFullRequest request);
 
-//    @Mapping(source = "origin.nameOrigin", target = "originName")
-//    @Mapping(source = "operatingSystem.nameOS", target = "operatingSystemName")
-//    @Mapping(source = "brand.nameBrand", target = "brandName")
-//    @Mapping(source = "warehouseArea.nameWarehouseArea", target = "warehouseAreaName")
-//    ProductResponse toProductResponse (Product product);
+    @Mapping(source = "origin.nameOrigin", target = "originName")
+    @Mapping(source = "operatingSystem.nameOS", target = "operatingSystemName")
+    @Mapping(source = "brand.nameBrand", target = "brandName")
+    @Mapping(source = "warehouseArea.nameWarehouseArea", target = "warehouseAreaName")
+    ProductResponse toProductResponse (Product product);
 
     @Mapping(source = "origin.nameOrigin", target = "originName")
     @Mapping(source = "operatingSystem.nameOS", target = "operatingSystemName")
@@ -157,34 +154,16 @@ public interface ProductMapper {
 
 
 
-//    // Phương thức mới để cập nhật đối tượng Product hiện có
-//    default void toProductUpdate(ProductUpdateRequest request, Product product, Origin origin, OperatingSystem os, Brand br, WarehouseArea wa) {
-//        if (request.getProcessor() != null) {
-//            product.setProcessor(request.getProcessor());
-//        }
-//        if (request.getBattery() != null) {
-//            product.setBattery(request.getBattery());
-//        }
-//        if (request.getScreenSize() != null) {
-//            product.setScreenSize(request.getScreenSize());
-//        }
-//        if (request.getChipset() != null) {
-//            product.setChipset(request.getChipset());
-//        }
-//        if (request.getRearCamera() != null) {
-//            product.setRearCamera(request.getRearCamera());
-//        }
-//        if (request.getFrontCamera() != null) {
-//            product.setFrontCamera(request.getFrontCamera());
-//        }
-//        if (request.getWarrantyPeriod() != null) {
-//            product.setWarrantyPeriod(request.getWarrantyPeriod());
-//        }
-//        product.setOrigin(origin);
-//        product.setOperatingSystem(os);
-//        product.setBrand(br);
-//        product.setWarehouseArea(wa);
-//    }
+    // Phương thức mới để cập nhật đối tượng Product hiện có
+    @Mapping(target = "origin", source = "origin")
+    @Mapping(target = "operatingSystem", source = "os")
+    @Mapping(target = "brand", source = "br")
+    @Mapping(target = "warehouseArea", source = "wa")
+    void toProductUpdate(ProductUpdateRequest request,@MappingTarget Product product, Origin origin, OperatingSystem os, Brand br, WarehouseArea wa);
+
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void toProductPartUpdate(ProductUpdateRequest request , @MappingTarget Product product);
 
 }
 
