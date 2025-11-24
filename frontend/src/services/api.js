@@ -80,50 +80,6 @@ export const productService = {
   searchProducts: (query) => api.get(`/products/search?q=${encodeURIComponent(query)}`).then(r => r.data),
 };
 
-// Cart services (dùng IMEI theo schema mới)
-export const cartService = {
-  // GET /api/cart  -> { success, cartItems:[...], grandTotal }
-  getCart: () => api.get('/cart').then(r => r.data),
-
-  // POST /api/cart/add  body: { imei, quantity: 1 }
-  addByImei: async (imei) => {
-    const res = await api.post('/cart/add', { imei, quantity: 1 }).then(r => r.data);
-    // notify other components (Header) that cart changed
-    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
-    return res;
-  },
-
-  // POST /cart/remove  body: { productVersionId }
-  removeByProductVersionId: async (productVersionId) => {
-    const res = await api.post('/cart/remove', { productVersionId }).then(r => r.data);
-    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
-    return res;
-  },
-    // ✅ THÊM MỚI: POST /cart/update-quantity  body: { productVersionId, quantity }
-  updateQuantity: async (productVersionId, quantity) => {
-    const res = await api.post('/cart/update-quantity', { productVersionId, quantity }).then(r => r.data);
-    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
-    return res;
-  },
-
-  // ✅ THÊM MỚI: POST /api/cart/checkout  body: { items, subtotal, shippingFee, total, orderDate }
-  createOrder: async (orderData) => {
-    const res = await api.post('/cart/checkout', orderData).then(r => r.data);
-    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
-    return res;
-  },
-
-  // Không có API clearCart -> gọi remove cho từng item, dùng removeByProductVersionId để phát event
-  clearCart: async () => {
-    const data = await api.get('/cart').then(r => r.data);
-    const items = data?.cartItems || [];
-    for (const it of items) {
-      await api.post('/cart/remove', { productVersionId: it.productVersionId }).then(r => r.data);
-    }
-    // một lần notify sau khi clear xong
-    try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
-  },
-};
 
 // Order services
 export const orderService = {
@@ -133,13 +89,6 @@ export const orderService = {
   getOrder: (id) => api.get(`/orders/${id}`).then(r => r.data),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(r => r.data),
 };
-
-// Customer services
-export const customerService = {
-  getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
-  updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
-};
-
 // User services
 export const userService = {
   getProfile: () => api.get('/users/profile').then(r => r.data),

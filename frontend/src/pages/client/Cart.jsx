@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Truck, X, ShoppingBag, Smartphone, Plus, Minus, CreditCard } from "lucide-react";
-import { cartService } from "../../services/api";
+import cartService from "../../services/cartService";
 
 // Format tiền VND
 const vnd = (n) =>
@@ -105,9 +105,10 @@ export default function ShoppingCart() {
     () => items.reduce((sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1), 0),
     [items]
   );
-  const shippingFee = subtotal >= 10000000 ? 0 : 30000;
+  const FREE_SHIP_LIMIT = 1000;
+  const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : 30000;
   const total = subtotal + shippingFee;
-  const freeShipProgress = Math.min((subtotal / 10000000) * 100, 100);
+  const freeShipProgress = Math.min((subtotal / FREE_SHIP_LIMIT) * 100, 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-20 sm:pt-24">
