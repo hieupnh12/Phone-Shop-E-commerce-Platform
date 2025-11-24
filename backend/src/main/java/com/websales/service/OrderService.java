@@ -1,10 +1,12 @@
 package com.websales.service;
 
 import com.websales.dto.request.OrderRequest;
+import com.websales.entity.Customer;
 import com.websales.entity.Order;
 import com.websales.entity.OrderDetail;
 import com.websales.entity.ProductVersion;
 import com.websales.enums.OrderStatus;
+import com.websales.repository.CustomerRepo;
 import com.websales.repository.OrderDetailRepository;
 import com.websales.repository.OrderRepository;
 import com.websales.repository.ProductVersionRepository;
@@ -24,9 +26,12 @@ public class OrderService {
     OrderRepository orderRepository;
     OrderDetailRepository orderDetailRepository;
     ProductVersionRepository productVersionRepository;
+    CustomerRepo customerRepo;
 
-    public List<Order> getOrdersByCustomer(Long customerId) {
-        return orderRepository.findByCustomerId(customerId);
+
+    public List<Order> getOrdersByCustomer(Long  customerId) {
+        Customer customer = customerRepo.findById(customerId).get();
+        return orderRepository.findByCustomerId(customer);
     }
 
     public List<Order> getAllOrders() {
@@ -40,8 +45,8 @@ public class OrderService {
     @Transactional
     public Order createOrder(OrderRequest request) {
         Order order = Order.builder()
-                .customerId(request.getCustomerId())
-                .employeeId(request.getEmployeeId())
+//                .customerId(request.getCustomerId())
+//                .employeeId(request.getEmployeeId())
                 .note(request.getNote())
                 .totalAmount(request.getTotalAmount())
                 .status(request.getStatus() != null ? request.getStatus() : OrderStatus.PENDING)
@@ -58,7 +63,7 @@ public class OrderService {
 
                         return OrderDetail.builder()
                                 .order(savedOrder)
-                                .productVersion(productVersion)
+//                                .productVersion(productVersion)
                                 .unitPriceBefore(detailRequest.getUnitPriceBefore())
                                 .unitPriceAfter(detailRequest.getUnitPriceAfter())
                                 .quantity(detailRequest.getQuantity())

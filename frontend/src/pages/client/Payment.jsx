@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2 } from 'lucide-react';
-import { cartService, customerService } from '../../services/api';
+import customerService  from '../../services/customerService';
+import cartService from '../../services/cartService';
 
 // Format tiền VND
 const vnd = (n) =>

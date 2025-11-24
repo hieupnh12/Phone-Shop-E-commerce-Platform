@@ -1,10 +1,10 @@
 package com.websales.enums;
 
 public enum OrderStatus {
-    PENDING,
-    PAID,
-    SHIPPED,
-    DELIVERED,
-    CANCELED,
-    RETURNED
+    PENDING,    // Chưa thanh toán / đang chờ
+    PAID,       // Đã thanh toán
+    SHIPPED,    // Đã giao hàng
+    DELIVERED,  // Đã nhận hàng
+    CANCELED,   // Đã hủy
+    RETURNED;   // Đã trả / hoàn hàng
 }

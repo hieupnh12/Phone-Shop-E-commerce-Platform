@@ -9,7 +9,6 @@ import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { CartProvider } from "./contexts/CartContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -32,7 +31,16 @@ import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
 import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
+import UpdateInfor from "./pages/auth/UpdateInfor";
+import OrderHistoryPage from "./components/profile/OrderHistoryPage";
+import PersonalInfoForm from "./components/profile/PersonalInfoForm";
+import ProfilePageLayout from './components/profile/ProfilePageLayout';
+import OrderDetailPage from "./components/profile/OrderDetailPage";
+import ProductDetailPage from "./components/common/Product/ProductDetail";
+import ProductsContainer from "./components/common/Product/ProductContainer";
+// Protected Route Component - check JWT token via getUserRole
 import OrderHistory from "./pages/client/OrderHistory";
+import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
 
@@ -46,26 +54,47 @@ import PaymentCancel from "./pages/client/PaymentCancel";
 // Bypass login check tạm thời
 const ProtectedRoute = ({ children }) => children;
 
+const RouterInitializer = () => {
+    useUrlTokenHandler();
+    return <ClientHomePage />;
+}
+
 const router = createBrowserRouter(
   [
     {
-      path: "/",
-      element: <ClientHomePage />,
+        path: "/",
+        element: <RouterInitializer />,
       children: [
         { index: true, element: <Home /> },
-        {
-          path: "products",
-          element: <Products />,
-          children: [{ path: "", element: <Products /> }],
-        },
+
       ],
     },
     {
+      path: "/products",
+      element: <Products />,
+      children: [
+        {
+          index: true, element: <ProductsContainer />
+        },
+        {
+          path: ":id", element: <ProductDetailPage />
+        }
+      ],
+    },
+        // {
+        //   path: "products/id",
+        //   element: <ProductDetails />,
+        // },
+    {
       path: "/cart",
-      element: <CartLayout />,
+      element: (
+        <ProtectedRoute>
+          <CartLayout />
+        </ProtectedRoute>
+      ),
       children: [{ index: true, element: <Cart /> }],
     },
-    
+
     {
       path: "/login",
       element: (
@@ -94,6 +123,30 @@ const router = createBrowserRouter(
       path: "/signup",
       element: <Signup />,
     },
+    {
+      path: "/update",
+      element: <UpdateInfor />,
+    },
+      {
+          path: "/profile",
+          element: (
+              <ProtectedRoute>
+                  <ProfilePageLayout />
+              </ProtectedRoute>
+          ),
+          children: [
+              { index: true, element: <Navigate to="info" replace /> }, // Tự động chuyển đến /profile/info
+
+              { path: "info", element: <PersonalInfoForm /> },
+
+              { path: "order", element: <OrderHistoryPage /> },
+              { path: "order/order-detail/:orderId", element: <OrderDetailPage /> },
+
+              // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
+              //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
+      ],
+      },
+
     {
       path: "/admin",
       element: <AdminRoute allowedRoles={"ROLE_SALE"} />,
@@ -136,15 +189,15 @@ const router = createBrowserRouter(
 );
 const queryClient = new QueryClient();
 
+
+
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <Chatbot />
+            <RouterProvider router={router} />
+            <Chatbot />
         </QueryClientProvider>
-      </CartProvider>
     </AuthProvider>
   );
 }

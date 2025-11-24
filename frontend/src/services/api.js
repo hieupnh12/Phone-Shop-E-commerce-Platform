@@ -140,13 +140,6 @@ export const orderService = {
   getOrder: (id) => api.get(`/orders/${id}`).then(r => r.data),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(r => r.data),
 };
-
-// Customer services
-export const customerService = {
-  getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
-  updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
-};
-
 // User services
 export const userService = {
   getProfile: () => api.get('/users/profile').then(r => r.data),
@@ -182,4 +175,35 @@ export const adminService = {
   getDashboardStats: () => api.get('/admin/dashboard/stats').then(r => r.data),
 };
 
+export const cusAuth = {
+  getCustomer:() => api.get('/customer').then(res => res.data.result)
+}
+
+export const profileService = {
+
+  updateCustomer: (id, requestData) =>
+      api
+          .put(`/customer/update/${id}`, requestData) // Gọi endpoint PUT /customer/update/{id}
+          .then(res => res.data.result),
+
+  getCustomerInfo: () =>
+      api
+          .get(`/customer/me`) // Gọi endpoint /customer/me
+          .then(res => res.data.result),
+
+  getTotalOrders: (customerId) =>
+      api
+          .get(`/customer/total_orders/${customerId}`)
+          .then(res => res.data.result),
+
+  getOrdersByCustomer: (customerId) =>
+      api
+          .get(`/customer/order/${customerId}`)
+          .then(res => res.data.result),
+
+  getOrderDetail: (orderId) =>
+      api
+          .get(`/customer/order_detail/${orderId}`)
+          .then(res => res.data.result),
+};
 export default api;
