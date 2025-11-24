@@ -84,7 +84,7 @@ public class CustomerService {
 
         List<ListOrderResponse> list = orderRepository.findByCustomerId(customerId)
                 .stream().map(o -> {
-                    OrderDetailResponse preview = orderDetailRepo.getOrderPreview(o.getOrderId());
+                    DetailResponse preview = orderDetailRepo.getOrderPreview(o.getOrderId());
                     return  ListOrderResponse.builder()
                             .orderId(o.getOrderId())
                             .createDatetime(o.getCreateDatetime())

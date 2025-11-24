@@ -1,5 +1,6 @@
 package com.websales.repository;
 
+import com.websales.dto.response.DetailResponse;
 import com.websales.dto.response.ListOrderDetailResponse;
 import com.websales.dto.response.OrderDetailResponse;
 import com.websales.entity.OrderDetail;
@@ -28,7 +29,7 @@ WHERE od.order_id = ?
 ORDER BY od.order_detail_id ASC
 LIMIT 1
 """, nativeQuery = true)
-    OrderDetailResponse getOrderPreview(Integer orderId);
+    DetailResponse getOrderPreview(Integer orderId);
 
     @Query(value = """
             select od.order_id,

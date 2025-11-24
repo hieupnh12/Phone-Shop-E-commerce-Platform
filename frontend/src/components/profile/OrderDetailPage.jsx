@@ -2,79 +2,85 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
+import {profileService} from "../../services/api";
 
 
-const mockOrderDetail = (orderId) => ({
-    id: orderId,
-    orderCode: '#02434S2503001300',
-    date: '24/03/2025',
-    status: 'Đã nhận hàng',
-    paymentStatus: 'Đã thanh toán trước',
-    paymentMethod: 'Thẻ tín dụng',
-    timeline: [
-        { status: 'Đặt hàng thành công', date: '24/03/2025', time: '19:02', completed: true },
-        { status: 'Đã xác nhận', date: '24/03/2025', time: '19:02', completed: true },
-        { status: 'Đã nhận hàng', date: '24/03/2025', time: '19:02', completed: true },
-        // { status: 'Đang vận chuyển', date: '25/03/2025', time: '10:00', completed: false },
-        // { status: 'Đã giao hàng', date: '25/03/2025', time: '15:30', completed: false },
-    ],
-    customer: {
-        name: 'Nguyễn Nhất Sinh',
-        phone: '0982481094',
-        address: '244 Phạm Văn Đồng, P. Cổ Nhuế, Q. Bắc Từ Liêm, Hà Nội',
-        note: '-',
-    },
-    supportInfo: {
-        storeAddress: '244 Phạm Văn Đồng, P. Cổ Nhuế, Q. Bắc Từ Liêm, Hà Nội',
-        storePhone: '02471007244',
-    },
-    products: [
-        {
-            id: 1,
-            name: 'TÚI CHỐNG SỐC TOMTOC BRIEFCASE MACBOOK PRO 14 GRAY (XÁM)',
-            image: 'https://placehold.co/60x60/f0f0f0/666?text=Bag',
-            price: 1050000,
-            quantity: 1,
-            warrantyEnd: '23/03/2026',
-            canRepurchase: true,
-        },
-        {
-            id: 2,
-            name: 'APPLE MACBOOK PRO 13" / MACBOOK AIR INNOSTYLE DÁN MÀN HÌNH',
-            image: 'https://placehold.co/60x60/f0f0f0/666?text=Dán',
-            price: 320000,
-            quantity: 1,
-            warrantyEnd: '24/04/2025',
-            canRepurchase: true,
-        }
-    ],
-    summary: {
-        subtotal: 1370000, // Tổng tiền hàng
-        discount: 105000,
-        shippingFee: 0, // Miễn phí
-        totalPaid: 1265000, // Tổng số tiền đã thanh toán (Tổng tiền sau giảm giá)
-        totalAmountPaid: 1265000, // Tổng số tiền đã thanh toán (đã thanh toán trước)
-        vatIncluded: true,
-    }
-});
 
 const OrderDetailPage = () => {
-    // Lấy orderId từ URL (ví dụ: /profile/orders/123)
     const { orderId } = useParams();
     const [orderData, setOrderData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        setIsLoading(true);
-        // Giả lập fetching data
-        setTimeout(() => {
-            const data = mockOrderDetail(orderId);
-            setOrderData(data);
-            setIsLoading(false);
-        }, 500);
+        const fetchDetail = async () => {
+            if (!orderId) return;
+
+            try {
+                setIsLoading(true);
+                const apiResult = await profileService.getOrderDetail(orderId); // orderId là string hoặc Integer (Backend dùng Integer)
+
+                const normalizedData = normalizeOrderDetail(apiResult, orderId);
+
+                setOrderData(normalizedData);
+                setError(null);
+            } catch (err) {
+                console.error("Lỗi khi tải chi tiết đơn hàng:", err);
+                setError("Không thể tải chi tiết đơn hàng này.");
+                setOrderData(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchDetail();
     }, [orderId]);
 
-    // Hàm định dạng tiền tệ
+    const normalizeOrderDetail = (apiProducts, id) => {
+        // Vì API chi tiết đơn hàng của bạn chỉ trả về danh sách sản phẩm,
+        // Ta cần phải giả định/lấy các thông tin khác (thông tin khách hàng, tổng tiền) từ các API khác
+        // hoặc từ data gốc nếu có. Ở đây, tôi sẽ dùng mock data cho các phần còn lại.
+
+        const products = apiProducts.map(p => ({
+            id: p.productId,
+            name: p.productName,
+            image: p.picture,
+            price: p.unitPriceBefore,
+            quantity: 1, // Giả định quantity là 1 cho mỗi item (hoặc cần API chi tiết hơn)
+            warrantyEnd: '23/03/2026', // Mock
+            canRepurchase: true, // Mock
+        }));
+
+        const totalAmount = products.reduce((sum, p) => sum + p.price, 0);
+
+        return {
+            id: id,
+            orderCode: `#${id}`,
+            date: new Date().toLocaleDateString('vi-VN'), // Mock ngày hiện tại
+            status: 'Đã nhận hàng', // Mock
+            // ... các thông tin Mock khác (customer, summary, timeline, supportInfo)
+            // ... cần được fetch từ các API khác nếu có
+            products: products,
+            summary: {
+                subtotal: totalAmount,
+                discount: 0,
+                shippingFee: 0,
+                totalPaid: totalAmount,
+                totalAmountPaid: totalAmount,
+                vatIncluded: true,
+            },
+            customer: {
+                name: 'Nguyễn Nhất Sinh', phone: '0982481094', address: '244 Phạm Văn Đồng, Hà Nội', note: '-',
+            },
+            supportInfo: {
+                storeAddress: '244 Phạm Văn Đồng, P. Cổ Nhuế, Q. Bắc Từ Liêm, Hà Nội', storePhone: '02471007244',
+            },
+            timeline: [
+                { status: 'Đặt hàng thành công', date: '24/03/2025', time: '19:02', completed: true },
+                { status: 'Đã giao hàng', date: '24/03/2025', time: '19:02', completed: true },
+            ],
+        };
+    };
+
     const formatCurrency = (amount) => {
         return amount.toLocaleString('vi-VN') + 'đ';
     };
@@ -83,19 +89,18 @@ const OrderDetailPage = () => {
         return (
             <div className="bg-white p-8 rounded-xl shadow-lg min-h-[500px] flex items-center justify-center">
                 <Loader2 size={32} className="animate-spin text-red-500" />
-                <p className="ml-3 text-lg text-gray-600">Đang tải chi tiết đơn hàng...</p>
+                <p className="ml-3 text-lg text-gray-600">Đang tải chi tiết đơn hàng {orderId}...</p>
             </div>
         );
     }
 
-    if (!orderData) {
+    if (error || !orderData) {
         return (
             <div className="bg-white p-8 rounded-xl shadow-lg min-h-[500px] flex items-center justify-center">
-                <p className="text-xl text-red-500">Không tìm thấy đơn hàng {orderId}.</p>
+                <p className="text-xl text-red-500">Lỗi: {error || `Không tìm thấy đơn hàng ${orderId}.`}</p>
             </div>
         );
     }
-
     // --- Components Con cho Bố cục ---
 
     const InfoRow = ({ label, value, currency = false, highlight = false, note = '' }) => (

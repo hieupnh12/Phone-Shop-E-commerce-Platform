@@ -181,6 +181,17 @@ export const cusAuth = {
 }
 
 export const profileService = {
+
+  updateCustomer: (id, requestData) =>
+      api
+          .put(`/customer/update/${id}`, requestData) // Gọi endpoint PUT /customer/update/{id}
+          .then(res => res.data.result),
+
+  getCustomerInfo: () =>
+      api
+          .get(`/customer/me`) // Gọi endpoint /customer/me
+          .then(res => res.data.result),
+
   getTotalOrders: (customerId) =>
       api
           .get(`/customer/total_orders/${customerId}`)

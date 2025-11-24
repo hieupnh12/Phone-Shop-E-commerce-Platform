@@ -46,7 +46,7 @@ public class CustomerController {
                 .build();
      }
 
-     @GetMapping
+     @GetMapping("/me")
      public ApiResponse<CustomerResponse> getCustomer() {
         return ApiResponse.<CustomerResponse>builder()
                 .result(customerService.getCustomer())

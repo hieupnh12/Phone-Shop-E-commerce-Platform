@@ -37,9 +37,9 @@ import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
 import ProfilePageLayout from './components/profile/ProfilePageLayout';
 import OrderDetailPage from "./components/profile/OrderDetailPage";
-import { getUserRole } from "./contexts/AuthContext";
-// Protected Route Component - check JWT token via getUserRole
+
 import OrderHistory from "./pages/client/OrderHistory";
+import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -51,11 +51,16 @@ import OrderHistory from "./pages/client/OrderHistory";
 // Bypass login check tạm thời
 const ProtectedRoute = ({ children }) => children;
 
+const RouterInitializer = () => {
+    useUrlTokenHandler();
+    return <ClientHomePage />;
+}
+
 const router = createBrowserRouter(
   [
     {
-      path: "/",
-      element: <ClientHomePage />,
+        path: "/",
+        element: <RouterInitializer />,
       children: [
         { index: true, element: <Home /> },
         {
@@ -162,13 +167,14 @@ const router = createBrowserRouter(
 const queryClient = new QueryClient();
 
 
+
 function App() {
   return (
     <AuthProvider>
       <CartProvider>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <Chatbot />
+            <RouterProvider router={router} />
+            <Chatbot />
         </QueryClientProvider>
       </CartProvider>
     </AuthProvider>

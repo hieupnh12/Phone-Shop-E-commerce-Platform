@@ -9,11 +9,11 @@ export default function RegistrationForm() {
     const [tempToken, setTempToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // 1. Loại bỏ Email khỏi state
     const [formData, setFormData] = useState({
         fullName: '',
         birthDate: '',
         phone: '',
-        email: ''
     });
 
     useEffect(() => {
@@ -22,6 +22,7 @@ export default function RegistrationForm() {
 
         if (token) {
             setTempToken(token);
+
         } else {
             navigate('/login', { replace: true });
         }
@@ -40,6 +41,7 @@ export default function RegistrationForm() {
     const handleSubmit = async () => {
         if (!formData.fullName || !formData.phone) {
             console.error('Lỗi: Vui lòng điền đầy đủ thông tin bắt buộc!');
+            alert('Vui lòng điền đầy đủ Họ và tên, Số điện thoại!');
             return;
         }
 
@@ -53,12 +55,11 @@ export default function RegistrationForm() {
                 fullName: formData.fullName,
                 phoneNumber: formData.phone,
                 birthDate: formData.birthDate || null,
-                email: formData.email
             };
 
             const response = await loginService.postCompleteProfile(requestData, tempToken);
 
-            const finalJwt = response.data.result.token; // Cập nhật dựa trên cấu trúc ApiResponse<CompleteProfileResponse>
+            const finalJwt = response.data.token;
 
             localStorage.setItem('jwtToken', finalJwt);
 
@@ -66,14 +67,11 @@ export default function RegistrationForm() {
 
         } catch (error) {
             console.error('Lỗi cập nhật hồ sơ:', error.response ? error.response.data : error.message);
-            // Hiển thị lỗi từ backend (ví dụ: SĐT không hợp lệ)
-            // (Thực tế nên hiển thị thông báo lỗi trên UI)
             alert('Cập nhật thất bại: ' + (error.response?.data?.message || 'Lỗi không xác định'));
         }
     };
 
     const handleBack = () => {
-        // Chuyển hướng về trang đăng nhập
         navigate('/login');
     };
 
@@ -101,20 +99,22 @@ export default function RegistrationForm() {
                     {/* Header */}
                     <div className="text-center mb-10">
                         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-2">
-                            Cập nhật thông tin
+                            Hoàn tất Hồ sơ
                         </h1>
-                        <div className="h-1 w-24 bg-gradient-to-r from-cyan-400 to-blue-500 mx-auto rounded-full"></div>
+                        <p className="text-slate-400 text-lg">Vui lòng cung cấp Số điện thoại để hoàn tất đăng ký.</p>
+                        <div className="h-1 w-24 bg-gradient-to-r from-cyan-400 to-blue-500 mx-auto rounded-full mt-3"></div>
                     </div>
 
-                    <h2 className="text-xl font-semibold text-slate-200 mb-8">Thông tin cá nhân</h2>
+                    <h2 className="text-xl font-semibold text-slate-200 mb-8">Thông tin cơ bản</h2>
 
                     <div>
-                        {/* Form Fields */}
+                        {/* 3. BỐ CỤC 2 CỘT CÂN ĐỐI CHO 3 TRƯỜNG */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                            {/* Họ và tên */}
+
+                            {/* Họ và tên (Cột 1, Hàng 1) */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-slate-300">
-                                    Họ và tên
+                                    Họ và tên <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -126,10 +126,10 @@ export default function RegistrationForm() {
                                 />
                             </div>
 
-                            {/* Ngày sinh */}
+                            {/* Ngày sinh (Cột 2, Hàng 1) */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-slate-300">
-                                    Ngày sinh
+                                    Ngày sinh (Tùy chọn)
                                 </label>
                                 <input
                                     type="date"
@@ -140,8 +140,8 @@ export default function RegistrationForm() {
                                 />
                             </div>
 
-                            {/* Số điện thoại (BẮT BUỘC) */}
-                            <div className="space-y-2">
+                            {/* Số điện thoại (Cột 1, Hàng 2 - chiếm 2 cột) */}
+                            <div className="space-y-2 md:col-span-2">
                                 <label className="block text-sm font-medium text-slate-300">
                                     Số điện thoại <span className="text-red-500">*</span>
                                 </label>
@@ -155,20 +155,8 @@ export default function RegistrationForm() {
                                 />
                             </div>
 
-                            {/* Email (Read-only từ Google) */}
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-slate-300">
-                                    Email
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    readOnly // Email được lấy từ Google, không cho phép sửa
-                                    placeholder="Nhập email"
-                                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-400 cursor-not-allowed"
-                                />
-                            </div>
+                            {/* 4. ĐÃ LOẠI BỎ TRƯỜNG EMAIL */}
+
                         </div>
 
                         {/* Buttons */}

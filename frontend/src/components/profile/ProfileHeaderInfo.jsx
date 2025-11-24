@@ -7,7 +7,7 @@ const MOCK_CUSTOMER_ID = 11;
 const ProfileHeaderInfo = ({ customer }) => {
 
 
-    const { data: customerStats, loading } = useFetchTotalInfo(MOCK_CUSTOMER_ID)
+    const { data: customerStats, loading } = useFetchTotalInfo(customer?.customerId || MOCK_CUSTOMER_ID)
 
     const defaultData = {
         name: 'Nguyễn Nhất Sinh',
@@ -19,6 +19,8 @@ const ProfileHeaderInfo = ({ customer }) => {
     };
     const data = {
         ...defaultData,
+        fullName: customer?.fullName || defaultData.fullName,
+        phoneNumber: customer?.phoneNumber || defaultData.phoneNumber,
         totalOrders: customerStats?.totalOrders || defaultData.totalOrders,
         totalSavings: customerStats?.totalAmount || defaultData.totalSavings, // totalAmount từ API sẽ là totalSavings
     };
@@ -62,9 +64,9 @@ const ProfileHeaderInfo = ({ customer }) => {
                         <img src="/image/loginbg.png" alt="Avatar" className="w-full h-full object-cover rounded-full" />
                     </div>
                     <div className="flex flex-col justify-center">
-                        <h3 className="text-xl font-bold text-gray-800">{data.name}</h3>
+                        <h3 className="text-xl font-bold text-gray-800">{data.fullName}</h3>
                         <p className="text-sm text-gray-500 my-1">
-                            {data.phone}
+                            {data.phoneNumber}
                         </p>
                         <div className="flex items-center mt-1">
                             {renderRankTag(data.rank)}

@@ -1,24 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Plus, Save, X } from 'lucide-react';
 import InputField  from "../common/InputField";
 import AddressBook  from "./AddressBook";
+import {  useOutletContext } from 'react-router-dom';
+import { profileService} from "../../services/api";
+import { useAuth } from '../../contexts/AuthContext';
 
 
 
 
 const PersonalInfoForm = () => {
+    const { getCurrentUser } = useAuth();
+    const { customerInfo } = useOutletContext();
 
-    const initialInfo = {
-        fullName: 'Nguyễn Nhất Sinh',
-        phone: '0982481094',
-        gender: 'male',
-        email: 'sinh.nguyen@example.com',
-        dateOfBirth: '2004-02-13',
-    };
-
-    const [customerInfo, setCustomerInfo] = useState(initialInfo);
-    const [formData, setFormData] = useState(initialInfo)
+    const [formData, setFormData] = useState({});
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [updateError, setUpdateError] = useState(null);
+
+
+
+    useEffect(() => {
+        if (customerInfo) {
+
+            let genderString = '';
+            if (customerInfo.gender === true) genderString = 'male';
+            else if (customerInfo.gender === false) genderString = 'female';
+
+            setFormData({
+                customerId: customerInfo.customerId,
+                fullName: customerInfo.fullName || '',
+                phone: customerInfo.phoneNumber || '',
+                gender: genderString,
+                email: customerInfo.email || '',
+                dateOfBirth: customerInfo.birthDate?.split('T')[0] || '',
+            });
+        }
+    }, [customerInfo]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -30,16 +48,51 @@ const PersonalInfoForm = () => {
     };
 
     const handleCancelClick = () => {
-        setFormData(customerInfo);
+        if (customerInfo) {
+            setFormData({
+                customerId: customerInfo.customerId,
+                fullName: customerInfo.fullName || '',
+                phone: customerInfo.phoneNumber || '',
+                gender: customerInfo.gender || '',
+                email: customerInfo.email || '',
+                dateOfBirth: customerInfo.birthDate?.split('T')[0] || '',
+            });
+        }
         setIsEditing(false);
     };
 
-    const handleSaveClick = (e) => {
+    const handleSaveClick = async (e) => {
         e.preventDefault();
-        // Giả lập logic gọi API và cập nhật trạng thái
-        console.log("Saving data:", formData);
-        setCustomerInfo(formData);
-        setIsEditing(false);
+        setIsSaving(true);
+        setUpdateError(null);
+
+        // Tạo request body khớp với CustomerUpdateRequest (Spring Boot)
+        const requestBody = {
+            fullName: formData.fullName,
+            email: formData.email,
+            // Chuyển đổi lại giới tính từ string sang boolean
+            gender: formData.gender === 'male' ? true : (formData.gender === 'female' ? false : null),
+            birthDate: formData.dateOfBirth, // Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
+            address: customerInfo.address, // Giữ nguyên address hiện tại (nếu API update không yêu cầu nó)
+        };
+
+        const customerId = formData.customerId;
+
+        try {
+            const response = await profileService.updateCustomer(customerId, requestBody);
+
+            console.log("Saving data successful:", response);
+
+            await getCurrentUser();
+
+            setIsEditing(false);
+
+        } catch (error) {
+            console.error("Lỗi khi lưu thông tin:", error);
+            setUpdateError("Lỗi: Không thể cập nhật thông tin. Vui lòng thử lại.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleAddAddressClick = () => {
@@ -57,6 +110,11 @@ const PersonalInfoForm = () => {
             </span>
         </div>
     );
+    const displayGender = (gender) => {
+        if (gender === 'male' || gender === true) return 'Nam';
+        if (gender === 'female' || gender === false) return 'Nữ';
+        return 'Khác';
+    }
 
     return (
         <form onSubmit={handleSaveClick} className="space-y-6">
@@ -154,12 +212,15 @@ const PersonalInfoForm = () => {
                         </>
                     ) : (
                         <>
-                            <InfoDisplayItem label="Họ và tên" value={customerInfo.fullName} />
-                            <InfoDisplayItem label="Số điện thoại" value={customerInfo.phone} />
-                            <InfoDisplayItem label="Email" value={customerInfo.email} />
-                            <InfoDisplayItem label="Ngày sinh" value={customerInfo.dateOfBirth} />
-                            <InfoDisplayItem label="Giới tính" value={customerInfo.gender} />
-                            <InfoDisplayItem label="Địa chỉ mặc định" value="Chưa có" />
+                            <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
+                            <InfoDisplayItem label="Số điện thoại" value={formData.phone} />
+                            <InfoDisplayItem label="Email" value={formData.email} />
+                            <InfoDisplayItem
+                                label="Ngày sinh"
+                                value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('vi-VN') : '-'}
+                            />
+                            <InfoDisplayItem label="Giới tính" value={displayGender(formData.gender)} />
+                            <InfoDisplayItem label="Địa chỉ mặc định" value={customerInfo.address || "Chưa có"} />
                         </>
                     )}
                 </div>

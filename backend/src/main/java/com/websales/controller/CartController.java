@@ -13,9 +13,11 @@ import com.websales.repository.PaymentMethodRepository;
 import com.websales.repository.PaymentTransactionRepository;
 import com.websales.repository.ProductVersionRepository;
 import com.websales.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/cart")
 public class CartController {
@@ -52,10 +55,11 @@ public class CartController {
     // --- GET GIỎ HÀNG ---
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getCart(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<?> getCart() {
         // Lấy customerId từ JWT token
-        Long customerId = Long.valueOf(jwt.getSubject());
-
+        var context = SecurityContextHolder.getContext();
+        Long customerId = Long.parseLong(context.getAuthentication().getName());
+        log.info("Customer ID: {}", customerId);
         // Lấy cart ACTIVE của customer với cart items được eager fetch
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
         

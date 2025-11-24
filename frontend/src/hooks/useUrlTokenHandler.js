@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import constants from "../constants/index.js";
 
-
-export const useTokenExtractor = () => {
+export const useUrlTokenHandler = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -11,14 +12,13 @@ export const useTokenExtractor = () => {
         const token = params.get('token');
 
         if (token) {
-            console.log("Tìm thấy JWT từ URL. Đang lưu trữ và dọn dẹp URL.");
+            console.log("Tìm thấy JWT trong URL. Đang lưu trữ vào Cookie và dọn dẹp URL.");
 
-            localStorage.setItem('jwtToken', token);
-
-
+            Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+            console.log(token + "")
             navigate(location.pathname, { replace: true });
+
         }
 
     }, [location, navigate]);
-
 };

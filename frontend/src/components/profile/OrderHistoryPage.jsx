@@ -1,7 +1,10 @@
 // file OrderHistoryPage
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Calendar, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom'; // ✅ Đã thêm import Link
+import {profileService} from "../../services/api"
+import { Link, useOutletContext } from 'react-router-dom';
+
+const MOCK_CUSTOMER_ID = 11;
 
 const orderTabs = [
     { id: 'all', label: 'Tất cả' },
@@ -12,64 +15,73 @@ const orderTabs = [
     { id: 'returned', label: 'Trả hàng' }, // Đã đổi 'paid' thành 'returned' cho rõ ràng
 ];
 
-const mockOrders = [
-    {
-        id: '#02434S2503001300',
-        date: '24/03/2025',
-        status: 'delivered',
-        products: [
-            {
-                image: 'https://via.placeholder.com/60/ccc?text=Product1',
-                name: 'TÚI CHỐNG SỐC TOMTOC BRIEFCASE MACBOOK PRO 14 GRAY (XÁM)',
-                price: 1050000,
-                quantity: 1,
-            },
-            {
-                image: 'https://via.placeholder.com/60/ccc?text=Product2',
-                name: 'Cùng 1 sản phẩm khác',
-                price: 235000,
-                quantity: 1,
-            },
-        ],
-        totalAmount: 1285000,
-    },
-    {
-        id: '#02434S2503001293',
-        date: '24/03/2025',
-        status: 'shipping', // Đã đổi status để test
-        products: [
-            {
-                image: 'https://via.placeholder.com/60/ccc?text=MacbookAir',
-                name: 'APPLE MACBOOK AIR M1 256GB 2020 XÁM CHÍNH HÃNG (MGN63)',
-                price: 15892000,
-                quantity: 1,
-            },
-        ],
-        totalAmount: 15892000,
-    },
-    {
-        id: '#02434S2503001290',
-        date: '24/03/2025',
-        status: 'cancelled',
-        products: [
-            {
-                image: 'https://via.placeholder.com/60/ccc?text=MacbookAir',
-                name: 'APPLE MACBOOK AIR M1 256GB 2020 XÁM CHÍNH HÃNG (MGN63)',
-                price: 22990000,
-                quantity: 1,
-            },
-        ],
-        totalAmount: 22990000,
-    },
-];
+
 
 const OrderHistoryPage = () => {
+    const { customerInfo } = useOutletContext();
+    const customerId = customerInfo?.customerId;
 
 
     const [activeTab, setActiveTab] = useState('all');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [startDate, setStartDate] = useState('01/12/2020');
-    const [endDate, setEndDate] = useState('22/11/2025');
+    const [searchTerm, setSearchTerm] = useState('')
+
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                setLoading(true);
+                // Gọi API lấy danh sách đơn hàng theo CustomerID
+                const data = await profileService.getOrdersByCustomer(customerId);
+
+                // 💡 Xử lý/Chuẩn hóa dữ liệu từ API:
+                // Nhóm các OrderDetail lại với nhau theo OrderId
+                const groupedOrders = groupAndNormalizeOrders(data);
+
+                setOrders(groupedOrders);
+                setError(null);
+            } catch (err) {
+                console.error("Lỗi khi tải đơn hàng:", err);
+                setError("Không thể tải lịch sử đơn hàng.");
+                setOrders([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrders();
+    }, [customerId]);
+
+    const groupAndNormalizeOrders = (apiData) => {
+        const orderMap = {};
+
+        apiData.forEach(item => {
+            const { orderId, createDatetime, totalAmount, status, orderDetail } = item;
+
+            const product = {
+                image: orderDetail.picture,
+                name: orderDetail.productName,
+                price: orderDetail.unitPriceBefore,
+                quantity: orderDetail.remainingProducts,
+            };
+
+            if (!orderMap[orderId]) {
+                orderMap[orderId] = {
+                    id: `#${orderId}`,
+                    orderId: orderId,
+                    date: new Date(createDatetime).toLocaleDateString('vi-VN'),
+                    status: status.toLowerCase(),
+                    totalAmount: totalAmount,
+                    products: [product],
+                };
+            } else {
+                orderMap[orderId].products.push(product);
+            }
+        });
+
+        return Object.values(orderMap);
+    };
 
     const formatCurrency = (amount) => {
         return amount.toLocaleString('vi-VN') + 'đ';
@@ -90,25 +102,23 @@ const OrderHistoryPage = () => {
         }
     };
 
-    const filteredOrders = mockOrders.filter(order => {
-        if (activeTab === 'all') return true;
+    const filteredOrders = orders.filter(order => {
+        // 2. Lọc theo Tab (Sử dụng order.status từ API)
+        if (activeTab !== 'all' && order.status !== activeTab) return false;
 
-        // ✅ Cập nhật logic lọc để khớp với các ID/Status mới
-        if (activeTab === 'delivered' && order.status === 'delivered') return true;
-        if (activeTab === 'cancelled' && order.status === 'cancelled') return true;
-        if (activeTab === 'pending' && order.status === 'pending') return true;
-        if (activeTab === 'shipping' && order.status === 'shipping') return true;
-        if (activeTab === 'returned' && order.status === 'returned') return true;
-
-        return false;
-    }).filter(order => {
+        // 3. Lọc theo SearchTerm
         if (searchTerm === '') return true;
         return order.products.some(product =>
             product.name.toLowerCase().includes(searchTerm.toLowerCase())
         ) || order.id.toLowerCase().includes(searchTerm.toLowerCase());
     });
+    if (loading) {
+        return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] flex justify-center items-center">Đang tải đơn hàng...</div>;
+    }
 
-
+    if (error) {
+        return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] text-red-500 flex justify-center items-center">Lỗi: {error}</div>;
+    }
     return (
         <div className="bg-white p-6 shadow-lg rounded-xl">
             {/* Header của phần Đơn hàng của tôi (Mẫu 2) */}
@@ -146,15 +156,15 @@ const OrderHistoryPage = () => {
             </div>
 
             {/* Bộ lọc thời gian (Mẫu 1) */}
-            <div className="flex items-center space-x-4 mb-6">
-                <span className="text-gray-700 font-medium">Lịch sử mua hàng</span>
-                <div className="flex items-center border border-gray-300 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50">
-                    <span className="text-gray-700 text-sm">{startDate}</span>
-                    <ChevronRight size={16} className="text-gray-400 mx-2 rotate-90" />
-                    <span className="text-gray-700 text-sm">{endDate}</span>
-                    <Calendar size={18} className="text-gray-400 ml-3" />
-                </div>
-            </div>
+            {/*<div className="flex items-center space-x-4 mb-6">*/}
+            {/*    <span className="text-gray-700 font-medium">Lịch sử mua hàng</span>*/}
+            {/*    <div className="flex items-center border border-gray-300 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50">*/}
+            {/*        <span className="text-gray-700 text-sm">{startDate}</span>*/}
+            {/*        <ChevronRight size={16} className="text-gray-400 mx-2 rotate-90" />*/}
+            {/*        <span className="text-gray-700 text-sm">{endDate}</span>*/}
+            {/*        <Calendar size={18} className="text-gray-400 ml-3" />*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Hiển thị danh sách đơn hàng hoặc Empty State */}
             {filteredOrders.length > 0 ? (
@@ -172,11 +182,19 @@ const OrderHistoryPage = () => {
 
                             {order.products.map((product, index) => (
                                 <div key={index} className="flex items-center py-2">
-                                    <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded mr-4" />
+                                    <img src={product.image} alt={product.name}
+                                         className="w-16 h-16 object-cover rounded mr-4"/>
                                     <div className="flex-grow">
                                         <p className="font-medium text-gray-800 text-base">{product.name}</p>
                                         <p className="text-gray-600 text-sm">{formatCurrency(product.price)}</p>
                                     </div>
+                                    { product.quantity > 0 &&
+                                        (<div className="font-medium text-gray-800 text-base">
+                                        Cùng {product.quantity} sản phẩm khác
+                                </div>)
+
+                                    }
+
                                     <div className="text-right">
                                         <p className="text-red-500 font-bold text-lg">{formatCurrency(order.totalAmount)}</p>
 
@@ -186,7 +204,7 @@ const OrderHistoryPage = () => {
                                             className="text-blue-600 hover:text-blue-800 text-sm flex items-center mt-1"
                                         >
                                             Xem chi tiết
-                                            <ChevronRight size={14} className="ml-1" />
+                                            <ChevronRight size={14} className="ml-1"/>
                                         </Link>
                                     </div>
                                 </div>

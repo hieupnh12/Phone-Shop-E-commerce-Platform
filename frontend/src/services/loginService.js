@@ -1,6 +1,6 @@
 import axiosClient from "../api";
 import constants from "../constants";
-import { GET, POST } from "../constants/httpMethod";
+import {GET, POST, PUT} from "../constants/httpMethod";
 import Cookies from 'js-cookie'
 
 const LOGIN_API_ENDPOINT = '/employee';
@@ -18,7 +18,7 @@ const loginApi = {
   },
 
   postCompleteProfile: (data, tempToken) => {
-    return axiosClient[POST](
+    return axiosClient[PUT](
         `customer/complete-profile`,
         data,
         {
