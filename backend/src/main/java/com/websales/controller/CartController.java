@@ -9,13 +9,17 @@ import com.websales.enums.PaymentStatus;
 import com.websales.enums.TransactionType;
 import com.websales.repository.CartItemRepository;
 import com.websales.repository.CartRepository;
+import com.websales.repository.CustomerRepo;
 import com.websales.repository.PaymentMethodRepository;
 import com.websales.repository.PaymentTransactionRepository;
 import com.websales.repository.ProductVersionRepository;
 import com.websales.service.OrderService;
+import com.websales.service.PayOSService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +39,7 @@ public class CartController {
     private final PaymentMethodRepository paymentMethodRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PayOSService payOSService;
+    private final CustomerRepo customerRepo;
 
     public CartController(CartRepository cartRepository,
             CartItemRepository cartItemRepository,
@@ -42,7 +47,8 @@ public class CartController {
             OrderService orderService,
             PaymentMethodRepository paymentMethodRepository,
             PaymentTransactionRepository paymentTransactionRepository,
-            PayOSService payOSService) {
+            PayOSService payOSService,
+            CustomerRepo customerRepo) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productVersionRepository = productVersionRepository;
@@ -50,6 +56,7 @@ public class CartController {
         this.paymentMethodRepository = paymentMethodRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.payOSService = payOSService;
+        this.customerRepo = customerRepo;
     }
 
     // --- GET GIỎ HÀNG ---
@@ -59,7 +66,7 @@ public class CartController {
         // Lấy customerId từ JWT token
         var context = SecurityContextHolder.getContext();
         Long customerId = Long.parseLong(context.getAuthentication().getName());
-        log.info("Customer ID: {}", customerId);
+
         // Lấy cart ACTIVE của customer với cart items được eager fetch
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
         
@@ -414,7 +421,17 @@ public class CartController {
             paymentMethodStr = "cod"; // Mặc định là COD
         }
         final String finalPaymentMethodStr = paymentMethodStr; // Make it final for lambda
+        
+        // Lấy address từ orderData, nếu không có thì lấy từ thông tin khách hàng trong database
         String address = (String) orderData.get("address");
+        if (address == null || address.isEmpty()) {
+            // Lấy thông tin khách hàng từ database
+            Optional<Customer> customerOpt = customerRepo.findById(customerId);
+            if (customerOpt.isPresent()) {
+                Customer customer = customerOpt.get();
+                address = customer.getAddress();
+            }
+        }
         
         // Lấy hoặc tạo PaymentMethod
         PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodType(finalPaymentMethodStr)
