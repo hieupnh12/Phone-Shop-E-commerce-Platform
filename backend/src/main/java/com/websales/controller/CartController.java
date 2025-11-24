@@ -97,8 +97,8 @@ public class CartController {
                     int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
                     // Lấy image từ productVersion nếu có, nếu không thì lấy từ product
-                    String image = (pv.getPicture() != null && !pv.getPicture().isEmpty()) 
-                            ? pv.getPicture() 
+                    String image = (pv.getImage() != null && !pv.getImage().isEmpty())
+                            ? pv.getImage()
                             : (product.getImage() != null ? product.getImage() : "");
 
                     CartItemResponse resp = new CartItemResponse(

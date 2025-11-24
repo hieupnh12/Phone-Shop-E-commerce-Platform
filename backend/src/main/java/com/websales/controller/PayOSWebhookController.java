@@ -99,15 +99,17 @@ public class PayOSWebhookController {
                 transaction.setResponseMessage("Thanh toán thành công qua PayOS. Order Code: " + orderCode);
                 
                 // Xóa cart items sau khi thanh toán thành công
-                Long customerId = order.getCustomerId();
-                if (customerId != null) {
+                if (order.getCustomerId() != null && order.getCustomerId().getCustomerId() != null) {
+                    Long customerId = order.getCustomerId().getCustomerId();
                     cartRepository.findFirstByCustomerIdAndStatus(customerId, true)
                             .ifPresent(cart -> {
                                 cart.getCartItems().clear();
                                 cart.setUpdateDate(java.time.LocalDateTime.now());
                                 cartRepository.save(cart);
-                                log.info("Cart cleared for customer {} after successful payment", customerId);
+                                log.info("Cart cleared for customer {} after successful PayOS payment", customerId);
                             });
+                } else {
+                    log.warn("Cannot clear cart: customerId is null for order {}", orderId);
                 }
                 
                 log.info("Order {} payment successful via PayOS", orderId);
