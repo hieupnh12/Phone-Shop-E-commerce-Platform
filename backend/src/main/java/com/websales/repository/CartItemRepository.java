@@ -9,16 +9,16 @@ import java.util.Optional;
 
 public interface CartItemRepository extends JpaRepository<CartItem, Integer> {
 
-    // Tìm item theo cartId và IMEI
-    Optional<CartItem> findByCart_IdCartAndProductItem_Imei(Integer idCart, String imei);
+    // Tìm item theo cartId và productVersionId
+    Optional<CartItem> findByCart_IdCartAndProductVersion_IdVersion(Integer idCart, String productVersionId);
 
-    // Xoá item theo userId + imei (join qua Carts)
+    // Xoá item theo customerId + productVersionId (join qua Carts)
     @Modifying
     @Query("""
                DELETE FROM CartItem ci
-               WHERE ci.cart.userId = :userId
-                 AND ci.productItem.imei = :imei
+               WHERE ci.cart.customerId = :customerId
+                 AND ci.productVersion.idVersion = :productVersionId
             """)
-    void deleteByUserIdAndImei(String userId, String imei);
+    void deleteByCustomerIdAndProductVersionId(Long customerId, String productVersionId);
 
 }

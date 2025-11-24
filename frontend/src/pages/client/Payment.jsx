@@ -1,37 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit } from 'lucide-react';
+import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2 } from 'lucide-react';
+import { cartService, customerService } from '../../services/api';
+
+// Format tiền VND
+const vnd = (n) =>
+  new Intl.NumberFormat("vi-VN", { 
+    style: "currency", 
+    currency: "VND", 
+    maximumFractionDigits: 0 
+  }).format(Number.isFinite(n) ? n : 0);
 
 export default function Payment() {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState('cod');
-  const [customerInfo] = useState({
-    name: 'Nguyễn Văn A',
-    phone: '0901234567',
-    email: 'nguyenvana@gmail.com',
-    address: '123 Đường Láng, Hà Nội'
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [cartItems, setCartItems] = useState([]);
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: ''
   });
 
-  const [orderItems] = useState([
-    {
-      name: 'K5 / Set Wing Gundam Zero EW +',
-      variant: 'Mô hình Robot - 2.5.1.1',
-      price: 1990000
-    }
-  ]);
+  // Load cart data and customer info
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load cart
+        const cartData = await cartService.getCart();
+        if (cartData?.success && cartData.cartItems) {
+          setCartItems(cartData.cartItems);
+        } else {
+          setError('Không thể tải giỏ hàng');
+        }
+        
+        // Load customer info from API
+        try {
+          const customerData = await customerService.getMyCustomerInfo();
+          if (customerData?.result) {
+            const customer = customerData.result;
+            setCustomerInfo({
+              name: customer.fullName || customer.name || 'Khách hàng',
+              phone: customer.phoneNumber || customer.phone || '',
+              email: customer.email || '',
+              address: customer.address || ''
+            });
+          }
+        } catch (e) {
+          // Nếu không lấy được customer info, dùng default
+          console.warn('Could not load customer info:', e);
+          setCustomerInfo({
+            name: 'Khách hàng',
+            phone: '',
+            email: '',
+            address: ''
+          });
+        }
+      } catch (e) {
+        setError(e.message || 'Lỗi kết nối');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const shippingFee = 0;
-  const subtotal = orderItems.reduce((sum, item) => sum + item.price, 0);
+    loadData();
+  }, []);
+
+  const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
+  const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
   const total = subtotal + shippingFee;
 
   const handlePaymentChange = (method) => {
     setPaymentMethod(method);
   };
 
-  const handlePlaceOrder = () => {
-    // Xử lý đặt hàng
-    console.log('Đặt hàng với phương thức:', paymentMethod);
-    // Navigate to success page or handle order
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) {
+      setError('Giỏ hàng trống');
+      return;
+    }
+
+    try {
+      setPlacingOrder(true);
+      setError('');
+      
+      // Gọi API checkout để tạo order
+      const orderData = {
+        total: total,
+        subtotal: subtotal,
+        shippingFee: shippingFee,
+        paymentMethod: paymentMethod,
+        note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.'
+      };
+
+      const response = await cartService.createOrder(orderData);
+      
+      if (response?.success) {
+        // Navigate to orders page
+        navigate('/orders');
+      } else {
+        setError(response?.message || 'Không thể đặt hàng');
+      }
+    } catch (e) {
+      setError(e.message || 'Lỗi khi đặt hàng');
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const handleEditOrder = () => {
@@ -95,9 +176,13 @@ export default function Payment() {
                 <StickyNote className="w-5 h-5" />
                 Ghi chú đơn hàng
               </h3>
-              <p className="text-gray-600 text-sm">
-                Giao hàng trong giờ hành chính. Gọi trước khi giao.
-              </p>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Giao hàng trong giờ hành chính. Gọi trước khi giao."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                rows="3"
+              />
             </div>
 
             {/* Phương thức thanh toán */}
@@ -170,58 +255,110 @@ export default function Payment() {
           </div>
 
           {/* Right Column - Đơn hàng */}
-          <div>
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              {orderItems.map((item, index) => (
-                <div key={index} className="p-5 border-b border-gray-200 last:border-b-0">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{item.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">{item.variant}</div>
+          <div className="space-y-5">
+            {loading ? (
+              <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-4" />
+                <p className="text-gray-600">Đang tải thông tin đơn hàng...</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  {cartItems.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <p>Giỏ hàng trống</p>
+                      <button
+                        onClick={() => navigate('/cart')}
+                        className="mt-4 text-rose-600 hover:text-rose-700 font-medium"
+                      >
+                        Quay lại giỏ hàng
+                      </button>
                     </div>
-                    <div className="font-semibold text-rose-600 ml-4">
-                      {item.price.toLocaleString('vi-VN')}đ
+                  ) : (
+                    <>
+                      {cartItems.map((item, index) => (
+                        <div key={item.productVersionId || index} className="p-5 border-b border-gray-200 last:border-b-0">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{item.productName || 'Sản phẩm'}</div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                Số lượng: {item.quantity || 1}
+                              </div>
+                            </div>
+                            <div className="font-semibold text-rose-600 ml-4">
+                              {vnd((item.price || 0) * (item.quantity || 1))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+
+                {cartItems.length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-5 border-b border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-900">Tạm tính</div>
+                        <div className="font-semibold text-gray-900">{vnd(subtotal)}</div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 border-b border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-900">Phí vận chuyển</div>
+                        <div className="font-semibold text-rose-600">
+                          {shippingFee === 0 ? 'Miễn phí' : vnd(shippingFee)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-rose-50 p-5">
+                      <div className="flex justify-between items-center text-lg font-semibold text-rose-600">
+                        <div>Tổng cộng</div>
+                        <div>{vnd(total)}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )}
 
-              <div className="p-5 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <div className="text-gray-900">Phí vận chuyển</div>
-                  <div className="font-semibold text-rose-600">
-                    {shippingFee === 0 ? 'Miễn phí' : `${shippingFee.toLocaleString('vi-VN')}đ`}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    {error}
                   </div>
-                </div>
-              </div>
+                )}
 
-              <div className="bg-rose-50 p-5">
-                <div className="flex justify-between items-center text-lg font-semibold text-rose-600">
-                  <div>Tổng cộng</div>
-                  <div>{total.toLocaleString('vi-VN')}đ</div>
-                </div>
-              </div>
-            </div>
+                <button 
+                  onClick={handlePlaceOrder}
+                  disabled={loading || placingOrder || cartItems.length === 0}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2 hover:transform hover:-translate-y-0.5"
+                >
+                  {placingOrder ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Đặt hàng
+                    </>
+                  )}
+                </button>
 
-            <button 
-              onClick={handlePlaceOrder}
-              className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3.5 px-6 rounded-lg mt-5 transition-all flex items-center justify-center gap-2 hover:transform hover:-translate-y-0.5"
-            >
-              <CheckCircle className="w-5 h-5" />
-              Đặt hàng
-            </button>
+                <button 
+                  onClick={handleEditOrder}
+                  className="w-full bg-transparent hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Edit className="w-5 h-5" />
+                  Chỉnh sửa đơn hàng
+                </button>
 
-            <button 
-              onClick={handleEditOrder}
-              className="w-full bg-transparent hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-semibold py-3.5 px-6 rounded-lg mt-3 transition-all flex items-center justify-center gap-2"
-            >
-              <Edit className="w-5 h-5" />
-              Chỉnh sửa đơn hàng
-            </button>
-
-            <p className="text-xs text-gray-500 italic mt-4">
-              * Quý khách vui lòng kiểm tra kỹ thông tin trước khi đặt hàng.
-            </p>
+                <p className="text-xs text-gray-500 italic">
+                  * Quý khách vui lòng kiểm tra kỹ thông tin trước khi đặt hàng.
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>

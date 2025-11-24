@@ -1,7 +1,15 @@
 // src/services/api.js
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+// Hardcode baseURL để đảm bảo đúng - ignore env variable nếu có vấn đề
+// Nếu cần dùng env variable, uncomment dòng dưới và comment dòng hardcode
+// const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/phoneShop';
+const API_BASE_URL = 'http://localhost:8080/phoneShop';
+
+// Debug: Log baseURL để kiểm tra
+console.log('🔧 API Base URL:', API_BASE_URL);
+console.log('🔧 REACT_APP_API_URL env:', process.env.REACT_APP_API_URL);
 
 // Create axios instance
 const api = axios.create({
@@ -15,9 +23,25 @@ const api = axios.create({
 // Add token to requests (if you use JWT alongside session, keep it)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // Debug: Check token sources
+    const cookieToken = Cookies.get('token');
+    const localToken = localStorage.getItem('token');
+    const token = cookieToken || localToken;
+    
+    console.log('🔍 Token check:', {
+      hasCookieToken: !!cookieToken,
+      hasLocalToken: !!localToken,
+      hasToken: !!token,
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`
+    });
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('✅ Token added to request');
+    } else {
+      console.warn('⚠️ No token found for request:', config.url);
     }
     return config;
   },
@@ -29,7 +53,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // If API returns 401, remove token and redirect to login
-      localStorage.removeItem('token');
+      //localStorage.removeItem('token');
+      // If API returns 401, remove token from both Cookies and localStorage
+      Cookies.remove('token');
       // optionally you might want to only redirect for certain endpoints
       window.location.href = '/login';
     }
@@ -67,15 +93,15 @@ export const cartService = {
     return res;
   },
 
-  // POST /api/cart/remove  body: { imei }
-  removeByImei: async (imei) => {
-    const res = await api.post('/cart/remove', { imei }).then(r => r.data);
+  // POST /cart/remove  body: { productVersionId }
+  removeByProductVersionId: async (productVersionId) => {
+    const res = await api.post('/cart/remove', { productVersionId }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
-    // ✅ THÊM MỚI: POST /api/cart/update-quantity  body: { imei, quantity }
-  updateQuantity: async (imei, quantity) => {
-    const res = await api.post('/cart/update-quantity', { imei, quantity }).then(r => r.data);
+    // ✅ THÊM MỚI: POST /cart/update-quantity  body: { productVersionId, quantity }
+  updateQuantity: async (productVersionId, quantity) => {
+    const res = await api.post('/cart/update-quantity', { productVersionId, quantity }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
@@ -87,12 +113,12 @@ export const cartService = {
     return res;
   },
 
-  // Không có API clearCart -> gọi remove cho từng item, dùng removeByImei để phát event
+  // Không có API clearCart -> gọi remove cho từng item, dùng removeByProductVersionId để phát event
   clearCart: async () => {
     const data = await api.get('/cart').then(r => r.data);
     const items = data?.cartItems || [];
     for (const it of items) {
-      await api.post('/cart/remove', { imei: it.imei }).then(r => r.data);
+      await api.post('/cart/remove', { productVersionId: it.productVersionId }).then(r => r.data);
     }
     // một lần notify sau khi clear xong
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
@@ -103,8 +129,15 @@ export const cartService = {
 export const orderService = {
   createOrder: (orderData) => api.post('/orders', orderData).then(r => r.data),
   getOrders: () => api.get('/orders').then(r => r.data),
+  getMyOrders: () => api.get('/orders/me').then(r => r.data), // Get orders for current logged-in customer
   getOrder: (id) => api.get(`/orders/${id}`).then(r => r.data),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(r => r.data),
+};
+
+// Customer services
+export const customerService = {
+  getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
+  updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
 };
 
 // User services

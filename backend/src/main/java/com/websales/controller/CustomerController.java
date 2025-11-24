@@ -7,12 +7,16 @@ import com.websales.dto.request.VerifyOtpRequest;
 import com.websales.dto.response.ApiResponse;
 import com.websales.dto.request.CustomerCreateRequest;
 import com.websales.dto.response.CustomerResponse;
+import com.websales.mapper.CustomerMapper;
+import com.websales.repository.CustomerRepo;
 import com.websales.service.CustomerAuthenticationService;
 import com.websales.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerController {
     CustomerService customerService;
     CustomerAuthenticationService cusAuthService;
+    CustomerRepo customerRepo;
+    CustomerMapper customerMapper;
     @PostMapping
     public ApiResponse<CustomerResponse> createCustomer(@RequestBody CustomerCreateRequest request) {
         return ApiResponse.<CustomerResponse>builder()
@@ -47,6 +53,20 @@ public class CustomerController {
                 .result(customerService.updateCustomer(id,request))
                 .build();
      }
+
+    // Lấy thông tin customer hiện tại từ JWT token
+    @GetMapping("/me")
+    public ApiResponse<CustomerResponse> getCurrentCustomer(@AuthenticationPrincipal Jwt jwt) {
+        Long customerId = Long.valueOf(jwt.getSubject());
+        return customerRepo.findById(customerId)
+                .map(customer -> ApiResponse.<CustomerResponse>builder()
+                        .result(customerMapper.toCustomerResponse(customer))
+                        .build())
+                .orElse(ApiResponse.<CustomerResponse>builder()
+                        .code(404)
+                        .message("Customer not found")
+                        .build());
+    }
 
 }
 

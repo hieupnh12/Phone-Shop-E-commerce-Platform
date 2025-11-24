@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   User,
   LayoutDashboard,
@@ -7,20 +8,28 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const ClientSidebar = ({ isOpen, onClose }) => {
-  const [activeRoute, setActiveRoute] = useState("/");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { logoutCustomer } = useAuth();
 
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/orders", icon: Package, label: "Orders" },
     { to: "/products", icon: Box, label: "Products" },
     { to: "/settings", icon: Settings, label: "Settings" },
-    { to: "/logout", icon: LogOut, label: "Logout" },
+    { to: "/logout", icon: LogOut, label: "Logout", isLogout: true },
   ];
 
-  const handleNavClick = (to) => {
-    setActiveRoute(to);
+  const handleNavClick = (to, isLogout = false) => {
+    if (isLogout) {
+      logoutCustomer();
+      navigate("/login");
+    } else {
+      navigate(to);
+    }
     onClose();
   };
 
@@ -57,17 +66,13 @@ const ClientSidebar = ({ isOpen, onClose }) => {
 
           {/* MENU */}
           <nav className="flex-1 space-y-2">
-            {menuItems.map(({ to, icon: Icon, label }) => {
-              const isActive = activeRoute === to;
+            {menuItems.map(({ to, icon: Icon, label, isLogout }) => {
+              const isActive = location.pathname === to;
               return (
-                <a
+                <button
                   key={label}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick(to);
-                  }}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group
+                  onClick={() => handleNavClick(to, isLogout)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group
                   ${
                     isActive
                       ? "bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-400 shadow-lg shadow-cyan-500/10"
@@ -83,7 +88,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
                   {isActive && (
                     <div className="ml-auto w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                   )}
-                </a>
+                </button>
               );
             })}
           </nav>
