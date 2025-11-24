@@ -112,4 +112,17 @@ public class ProductVersionService {
             throw new IOException("Lỗi khi tải tệp lên Cloudinary: " + e.getMessage(), e);
         }
     }
+
+
+    public ProductVersionResponse SearchProductVersion(String colorName,
+                                                       String ramName,
+                                                       String romName,
+                                                       String productName){
+           ProductVersion pv =  productVersionRepository.findByProductVersionByTT(productName,romName,ramName,colorName);
+           return pvm.ToProductVersionResponse(pv);
+    }
+
+
+
+
 }

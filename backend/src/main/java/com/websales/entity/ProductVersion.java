@@ -52,7 +52,7 @@ public class ProductVersion {
 
 
     @Column(name ="picture")
-//    String image ;
+    String image ;
 
     @OneToMany(mappedBy = "productVersionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<ProductVersionImage> images;

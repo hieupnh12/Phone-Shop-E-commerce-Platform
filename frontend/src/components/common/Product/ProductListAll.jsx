@@ -22,9 +22,9 @@ const fetchProducts = async (page) => {
   setLoading(true); 
   setError(null);  // ← THÊM: Reset error
   try {
-    const data = await productWorker.fetchAllProducts(page,8 );
+    const data = await productWorker.fetchAllProducts(page,8);
     setProducts(data.products || []);
-    setTotalPages(data.totalPages || 1);
+    setTotalPages(data.totalPages - 2|| 1);
   } catch (error) {
     console.error('Lỗi fetch sản phẩm:', error);
     setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');  // ← THÊM: Thông báo lỗi user-friendly
@@ -136,9 +136,9 @@ if (error) {
             const version = product.versions?.[0];
             const isFavorite = favorites.has(product.id);
             const discount = product.discount || 0;
-            const screenSize = product.specifications?.['Screen Size'] || '6.5 inches';
-            const ram = product.specifications?.['RAM'] || '8 GB';
-            const storage = product.specifications?.['Internal Storage'] || '256 GB';
+            const screenSize = product.specifications?.['Screen Size'];
+            const ram = version?.ram || '8 GB';
+            const storage = version?.rom || '128 GB';
 
             return (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden relative">

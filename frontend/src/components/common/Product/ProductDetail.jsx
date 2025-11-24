@@ -16,6 +16,9 @@ import { useParams } from "react-router-dom"; // Import useParams
 const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
+  const [selectedRam, setSelectedRam] = useState(null);
+  const [selectedRom, setSelectedRom] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -25,6 +28,8 @@ const ProductDetailPage = () => {
   // Lấy productId từ URL params
   const { id } = useParams(); // Lấy :id từ route /products/:id
   const productId = parseInt(id, 10); // Chuyển sang number nếu cần
+
+
 
   const fetchProductDetail = async (id) => {
     if (!id) {
@@ -57,6 +62,16 @@ const ProductDetailPage = () => {
       setLoading(false);
     }
   };
+
+  
+  
+
+
+
+
+
+
+
 
   useEffect(() => {
     if (productId) {
@@ -161,6 +176,42 @@ const ProductDetailPage = () => {
       console.warn("ProductDetail log error:", err);
     }
   }, [images, currentImageIndex]);
+
+  // Search version helper - calls productWorker.fetchSearchProductVersion
+  const searchVersion = async () => {
+    try {
+      const v = await productWorker.fetchSearchProductVersion(
+        product.name,
+        selectedRom,
+        selectedRam,
+        selectedColor
+      );
+      if (v) {
+        setSelectedVersion(v);
+        return v;
+      }
+
+      // Fallback to local match
+      const found = product.versions.find(
+        (ver) =>
+          (selectedRam ? ver.ram === selectedRam : true) &&
+          (selectedRom ? ver.rom === selectedRom : true) &&
+          (selectedColor ? ver.color === selectedColor : true)
+      );
+      if (found) setSelectedVersion(found);
+      return found || null;
+    } catch (err) {
+      console.warn("Version search failed, falling back to local match", err);
+      const found = product.versions.find(
+        (ver) =>
+          (selectedRam ? ver.ram === selectedRam : true) &&
+          (selectedRom ? ver.rom === selectedRom : true) &&
+          (selectedColor ? ver.color === selectedColor : true)
+      );
+      if (found) setSelectedVersion(found);
+      return found || null;
+    }
+  };
 
   if (loading) {
     return (
@@ -304,7 +355,9 @@ const ProductDetailPage = () => {
 
                 {/* Feature Highlights (only on first image) */}
                 <div className="text-white text-l">
-                  <h3 className="text-sm font-semibold mb-2">TÍNH NĂNG NỔI BẬT</h3>
+                  <h3 className="text-sm font-semibold mb-2">
+                    TÍNH NĂNG NỔI BẬT
+                  </h3>
                   <ul className="space-y-1 text-[10px]">
                     <li className="flex items-start gap-2">
                       <span className="text-white">●</span>
@@ -344,76 +397,97 @@ const ProductDetailPage = () => {
 
             {/* Thumbnail Images with Smooth Scroll */}
             {images.length > 1 && (
-  <div className="relative mt-6">
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => {
-          const newIndex = currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1;
-          setCurrentImageIndex(newIndex);
-        }}
-        className="p-2 bg-white rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-shrink-0"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-      <div className="flex-1 overflow-hidden" ref={(el) => {
-        if (el && images.length > 0) {
-          const containerWidth = el.offsetWidth;
-          const imageWidth = 112; // 96px (w-24) + 12px (gap-3)
-          const visibleImages = Math.floor(containerWidth / imageWidth);
-          const maxScroll = Math.max(0, images.length - visibleImages);
-          
-          // Lưu giá trị này để sử dụng trong style
-          el.dataset.maxScroll = maxScroll.toString();
-        }
-      }}>
-        <div
-          className="flex gap-3 transition-transform duration-300 ease-in-out"
-          style={{
-            transform: `translateX(-${(() => {
-              const container = document.querySelector('.flex-1.overflow-hidden');
-              if (!container) return currentImageIndex * 50;
-              
-              const maxScroll = parseInt(container.dataset.maxScroll || '0');
-              const scrollPosition = Math.min(currentImageIndex, maxScroll);
-              return scrollPosition * 98;
-            })()}px)`,
-          }}
-        >
-          {images.map((img, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentImageIndex(idx)}
-              className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
-                currentImageIndex === idx
-                  ? "border-blue-600 shadow-md scale-105 opacity-100"
-                  : "border-gray-200 hover:border-gray-300 opacity-40 hover:opacity-70"
-              }`}
-            >
-              <img
-                src={img}
-                alt={`View ${idx + 1}`}
-                className="w-full h-full object-contain bg-gray-50"
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-      <button
-        onClick={() => {
-          const newIndex = currentImageIndex === images.length - 1 ? 0 : currentImageIndex + 1;
-          setCurrentImageIndex(newIndex);
-        }}
-        className="p-2 bg-white rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-shrink-0"
-      >
-        <ChevronRight className="w-5 h-5" />
-      </button>
-    </div>
-    {/* Image Counter */}
-    <div className="text-center mt-3 text-sm text-gray-500">
-      {currentImageIndex + 1} / {images.length}
-    </div>
-  </div>
-)}
+              <div className="relative mt-6">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const newIndex =
+                        currentImageIndex === 0
+                          ? images.length - 1
+                          : currentImageIndex - 1;
+                      setCurrentImageIndex(newIndex);
+                    }}
+                    className="p-2 bg-white rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div
+                    className="flex-1 overflow-hidden"
+                    ref={(el) => {
+                      if (el && images.length > 0) {
+                        const containerWidth = el.offsetWidth;
+                        const imageWidth = 112; // 96px (w-24) + 12px (gap-3)
+                        const visibleImages = Math.floor(
+                          containerWidth / imageWidth
+                        );
+                        const maxScroll = Math.max(
+                          0,
+                          images.length - visibleImages
+                        );
+
+                        // Lưu giá trị này để sử dụng trong style
+                        el.dataset.maxScroll = maxScroll.toString();
+                      }
+                    }}
+                  >
+                    <div
+                      className="flex gap-3 transition-transform duration-300 ease-in-out"
+                      style={{
+                        transform: `translateX(-${(() => {
+                          const container = document.querySelector(
+                            ".flex-1.overflow-hidden"
+                          );
+                          if (!container) return currentImageIndex * 50;
+
+                          const maxScroll = parseInt(
+                            container.dataset.maxScroll || "0"
+                          );
+                          const scrollPosition = Math.min(
+                            currentImageIndex,
+                            maxScroll
+                          );
+                          return scrollPosition * 98;
+                        })()}px)`,
+                      }}
+                    >
+                      {images.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentImageIndex(idx)}
+                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                            currentImageIndex === idx
+                              ? "border-blue-600 shadow-md scale-105 opacity-100"
+                              : "border-gray-200 hover:border-gray-300 opacity-40 hover:opacity-70"
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt={`View ${idx + 1}`}
+                            className="w-full h-full object-contain bg-gray-50"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newIndex =
+                        currentImageIndex === images.length - 1
+                          ? 0
+                          : currentImageIndex + 1;
+                      setCurrentImageIndex(newIndex);
+                    }}
+                    className="p-2 bg-white rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-shrink-0"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+                {/* Image Counter */}
+                <div className="text-center mt-3 text-sm text-gray-500">
+                  {currentImageIndex + 1} / {images.length}
+                </div>
+              </div>
+            )}
             {/* </div>
 </div> */}
             {/* Cam kết sản phẩm */}
@@ -471,32 +545,151 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-              {/* Versions (chọn variant trực tiếp với ram + rom + color) */}
+        {/* Versions (dynamic filtering) */}
               <div className="mb-6">
                 <h3 className="font-bold text-gray-900 mb-3">Phiên bản</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {product.versions.map((version) => (
-                    <button
-                      key={version.id}
-                      onClick={() => setSelectedVersion(version)}
-                      className={`p-3 rounded-lg border-2 transition ${
-                        selectedVersion?.id === version.id
-                          ? "border-red-600 bg-red-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="font-semibold text-gray-900">
-                        {version.ram} / {version.rom} / {version.color}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {formatPrice(version.price)}
-                      </div>
-                      {selectedVersion?.id === version.id && (
-                        <Check className="w-5 h-5 text-red-600 absolute top-2 right-2" />
-                      )}
-                    </button>
-                  ))}
-                </div>
+
+                {product.versions && product.versions.length > 0 && (() => {
+                  // Filter available versions based on current selections
+                  const filteredVersions = product.versions.filter(v => {
+                    if (selectedRam && v.ram !== selectedRam) return false;
+                    if (selectedRom && v.rom !== selectedRom) return false;
+                    if (selectedColor && v.color !== selectedColor) return false;
+                    return true;
+                  });
+
+                  // Get available options from filtered versions
+                  const availableRams = new Set(filteredVersions.map(v => v.ram));
+                  const availableRoms = new Set(filteredVersions.map(v => v.rom));
+                  const availableColors = new Set(filteredVersions.map(v => v.color));
+
+                  // Get all possible options
+                  const allRams = Array.from(new Set(product.versions.map(v => v.ram)));
+                  const allRoms = Array.from(new Set(product.versions.map(v => v.rom)));
+                  const allColors = Array.from(new Set(product.versions.map(v => v.color)));
+
+                  // Handle selection and auto-update
+                  const handleSelect = (type, value) => {
+                    let newRam = selectedRam;
+                    let newRom = selectedRom;
+                    let newColor = selectedColor;
+
+                    if (type === 'ram') newRam = selectedRam === value ? null : value;
+                    if (type === 'rom') newRom = selectedRom === value ? null : value;
+                    if (type === 'color') newColor = selectedColor === value ? null : value;
+
+                    setSelectedRam(newRam);
+                    setSelectedRom(newRom);
+                    setSelectedColor(newColor);
+
+                    // Auto-find matching version
+                    const match = product.versions.find(v => {
+                      if (newRam && v.ram !== newRam) return false;
+                      if (newRom && v.rom !== newRom) return false;
+                      if (newColor && v.color !== newColor) return false;
+                      return true;
+                    });
+
+                    if (match) {
+                      setSelectedVersion(match);
+                    } else if (!newRam && !newRom && !newColor) {
+                      setSelectedVersion(product.versions[0]);
+                    }
+                  };
+
+                  return (
+                    <div className="space-y-3">
+                      {/* <div>
+                        <div className="text-sm text-gray-600 mb-2">RAM</div>
+                        <div className="flex flex-wrap gap-2">
+                          {allRams.map((r) => {
+                            const isAvailable = availableRams.has(r);
+                            const isSelected = selectedRam === r;
+                            return (
+                              <button
+                                key={r}
+                                onClick={() => isAvailable && handleSelect('ram', r)}
+                                disabled={!isAvailable}
+                                className={`px-3 py-2 rounded-lg border-2 transition ${
+                                  isSelected 
+                                    ? "border-red-600 bg-red-50" 
+                                    : isAvailable
+                                    ? "border-gray-200 hover:border-gray-300"
+                                    : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+                                }`}
+                              >
+                                {r}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div> */}
+<div>
+  <div className="text-sm text-gray-600 mb-2">ROM</div>
+  <div className="flex flex-wrap gap-2">
+    {allRoms.map((r) => {
+      const isAvailable = availableRoms.has(r);
+      const isSelected = selectedRom === r;
+      return (
+        <button
+          key={r}
+          onClick={() => isAvailable && handleSelect('rom', r)}
+          disabled={!isAvailable}
+          className={`px-5 py-3 rounded-xl text-base border-2 transition ${
+            isSelected
+              ? "border-red-600 bg-red-50"
+              : isAvailable
+              ? "border-gray-200 hover:border-gray-300"
+              : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+          }`}
+        >
+          {r}
+        </button>
+      );
+    })}
+  </div>
+</div>
+
+<div>
+  <div className="text-sm text-gray-600 mb-2">Màu sắc</div>
+  <div className="flex flex-wrap gap-2">
+    {allColors.map((c) => {
+      const isAvailable = availableColors.has(c);
+      const isSelected = selectedColor === c;
+      return (
+        <button
+          key={c}
+          onClick={() => isAvailable && handleSelect('color', c)}
+          disabled={!isAvailable}
+          className={`px-5 py-3 rounded-xl text-base border-2 transition ${
+            isSelected
+              ? "border-red-600 bg-red-50"
+              : isAvailable
+              ? "border-gray-200 hover:border-gray-300"
+              : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+          }`}
+        >
+          {c}
+        </button>
+      );
+    })}
+  </div>
+</div>
+
+                      {/* Show currently selected version */}
+                      {/* {selectedVersion && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="text-sm font-medium text-gray-900">
+                            {selectedVersion.ram} / {selectedVersion.rom} / {selectedVersion.color}
+                          </div>
+                          <div className="text-lg font-bold text-red-600 mt-1">
+                            {formatPrice(selectedVersion.price)}
+                          </div>
+                        </div>
+                      )} */}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Smember Savings */}
@@ -592,13 +785,13 @@ const ProductDetailPage = () => {
         </div>
 
         {/* Promotional Banner */}
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <img
             src="https://via.placeholder.com/1200x150/ff1493/ffffff?text=Chào+Bạn+Mới+-+Giảm+thêm+300k+-+Nhận+ngay"
             alt="Promotion"
             className="w-full rounded-xl"
           />
-        </div>
+        </div> */}
       </div>
     </div>
   );

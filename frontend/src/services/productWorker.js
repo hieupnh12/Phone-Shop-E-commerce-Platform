@@ -16,8 +16,7 @@ const API_BASE_URL = '/product'; // Adjust if needed
  */
 const cache = {
   products: {
-    data: null,
-    timestamp: null,
+    entries: {}, // keyed by `${page}_${size}` -> { data, timestamp }
     ttl: 5 * 60 * 1000, // 5 minutes
   },
   productDetail: {},
@@ -30,13 +29,21 @@ const cache = {
 
 // Helper to check if cache is valid
 const isCacheValid = (cacheEntry) => {
-  if (!cacheEntry.data || !cacheEntry.timestamp) return false;
-  return Date.now() - cacheEntry.timestamp < cacheEntry.ttl;
+  if (!cacheEntry || !cacheEntry.data || !cacheEntry.timestamp) return false;
+  // cacheEntry may not contain ttl; use parent bucket ttl if present
+  const ttl = cacheEntry.ttl || cacheEntry._ttl || 5 * 60 * 1000;
+  return Date.now() - cacheEntry.timestamp < ttl;
 };
 
 // Helper to clear cache
 const clearCache = (key) => {
-  if (cache[key]) {
+  if (!cache[key]) return;
+  // products uses entries map
+  if (cache[key].entries) {
+    cache[key].entries = {};
+    return;
+  }
+  if (cache[key].data || cache[key].timestamp) {
     cache[key].data = null;
     cache[key].timestamp = null;
   }
@@ -109,6 +116,39 @@ export const transformProductResponse = (backendProduct) => {
 
 
 
+/** 
+* @param {string} productName - Name of the product (partial/exact match)
+ * @param {string} romName - ROM size/name
+ * @param {string} ramName - RAM size/name
+ * @param {string} colorName - Color name
+ * @returns {Promise<Object|null>} Transformed version details or null
+ */
+export const fetchSearchProductVersion = async (productName, romName, ramName, colorName) => {
+  try {
+    const response = await axiosClient[GET](`${API_BASE_URL}/searchVersion`, {
+      params: { productName, romName, ramName, colorName },
+    });
+    console.log('✓ Product version search API response received', response);
+
+    const result = response.data?.result;
+    if (!result) {
+      console.warn('⚠ No data in product version search response');
+      return null;
+    }
+    // Transform backend ProductVersionResponse to frontend format
+    // Adapted from transformProductResponse's version mapping
+    return transformProductResponse(result.versions?.[0]) || null;
+  } catch (error) {
+     console.log('fetching product version by search', error);
+     throw error;
+  }
+};
+
+
+
+
+
+
 
 
 
@@ -121,18 +161,17 @@ export const transformProductResponse = (backendProduct) => {
  */
 export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
   try {
-    // Check cache for default parameters
+    // Build params and cache key
+    const params = { page, size, ...filters };
+    const cacheKey = `${page}_${size}`;
+
+    // Check cache for default parameters (no filters) and per-page entry
     if (!filters || Object.keys(filters).length === 0) {
-      if (isCacheValid(cache.products)) {
-        return cache.products.data;
+      const cached = cache.products.entries[cacheKey];
+      if (cached && isCacheValid({ ...cached, _ttl: cache.products.ttl })) {
+        return cached.data;
       }
     }
-
-    const params = {
-      page,
-      size,
-      ...filters,
-    };
 
     const response = await axiosClient[GET](`${API_BASE_URL}`, { params });
     console.log('✓ Products API response received',response);
@@ -154,10 +193,9 @@ export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
       totalPages: result.totalPages || Math.ceil((result.totalElements || 0) / size),
     };
 
-    // Cache the result
+    // Cache the result per page when there are no filters
     if (!filters || Object.keys(filters).length === 0) {
-      cache.products.data = transformedData;
-      cache.products.timestamp = Date.now();
+      cache.products.entries[cacheKey] = { data: transformedData, timestamp: Date.now() };
     }
     return transformedData;
   } catch (error) {
@@ -173,6 +211,13 @@ export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
     throw error; // No fallback - let component handle error (e.g., show empty list or error message)
   }
 };
+
+
+/**
+ @param {string} filters.idProductVersion - Product Version ID (exact match)
+ */
+
+
 
 
 
@@ -290,7 +335,7 @@ export const invalidateProductsCache = () => {
 const productWorkerExport = {
   fetchAllProducts,
   fetchProductById,
-  // fetchProductByImei,
+  fetchSearchProductVersion,
   searchProducts,
   fetchProductStats,
   initializeProducts,

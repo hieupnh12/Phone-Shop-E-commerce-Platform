@@ -92,8 +92,8 @@ public class CartController {
                     int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
                     // Lấy image từ productVersion nếu có, nếu không thì lấy từ product
-                    String image = (pv.getPicture() != null && !pv.getPicture().isEmpty()) 
-                            ? pv.getPicture() 
+                    String image = (pv.getImages() != null && !pv.getImages().isEmpty())
+                            ? pv.getImage()
                             : (product.getImage() != null ? product.getImage() : "");
 
                     CartItemResponse resp = new CartItemResponse(
@@ -271,6 +271,7 @@ public class CartController {
                 "success", true,
                 "message", "Đã xóa sản phẩm khỏi giỏ hàng"));
     }
+
 
     // --- TẠO ĐƠN HÀNG (CHECKOUT) ---
     @PostMapping(value = "/checkout", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -48,4 +48,15 @@ public class ProductVersionController {
                 .build();
     }
 
+
+    @GetMapping("/searchVersion")
+    public ApiResponse<ProductVersionResponse> searchVersion(
+            @RequestParam(required = false) String ramName,
+            @RequestParam(required = false) String romName,
+            @RequestParam(required = false) String colorName,
+            @RequestParam(required = false) String productName) {
+        return ApiResponse.<ProductVersionResponse>builder()
+                .result(pvs.SearchProductVersion(ramName,romName,colorName,productName))
+                .build();
+    }
 }
