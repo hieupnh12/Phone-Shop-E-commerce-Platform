@@ -19,7 +19,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check token on mount và lấy user info
+  const handleCustomerLoginSuccess = (token) => {
+    if (token) {
+      Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+      getCurrentUser();
+    }
+  };
   useEffect(() => {
     const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
     if (token) {
@@ -94,8 +99,9 @@ export const AuthProvider = ({ children }) => {
     const token = response?.result;
 
     if (token) {
-      Cookies.set(constants.ACCESS_TOKEN_KEY, token);
-      setUser(info?.rawPhone);
+      // Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+      // setUser(info?.rawPhone);
+      handleCustomerLoginSuccess(token);
     }
     return response;
   }
@@ -108,7 +114,8 @@ export const AuthProvider = ({ children }) => {
     getCurrentUser,
     logoutCustomer,
     sendOtp,
-    verifyOtp
+    verifyOtp,
+    handleCustomerLoginSuccess
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

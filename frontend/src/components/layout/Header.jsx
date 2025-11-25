@@ -112,7 +112,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   aria-expanded={showUserMenu}
                 >
                   <User className="w-4 h-4 sm:w-5 sm:h-5 text-slate-200" />
-                  <span className="hidden sm:inline text-white font-medium text-sm">{user?.name ? user.name.split(' ')[0] : 'Tài khoản'}</span>
+                  <span className="hidden sm:inline text-white font-medium text-sm">{user?.fullName ? user.fullName.split(' ')[0] : 'Tài khoản'}</span>
                 </button>
 
                 {showUserMenu && (

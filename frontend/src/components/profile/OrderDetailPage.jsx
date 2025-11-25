@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {useParams, Link, useOutletContext} from 'react-router-dom';
 import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
-import {profileService} from "../../services/api";
 import {useAuth} from "../../contexts/AuthContext";
-import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, Clock, Loader2, ChevronRight, Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
 import { profileService } from "../../services/api";
 
 
