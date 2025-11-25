@@ -9,7 +9,6 @@ import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { CartProvider } from "./contexts/CartContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -37,9 +36,13 @@ import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
 import ProfilePageLayout from './components/profile/ProfilePageLayout';
 import OrderDetailPage from "./components/profile/OrderDetailPage";
-
+import ProductDetailPage from "./components/common/Product/ProductDetail";
+import ProductsContainer from "./components/common/Product/ProductContainer";
+// Protected Route Component - check JWT token via getUserRole
 import OrderHistory from "./pages/client/OrderHistory";
 import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
+import PaymentSuccess from "./pages/client/PaymentSuccess";
+import PaymentCancel from "./pages/client/PaymentCancel";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -63,13 +66,25 @@ const router = createBrowserRouter(
         element: <RouterInitializer />,
       children: [
         { index: true, element: <Home /> },
-        {
-          path: "products",
-          element: <Products />,
-          children: [{ path: "", element: <Products /> }],
-        },
+
       ],
     },
+    {
+      path: "/products",
+      element: <Products />,
+      children: [
+        {
+          index: true, element: <ProductsContainer />
+        },
+        {
+          path: ":id", element: <ProductDetailPage />
+        }
+      ],
+    },
+        // {
+        //   path: "products/id",
+        //   element: <ProductDetails />,
+        // },
     {
       path: "/cart",
       element: (
@@ -91,6 +106,14 @@ const router = createBrowserRouter(
     {
       path: "/payment",
       element: <Payment />,
+    },
+    {
+      path: "/payment/success",
+      element: <PaymentSuccess />,
+    },
+    {
+      path: "/payment/cancel",
+      element: <PaymentCancel />,
     },
     {
       path: "/orders",
@@ -171,12 +194,10 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
         <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
             <Chatbot />
         </QueryClientProvider>
-      </CartProvider>
     </AuthProvider>
   );
 }

@@ -2,7 +2,8 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-
+// Hardcode baseURL để đảm bảo đúng - ignore env variable nếu có vấn đề
+// Nếu cần dùng env variable, uncomment dòng dưới và comment dòng hardcode
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/phoneShop';
 const API_BASE_URL = 'http://localhost:8080/phoneShop';
 
@@ -103,6 +104,12 @@ export const cartService = {
   updateQuantity: async (productVersionId, quantity) => {
     const res = await api.post('/cart/update-quantity', { productVersionId, quantity }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
+    return res;
+  },
+
+  // ✅ THÊM MỚI: POST /api/cart/preview-payment  body: { total, subtotal, shippingFee, paymentMethod, note }
+  previewPayment: async (orderData) => {
+    const res = await api.post('/cart/preview-payment', orderData).then(r => r.data);
     return res;
   },
 

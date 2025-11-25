@@ -3,6 +3,9 @@ import {useParams, Link, useOutletContext} from 'react-router-dom';
 import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
 import {profileService} from "../../services/api";
 import {useAuth} from "../../contexts/AuthContext";
+import { useParams, Link } from 'react-router-dom';
+import { CheckCircle, Clock, Loader2, ChevronRight, Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
+import { profileService } from "../../services/api";
 
 
 
@@ -138,7 +141,12 @@ const OrderDetailPage = () => {
                 <InfoRow label="Sản phẩm" value={orderData.products.length} note="số lượng" />
                 <InfoRow label="Tổng tiền hàng" value={orderData.summary.subtotal} currency />
                 <InfoRow label="Giảm giá" value={-orderData.summary.discount} currency highlight />
-                <InfoRow label="Phí vận chuyển" value={orderData.summary.shippingFee} currency={orderData.summary.shippingFee > 0} value={orderData.summary.shippingFee === 0 ? 'Miễn phí' : orderData.summary.shippingFee} />
+                <InfoRow
+                    label="Phí vận chuyển"
+                    value={orderData.summary.shippingFee === 0 ? 'Miễn phí' : orderData.summary.shippingFee}
+                    currency={orderData.summary.shippingFee > 0}
+                />
+
             </div>
 
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">

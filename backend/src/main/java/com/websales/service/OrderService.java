@@ -1,10 +1,12 @@
 package com.websales.service;
 
 import com.websales.dto.request.OrderRequest;
+import com.websales.entity.Customer;
 import com.websales.entity.Order;
 import com.websales.entity.OrderDetail;
 import com.websales.entity.ProductVersion;
 import com.websales.enums.OrderStatus;
+import com.websales.repository.CustomerRepo;
 import com.websales.repository.OrderDetailRepository;
 import com.websales.repository.OrderRepository;
 import com.websales.repository.ProductVersionRepository;
@@ -24,9 +26,12 @@ public class OrderService {
     OrderRepository orderRepository;
     OrderDetailRepository orderDetailRepository;
     ProductVersionRepository productVersionRepository;
+    CustomerRepo customerRepo;
 
-    public List<Order> getOrdersByCustomer(Long customerId) {
-        return orderRepository.findByCustomerId(customerId);
+
+    public List<Order> getOrdersByCustomer(Long  customerId) {
+        Customer customer = customerRepo.findById(customerId).get();
+        return orderRepository.findByCustomerId(customer);
     }
 
     public List<Order> getAllOrders() {
@@ -39,9 +44,15 @@ public class OrderService {
 
     @Transactional
     public Order createOrder(OrderRequest request) {
+        // Load Customer entity if customerId is provided
+        Customer customer = null;
+        if (request.getCustomerId() != null) {
+            customer = customerRepo.findById(request.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Customer not found: " + request.getCustomerId()));
+        }
+        
         Order order = Order.builder()
-                .customerId(request.getCustomerId())
-                .employeeId(request.getEmployeeId())
+                .customerId(customer)
                 .note(request.getNote())
                 .totalAmount(request.getTotalAmount())
                 .status(request.getStatus() != null ? request.getStatus() : OrderStatus.PENDING)
@@ -56,13 +67,17 @@ public class OrderService {
                         ProductVersion productVersion = productVersionRepository.findById(detailRequest.getProductVersionId())
                                 .orElseThrow(() -> new RuntimeException("Product version not found: " + detailRequest.getProductVersionId()));
 
-                        return OrderDetail.builder()
+                        OrderDetail orderDetail = OrderDetail.builder()
                                 .order(savedOrder)
-                                .productVersion(productVersion)
                                 .unitPriceBefore(detailRequest.getUnitPriceBefore())
                                 .unitPriceAfter(detailRequest.getUnitPriceAfter())
                                 .quantity(detailRequest.getQuantity())
                                 .build();
+                        
+                        // Set productVersion using setter to ensure Hibernate recognizes the relationship
+                        orderDetail.setProductVersion(productVersion);
+                        
+                        return orderDetail;
                     })
                     .toList();
 
