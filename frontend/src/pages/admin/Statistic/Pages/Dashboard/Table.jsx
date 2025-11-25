@@ -1,21 +1,13 @@
 import React, { useMemo, useState } from 'react'
 import { ArrowUpDown } from 'lucide-react';
 import { useQuery } from "@tanstack/react-query";
+import Loading from '../../../../../components/common/Loading';
 
-const fetchStatistics = async () => {
-  const res = "ddd";
-  return res;
-};
-export default function Table({data7Day}) {
+
+export default function Table({data7Day, isLoading}) {
     const [sortColumn, setSortColumn] = useState(null);
-  const [sortDirection, setSortDirection] = useState("asc");
-    const statsData = data7Day;
-  // ✅ useQuery gọi API
-//   const { data: statsData = [], isLoading, isError } = useQuery({
-//     queryKey: ["statistics", "last-7-days"],
-//     queryFn: fetchStatistics,
-//     staleTime: 1000 * 60 * 5, // cache 5 phút
-//   });
+    const [sortDirection, setSortDirection] = useState("asc");
+    const statsData = data7Day? data7Day:[];
 
   // 🔄 Hàm sắp xếp
   const handleSort = (column) => {
@@ -43,12 +35,7 @@ export default function Table({data7Day}) {
     });
   }, [statsData, sortColumn, sortDirection]);
 
-  // 🕑 Loading / Error
-//   if (isLoading)
-//     return <div className="p-6 text-center text-gray-500">Đang tải dữ liệu...</div>;
-//   if (isError)
-//     return <div className="p-6 text-center text-red-500">❌ Lỗi tải dữ liệu thống kê</div>;
-
+ if (isLoading) return <Loading type='dots'/>
   return (
     <div className="bg-white rounded-2xl shadow-md mt-6">
       <div className="p-6 border-b border-gray-200">

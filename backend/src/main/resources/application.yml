@@ -7,8 +7,19 @@ server:
 spring:
   application:
     name: web-sales-backend
-  
-  # Database Configuration
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "271448374588-jjece2dljonhoikvcog3nfiborcjjv3o.apps.googleusercontent.com"
+            client-secret: "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"
+            redirect-uri: "http://localhost:8080/phoneShop/login/oauth2/code/google"
+            scope:
+              - email
+              - profile
+
   datasource:
     url:  "jdbc:mysql://mysql-2646241a-myloc203-df70.e.aivencloud.com:24714/phoneShop"
     username: avnadmin
@@ -19,7 +30,6 @@ spring:
       repositories:
         enabled: false
 
-  # JPA Configuration
 
   jpa:
     hibernate:
@@ -30,13 +40,11 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
   
-  # H2 Database (for development/testing)
   h2:
     console:
       enabled: true
       path: /h2-console
   
-  # Mail Configuration
   mail:
     host: smtp.gmail.com
     port: 587
@@ -53,7 +61,6 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
-  # AI
   ai:
     openai:
       api-key: AIzaSyBrTipp-3SITKxs3t7cN3eP2crvOG9edfs
@@ -63,19 +70,17 @@ spring:
         options:
           model: gemini-2.0-flash
 
-# JWT Configuration
 jwt:
   signerKey: "4fenEIft8k/ii3gdEbIEiNzAz8A6SHw4gmq98FuMVbYffeCwLUFwKkcx8g7mZqWV0ZtPMFzEw1yKfF3pHoREXOznR2a/4PCFQWQxUTH3Zrb1QT1sBqenm3/UdM1PWAFS"
   expiration: 8640000000
   refreshable-duration: 360000
+  temp-expiration: 300
 
-# File Upload Configuration
 file:
   upload-dir: uploads/
   max-file-size: 100MB
   max-request-size: 100MB
 
-# Logging Configuration
 logging:
   level:
     com.websales: DEBUG
@@ -86,7 +91,6 @@ logging:
   file:
     name: logs/websales.log
 
-# Management Endpoints
 management:
   endpoints:
     web:
@@ -116,5 +120,12 @@ cloudinary:
 
 speedsms:
   access_token: "keZn3M1sLGxNoLXAokT814YRisuw0L47"
+
+# PayOS Configuration
+payos:
+  client-id: ${PAYOS_CLIENT_ID:1e486ec0-9fac-4d03-9f38-c30f9987e1f0}
+  api-key: ${PAYOS_API_KEY:0993fd87-b82f-4d17-8ebc-e47deb600a9a}
+  checksum-key: ${PAYOS_CHECKSUM_KEY:882ff1d4a906a720c4c4ac414a2def108b0eea3f2735950dc96e80315502a8c7}
+  log-level: ${PAYOS_LOG_LEVEL:INFO} # DEBUG | INFO | NONE
 
 

@@ -47,6 +47,7 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 // Handle response errors
 api.interceptors.response.use(
   (response) => response,
@@ -103,6 +104,12 @@ export const cartService = {
   updateQuantity: async (productVersionId, quantity) => {
     const res = await api.post('/cart/update-quantity', { productVersionId, quantity }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
+    return res;
+  },
+
+  // ✅ THÊM MỚI: POST /api/cart/preview-payment  body: { total, subtotal, shippingFee, paymentMethod, note }
+  previewPayment: async (orderData) => {
+    const res = await api.post('/cart/preview-payment', orderData).then(r => r.data);
     return res;
   },
 
@@ -175,4 +182,35 @@ export const adminService = {
   getDashboardStats: () => api.get('/admin/dashboard/stats').then(r => r.data),
 };
 
+export const cusAuth = {
+  getCustomer:() => api.get('/customer').then(res => res.data.result)
+}
+
+export const profileService = {
+
+  updateCustomer: (id, requestData) =>
+      api
+          .put(`/customer/update/${id}`, requestData) // Gọi endpoint PUT /customer/update/{id}
+          .then(res => res.data.result),
+
+  getCustomerInfo: () =>
+      api
+          .get(`/customer/me`) // Gọi endpoint /customer/me
+          .then(res => res.data.result),
+
+  getTotalOrders: (customerId) =>
+      api
+          .get(`/customer/total_orders/${customerId}`)
+          .then(res => res.data.result),
+
+  getOrdersByCustomer: (customerId) =>
+      api
+          .get(`/customer/order/${customerId}`)
+          .then(res => res.data.result),
+
+  getOrderDetail: (orderId) =>
+      api
+          .get(`/customer/order_detail/${orderId}`)
+          .then(res => res.data.result),
+};
 export default api;

@@ -143,7 +143,7 @@ const Login = () => {
                   <h2 className="text-3xl font-bold text-gray-900">
                     {isLogin ? 'Đăng nhập' : 'Đăng ký'}
                   </h2>
-                  <p className="text-gray-600">
+                  {/* <p className="text-gray-600">
                     {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}{' '}
                     <button
                       onClick={() => {
@@ -155,12 +155,12 @@ const Login = () => {
                     >
                       {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
                     </button>
-                  </p>
+                  </p>                       */}
                 </div>
 
                 {/* Login Method Tabs */}
                 <div className="flex gap-2 bg-gray-100 rounded-2xl p-1">
-                  <button
+                  {/* <button
                     onClick={() => setLoginMethod('email')}
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all duration-300 ${
                       loginMethod === 'email'
@@ -170,7 +170,7 @@ const Login = () => {
                   >
                     <Mail className="w-4 h-4" />
                     Email
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => {
                       setLoginMethod('phone');

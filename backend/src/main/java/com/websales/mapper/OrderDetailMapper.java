@@ -16,10 +16,11 @@ public interface OrderDetailMapper {
     
     @AfterMapping
     default void afterMapping(OrderDetail orderDetail, @MappingTarget OrderDetailResponse response) {
-        // Set product name
-        if (orderDetail.getProductVersionId() != null &&
-            orderDetail.getProductVersionId().getVersionId() != null) {
-            response.setProductVersionId(orderDetail.getProductVersionId().getVersionId().getIdVersion());        }
+        // Set product version id
+        if (orderDetail.getProductVersion() != null &&
+            orderDetail.getProductVersion().getIdVersion() != null) {
+            response.setProductVersionId(orderDetail.getProductVersion().getIdVersion());
+        }
         
         // Calculate subtotal
         if (orderDetail.getUnitPriceAfter() != null && orderDetail.getQuantity() != null) {

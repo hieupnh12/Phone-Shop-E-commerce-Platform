@@ -3,10 +3,11 @@ import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import constants from "../constants/index.js";
 import loginApi from "../services/loginService.js";
+import {profileService} from "../services/api";
 
 const AuthContext = createContext();
 
-export const useAuth = () => {
+export const useAuthFullOptions = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
   const getCurrentUser = async () => {
     try {
-      const response = await loginApi.getInfo();
+      const response = await profileService.getCustomerInfo();
       setUser(response?.result);
     } catch (error) {
       // Token invalid, clear it
@@ -61,6 +62,7 @@ export const AuthProvider = ({ children }) => {
     Cookies.remove(constants.ACCESS_TOKEN_KEY);
     setUser(null);
     return response;
+    
   };
 
   const logoutCustomer = async () => {

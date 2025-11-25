@@ -12,8 +12,6 @@ import {
   Zap,
   TrendingUp,
 } from "lucide-react";
-import loginApi from "../../services/loginService";
-import Cookies from "js-cookie";
 import { Navigate, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 
@@ -79,7 +77,7 @@ const Login = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    alert(`Đăng nhập bằng ${provider}`);
+    window.location.href = "http://localhost:8080/phoneShop/oauth2/authorization/google";
   };
 
   return (

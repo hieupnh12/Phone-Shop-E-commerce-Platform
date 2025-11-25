@@ -14,5 +14,5 @@ public class WarehouseAreaResponse {
 
     String note;
 
-    boolean status;
+//    boolean status;
 }

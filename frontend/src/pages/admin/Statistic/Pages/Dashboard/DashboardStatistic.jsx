@@ -1,77 +1,52 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Chart from "./Chart";
 import Table from "./Table";
 import SummaryCards from "./SummaryCards";
+import { useQuery } from "@tanstack/react-query";
+import statisticApi from "../../../../../services/statisticService";
+import { useAuth } from "../../../../../reducers";
+import Loading from "../../../../../components/common/Loading";
+
 export default function DashboardStatistic() {
-  const [data7Day, setData7Day] = useState([]);
-
-  useEffect(() => {
-    const fakeDate = [
-      {
-        date: "",
-        orders: 25,
-        revenue: 1200000,
-        cost: 8000000,
-        benefit: -400000,
-        topProduct: "iPhone 15 Pro"
-      },
-      {
-        date: "2025-10-30",
-        orders: 25,
-        revenue: 950000,
-        cost: 700000,
-        benefit: 250000,
-        topProduct: "iPhone 15 Pro"
-      },
-      {
-        date: "2025-10-31",
-        orders: 25,
-        revenue: 1800000,
-        cost: 1200000,
-        benefit: 600000,
-        topProduct: "iPhone 15 Pro"
-      },
-      {
-        date: "2025-11-01",
-        revenue: 2100000,
-        cost: 1600000,
-        benefit: 500000,
-      },
-      {
-        date: "2025-11-02",
-        revenue: 1700000,
-        cost: 1200000,
-        benefit: 500000,
-      },
-      {
-        date: "2025-11-03",
-        revenue: 1950000,
-        cost: 1400000,
-        benefit: 550000,
-      },
-      {
-        date: "2025-11-04",
-        revenue: 2300000,
-        cost: 1600000,
-        benefit: 700000,
-      },
-    ];
-
-    setData7Day(fakeDate);
-  }, []);
-
-  return (
-    <div>
-      {data7Day.length === 0 ? (
-        <p>Tải data</p>
-      ) : (
-        <div className="w-full">
-        <SummaryCards/>
-        <Chart data7Day={data7Day}/>
-        <Table data7Day={data7Day}/>
-        </div>
-      )}
+  const { data: isAuth, isLoading: authLoading } = useAuth();
+  const {data:dataCard, isLoadingCard, errorCard} = useQuery({
+    queryKey: ["summaryCard", {days: 7}],
+    queryFn: async () => {
+      const res = await statisticApi.getInfoCardDashboard();
       
+      return res?.result || [];
+    },
+    enabled: !!isAuth, 
+    staleTime: 1000 * 60 * 5, 
+    refetchOnWindowFocus: true, 
+    refetchInterval: 0, 
+  })
+  
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["summary", 7], 
+    queryFn: async () => {
+      const res = await statisticApi.getInfoSummary(7);
+      console.log(res);
+      
+      return res?.result || []; 
+    },
+    enabled: !!isAuth, 
+    staleTime: 1000 * 60 * 5, 
+    refetchOnWindowFocus: true, 
+    refetchInterval: 0, 
+  });
+
+
+      console.log("dđ",dataCard);
+
+  if (authLoading) return <Loading fullScreen type="dots" />;
+  if (error) return <Loading fullScreen message={error.message}/>;
+// <p>Error: {error.message}</p> || 
+  return (
+    <div className="w-full">
+      <SummaryCards dataCard={dataCard} isLoadingCard={isLoadingCard} errorCard={errorCard}/>
+      <Chart data7Day={data} isLoading={isLoading}/>
+      <Table data7Day={data} isLoading={isLoading}/>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 import productWorker from "../../../services/productWorker";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { useParams } from "react-router-dom"; // Import useParams
+import cartService from "../../../services/cartService";
 
 const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
@@ -212,6 +213,28 @@ const ProductDetailPage = () => {
       return found || null;
     }
   };
+  // === ADD TO CART ===
+ const handleAddToCart = async () => {
+  try {
+    if (!selectedVersion?.id) {
+      alert("Không có phiên bản hợp lệ!");
+      return;
+    }
+
+    console.log("CALL ADD TO CART:", selectedVersion.id);
+
+    const res = await cartService.addToCart(selectedVersion.id, 1);
+
+    alert("Đã thêm vào giỏ hàng!");
+  } catch (err) {
+    console.log("Add to cart error:", err);
+    alert("Không thể thêm vào giỏ hàng.");
+  }
+};
+
+
+
+
 
   if (loading) {
     return (
@@ -281,9 +304,8 @@ const ProductDetailPage = () => {
               className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
             >
               <Heart
-                className={`w-5 h-5 ${
-                  isFavorite ? "fill-red-500 text-red-500" : ""
-                }`}
+                className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : ""
+                  }`}
               />
               <span>Yêu thích</span>
             </button>
@@ -454,11 +476,10 @@ const ProductDetailPage = () => {
                         <button
                           key={idx}
                           onClick={() => setCurrentImageIndex(idx)}
-                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
-                            currentImageIndex === idx
-                              ? "border-blue-600 shadow-md scale-105 opacity-100"
-                              : "border-gray-200 hover:border-gray-300 opacity-40 hover:opacity-70"
-                          }`}
+                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${currentImageIndex === idx
+                            ? "border-blue-600 shadow-md scale-105 opacity-100"
+                            : "border-gray-200 hover:border-gray-300 opacity-40 hover:opacity-70"
+                            }`}
                         >
                           <img
                             src={img}
@@ -766,10 +787,16 @@ const ProductDetailPage = () => {
                   MUA NGAY
                   <span className="text-sm font-normal">(Giao tận nơi)</span>
                 </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2">
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
+                  onClick={handleAddToCart}
+                >
                   <ShoppingCart className="w-6 h-6" />
                   THÊM VÀO GIỎ
                 </button>
+
+
+
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-3">
