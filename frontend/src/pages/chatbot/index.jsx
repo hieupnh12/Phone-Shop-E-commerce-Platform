@@ -34,6 +34,7 @@ export default function Chatbot() {
   const messagesContainerRef = useRef(null);
   const lastScrollTop = useRef(0);
   const [isSending, setIsSending] = useState(false);
+
   // Mock older messages để demo lazy loading
   const generateOlderMessages = (pageNum) => {
     const oldMessages = [];
@@ -159,9 +160,9 @@ export default function Chatbot() {
 
     try {
       const response = await chatsApi.sendMessage(input);
-      console.log(response);
+      console.log("trả về lại",response);
       
-      const { answer, Product, Order } = response;
+      const { answer, products, orders } = response;
       const botText = answer || "Cảm ơn bạn! Tôi đã nhận được tin nhắn.";
       streamText(botText, (fullText) => {
         const botMessage = {
@@ -170,7 +171,7 @@ export default function Chatbot() {
           sender: "bot",
           timestamp: new Date(),
           // Nếu muốn hiển thị Product/Order, bạn có thể thêm field riêng
-          extra: { Product, Order },
+          extra: { products, orders },
         };
         setMessages((prev) => [...prev, botMessage]);
       });
@@ -188,6 +189,12 @@ export default function Chatbot() {
       inputRef.current?.focus();
     }
   };
+
+
+console.log("san", messages);
+
+
+
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -338,6 +345,48 @@ export default function Chatbot() {
                     >
                       {message.text}
                     </div>
+         {/* Nếu bot có Product */}
+{message.sender === "bot" && message?.extra?.products && (
+  <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
+    <h4 className="font-semibold text-gray-700 mb-2">Sản phẩm:</h4>
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {message?.extra?.products.map((p) => (
+        
+        <a
+          key={p.idProduct}
+          href={`/product/${p.idProduct}`}
+          className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition block"
+        >
+          {/* Ảnh */}
+          <img
+            src={p.image}
+            alt={p.nameProduct}
+            className="w-full h-24 object-cover"
+          />
+
+          {/* Tên */}
+          <div className="p-1 text-center text-sm font-medium text-gray-800">
+            {p.nameProduct}
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+
+  {/* Nếu bot có Order */}
+  {message.sender === "bot" && message.extra?.Order && (
+    <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
+      <h4 className="font-semibold text-gray-700">Đơn hàng:</h4>
+      <ul className="list-disc list-inside text-gray-600">
+        {message.extra.Order.map((o) => (
+          <li key={o.id}>
+            #{o.id} - Tổng: {o.totalAmount}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
                     <div
                       className={`text-xs text-gray-400 mt-1 ${
                         message.sender === "user" ? "text-right" : "text-left"

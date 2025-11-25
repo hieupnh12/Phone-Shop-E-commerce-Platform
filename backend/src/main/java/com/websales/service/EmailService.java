@@ -8,9 +8,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -91,5 +96,56 @@ public class EmailService   {
             log.error("Lỗi khi gửi email cho {}: {}", to, e.getMessage());
             throw new AppException(ErrorCode.TOKEN_STILL_VALID);
         }
+    }
+
+    public void sendReportExcel(String subject, List<String> toEmails, ByteArrayInputStream excelFile)
+            throws MessagingException, IOException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8"); // true = multipart, UTF-8
+
+        // ---- Người nhận ----
+        helper.setTo(toEmails.toArray(new String[0]));
+
+        // ---- Tiêu đề ----
+        helper.setSubject(subject);
+
+        // ---- Nội dung HTML chuyên nghiệp ----
+        String htmlContent = """
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #1a73e8;">Báo cáo doanh thu tự động</h2>
+                <p>Kính gửi Quý khách hàng / Nhân viên,</p>
+
+                <p>Hệ thống đã tạo báo cáo doanh thu mới nhất và đính kèm trong email này dưới dạng file Excel. 
+                Vui lòng tải xuống và xem chi tiết các số liệu để phục vụ công tác quản lý và kiểm soát doanh thu.</p>
+
+                <p><strong>Lưu ý:</strong></p>
+                <ul>
+                    <li>File Excel chứa đầy đủ các bảng số liệu theo ngày/tuần/tháng.</li>
+                    <li>Báo cáo được tự động sinh ra từ hệ thống, đảm bảo dữ liệu chính xác.</li>
+                    <li>Xin vui lòng không chỉnh sửa định dạng của file để đảm bảo tính toàn vẹn dữ liệu.</li>
+                </ul>
+
+                <p>Chúng tôi khuyến nghị quý khách lưu trữ file báo cáo vào hệ thống quản lý nội bộ.</p>
+
+                <p>Trân trọng,</p>
+                <p><em>Đội ngũ quản lý hệ thống</em></p>
+            </div>
+        </body>
+        </html>
+        """;
+
+        helper.setText(htmlContent, true); // true = HTML
+
+        // ---- Đính kèm file Excel ----
+        helper.addAttachment("OrderReport.xlsx",
+                new ByteArrayResource(excelFile.readAllBytes()));
+
+        // ---- Gửi email ----
+        mailSender.send(message);
+
+        System.out.println(">>> Email đã gửi thành công đến: " + toEmails);
     }
 }
