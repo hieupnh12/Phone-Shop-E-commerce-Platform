@@ -160,13 +160,34 @@ public class ProductController {
             @RequestParam(required = false) String originName,
             @RequestParam(required = false) String operatingSystemName,
             @RequestParam(required = false) String productName,
+//            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) String battery,
+            @RequestParam(required = false) String scanFrequency,
+            @RequestParam(required = false) String screenSize,
+            @RequestParam(required = false) String screenResolution,
+            @RequestParam(required = false) String screenTech,
+            @RequestParam(required = false) String chipset,
+            @RequestParam(required = false) String rearCamera,
+            @RequestParam(required = false) String frontCamera,
+//            @RequestParam(required = false) String image,
+            @RequestParam(required = false) Integer warrantyPeriod,
+//            @RequestParam(required = false) Integer stockQuantity,
+            @RequestParam(required = false) Boolean status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         return productService.SearchProduct(
-                brandName, warehouseAreaName, originName, operatingSystemName, productName, pageable);
+                brandName, warehouseAreaName, originName, operatingSystemName, productName,
+                battery, scanFrequency, screenSize, screenResolution, screenTech, chipset,
+                rearCamera, frontCamera, warrantyPeriod, status, pageable);
     }
 
+    @GetMapping("/count")
+    public ApiResponse<Long> countProduct() {
+     return ApiResponse.<Long>builder()
+             .result(productService.CountProduct())
+             .build();
+    }
 
 //    @GetMapping("/imei/{imei}")
 //    public ApiResponse<ProductFULLResponse> getProductByImei(@PathVariable("imei") String imei) {

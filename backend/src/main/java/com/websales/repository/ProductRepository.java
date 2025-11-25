@@ -95,19 +95,46 @@ void deleteSafeProductItems(Long productId);
             "LEFT JOIN FETCH p.brand  b " +
             "LEFT JOIN FETCH p.operatingSystem os " +
             "LEFT JOIN FETCH p.warehouseArea  w " +
+            "LEFT JOIN FETCH p.category c " +
             "LEFT JOIN FETCH p.productVersion  pv " +
-           "WHERE (:brandName IS NULL OR LOWER( b.nameBrand) LIKE LOWER(CONCAT('%', :brandName, '%')))  " +
+            "WHERE (:brandName IS NULL OR LOWER( b.nameBrand) LIKE LOWER(CONCAT('%', :brandName, '%')))  " +
             "AND (:warehouseAreaName IS NULL OR LOWER(w.nameWarehouseArea) LIKE LOWER(CONCAT('%', :warehouseAreaName, '%'))) " +
             "AND (:originName IS NULL OR LOWER(o.nameOrigin) LIKE LOWER(CONCAT('%', :originName, '%')))" +
             "AND (:operatingSystemName IS NULL OR LOWER(os.nameOS) LIKE LOWER(CONCAT('%', :operatingSystemName, '%'))) " +
             "AND (:productName IS NULL OR LOWER(p.nameProduct) LIKE LOWER(CONCAT('%', :productName, '%')))"  +
-             "ORDER BY p.idProduct DESC ")
+//            "AND (:categoryName IS NULL OR LOWER(c.nameCategory) LIKE LOWER(CONCAT('%', :categoryName, '%')))" +
+            "AND (:battery IS NULL OR LOWER(p.battery) LIKE LOWER(CONCAT('%', :battery, '%')))" +
+            "AND (:scanFrequency IS NULL OR LOWER(p.scanFrequency) LIKE LOWER(CONCAT('%', :scanFrequency, '%')))" +
+            "AND (:screenSize IS NULL OR LOWER(p.screenSize) LIKE LOWER(CONCAT('%', :screenSize, '%')))" +
+            "AND (:screenResolution IS NULL OR LOWER(p.screenResolution) LIKE LOWER(CONCAT('%', :screenResolution, '%')))" +
+            "AND (:screenTech IS NULL OR LOWER(p.screenTech) LIKE LOWER(CONCAT('%', :screenTech, '%')))" +
+            "AND (:chipset IS NULL OR LOWER(p.chipset) LIKE LOWER(CONCAT('%', :chipset, '%')))" +
+            "AND (:rearCamera IS NULL OR LOWER(p.rearCamera) LIKE LOWER(CONCAT('%', :rearCamera, '%')))" +
+            "AND (:frontCamera IS NULL OR LOWER(p.frontCamera) LIKE LOWER(CONCAT('%', :frontCamera, '%')))" +
+//            "AND (:image IS NULL OR LOWER(p.image) LIKE LOWER(CONCAT('%', :image, '%')))" +
+            "AND (:warrantyPeriod IS NULL OR p.warrantyPeriod = :warrantyPeriod)" +
+//            "AND (:stockQuantity IS NULL OR p.stockQuantity = :stockQuantity)" +
+            "AND (:status IS NULL OR p.status = :status)" +
+            "ORDER BY p.idProduct DESC ")
     Page<Product> findProductsWithFilters(
             @Param("brandName")String brandName ,
             @Param("warehouseAreaName") String warehouseAreaName ,
             @Param("originName") String originName ,
             @Param("operatingSystemName") String operatingSystemName ,
             @Param("productName") String productName,
+//            @Param("categoryName") String categoryName,
+            @Param("battery") String battery,
+            @Param("scanFrequency") String scanFrequency,
+            @Param("screenSize") String screenSize,
+            @Param("screenResolution") String screenResolution,
+            @Param("screenTech") String screenTech,
+            @Param("chipset") String chipset,
+            @Param("rearCamera") String rearCamera,
+            @Param("frontCamera") String frontCamera,
+//            @Param("image") String image,
+            @Param("warrantyPeriod") Integer warrantyPeriod,
+//            @Param("stockQuantity") Integer stockQuantity,
+            @Param("status") Boolean status,
             Pageable pageable
     );
 
@@ -121,5 +148,7 @@ void deleteSafeProductItems(Long productId);
 //            "WHERE EXISTS (SELECT pi FROM ProductItem pi " +
 //            "WHERE pi.versionId = pv AND pi.imei = :imei AND pi.export_id IS NULL)")
 //    Optional<Product> findByImei(String imei);
+
+
 
 }

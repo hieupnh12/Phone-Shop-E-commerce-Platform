@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import Loading from '../../../components/common/Loading';
 import { cartService } from '../../../services/api';
-import productWorker from '../../../services/productWorker';
+import productWorker, { fetchCountProduct } from '../../../services/productWorker';
 import ProductListAll from '../../../components/common/Product/ProductListAll';
 import ProductFilter from './ProductFilter';
 
@@ -20,7 +20,7 @@ const ProductsContainer = () => {
   const [minRating, setMinRating] = useState(0);
   const [categories, setCategories] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
-
+  const [totalCount,setTotalCount] = useState(0);
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('favorites');
@@ -94,6 +94,26 @@ const ProductsContainer = () => {
   const handleRatingChange = (newRating) => setMinRating(newRating);
   const handleToggleFilters = () => setShowFilters(!showFilters);
 
+
+  // Fetch the total count asynchronously on mount (or when dependencies change, if any)
+  const loadTotalCount = async () => {
+    try {
+      const data = await fetchCountProduct(); // Assumes fetchCountProduct returns the count directly (no ID needed for total count)
+      const count = data?.result ||  -1;
+      setTotalCount(count);
+    // setTotalCount(data.totalCount || 0); // ← THÊM MỚI: Lưu tổng count từ API (nếu có; fallback 0)
+    console.log("so luong san pham la : ",totalCount);
+    return 
+      } catch (error) {
+      console.error('Error loading total product count:', error);
+      setTotalCount(0); // Fallback to 0 on error
+    }
+  };
+
+useEffect(() => {
+  loadTotalCount();
+}, []); // Empty for mount-only; or add filter deps for re-fetch on changes
+
   if (loading && categories.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -123,9 +143,10 @@ const ProductsContainer = () => {
         <div className="flex-1">
           {/* Results Summary */}
           <div className="mb-6 flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-white">
-              Showing <span className="font-bold">{productCount}</span> products
-            </p>
+          <p className="text-white">
+            Showing <span className="font-bold">{totalCount}</span> products
+            {/* {totalCount === 1 ? ' (1 result)' : ' results'} Improved pluralization for better UX */}
+          </p>
             {error && <p className="text-red-400 text-sm">{error}</p>}
           </div>
 

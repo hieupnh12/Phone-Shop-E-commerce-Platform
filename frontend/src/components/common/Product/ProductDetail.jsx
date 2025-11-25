@@ -625,7 +625,7 @@ const ProductDetailPage = () => {
                         </div>
                       </div> */}
 <div>
-  <div className="text-sm text-gray-600 mb-2">ROM</div>
+  {/* <div className="text-sm text-gray-600 mb-2">ROM</div> */}
   <div className="flex flex-wrap gap-2">
     {allRoms.map((r) => {
       const isAvailable = availableRoms.has(r);
@@ -635,7 +635,7 @@ const ProductDetailPage = () => {
           key={r}
           onClick={() => isAvailable && handleSelect('rom', r)}
           disabled={!isAvailable}
-          className={`px-5 py-3 rounded-xl text-base border-2 transition ${
+          className={`px-7 py-4 rounded-xl text-base border-2 transition ${
             isSelected
               ? "border-red-600 bg-red-50"
               : isAvailable
@@ -651,7 +651,7 @@ const ProductDetailPage = () => {
 </div>
 
 <div>
-  <div className="text-sm text-gray-600 mb-2">Màu sắc</div>
+  <div className="font-bold text-gray-900 mb-3">Màu sắc</div>
   <div className="flex flex-wrap gap-2">
     {allColors.map((c) => {
       const isAvailable = availableColors.has(c);
@@ -661,7 +661,7 @@ const ProductDetailPage = () => {
           key={c}
           onClick={() => isAvailable && handleSelect('color', c)}
           disabled={!isAvailable}
-          className={`px-5 py-3 rounded-xl text-base border-2 transition ${
+          className={`px-7 py-4 rounded-xl text-base border-2 transition ${
             isSelected
               ? "border-red-600 bg-red-50"
               : isAvailable

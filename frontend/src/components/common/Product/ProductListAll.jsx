@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
-import productWorker from '../../../services/productWorker'; // ← THÊM: Import productWorker (điều chỉnh đường dẫn nếu cần)
+import productWorker, { fetchCountProduct } from '../../../services/productWorker'; // ← THÊM: Import productWorker (điều chỉnh đường dẫn nếu cần)
 import { useNavigate, Outlet } from "react-router-dom";
 
 const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProducts thay fetch thủ công
@@ -8,7 +8,9 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1); // ← THÊM: Để lưu totalPages từ API
+  const [totalCount, setTotalCount] = useState(0); // ← THÊM MỚI: State cho tổng số sản phẩm toàn bộ
   const [favorites, setFavorites] = useState(new Set());
+  const [pageSize, setPagesize] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,22 +20,50 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   // CẬP NHẬT (của tôi):
 const [error, setError] = useState(null);  // ← THÊM: State error
 
+
+
 const fetchProducts = async (page) => {
   setLoading(true); 
   setError(null);  // ← THÊM: Reset error
   try {
     const data = await productWorker.fetchAllProducts(page,8);
     setProducts(data.products || []);
-    setTotalPages(data.totalPages - 2|| 1);
+    setTotalPages(data.totalPages || 1);
+
   } catch (error) {
     console.error('Lỗi fetch sản phẩm:', error);
     setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');  // ← THÊM: Thông báo lỗi user-friendly
     setProducts([]);  // ← THAY: Rỗng thay vì mock
     setTotalPages(1);
+    setTotalCount(0); // ← THÊM: Reset totalCount khi lỗi
   } finally {
     setLoading(false);
   }
 };
+// useEffect(() => {
+//   // Fetch the total count asynchronously on mount (or when dependencies change, if any)
+//   const loadTotalCount = async () => {
+//     try {
+//       const count = await fetchCountProduct(); // Assumes fetchCountProduct returns the count directly (no ID needed for total count)
+//       setTotalCount(count);
+//     // setTotalCount(data.totalCount || 0); // ← THÊM MỚI: Lưu tổng count từ API (nếu có; fallback 0)
+//     console.log("so luong san pham lal : ",totalCount);
+//       } catch (error) {
+//       console.error('Error loading total product count:', error);
+//       setTotalCount(0); // Fallback to 0 on error
+//     }
+//   };
+
+//   loadTotalCount();
+// }, []);
+
+
+  // Sau fetch thành công - gửi count lên component cha khi products thay đổi
+// ← SỬA: Gửi TỔNG SỐ sản phẩm (totalCount) thay vì products.length (per page)
+  // useEffect(() => {
+  //   props.onProductsCountChange?.(totalCount || 0); // ← THAY ĐỔI: Dùng totalCount để gửi tổng toàn bộ
+  //       // THÊM: Tự tính totalCount ở frontend dựa trên totalPages và pageSize (8)
+  // }, [totalCount]); // ← THAY ĐỔI: Depend vào totalCount thay vì products (vì totalCount chỉ thay đổi khi fetch, không phụ thuộc page)
 
 
 
@@ -53,10 +83,8 @@ const fetchProducts = async (page) => {
 
 
 
-  // Sau fetch thành công - gửi count lên component cha khi products thay đổi
-  useEffect(() => {
-    props.onProductsCountChange?.(products.length || 0);
-  }, [products]);
+
+  
   // ← GIỮ: formatPrice
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN').format(price * 1000) + 'đ';
@@ -137,8 +165,8 @@ if (error) {
             const isFavorite = favorites.has(product.id);
             const discount = product.discount || 0;
             const screenSize = product.specifications?.['Screen Size'];
-            const ram = version?.ram || '8 GB';
-            const storage = version?.rom || '128 GB';
+            const ram = version?.ram || 'null';
+            const storage = version?.rom || 'null';
 
             return (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden relative">

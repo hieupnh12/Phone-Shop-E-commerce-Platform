@@ -17,11 +17,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
@@ -123,6 +126,40 @@ public class ProductVersionService {
     }
 
 
+
+
+    public Page<ProductVersionResponse> SearchProductVersionCombined(
+            String brandName,
+            String warehouseAreaName,
+            String originName,
+            String operatingSystemName,
+            String productName,
+//            String categoryName,
+            String battery,
+            String scanFrequency,
+            String screenSize,
+            String screenResolution,
+            String screenTech,
+            String chipset,
+            String rearCamera,
+            String frontCamera,
+//            String image,
+            Integer warrantyPeriod,
+//            Integer stockQuantity,
+//            Boolean status,
+            String romName,
+            String ramName,
+            String colorName,
+            BigDecimal importPrice,
+            BigDecimal exportPrice,
+            Pageable pageable){
+        return productVersionRepository.findProductVersionsWithCombinedFilters(
+                        brandName, warehouseAreaName, originName, operatingSystemName, productName,
+                        battery, scanFrequency, screenSize, screenResolution, screenTech, chipset,
+                        rearCamera, frontCamera, warrantyPeriod,
+                        romName, ramName, colorName, importPrice, exportPrice, pageable)
+                .map(pvm::ToProductVersionResponse);
+    }
 
 
 }
