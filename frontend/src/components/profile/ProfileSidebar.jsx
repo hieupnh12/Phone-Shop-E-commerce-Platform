@@ -3,7 +3,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Shield, MessageSquare, LogOut } from 'lucide-react';
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuthFullOptions } from "../../contexts/AuthContext";
 
 const navItems = [
     { name: 'Đơn hàng của tôi', icon: ShoppingBag, path: '/profile/order' },
@@ -16,7 +16,7 @@ const navItems = [
 
 
 const ProfileSidebar = () => {
-    const { logoutCustomer } = useAuth();
+    const { logoutCustomer } = useAuthFullOptions();
     const navigate = useNavigate();
     const handleLogout = () => {
         logoutCustomer();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {useParams, Link, useOutletContext} from 'react-router-dom';
 import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
-import {useAuth} from "../../contexts/AuthContext";
+import {useAuthFullOptions} from "../../contexts/AuthContext";
 import { profileService } from "../../services/api";
 
 
@@ -11,7 +11,7 @@ const OrderDetailPage = () => {
     const [orderData, setOrderData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const { getCurrentUser } = useAuth();
+    const { getCurrentUser } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
 
 

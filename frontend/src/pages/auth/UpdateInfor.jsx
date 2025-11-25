@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import loginService from "../../services/loginService";
 import Cookies from "js-cookie";
 import constants from "../../constants";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuthFullOptions } from "../../contexts/AuthContext";
 
 export default function RegistrationForm() {
     const location = useLocation();
@@ -12,7 +12,7 @@ export default function RegistrationForm() {
     const [tempToken, setTempToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const { handleCustomerLoginSuccess } = useAuth();
+    const { handleCustomerLoginSuccess } = useAuthFullOptions();
 
     // 1. Loại bỏ Email khỏi state
     const [formData, setFormData] = useState({
