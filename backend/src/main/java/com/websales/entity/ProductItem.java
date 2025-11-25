@@ -25,11 +25,10 @@ public class ProductItem {
     @ToString.Exclude
     ProductVersion versionId;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name ="order_detail_id")
-//    @ToString.Exclude
-//    OrderDetail orderDetail;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="order_detail_id")
+    @ToString.Exclude
+    OrderDetail orderDetail;
 
 
     @Enumerated(EnumType.STRING)

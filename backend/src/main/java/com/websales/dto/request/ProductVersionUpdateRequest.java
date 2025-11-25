@@ -1,11 +1,14 @@
-package com.websales.dto.response;
+package com.websales.dto.request;
 
-
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.util.List;
+
 
 @Builder                 // Tạo builder pattern giúp tạo đối tượng dễ dàng, linh hoạt
 // Đánh dấu class này là entity, ánh xạ tới bảng trong DB
@@ -13,28 +16,28 @@ import java.util.List;
 @NoArgsConstructor       // Tạo constructor không tham số (mặc định)
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
-public class ProductVersionResponse {
-    String idVersion;
+public class ProductVersionUpdateRequest {
 
-            String productName;
+    @NotNull
+    @Positive
+    Long idRom;
 
-            String romName;
+    @NotNull
+    @Positive
+    Long idRam;
 
-            String ramName;
+    @NotNull
+    @Positive
+    Long idColor;
 
-            String colorName;
-
-    List<ImageVersionResponse> images;
-
+    @NotNull
+    @DecimalMin("0.0")
     BigDecimal importPrice;
 
+
+    @NotNull
+    @DecimalMin("0.0")
     BigDecimal exportPrice;
-
-    Integer stockQuantity;
-
-    Boolean status;
-
-    List<ImeiResponse> imei;   //importRequest3
 
 
 }

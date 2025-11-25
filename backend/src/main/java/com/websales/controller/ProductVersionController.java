@@ -2,15 +2,18 @@ package com.websales.controller;
 
 
 
-import com.websales.dto.request.ProductVersionRequest;
+import com.websales.dto.request.*;
 import com.websales.dto.response.ApiResponse;
 import com.websales.dto.response.ProductVersionResponse;
 import com.websales.service.ProductService;
 import com.websales.service.ProductVersionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -22,64 +25,38 @@ public class ProductVersionController {
     @Autowired
     private ProductService productService;
 
-//      @PostMapping
-//      ApiResponse<ProductVersionResponse> create(@PathVariable Long id, @RequestBody @Valid ProductVersionRequest request) {
-//          ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
-//          resp.setResult(pvs.CreateProductVersion(id,request));
-//          return resp;
-//
-//      }
 
-//    @PostMapping
-//    ApiResponse<ProductVersionResponse> create( @RequestBody @Valid ProductVersionRequest request) {
-//        ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
-//        resp.setResult(pvs.CreateProductVersion(request));
-//        return resp;
-//    }
-//
-//
-//
-//
-//    @GetMapping("/{productId}")
-//    public ApiResponse<List<ProductVersionResponse>> getAll(@PathVariable("productId") Long productId) {
-//        ApiResponse<List<ProductVersionResponse>> resp = new ApiResponse<>();
-//        Product product = productService.getProductById(productId);
-//        resp.setCode(1010);
-//        resp.setResult(pvs.ListProductVersion(product));
-//        return resp;
-//    }
-//
-//
-//
-//
-//
-//
-//    @PutMapping("/{id}")
-//      ApiResponse<ProductVersionResponse> update(@PathVariable String id, @RequestBody @Valid ProductVersionRequest request) {
-//          ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
-//          resp.setCode(1011);
-//          resp.setMessage("Product version update successful");
-//          resp.setResult(pvs.UpdateProductVersion(request,id));
-//          return resp;
-//      }
-//
-//
-//      @DeleteMapping("/{id}")
-//    ApiResponse<Void> delete(@PathVariable String id) {
-//          pvs.DeleteProductVersion(id);
-//          ApiResponse<Void> resp = new ApiResponse<>();
-//          resp.setCode(1012);
-//          resp.setMessage("Version delete successful");
-//          return resp;
-//      }
-//
-//
-//      @GetMapping
-//      public ApiResponse<List<ProductVersionResponse>> getAllVersion() {
-//          ApiResponse<List<ProductVersionResponse>> resp = new ApiResponse<>();
-//          resp.setCode(1010);
-//          resp.setResult(pvs.listAll());
-//          return resp;
-//      }
+    @PutMapping("/{id}")
+      ApiResponse<ProductVersionResponse> update(@PathVariable String id, @RequestBody @Valid ProductVersionUpdateRequest request) {
+          ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
+          resp.setCode(1011);
+          resp.setMessage("Product version update successful");
+          resp.setResult(pvs.UpdateProductVersion(request,id));
+          return resp;
+      }
 
+    @PostMapping(value = "/upload_image/{idVersion}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProductVersionResponse> updateImageVersion( // Sửa tên method
+                                                                   @PathVariable("idVersion") @Valid String id,
+                                                                   @RequestPart(value = "image", required = false) List<MultipartFile> images) throws IOException { // Sửa: Thêm tên biến 'images'
+
+        ImageVersionRequest request = ImageVersionRequest.builder().images(images).build(); // Build DTO từ list
+        ProductVersionResponse response = pvs.updateImageVersion(request,id); // Gọi service đã sửa
+
+        return ApiResponse.<ProductVersionResponse>builder()
+                .result(response)
+                .build();
+    }
+
+
+    @GetMapping("/searchVersion")
+    public ApiResponse<ProductVersionResponse> searchVersion(
+            @RequestParam(required = false) String ramName,
+            @RequestParam(required = false) String romName,
+            @RequestParam(required = false) String colorName,
+            @RequestParam(required = false) String productName) {
+        return ApiResponse.<ProductVersionResponse>builder()
+                .result(pvs.SearchProductVersion(ramName,romName,colorName,productName))
+                .build();
+    }
 }

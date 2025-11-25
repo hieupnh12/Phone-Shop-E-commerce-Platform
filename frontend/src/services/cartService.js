@@ -62,6 +62,16 @@ const cartService = {
 
     return res;
   },
+  // POST /cart/checkout  (alias cho createOrder)
+createOrder: async (orderData) => {
+  const res = await axiosClient[POST]('/cart/checkout', orderData);
+
+  try { 
+    window.dispatchEvent(new CustomEvent('cartUpdated')); 
+  } catch (_) {}
+
+  return res;
+},
 
   // POST /cart/preview-payment
   previewPayment: async (orderData) => {

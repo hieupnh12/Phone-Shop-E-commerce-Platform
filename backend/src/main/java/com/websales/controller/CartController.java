@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -62,10 +61,9 @@ public class CartController {
     // --- GET GIỎ HÀNG ---
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getCart() {
+    public ResponseEntity<?> getCart(@AuthenticationPrincipal Jwt jwt) {
         // Lấy customerId từ JWT token
-        var context = SecurityContextHolder.getContext();
-        Long customerId = Long.parseLong(context.getAuthentication().getName());
+        Long customerId = Long.valueOf(jwt.getSubject());
 
         // Lấy cart ACTIVE của customer với cart items được eager fetch
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
@@ -103,8 +101,8 @@ public class CartController {
                     int qty = item.getQuantity() != null ? item.getQuantity() : 1;
 
                     // Lấy image từ productVersion nếu có, nếu không thì lấy từ product
-                    String image = (pv.getPicture() != null && !pv.getPicture().isEmpty()) 
-                            ? pv.getPicture() 
+                    String image = (pv.getImage() != null && !pv.getImage().isEmpty())
+                            ? pv.getImage()
                             : (product.getImage() != null ? product.getImage() : "");
 
                     CartItemResponse resp = new CartItemResponse(

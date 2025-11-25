@@ -9,17 +9,17 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface OrderDetailMapper {
-    @Mapping(target = "productVersionId", source = "productVersion.idVersion")
+    @Mapping(target = "productVersionId", ignore = true)
     @Mapping(target = "productName", ignore = true)
     @Mapping(target = "subtotal", ignore = true)
     OrderDetailResponse toOrderDetailResponse(OrderDetail orderDetail);
     
     @AfterMapping
     default void afterMapping(OrderDetail orderDetail, @MappingTarget OrderDetailResponse response) {
-        // Set product name
-        if (orderDetail.getProductVersion() != null && 
-            orderDetail.getProductVersion().getProduct() != null) {
-            response.setProductName(orderDetail.getProductVersion().getProduct().getNameProduct());
+        // Set product version id
+        if (orderDetail.getProductVersion() != null &&
+            orderDetail.getProductVersion().getIdVersion() != null) {
+            response.setProductVersionId(orderDetail.getProductVersion().getIdVersion());
         }
         
         // Calculate subtotal
