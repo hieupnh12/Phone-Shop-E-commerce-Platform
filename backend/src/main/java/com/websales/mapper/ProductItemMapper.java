@@ -19,10 +19,11 @@ public interface ProductItemMapper {
 ////    @Mapping(source = "orderDetail.", target = "orderDetail.id" , nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 //    ProductItemResponse toProductItemResponse(ProductItem productItem);
 
-    default ProductItem ToProducItemcreate(ProductItemRequest request, ProductVersion version /*, OrderDetail order*/) {
+    default ProductItem ToProducItemcreate(ProductItemRequest request, ProductVersion version /* , OrderDetail order*/) {
         ProductItem item = new ProductItem();
         item.setImei(request.getImei());
         item.setVersionId(version);
+//        item.setOrderDetail(order);
         item.setStatus(request.getStatus()); // Nếu có
         return item;
     }

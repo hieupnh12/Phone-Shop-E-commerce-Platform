@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OperatingSystemResponse {
-    Long  id;
-    String name;
-    boolean status;
+    Long  idOS;
+    String nameOS;
+//    boolean status;
 }

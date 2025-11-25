@@ -43,6 +43,10 @@ import OrderHistory from "./pages/client/OrderHistory";
 import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
+import AdminLogin from "./pages/auth/AdminLogin";
+import AddProduct from "./pages/admin/Products/AddProduct";
+import ListProduct from "./pages/admin/Products/ListProduct";
+import EditProduct from "./pages/admin/Products/EditProduct";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -97,6 +101,10 @@ const router = createBrowserRouter(
       ),
     },
     {
+      path: "/admin-login",
+      element: <AdminLogin />,
+    },
+    {
       path: "/payment",
       element: <Payment />,
     },
@@ -111,11 +119,7 @@ const router = createBrowserRouter(
     {
       path: "/orders",
       element: <OrderHistory />,
-    },
-    {
-      path: "/signup",
-      element: <Signup />,
-    },
+    },    
     {
       path: "/update",
       element: <UpdateInfor />,
@@ -147,13 +151,14 @@ const router = createBrowserRouter(
           children: [
             { index: true, element: <HomeAdmin /> },
             { path: "dashboard", element: <HomeAdmin /> },
-            // {
-            //   path: "products",
-            //   element: <Products />,
-            //   children: [],
-            // },
-            // { path: "customers", element: <Customers /> },
-            // { path: "staff", element: <Staff /> },
+            {
+              path: "products",
+              children: [
+                { index: true, element: <ListProduct /> },
+                { path: "create", element: <AddProduct /> },
+                { path: ":id/edit", element: <EditProduct /> },
+              ],
+            },
             {
               path: "statistic",
               element: <Statistic />,

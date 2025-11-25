@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }) => {
     Cookies.remove(constants.ACCESS_TOKEN_KEY);
     setUser(null);
     return response;
+    
   };
 
   const logoutCustomer = async () => {

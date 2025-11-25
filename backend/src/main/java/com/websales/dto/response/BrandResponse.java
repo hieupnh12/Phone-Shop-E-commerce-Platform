@@ -11,7 +11,7 @@ import lombok.experimental.FieldDefaults;
 public class BrandResponse {
     Long idBrand;
 
-    String brandName;
+    String nameBrand;
 
     Boolean  status;
 }

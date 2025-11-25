@@ -30,7 +30,7 @@ export default function AdminLayout() {
   const handLogout = async () => {
     const response = await logout();
     if (response) {
-      navigate("/login", { replace: true });
+      navigate("/admin-login", { replace: true });
     }
   }
   useEffect(() => {
