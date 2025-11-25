@@ -1,37 +1,194 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit } from 'lucide-react';
+import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2 } from 'lucide-react';
+import customerService  from '../../services/customerService';
+import cartService from '../../services/cartService';
+
+// Format tiền VND
+const vnd = (n) =>
+  new Intl.NumberFormat("vi-VN", { 
+    style: "currency", 
+    currency: "VND", 
+    maximumFractionDigits: 0 
+  }).format(Number.isFinite(n) ? n : 0);
 
 export default function Payment() {
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState('cod');
-  const [customerInfo] = useState({
-    name: 'Nguyễn Văn A',
-    phone: '0901234567',
-    email: 'nguyenvana@gmail.com',
-    address: '123 Đường Láng, Hà Nội'
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [error, setError] = useState('');
+  const [payOSQRCode, setPayOSQRCode] = useState('');
+  const [payOSLink, setPayOSLink] = useState('');
+  const [loadingQR, setLoadingQR] = useState(false);
+  
+  const [cartItems, setCartItems] = useState([]);
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    address: ''
   });
 
-  const [orderItems] = useState([
-    {
-      name: 'K5 / Set Wing Gundam Zero EW +',
-      variant: 'Mô hình Robot - 2.5.1.1',
-      price: 1990000
-    }
-  ]);
+  // Load cart data and customer info
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load cart
+        const cartData = await cartService.getCart();
+        if (cartData?.success && cartData.cartItems) {
+          setCartItems(cartData.cartItems);
+        } else {
+          setError('Không thể tải giỏ hàng');
+        }
+        
+        // Load customer info from API
+        try {
+          const customerData = await customerService.getMyCustomerInfo();
+          console.log('Customer data received:', customerData);
+          
+          // API trả về { code, message, result: CustomerResponse }
+          const customer = customerData?.result || customerData;
+          
+          if (customer && (customer.fullName || customer.phoneNumber || customer.email || customer.address)) {
+            setCustomerInfo({
+              name: customer.fullName || 'Khách hàng',
+              phone: customer.phoneNumber || '',
+              email: customer.email || '',
+              address: customer.address || ''
+            });
+            console.log('Customer info set successfully:', {
+              name: customer.fullName || 'Khách hàng',
+              phone: customer.phoneNumber || '',
+              email: customer.email || '',
+              address: customer.address || ''
+            });
+          } else {
+            console.warn('No customer data in response or all fields are empty:', customer);
+            setCustomerInfo({
+              name: 'Khách hàng',
+              phone: '',
+              email: '',
+              address: ''
+            });
+          }
+        } catch (e) {
+          // Nếu không lấy được customer info, dùng default
+          console.error('Could not load customer info:', e);
+          setCustomerInfo({
+            name: 'Khách hàng',
+            phone: '',
+            email: '',
+            address: ''
+          });
+        }
+      } catch (e) {
+        setError(e.message || 'Lỗi kết nối');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const shippingFee = 0;
-  const subtotal = orderItems.reduce((sum, item) => sum + item.price, 0);
+    loadData();
+  }, []);
+
+  const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
+  const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
   const total = subtotal + shippingFee;
 
-  const handlePaymentChange = (method) => {
+  const handlePaymentChange = async (method) => {
     setPaymentMethod(method);
+    
+    // Nếu chọn bank, tạo payment link preview để lấy QR code
+    if (method === 'bank' && cartItems.length > 0) {
+      setLoadingQR(true);
+      try {
+        const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
+        const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
+        const total = subtotal + shippingFee;
+        
+        const orderData = {
+          total: total,
+          subtotal: subtotal,
+          shippingFee: shippingFee,
+          paymentMethod: 'bank',
+          note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.'
+        };
+        
+        console.log('Calling previewPayment with:', orderData);
+        const response = await cartService.previewPayment(orderData);
+        console.log('Preview payment response:', response);
+        
+        if (response?.success) {
+          if (response?.qrCode) {
+            console.log('QR Code received:', response.qrCode.substring(0, 50) + '...');
+            setPayOSQRCode(response.qrCode);
+            setPayOSLink(response.paymentLink);
+          } else if (response?.paymentLink) {
+            // Nếu không có QR code nhưng có payment link, vẫn lưu link
+            console.log('Payment link received (no QR):', response.paymentLink);
+            setPayOSLink(response.paymentLink);
+            setPayOSQRCode('');
+          } else {
+            console.warn('No QR code or payment link in response');
+          }
+        } else {
+          console.error('Preview payment failed:', response?.message);
+        }
+      } catch (e) {
+        console.error('Error creating payment preview:', e);
+        setError('Không thể tạo mã QR. Vui lòng thử lại.');
+      } finally {
+        setLoadingQR(false);
+      }
+    } else {
+      // Reset khi chọn COD
+      setPayOSQRCode('');
+      setPayOSLink('');
+    }
   };
 
-  const handlePlaceOrder = () => {
-    // Xử lý đặt hàng
-    console.log('Đặt hàng với phương thức:', paymentMethod);
-    // Navigate to success page or handle order
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) {
+      setError('Giỏ hàng trống');
+      return;
+    }
+
+    try {
+      setPlacingOrder(true);
+      setError('');
+      
+      // Gọi API checkout để tạo order
+      const orderData = {
+        total: total,
+        subtotal: subtotal,
+        shippingFee: shippingFee,
+        paymentMethod: paymentMethod,
+        note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.',
+        address: customerInfo.address || ''
+      };
+
+      const response = await cartService.createOrder(orderData);
+      
+      if (response?.success) {
+        // Nếu có paymentLink (PayOS), redirect đến trang thanh toán
+        if (response.requiresPayment && response.paymentLink) {
+          window.location.href = response.paymentLink;
+        } else {
+          // Navigate to orders page cho COD hoặc nếu PayOS link không có
+          navigate('/orders');
+        }
+      } else {
+        setError(response?.message || 'Không thể đặt hàng');
+      }
+    } catch (e) {
+      setError(e.message || 'Lỗi khi đặt hàng');
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const handleEditOrder = () => {
@@ -60,7 +217,7 @@ export default function Payment() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1">Họ và tên</span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.name}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.name || 'Chưa cập nhật'}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -68,7 +225,7 @@ export default function Payment() {
                     <Phone className="w-4 h-4" />
                     Số điện thoại
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.phone}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || 'Chưa cập nhật'}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -76,7 +233,7 @@ export default function Payment() {
                     <Mail className="w-4 h-4" />
                     Email
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.email}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.email || 'Chưa cập nhật'}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -84,7 +241,7 @@ export default function Payment() {
                     <MapPin className="w-4 h-4" />
                     Địa chỉ giao hàng
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.address}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.address || 'Chưa cập nhật'}</span>
                 </div>
               </div>
             </div>
@@ -95,9 +252,13 @@ export default function Payment() {
                 <StickyNote className="w-5 h-5" />
                 Ghi chú đơn hàng
               </h3>
-              <p className="text-gray-600 text-sm">
-                Giao hàng trong giờ hành chính. Gọi trước khi giao.
-              </p>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Giao hàng trong giờ hành chính. Gọi trước khi giao."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                rows="3"
+              />
             </div>
 
             {/* Phương thức thanh toán */}
@@ -156,72 +317,147 @@ export default function Payment() {
               {/* QR Code */}
               {paymentMethod === 'bank' && (
                 <div className="mt-4 text-center">
-                  <div className="inline-block p-2 border border-gray-200 rounded-lg bg-white">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=PaymentInfo`} 
-                      alt="QR Code"
-                      className="w-[120px] h-[120px] rounded"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">Quét mã QR bằng ứng dụng ngân hàng</p>
+                  {loadingQR ? (
+                    <div className="py-8">
+                      <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500">Đang tạo mã QR...</p>
+                    </div>
+                  ) : payOSQRCode ? (
+                    <>
+                      <div className="inline-block p-2 border border-gray-200 rounded-lg bg-white">
+                        <img 
+                          src={payOSQRCode} 
+                          alt="PayOS QR Code"
+                          className="w-[200px] h-[200px] rounded"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
+                      {payOSLink && (
+                        <a 
+                          href={payOSLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs text-rose-600 hover:text-rose-700 underline"
+                        >
+                          Hoặc mở link thanh toán
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-4">
+                      <p className="text-xs text-gray-500">Nhấn "Đặt hàng" để tạo mã QR thanh toán</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           {/* Right Column - Đơn hàng */}
-          <div>
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              {orderItems.map((item, index) => (
-                <div key={index} className="p-5 border-b border-gray-200 last:border-b-0">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{item.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">{item.variant}</div>
+          <div className="space-y-5">
+            {loading ? (
+              <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-4" />
+                <p className="text-gray-600">Đang tải thông tin đơn hàng...</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  {cartItems.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <p>Giỏ hàng trống</p>
+                      <button
+                        onClick={() => navigate('/cart')}
+                        className="mt-4 text-rose-600 hover:text-rose-700 font-medium"
+                      >
+                        Quay lại giỏ hàng
+                      </button>
                     </div>
-                    <div className="font-semibold text-rose-600 ml-4">
-                      {item.price.toLocaleString('vi-VN')}đ
+                  ) : (
+                    <>
+                      {cartItems.map((item, index) => (
+                        <div key={item.productVersionId || index} className="p-5 border-b border-gray-200 last:border-b-0">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{item.productName || 'Sản phẩm'}</div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                Số lượng: {item.quantity || 1}
+                              </div>
+                            </div>
+                            <div className="font-semibold text-rose-600 ml-4">
+                              {vnd((item.price || 0) * (item.quantity || 1))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+
+                {cartItems.length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-5 border-b border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-900">Tạm tính</div>
+                        <div className="font-semibold text-gray-900">{vnd(subtotal)}</div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 border-b border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-900">Phí vận chuyển</div>
+                        <div className="font-semibold text-rose-600">
+                          {shippingFee === 0 ? 'Miễn phí' : vnd(shippingFee)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-rose-50 p-5">
+                      <div className="flex justify-between items-center text-lg font-semibold text-rose-600">
+                        <div>Tổng cộng</div>
+                        <div>{vnd(total)}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )}
 
-              <div className="p-5 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <div className="text-gray-900">Phí vận chuyển</div>
-                  <div className="font-semibold text-rose-600">
-                    {shippingFee === 0 ? 'Miễn phí' : `${shippingFee.toLocaleString('vi-VN')}đ`}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    {error}
                   </div>
-                </div>
-              </div>
+                )}
 
-              <div className="bg-rose-50 p-5">
-                <div className="flex justify-between items-center text-lg font-semibold text-rose-600">
-                  <div>Tổng cộng</div>
-                  <div>{total.toLocaleString('vi-VN')}đ</div>
-                </div>
-              </div>
-            </div>
+                <button 
+                  onClick={handlePlaceOrder}
+                  disabled={loading || placingOrder || cartItems.length === 0}
+                  className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2 hover:transform hover:-translate-y-0.5"
+                >
+                  {placingOrder ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Đặt hàng
+                    </>
+                  )}
+                </button>
 
-            <button 
-              onClick={handlePlaceOrder}
-              className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-3.5 px-6 rounded-lg mt-5 transition-all flex items-center justify-center gap-2 hover:transform hover:-translate-y-0.5"
-            >
-              <CheckCircle className="w-5 h-5" />
-              Đặt hàng
-            </button>
+                <button 
+                  onClick={handleEditOrder}
+                  className="w-full bg-transparent hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Edit className="w-5 h-5" />
+                  Chỉnh sửa đơn hàng
+                </button>
 
-            <button 
-              onClick={handleEditOrder}
-              className="w-full bg-transparent hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-semibold py-3.5 px-6 rounded-lg mt-3 transition-all flex items-center justify-center gap-2"
-            >
-              <Edit className="w-5 h-5" />
-              Chỉnh sửa đơn hàng
-            </button>
-
-            <p className="text-xs text-gray-500 italic mt-4">
-              * Quý khách vui lòng kiểm tra kỹ thông tin trước khi đặt hàng.
-            </p>
+                <p className="text-xs text-gray-500 italic">
+                  * Quý khách vui lòng kiểm tra kỹ thông tin trước khi đặt hàng.
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>

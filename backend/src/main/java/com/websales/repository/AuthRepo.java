@@ -11,4 +11,6 @@ public interface AuthRepo extends JpaRepository<CustomerAuth, Long> {
     Optional<CustomerAuth> findByCustomerIdAndProvider(Long customerId, String provider);
 
     boolean existsByCustomerIdAndProvider(Long customerId, String provider);
+
+    Optional<CustomerAuth> findByProviderAndProviderUserId(String provider, String providerUserId);
 }

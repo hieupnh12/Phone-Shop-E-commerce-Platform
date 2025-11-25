@@ -3,6 +3,7 @@ import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import constants from "../constants/index.js";
 import loginApi from "../services/loginService.js";
+import {profileService} from "../services/api";
 
 const AuthContext = createContext();
 
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
   const getCurrentUser = async () => {
     try {
-      const response = await loginApi.getInfo();
+      const response = await profileService.getCustomerInfo();
       setUser(response?.result);
     } catch (error) {
       // Token invalid, clear it

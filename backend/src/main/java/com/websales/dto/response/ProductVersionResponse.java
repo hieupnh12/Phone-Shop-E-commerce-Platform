@@ -24,6 +24,8 @@ public class ProductVersionResponse {
 
             String colorName;
 
+    List<ImageVersionResponse> images;
+
     BigDecimal importPrice;
 
     BigDecimal exportPrice;

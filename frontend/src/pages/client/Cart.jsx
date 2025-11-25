@@ -1,41 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Truck, X, ShoppingBag, Smartphone, Plus, Minus, CreditCard } from "lucide-react";
-
-// Mock cartService để demo
-const cartService = {
-  getCart: async () => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    return {
-      success: true,
-      cartItems: [
-        {
-          imei: "352094087982341",
-          productId: "ip15pm-256",
-          productName: "iPhone 15 Pro Max 256GB",
-          image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400&q=80",
-          price: 29990000,
-          quantity: 1
-        },
-        {
-          imei: "352094087982342",
-          productId: "ss-s24u-512",
-          productName: "Samsung Galaxy 10 Ultra 1GB",
-          image: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400&q=80",
-          price: 9000000,
-          quantity: 1
-        }
-      ]
-    };
-  },
-  removeByImei: async (imei) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { success: true };
-  },
-  updateQuantity: async (imei, quantity) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { success: true };
-  }
-};
+import cartService from "../../services/cartService";
 
 // Format tiền VND
 const vnd = (n) =>
@@ -46,11 +12,12 @@ const vnd = (n) =>
   }).format(Number.isFinite(n) ? n : 0);
 
 export default function ShoppingCart() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [removingImei, setRemovingImei] = useState(null);
-  const [updatingImei, setUpdatingImei] = useState(null);
+  const [removingProductVersionId, setRemovingProductVersionId] = useState(null);
+  const [updatingProductVersionId, setUpdatingProductVersionId] = useState(null);
 
   // Lấy giỏ hàng
   const loadCart = async () => {
@@ -59,12 +26,23 @@ export default function ShoppingCart() {
       setErr("");
       const data = await cartService.getCart();
       if (data?.success) {
-        setItems(data.cartItems || []);
+        // Map dữ liệu từ API về format cần thiết
+        const mappedItems = (data.cartItems || []).map(item => ({
+          productVersionId: item.productVersionId,
+          productId: item.productId,
+          productName: item.productName,
+          image: item.image,
+          price: item.price,
+          quantity: item.quantity || 1
+        }));
+        setItems(mappedItems);
       } else {
         setErr(data?.message || "Không lấy được giỏ hàng");
+        setItems([]);
       }
     } catch (e) {
       setErr(e.message || "Lỗi kết nối");
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -75,50 +53,50 @@ export default function ShoppingCart() {
   }, []);
 
   // Cập nhật số lượng
-  const updateQuantity = async (imei, delta) => {
-    const item = items.find(x => x.imei === imei);
+  const updateQuantity = async (productVersionId, delta) => {
+    const item = items.find(x => x.productVersionId === productVersionId);
     if (!item) return;
     
     const newQuantity = (item.quantity || 1) + delta;
     if (newQuantity < 1) return;
     
     try {
-      setUpdatingImei(imei);
+      setUpdatingProductVersionId(productVersionId);
       setItems(prev => prev.map(x => 
-        x.imei === imei ? { ...x, quantity: newQuantity } : x
+        x.productVersionId === productVersionId ? { ...x, quantity: newQuantity } : x
       ));
       
-      const res = await cartService.updateQuantity(imei, newQuantity);
+      const res = await cartService.updateQuantity(productVersionId, newQuantity);
       if (!res?.success) {
         setItems(prev => prev.map(x => 
-          x.imei === imei ? { ...x, quantity: item.quantity } : x
+          x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
         ));
         setErr(res?.message || "Không cập nhật được số lượng");
       }
     } catch (e) {
       setItems(prev => prev.map(x => 
-        x.imei === imei ? { ...x, quantity: item.quantity } : x
+        x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
       ));
       setErr(e.message || "Lỗi mạng");
     } finally {
-      setUpdatingImei(null);
+      setUpdatingProductVersionId(null);
     }
   };
 
   // Xóa sản phẩm
-  const removeItem = async (imei) => {
+  const removeItem = async (productVersionId) => {
     try {
-      setRemovingImei(imei);
-      const res = await cartService.removeByImei(imei);
+      setRemovingProductVersionId(productVersionId);
+      const res = await cartService.removeItem(productVersionId);
       if (res?.success) {
-        setItems(prev => prev.filter(x => x.imei !== imei));
+        setItems(prev => prev.filter(x => x.productVersionId !== productVersionId));
       } else {
         setErr(res?.message || "Không xóa được sản phẩm");
       }
     } catch (e) {
       setErr(e.message || "Lỗi mạng");
     } finally {
-      setRemovingImei(null);
+      setRemovingProductVersionId(null);
     }
   };
 
@@ -127,9 +105,10 @@ export default function ShoppingCart() {
     () => items.reduce((sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1), 0),
     [items]
   );
-  const shippingFee = subtotal >= 10000000 ? 0 : 30000;
+  const FREE_SHIP_LIMIT = 1000;
+  const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : 30000;
   const total = subtotal + shippingFee;
-  const freeShipProgress = Math.min((subtotal / 10000000) * 100, 100);
+  const freeShipProgress = Math.min((subtotal / FREE_SHIP_LIMIT) * 100, 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-20 sm:pt-24">
@@ -230,9 +209,9 @@ export default function ShoppingCart() {
               ) : (
                 items.map((item) => (
                   <div
-                    key={item.imei}
+                    key={item.productVersionId}
                     className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${
-                      removingImei === item.imei ? 'opacity-50' : ''
+                      removingProductVersionId === item.productVersionId ? 'opacity-50' : ''
                     }`}
                   >
                     <div className="flex gap-4">
@@ -257,10 +236,6 @@ export default function ShoppingCart() {
                           {item.productName || "Sản phẩm"}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className="inline-flex items-center text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg font-medium">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span>
-                            IMEI: {item.imei}
-                          </span>
                           <span className="inline-flex items-center text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
                             Chính hãng
                           </span>
@@ -282,8 +257,8 @@ export default function ShoppingCart() {
                             {/* Quantity Controls */}
                             <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
                               <button
-                                onClick={() => updateQuantity(item.imei, -1)}
-                                disabled={item.quantity <= 1 || updatingImei === item.imei}
+                                onClick={() => updateQuantity(item.productVersionId, -1)}
+                                disabled={item.quantity <= 1 || updatingProductVersionId === item.productVersionId}
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title="Giảm số lượng"
                               >
@@ -293,8 +268,8 @@ export default function ShoppingCart() {
                                 {item.quantity || 1}
                               </span>
                               <button
-                                onClick={() => updateQuantity(item.imei, +1)}
-                                disabled={updatingImei === item.imei}
+                                onClick={() => updateQuantity(item.productVersionId, +1)}
+                                disabled={updatingProductVersionId === item.productVersionId}
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title="Tăng số lượng"
                               >
@@ -304,12 +279,12 @@ export default function ShoppingCart() {
 
                             {/* Remove Button */}
                             <button
-                              onClick={() => removeItem(item.imei)}
-                              disabled={removingImei === item.imei}
+                              onClick={() => removeItem(item.productVersionId)}
+                              disabled={removingProductVersionId === item.productVersionId}
                               className="flex items-center gap-1 text-slate-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg disabled:opacity-50"
                               title="Xóa khỏi giỏ"
                             >
-                              {removingImei === item.imei ? (
+                              {removingProductVersionId === item.productVersionId ? (
                                 <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                               ) : (
                                 <X className="w-5 h-5" />
@@ -356,6 +331,7 @@ export default function ShoppingCart() {
               </div>
 
               <button 
+                onClick={() => navigate('/payment')}
                 disabled={items.length === 0 || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >

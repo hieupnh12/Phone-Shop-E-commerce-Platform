@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, User, ShoppingCart, Menu, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cartService } from "../../services/api";
+import  cartService from "../../services/cartService";
 import { useAuth } from "../../contexts/AuthContext";
 
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {

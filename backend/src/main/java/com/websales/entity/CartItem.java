@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "CartItem")
+@Table(name = "cart_items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,16 +13,17 @@ public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "cart_item_id")
     private Integer idCartItem;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idCart", nullable = false)
+    @JoinColumn(name = "cart_id", nullable = false)
     private Cart cart;
 
-    // Thay vì String imei rời, map ManyToOne tới ProductItem (PK = imei)
+    // Map ManyToOne tới ProductItem (PK = imei)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "imei", nullable = false)
-    private ProductItem productItem;
+    @JoinColumn(name = "product_version_id", nullable = false)
+    private ProductVersion productVersion;
 
     @Column(name = "quantity")
     private Integer quantity;

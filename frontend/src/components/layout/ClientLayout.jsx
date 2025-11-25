@@ -270,7 +270,8 @@ const ClientLayout = ({ children, showHero = true }) => {
               <div className="text-center mt-8">
                 <button
                 onClick={handleViewAllProducts}
-                 className="bg-white/10 backdrop-blur-lg hover:bg-white/20 text-white px-8 py-3 rounded-full font-semibold border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105">
+                 className="bg-white/10 backdrop-blur-lg hover:bg-white/20 text-white px-8 py-3 rounded-full font-semibold border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105"
+                 >
                   Xem Tất Cả Sản Phẩm →
                 </button>
               </div>

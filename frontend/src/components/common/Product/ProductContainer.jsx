@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import Loading from '../../../components/common/Loading';
-import { cartService } from '../../../services/api';
+import cartService from '../../../services/cartService';
 import productWorker from '../../../services/productWorker';
 import ProductListAll from '../../../components/common/Product/ProductListAll';
 import ProductFilter from './ProductFilter';

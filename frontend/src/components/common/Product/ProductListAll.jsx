@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import productWorker from '../../../services/productWorker'; // ← THÊM: Import productWorker (điều chỉnh đường dẫn nếu cần)
+import { useNavigate, Outlet } from "react-router-dom";
 
 const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProducts thay fetch thủ công
   const [products, setProducts] = useState([]);
@@ -8,6 +9,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1); // ← THÊM: Để lưu totalPages từ API
   const [favorites, setFavorites] = useState(new Set());
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts(currentPage);
@@ -17,15 +19,12 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
 const [error, setError] = useState(null);  // ← THÊM: State error
 
 const fetchProducts = async (page) => {
-  setLoading(true);
+  setLoading(true); 
   setError(null);  // ← THÊM: Reset error
   try {
-    const data = await productWorker.fetchAllProducts(page, 5);
-    console.log('Fetched products data:', data); // ← THÊM: Log dữ liệu nhận được
+    const data = await productWorker.fetchAllProducts(page,8);
     setProducts(data.products || []);
-    console.log('Transformed products:', data.products || []); // ← THÊM: Log products sau khi set
-    setTotalPages(data.totalPages || 1);
-    console.log('Total pages:', data.totalPages || 1); // ← THÊM: Log totalPages
+    setTotalPages(data.totalPages - 2|| 1);
   } catch (error) {
     console.error('Lỗi fetch sản phẩm:', error);
     setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');  // ← THÊM: Thông báo lỗi user-friendly
@@ -35,6 +34,10 @@ const fetchProducts = async (page) => {
     setLoading(false);
   }
 };
+
+
+
+
   // ← GIỮ: toggleFavorite, nhưng dùng product.id sau transform
   const toggleFavorite = (id) => {
     setFavorites(prev => {
@@ -47,6 +50,9 @@ const fetchProducts = async (page) => {
       return newFavorites;
     });
   };
+
+
+
   // Sau fetch thành công - gửi count lên component cha khi products thay đổi
   useEffect(() => {
     props.onProductsCountChange?.(products.length || 0);
@@ -55,6 +61,24 @@ const fetchProducts = async (page) => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN').format(price * 1000) + 'đ';
   };
+
+
+  //  const handleViewProductId = () =>{
+  //      navigate(`/products/${products.id}`);
+  //  }
+
+// Function handleViewProductId - log bên trong để debug
+  const handleViewProductId = (id) => {
+    console.log('handleViewProductId called with ID:', id); // Log ID trong function để xác nhận
+    if (!id) {
+      console.error('Invalid product ID:', id);
+      return; // Không navigate nếu id undefined/null
+    }
+    navigate(`/products/${id}`); // Navigate với ID đúng
+    console.log('Navigated to /products/', id); // Log sau navigate
+  };
+
+
 
   // ← XÓA: calculateDiscount thủ công, vì transform đã có product.discount
   if (loading) {
@@ -67,6 +91,8 @@ const fetchProducts = async (page) => {
       </div>
     );
   }
+
+
 // THÊM MỚI: Sau if (loading) {...}
 if (error) {
   return (
@@ -83,6 +109,8 @@ if (error) {
     </div>
   );
 }
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header - GIỮ NGUYÊN */}
@@ -99,6 +127,8 @@ if (error) {
         </div>
       </div>
 
+      <main>
+
       {/* Products Grid - THAY ĐỔI: Adjust fields theo transform */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -106,9 +136,9 @@ if (error) {
             const version = product.versions?.[0];
             const isFavorite = favorites.has(product.id);
             const discount = product.discount || 0;
-            const screenSize = product.specifications?.['Screen Size'] || '6.5 inches';
-            const ram = product.specifications?.['RAM'] || '8 GB';
-            const storage = product.specifications?.['Internal Storage'] || '256 GB';
+            const screenSize = product.specifications?.['Screen Size'];
+            const ram = version?.ram || '8 GB';
+            const storage = version?.rom || '128 GB';
 
             return (
               <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden relative">
@@ -125,21 +155,31 @@ if (error) {
                 </div>
 
                 {/* Image Container */}
-                <div className="relative bg-white p-4">
+                <button
+                  onClick={() => {
+                   console.log('Product ID:', product.id); // Log ID trước khi truyền
+                    handleViewProductId(product.id);
+                    }}
+
+                    className="relative bg-white p-4">
                   <img 
                     src={product.image} 
                     alt={product.name}
                     className="w-full h-48 object-contain"
                   />
-                </div>
-
+                </button>
                 {/* Product Info */}
                 <div className="p-4">
+                  
                   {/* Product Name with Official Badge */}
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2 min-h-[40px]">
-                    {product.name} | Chính hãng
-                  </h3>
-
+                  <button
+                  onClick={() => {
+                    console.log('Product ID:', product.id); // Log ID trước khi truyền
+                    handleViewProductId(product.id);
+                      }}
+                   className="text-base font-semibold text-gray-800 mb-2 line-clamp-2 min-h-[40px] ">
+                    {product.name} | Chính hãng                 
+                  </button>
                   {/* Price */}
                   <div className="mb-3">
                     <div className="flex items-baseline gap-2">
@@ -198,6 +238,8 @@ if (error) {
           })}
         </div>
 
+
+
         {/* Pagination - THAY ĐỔI: Dùng totalPages từ API */}
         <div className="flex justify-center items-center gap-4 mt-12">
           <button 
@@ -220,8 +262,12 @@ if (error) {
             <ChevronRight className="w-6 h-6 text-gray-700" />
           </button>
         </div>
+
       </div>
+          </main>
+
     </div>
   );
+  
 };
 export default PhoneShopList;

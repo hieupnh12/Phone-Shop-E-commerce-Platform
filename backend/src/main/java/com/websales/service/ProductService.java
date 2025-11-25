@@ -339,10 +339,28 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
         long end = System.nanoTime();
-        log.info("getProductById took {} ms", (end - start) / 1_000_000);
         return product;
     }
 
+
+    public ProductFULLResponse getProductFULLById(Long idproduct) {
+        Product  product = productRepository.findByIdProduct(idproduct);
+        // Assuming getProductVersion() returns List<ProductVersion>
+        product.getProductVersion().forEach(version -> {
+            // Filter ProductItems where export_id IS NULL (uncomment and fix the lambda)
+            version.setProductItems(
+                    version.getProductItems().stream()
+//                            .filter(pi -> pi.getExportId() == null)  // Adjust 'getExportId()' to match your entity field
+                            .collect(Collectors.toList())
+            );
+        });
+
+
+
+        
+        // Map to DTO (assuming a mapper or manual mapping exists; adjust as needed)
+        return productMapper.toProductFULLResponse(product);  // Or manu
+    }
 
 
     @Transactional
@@ -520,7 +538,7 @@ public class ProductService {
 //        String contentType = file.getContentType();
 //        return contentType != null && (contentType.equals("image/jpeg") || contentType.equals("image/png"));
 //    }
-//
+
 //
 //
 //
