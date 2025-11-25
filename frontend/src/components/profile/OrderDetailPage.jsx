@@ -1,8 +1,8 @@
 // file orderDetailPage
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
-import {profileService} from "../../services/api";
+import { CheckCircle, Clock, Loader2, ChevronRight, Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
+import { profileService } from "../../services/api";
 
 
 
@@ -132,7 +132,12 @@ const OrderDetailPage = () => {
                 <InfoRow label="Sản phẩm" value={orderData.products.length} note="số lượng" />
                 <InfoRow label="Tổng tiền hàng" value={orderData.summary.subtotal} currency />
                 <InfoRow label="Giảm giá" value={-orderData.summary.discount} currency highlight />
-                <InfoRow label="Phí vận chuyển" value={orderData.summary.shippingFee} currency={orderData.summary.shippingFee > 0} value={orderData.summary.shippingFee === 0 ? 'Miễn phí' : orderData.summary.shippingFee} />
+                <InfoRow
+                    label="Phí vận chuyển"
+                    value={orderData.summary.shippingFee === 0 ? 'Miễn phí' : orderData.summary.shippingFee}
+                    currency={orderData.summary.shippingFee > 0}
+                />
+
             </div>
 
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
@@ -176,7 +181,7 @@ const OrderDetailPage = () => {
                             {index < totalSteps - 1 && (
                                 <div className={`absolute h-1 top-4 left-1/2 w-full transition-colors duration-500 
                                     ${steps[index + 1]?.completed ? 'bg-blue-600' : 'bg-gray-200'} z-0`}
-                                     style={{ width: `calc(100% + ${100 / totalSteps}%)`, transform: 'translateX(-50%)' }}>
+                                    style={{ width: `calc(100% + ${100 / totalSteps}%)`, transform: 'translateX(-50%)' }}>
                                 </div>
                             )}
 

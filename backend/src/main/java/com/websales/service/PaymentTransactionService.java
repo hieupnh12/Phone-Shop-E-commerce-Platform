@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import com.websales.entity.Order;
 import com.websales.enums.OrderStatus;
+import com.websales.repository.CartRepository;
 import com.websales.repository.OrderRepository;
 
 @Service
@@ -38,6 +39,7 @@ public class PaymentTransactionService {
     PaymentTransactionMapper paymentTransactionMapper;
     PaymentMethodService paymentMethodService;
     OrderRepository orderRepository;
+    CartRepository cartRepository;
 
     @Transactional
     public PaymentTransactionResponse createPaymentTransaction(PaymentTransactionRequest request) {
@@ -177,7 +179,7 @@ public class PaymentTransactionService {
         
         PaymentTransaction updatedTransaction = paymentTransactionRepository.save(transaction);
         
-        // Update Order status khi thanh toán thành công
+        // Update Order status và xóa cart khi thanh toán thành công
         if (status == PaymentStatus.SUCCESS && oldStatus != PaymentStatus.SUCCESS && transaction.getOrderId() != null) {
             Order order = orderRepository.findById(transaction.getOrderId())
                     .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -188,6 +190,18 @@ public class PaymentTransactionService {
             orderRepository.save(order);
             
             log.info("Order {} status updated to PAID after successful payment", order.getOrderId());
+            
+            // Xóa cart items sau khi thanh toán thành công
+            if (order.getCustomerId() != null && order.getCustomerId().getCustomerId() != null) {
+                Long customerId = order.getCustomerId().getCustomerId();
+                cartRepository.findFirstByCustomerIdAndStatus(customerId, true)
+                        .ifPresent(cart -> {
+                            cart.getCartItems().clear();
+                            cart.setUpdateDate(LocalDateTime.now());
+                            cartRepository.save(cart);
+                            log.info("Cart cleared for customer {} after successful payment", customerId);
+                        });
+            }
         }
         
         return paymentTransactionMapper.toPaymentTransactionResponse(updatedTransaction);

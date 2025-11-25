@@ -334,58 +334,88 @@ public class ProductService {
 
 
 
-//    public Product getProductById(Long id) {
-//        long start = System.nanoTime();
-//        Product product = productRepository.findById(id)
-//                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
-//        long end = System.nanoTime();
-//        log.info("getProductById took {} ms", (end - start) / 1_000_000);
-//        return product;
-//    }
-//
-//
-//
-//    @Transactional
-//    public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
-//        log.info("Nhận được ProductUpdateRequest với originId: {}", request.getOriginId());
-//        // Lấy sản phẩm hiện có
-//        Product product = getProductById(id); // Đảm bảo lấy sản phẩm với productId = 18
-//
-//        // Lấy các thực thể liên quan
-//        Origin origin = originService.getOriginById(request.getOriginId());
-//        WarehouseArea wa = warehouseAreaService.getWarehouseAreaById(request.getWarehouseAreaId());
-//        if (!wa.isStatus()) {
-//            throw new AppException(ErrorCode.WAREHOUSE_UNAVAILABLE);
-//        }
-//        Brand br = brandService.GetBrandById(request.getBrandId());
-//        OperatingSystem os = operatingSystemService.getOSById(request.getOperatingSystemId());
-//
-//        // Cập nhật các trường của sản phẩm hiện có
-//        productMapper.toProductUpdate(request, product, origin, os, br, wa);
-//
-//        // Lưu sản phẩm đã cập nhật
-//        Product savedProduct = productRepository.save(product);
-//        return productMapper.toProductResponse(savedProduct);
-//    }
-//
-//
-//
-//
-//
-//    @Transactional
-//    public void deleteProduct(Long productId) {
-//        // Kiểm tra xem sản phẩm có ProductItem liên quan không
-//        if (productRepository.hasProductItems(productId)) {
-//            throw new IllegalStateException("Không thể xóa sản phẩm vì tồn tại ProductItem liên quan.");
-//        }
-//        // Xóa các ProductVersion không có ProductItem
-//        productRepository.deleteProductVersionsWithoutItems(productId);
-//        // Xóa sản phẩm
-//        productRepository.deleteProductById(productId);
-//    }
-//
-//
-//
+    public Product getProductById(Long id) {
+        long start = System.nanoTime();
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
+        long end = System.nanoTime();
+        return product;
+    }
+
+
+    public ProductFULLResponse getProductFULLById(Long idproduct) {
+        Product  product = productRepository.findByIdProduct(idproduct);
+        // Assuming getProductVersion() returns List<ProductVersion>
+        product.getProductVersion().forEach(version -> {
+            // Filter ProductItems where export_id IS NULL (uncomment and fix the lambda)
+            version.setProductItems(
+                    version.getProductItems().stream()
+//                            .filter(pi -> pi.getExportId() == null)  // Adjust 'getExportId()' to match your entity field
+                            .collect(Collectors.toList())
+            );
+        });
+
+
+
+        
+        // Map to DTO (assuming a mapper or manual mapping exists; adjust as needed)
+        return productMapper.toProductFULLResponse(product);  // Or manu
+    }
+
+
+    @Transactional
+    public ProductResponse updateProduct(Long id, ProductUpdateRequest request) {
+        log.info("Nhận được ProductUpdateRequest với originId: {}", request.getIdOrigin());
+        // Lấy sản phẩm hiện có
+        Product product = getProductById(id); // Đảm bảo lấy sản phẩm với productId = 18
+
+        // Lấy các thực thể liên quan neu trong truong hop phai sua cac origin , warehouse , brand , operating system
+        if (request.getIdOrigin() != null && request.getIdWarehouseArea() != null  &&  request.getIdBrand() != null  &&  request.getIdBrand() != null  &&  request.getIdOperatingSystem() != null) {
+            Origin origin = originService.getOriginById(request.getIdOrigin());
+
+            WarehouseArea wa = warehouseAreaService.getWarehouseAreaById(request.getIdWarehouseArea());
+            if (!wa.isStatus()) {
+                throw new AppException(ErrorCode.WAREHOUSE_UNAVAILABLE);
+
+            }
+
+            Brand br = brandService.GetBrandById(request.getIdBrand());
+
+            OperatingSystem os = operatingSystemService.getOs(request.getIdOperatingSystem());
+
+            // Cập nhật các trường của sản phẩm hiện có
+            productMapper.toProductUpdate(request, product, origin, os, br, wa);
+        }
+
+
+            productMapper.toProductPartUpdate(request, product);
+
+            // Lưu sản phẩm đã cập nhật
+            Product savedProduct = productRepository.save(product);
+            return productMapper.toProductResponse(savedProduct);
+
+    }
+
+
+
+
+
+    @Transactional
+    public void deleteProduct(Long productId) {
+        // Kiểm tra xem sản phẩm có ProductItem liên quan không
+        if (productRepository.hasOrderDetails(productId)) {
+            throw new IllegalStateException("Không thể xóa sản phẩm vì  ProductItem liên quan đã được bán ra.");
+        }
+        //xóa các productItem
+        productRepository.deleteSafeProductItems(productId);
+        // Xóa các ProductVersion
+        productRepository.deleteSafeProductVersions(productId);
+        // Xóa sản phẩm
+        productRepository.deleteProductById(productId);
+    }
+
+
+
 //    // cac method khong phai la CRUD
 
 
@@ -400,6 +430,10 @@ public class ProductService {
                 .map(productMapper::toProductFULLResponse);
     }
 
+
+
+
+//
 //   @Transactional
 //    public void fixStock() {
 //        fixStockQuantities();
@@ -430,22 +464,22 @@ public class ProductService {
 //
 //
 //
-//
-//    // Phương thức tính stock_quantity cho Product
-//    public int calculateStockQuantity(Product product) {
-//        return productRepository.calculateStockQuantity(product);
-//    }
-//
-//
-//    // Phương thức cập nhật stock_quantity cho Product
-//    @Transactional
-//    public void updateProductStockQuantity(Long productId) {
-//        Product product = getProductById(productId);
-//        int totalStock = calculateStockQuantity(product);
-//        product.setStockQuantity(totalStock);
-//        productRepository.save(product);
-//    }
-//
+
+    // Phương thức tính stock_quantity cho Product
+    public int calculateStockQuantity(Product product) {
+        return productRepository.calculateStockQuantity(product);
+    }
+
+
+    // Phương thức cập nhật stock_quantity cho Product
+    @Transactional
+    public void updateProductStockQuantity(Long productId) {
+        Product product = getProductById(productId);
+        int totalStock = calculateStockQuantity(product);
+        product.setStockQuantity(totalStock);
+        productRepository.save(product);
+    }
+
 //
 //    // Phương thức mới để cập nhật stock_quantity cho tất cả Product
 //    @Transactional
@@ -504,7 +538,7 @@ public class ProductService {
 //        String contentType = file.getContentType();
 //        return contentType != null && (contentType.equals("image/jpeg") || contentType.equals("image/png"));
 //    }
-//
+
 //
 //
 //

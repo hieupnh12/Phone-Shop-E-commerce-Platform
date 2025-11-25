@@ -81,8 +81,11 @@ public class CustomerService {
     }
 
     public List<ListOrderResponse> findOrderByCustomerId(Long customerId) {
-
-        List<ListOrderResponse> list = orderRepository.findByCustomerId(customerId)
+     
+     Customer customer = customerRepository.findById(customerId).orElseThrow(
+                () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
+        );
+        List<ListOrderResponse> list = orderRepository.findByCustomerId(customer)
                 .stream().map(o -> {
                     DetailResponse preview = orderDetailRepo.getOrderPreview(o.getOrderId());
                     return  ListOrderResponse.builder()
