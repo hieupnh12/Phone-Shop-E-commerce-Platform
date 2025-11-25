@@ -1,7 +1,7 @@
-// file orderDetailPage
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, Clock, Loader2, ChevronRight, Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
+import {useParams, Link, useOutletContext} from 'react-router-dom';
+import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
+import {useAuth} from "../../contexts/AuthContext";
 import { profileService } from "../../services/api";
 
 
@@ -11,6 +11,9 @@ const OrderDetailPage = () => {
     const [orderData, setOrderData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { getCurrentUser } = useAuth();
+    const { customerInfo } = useOutletContext();
+
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -20,7 +23,7 @@ const OrderDetailPage = () => {
                 setIsLoading(true);
                 const apiResult = await profileService.getOrderDetail(orderId); // orderId là string hoặc Integer (Backend dùng Integer)
 
-                const normalizedData = normalizeOrderDetail(apiResult, orderId);
+                const normalizedData = normalizeOrderDetail(apiResult, orderId, customerInfo );
 
                 setOrderData(normalizedData);
                 setError(null);
@@ -33,25 +36,29 @@ const OrderDetailPage = () => {
             }
         };
         fetchDetail();
-    }, [orderId]);
+    }, [orderId, customerInfo]);
 
-    const normalizeOrderDetail = (apiProducts, id) => {
-        // Vì API chi tiết đơn hàng của bạn chỉ trả về danh sách sản phẩm,
-        // Ta cần phải giả định/lấy các thông tin khác (thông tin khách hàng, tổng tiền) từ các API khác
-        // hoặc từ data gốc nếu có. Ở đây, tôi sẽ dùng mock data cho các phần còn lại.
+    const normalizeOrderDetail = (apiProducts, id, customerData) => {
+
+
 
         const products = apiProducts.map(p => ({
             id: p.productId,
             name: p.productName,
             image: p.picture,
             price: p.unitPriceBefore,
-            quantity: 1, // Giả định quantity là 1 cho mỗi item (hoặc cần API chi tiết hơn)
-            warrantyEnd: '23/03/2026', // Mock
-            canRepurchase: true, // Mock
+            quantity: 1,
+            warrantyEnd: '23/03/2026',
+            canRepurchase: true,
         }));
 
         const totalAmount = products.reduce((sum, p) => sum + p.price, 0);
-
+        const defaultCustomer = {
+            name: customerData?.fullName || 'Khách hàng',
+            phone: customerData?.phoneNumber || 'Đang cập nhật',
+            address: customerData?.address || 'Chưa có địa chỉ',
+            note: '-',
+        };
         return {
             id: id,
             orderCode: `#${id}`,
@@ -68,11 +75,9 @@ const OrderDetailPage = () => {
                 totalAmountPaid: totalAmount,
                 vatIncluded: true,
             },
-            customer: {
-                name: 'Nguyễn Nhất Sinh', phone: '0982481094', address: '244 Phạm Văn Đồng, Hà Nội', note: '-',
-            },
+            customer: defaultCustomer,
             supportInfo: {
-                storeAddress: '244 Phạm Văn Đồng, P. Cổ Nhuế, Q. Bắc Từ Liêm, Hà Nội', storePhone: '02471007244',
+                storeAddress: '244 Nam Kì khởi Nghĩa , P. Hoà Quí, Q. Ngữ Hành Sơn, Đà Nẵng', storePhone: '0909696999',
             },
             timeline: [
                 { status: 'Đặt hàng thành công', date: '24/03/2025', time: '19:02', completed: true },
@@ -114,12 +119,13 @@ const OrderDetailPage = () => {
     );
 
     const CustomerInfoCard = () => (
-        <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
+        <div className="p-3 bg-white rounded-xl border border-gray-100 h-full">
             <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Thông tin khách hàng</h4>
             <div className="space-y-3">
                 <InfoRow label="Họ và tên" value={orderData.customer.name} />
                 <InfoRow label="Số điện thoại" value={orderData.customer.phone} />
                 <InfoRow label="Địa chỉ" value={orderData.customer.address} />
+                <InfoRow label="Email" value={customerInfo?.email || 'N/A'} />
                 <InfoRow label="Ghi chú" value={orderData.customer.note} />
             </div>
         </div>
@@ -159,43 +165,42 @@ const OrderDetailPage = () => {
         </div>
     );
 
-    const OrderTimeline = () => {
-        // Tối đa 5 bước
-        const steps = orderData.timeline;
-        const totalSteps = steps.length;
-
-        return (
-            <div className="my-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-x-auto">
-                <div className="flex justify-between items-center relative w-full min-w-[600px] pb-6 pt-3">
-
-                    {steps.map((step, index) => (
-                        <div key={index} className="flex flex-col items-center w-1/4 relative z-10">
-                            {/* Icon/Dot */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 
-                                ${step.completed ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-500'}`}
-                            >
-                                {step.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
-                            </div>
-
-                            {/* Line nối */}
-                            {index < totalSteps - 1 && (
-                                <div className={`absolute h-1 top-4 left-1/2 w-full transition-colors duration-500 
-                                    ${steps[index + 1]?.completed ? 'bg-blue-600' : 'bg-gray-200'} z-0`}
-                                    style={{ width: `calc(100% + ${100 / totalSteps}%)`, transform: 'translateX(-50%)' }}>
-                                </div>
-                            )}
-
-                            {/* Text */}
-                            <p className={`mt-3 text-sm font-medium text-center ${step.completed ? 'text-blue-700' : 'text-gray-500'}`}>
-                                {step.status}
-                            </p>
-                            <p className="text-xs text-gray-400">{step.date}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
+    // const OrderTimeline = () => {
+    //     const steps = orderData.timeline;
+    //     const totalSteps = steps.length;
+    //
+    //     return (
+    //         <div className="my-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-x-auto">
+    //             <div className="flex justify-between items-center relative w-full min-w-[600px] pb-6 pt-3">
+    //
+    //                 {steps.map((step, index) => (
+    //                     <div key={index} className="flex flex-col items-center w-1/4 relative z-10">
+    //                         {/* Icon/Dot */}
+    //                         <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500
+    //                             ${step.completed ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-500'}`}
+    //                         >
+    //                             {step.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
+    //                         </div>
+    //
+    //                         {/* Line nối */}
+    //                         {index < totalSteps - 1 && (
+    //                             <div className={`absolute h-1 top-4 left-1/2 w-full transition-colors duration-500
+    //                                 ${steps[index + 1]?.completed ? 'bg-blue-600' : 'bg-gray-200'} z-0`}
+    //                                  style={{ width: `calc(100% + ${100 / totalSteps}%)`, transform: 'translateX(-50%)' }}>
+    //                             </div>
+    //                         )}
+    //
+    //                         {/* Text */}
+    //                         <p className={`mt-3 text-sm font-medium text-center ${step.completed ? 'text-blue-700' : 'text-gray-500'}`}>
+    //                             {step.status}
+    //                         </p>
+    //                         <p className="text-xs text-gray-400">{step.date}</p>
+    //                     </div>
+    //                 ))}
+    //             </div>
+    //         </div>
+    //     );
+    // };
 
 
     return (
@@ -251,7 +256,7 @@ const OrderDetailPage = () => {
             </div>
 
             {/* Thanh tiến trình đơn hàng */}
-            <OrderTimeline />
+            {/*<OrderTimeline />*/}
 
             {/* Thông tin Khách hàng & Thanh toán & Hỗ trợ (2 Cột) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -93,6 +93,7 @@ public class CustomerService {
                             .createDatetime(o.getCreateDatetime())
                             .totalAmount(o.getTotalAmount())
                             .status(o.getStatus())
+                            .endDateTime(o.getEndDatetime())
                             .orderDetail(preview)
                             .build();
                 }).collect(Collectors.toList());
