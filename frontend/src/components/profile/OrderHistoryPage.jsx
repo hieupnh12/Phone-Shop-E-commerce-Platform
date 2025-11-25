@@ -187,13 +187,13 @@ const OrderHistoryPage = () => {
                                     <div className="flex-grow">
                                         <p className="font-medium text-gray-800 text-base">{product.name}</p>
                                         <p className="text-gray-600 text-sm">{formatCurrency(product.price)}</p>
+                                        { product.quantity > 0 &&
+                                            (<div className="font-medium text-gray-700 text-base">
+                                                Cùng {product.quantity} sản phẩm khác
+                                            </div>)
+                                        }
                                     </div>
-                                    { product.quantity > 0 &&
-                                        (<div className="font-medium text-gray-800 text-base">
-                                        Cùng {product.quantity} sản phẩm khác
-                                </div>)
 
-                                    }
 
                                     <div className="text-right">
                                         <p className="text-red-500 font-bold text-lg">{formatCurrency(order.totalAmount)}</p>

@@ -31,10 +31,24 @@ export const AuthProvider = ({ children }) => {
 
   const getCurrentUser = async () => {
     try {
-      const response = await profileService.getCustomerInfo();
+      const role = getUserRole(); // Lấy vai trò (ROLE_SALE, USER,...)
+      let response;
+
+      const isEmployeeRole = role && role !== 'USER' && role.startsWith('ROLE_');
+
+      if (isEmployeeRole) {
+        response = await loginApi.getInfo();
+      } else if (role === 'USER') {
+        response = await profileService.getCustomerInfo();
+      } else {
+        setLoading(false);
+        return;
+      }
+
       setUser(response?.result);
+
     } catch (error) {
-      // Token invalid, clear it
+      console.error("Lỗi khi fetch thông tin người dùng:", error);
       Cookies.remove(constants.ACCESS_TOKEN_KEY);
       setUser(null);
     } finally {
@@ -48,12 +62,11 @@ export const AuthProvider = ({ children }) => {
 
     if (token) {
       Cookies.set(constants.ACCESS_TOKEN_KEY, token);
+
+      await getCurrentUser();
+
     }
-    const responseInfo = await loginApi.getInfo();
-    const userData = responseInfo?.result;
-    if (userData) {
-      setUser(userData);
-    }
+
     return response;
   };
 
@@ -65,8 +78,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logoutCustomer = async () => {
+    const response = await loginApi.postLogout();
     Cookies.remove(constants.ACCESS_TOKEN_KEY);
     setUser(null);
+    return response;
   };
 
   const sendOtp = async (sdt) => {
@@ -101,12 +116,19 @@ export const AuthProvider = ({ children }) => {
 
 export const getUserRole = () => {
   const token =
-    Cookies.get(constants.ACCESS_TOKEN_KEY);
+      Cookies.get(constants.ACCESS_TOKEN_KEY);
   if (!token) return null;
   try {
     const decoded = jwtDecode(token);
-    return decoded.scopes?.[0] || decoded.role || null;
+
+    if (decoded.scopes && decoded.scopes.length > 0) {
+      return decoded.scopes[0];
+    }
+
+    return decoded.role || null;
+
   } catch (e) {
+    console.error("Lỗi khi giải mã token:", e);
     return null;
   }
 };

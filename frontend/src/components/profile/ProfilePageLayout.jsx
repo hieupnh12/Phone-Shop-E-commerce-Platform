@@ -11,7 +11,7 @@ const ProfilePageLayout = () => {
     const { customerInfo, isLoading, error } = useCustomerInfo();
 
     if (isLoading) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Đang tải bố cục trang cá nhân...</div>;
+        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Đang tải ...</div>;
     }
 
     if (error) {
