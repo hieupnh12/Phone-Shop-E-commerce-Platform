@@ -17,6 +17,7 @@ public class ListOrderResponse {
     LocalDateTime createDatetime;
     BigDecimal totalAmount;
     OrderStatus status;
+    LocalDateTime endDateTime;
     DetailResponse orderDetail;
 
 

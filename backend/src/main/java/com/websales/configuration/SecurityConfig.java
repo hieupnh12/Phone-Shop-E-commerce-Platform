@@ -35,8 +35,7 @@ public class SecurityConfig {
                     "/customer/auth_verify_otp", "/employee/auth_check_valid", "/product",
                     "/customer/total_orders/{id}",
                     "/customer/order/{id}",
-                    "/customer/order_detail/{id}",
-                    "/api/chats"
+                    "/customer/order_detail/{id}"
             };
 //, "/customer/update/{id}"
     @Lazy
