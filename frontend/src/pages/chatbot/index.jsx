@@ -354,7 +354,7 @@ console.log("san", messages);
         
         <a
           key={p.idProduct}
-          href={`/product/${p.idProduct}`}
+          href={`/products/${p.idProduct}`}
           className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition block"
         >
           {/* Ảnh */}

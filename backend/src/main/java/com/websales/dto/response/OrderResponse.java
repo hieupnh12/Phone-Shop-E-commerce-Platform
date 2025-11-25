@@ -13,6 +13,9 @@ import java.util.List;
 public class OrderResponse {
     Integer orderId;
     Long customerId;
+    String customerName;
+    String customerPhone;
+    String customerAddress;
     LocalDateTime createDatetime;
     Long employeeId;
     LocalDateTime endDatetime;

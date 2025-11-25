@@ -47,6 +47,7 @@ import AdminLogin from "./pages/auth/AdminLogin";
 import AddProduct from "./pages/admin/Products/AddProduct";
 import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
+import Orders from "./pages/admin/Order";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -159,6 +160,7 @@ const router = createBrowserRouter(
                 { path: ":id/edit", element: <EditProduct /> },
               ],
             },
+            { path: "orders", element: <Orders /> },
             {
               path: "statistic",
               element: <Statistic />,

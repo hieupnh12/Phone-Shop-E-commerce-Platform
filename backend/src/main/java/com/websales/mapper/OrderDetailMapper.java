@@ -22,6 +22,18 @@ public interface OrderDetailMapper {
             response.setProductVersionId(orderDetail.getProductVersion().getIdVersion());
         }
         
+        // Set product info
+        if (orderDetail.getProductVersion() != null &&
+            orderDetail.getProductVersion().getProduct() != null) {
+            var product = orderDetail.getProductVersion().getProduct();
+            if (product.getNameProduct() != null) {
+                response.setProductName(product.getNameProduct());
+            }
+            if (product.getImage() != null) {
+                response.setProductImage(product.getImage());
+            }
+        }
+        
         // Calculate subtotal
         if (orderDetail.getUnitPriceAfter() != null && orderDetail.getQuantity() != null) {
             response.setSubtotal(orderDetail.getUnitPriceAfter()
