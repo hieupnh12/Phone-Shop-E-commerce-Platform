@@ -13,8 +13,10 @@ import productWorker from "../../../services/productWorker";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { useParams } from "react-router-dom"; // Import useParams
 import cartService from "../../../services/cartService";
+import Toast from "../../../components/common/Toast";
 
 const ProductDetailPage = () => {
+  const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
   const [selectedRam, setSelectedRam] = useState(null);
@@ -214,23 +216,32 @@ const ProductDetailPage = () => {
     }
   };
   // === ADD TO CART ===
- const handleAddToCart = async () => {
-  try {
-    if (!selectedVersion?.id) {
-      alert("Không có phiên bản hợp lệ!");
-      return;
+  const handleAddToCart = async () => {
+    try {
+      if (!selectedVersion?.id) {
+        setToast({
+        type: 'error',
+        message: 'Không tìm thấy phiên bản hợp lệ',
+      });
+        return;
+      }
+
+      console.log("CALL ADD TO CART:", selectedVersion.id);
+
+      const res = await cartService.addToCart(selectedVersion.id, 1);
+
+      setToast({
+        type: 'success',
+        message: 'Đã thêm vào giỏ hàng!',
+      });
+    } catch (err) {
+      console.log("Add to cart error:", err);
+      setToast({
+        type: 'error',
+        message: 'Không thể thêm vào giỏ hàng ',
+      });
     }
-
-    console.log("CALL ADD TO CART:", selectedVersion.id);
-
-    const res = await cartService.addToCart(selectedVersion.id, 1);
-
-    alert("Đã thêm vào giỏ hàng!");
-  } catch (err) {
-    console.log("Add to cart error:", err);
-    alert("Không thể thêm vào giỏ hàng.");
-  }
-};
+  };
 
 
 
@@ -781,10 +792,22 @@ const ProductDetailPage = () => {
 
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4">
-                <button className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2">
+                <button
+                  onClick={async () => {
+                    if (!selectedVersion?.id) {
+                      alert("Không tìm thấy phiên bản hợp lệ!");
+                      return;
+                    }
+
+                    await cartService.addToCart(selectedVersion.id, 1);
+                    navigate('/payment');
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
+                >
                   MUA NGAY
                   <span className="text-sm font-normal">(Giao tận nơi)</span>
                 </button>
+
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
                   onClick={handleAddToCart}
@@ -818,6 +841,13 @@ const ProductDetailPage = () => {
           />
         </div> */}
       </div>
+      {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
     </div>
   );
 };

@@ -67,7 +67,7 @@ public class CartController {
 
         // Lấy cart ACTIVE của customer với cart items được eager fetch
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
-        
+
         List<CartItemResponse> cartItemsResp = new ArrayList<>();
         double grandTotal = 0;
 
@@ -80,12 +80,12 @@ public class CartController {
                     if (item.getStatus() == null || !item.getStatus()) {
                         continue;
                     }
-                    
+
                     ProductVersion pv = item.getProductVersion();
                     if (pv == null) {
                         continue;
                     }
-                    
+
                     // Force load product từ productVersion
                     Product product = pv.getProduct();
                     if (product == null) {
@@ -166,9 +166,9 @@ public class CartController {
         if (existed.isPresent()) {
             // Cập nhật quantity
             CartItem item = existed.get();
-            int newQuantity = request.getQuantity() > 0 ? request.getQuantity() : 1;
-            item.setQuantity(newQuantity);
-            item.setStatus(true); // Đảm bảo status = true
+            int addedQuantity = request.getQuantity() > 0 ? request.getQuantity() : 1;
+            item.setQuantity(item.getQuantity() + addedQuantity);
+            item.setStatus(true);
             cartItemRepository.save(item);
         } else {
             // Tạo cart item mới
@@ -237,7 +237,7 @@ public class CartController {
         CartItem item = itemOpt.get();
         item.setQuantity(quantity);
         cartItemRepository.save(item);
-        
+
         // Cập nhật update_date của cart
         Cart cart = cartOpt.get();
         cart.setUpdateDate(LocalDateTime.now());
@@ -266,9 +266,9 @@ public class CartController {
 
         // Tìm cart active để cập nhật update_date
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
-        
+
         cartItemRepository.deleteByCustomerIdAndProductVersionId(customerId, productVersionId);
-        
+
         // Cập nhật update_date của cart
         if (cartOpt.isPresent()) {
             Cart cart = cartOpt.get();
@@ -343,8 +343,7 @@ public class CartController {
                     totalAmount,
                     description,
                     returnUrl,
-                    cancelUrl
-            );
+                    cancelUrl);
 
             // Trả về QR code và payment link
             Map<String, Object> response = new java.util.HashMap<>();
@@ -412,15 +411,16 @@ public class CartController {
 
         // Lấy note từ orderData
         String note = (String) orderData.get("note");
-        
+
         // Lấy payment method và address từ orderData
         String paymentMethodStr = (String) orderData.get("paymentMethod");
         if (paymentMethodStr == null || paymentMethodStr.isEmpty()) {
             paymentMethodStr = "cod"; // Mặc định là COD
         }
         final String finalPaymentMethodStr = paymentMethodStr; // Make it final for lambda
-        
-        // Lấy address từ orderData, nếu không có thì lấy từ thông tin khách hàng trong database
+
+        // Lấy address từ orderData, nếu không có thì lấy từ thông tin khách hàng trong
+        // database
         String address = (String) orderData.get("address");
         if (address == null || address.isEmpty()) {
             // Lấy thông tin khách hàng từ database
@@ -430,7 +430,7 @@ public class CartController {
                 address = customer.getAddress();
             }
         }
-        
+
         // Lấy hoặc tạo PaymentMethod
         PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodType(finalPaymentMethodStr)
                 .orElseGet(() -> {
@@ -442,9 +442,10 @@ public class CartController {
                             .build();
                     return paymentMethodRepository.save(newMethod);
                 });
-        
+
         // Xác định payment status dựa trên payment method
-        // Với PayOS, order sẽ ở trạng thái PENDING cho đến khi webhook xác nhận thanh toán thành công
+        // Với PayOS, order sẽ ở trạng thái PENDING cho đến khi webhook xác nhận thanh
+        // toán thành công
         boolean isPaid = false; // PayOS: chưa thanh toán, chờ webhook
         OrderStatus status = OrderStatus.PENDING; // Tất cả đều PENDING ban đầu
         PaymentStatus paymentStatus = PaymentStatus.PENDING; // Chờ thanh toán
@@ -470,14 +471,13 @@ public class CartController {
                 String description = "Thanh toán đơn hàng";
 
                 // Tạo payment link từ PayOS (sẽ cập nhật order code sau)
-                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse =
-                        payOSService.createPaymentLink(
+                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = payOSService
+                        .createPaymentLink(
                                 payOSOrderCode,
                                 totalAmount,
                                 description,
                                 returnUrl + "{orderId}",
-                                cancelUrl + "{orderId}"
-                        );
+                                cancelUrl + "{orderId}");
 
                 payOSPaymentLink = payOSResponse.getCheckoutUrl();
             } catch (Exception e) {
@@ -495,7 +495,7 @@ public class CartController {
                     ProductVersion pv = item.getProductVersion();
                     BigDecimal exportPrice = pv != null ? pv.getExportPrice() : BigDecimal.ZERO;
                     BigDecimal importPrice = pv != null ? pv.getImportPrice() : BigDecimal.ZERO;
-                    
+
                     return OrderRequest.OrderDetailRequest.builder()
                             .productVersionId(pv != null ? pv.getIdVersion() : null)
                             .unitPriceBefore(importPrice)
@@ -536,14 +536,13 @@ public class CartController {
                 String cancelUrl = baseUrl + "/payment/cancel?orderId=" + order.getOrderId();
                 String description = "Thanh toán đơn hàng #" + order.getOrderId();
 
-                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse =
-                        payOSService.createPaymentLink(
+                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = payOSService
+                        .createPaymentLink(
                                 realOrderCode,
                                 totalAmount,
                                 description,
                                 returnUrl,
-                                cancelUrl
-                        );
+                                cancelUrl);
 
                 payOSPaymentLink = payOSResponse.getCheckoutUrl();
                 payOSOrderCode = realOrderCode;
@@ -562,7 +561,7 @@ public class CartController {
         String responseMessage = "bank".equals(finalPaymentMethodStr)
                 ? "Chờ thanh toán qua PayOS. Order Code: " + payOSOrderCode
                 : "Chờ thanh toán khi nhận hàng";
-        
+
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
                 .transactionId(transactionId)
                 .transactionCode(transactionCode)
@@ -575,7 +574,7 @@ public class CartController {
                 .address(address)
                 .paymentTime(LocalDateTime.now())
                 .build();
-        
+
         paymentTransactionRepository.save(paymentTransaction);
 
         // Chỉ xóa cart items khi thanh toán thành công
