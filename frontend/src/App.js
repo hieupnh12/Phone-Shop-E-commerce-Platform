@@ -31,13 +31,6 @@ import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
 import AuthRedirect from "./routes/AuthRedirect";
 import Cart from "./pages/client/Cart";
 import CartLayout from "./components/layout/CartLayout";
-<<<<<<< HEAD
-import { getUserRole } from "./contexts/AuthContext";
-import AdminLogin from "./pages/auth/AdminLogin";
-import ListProduct from "./pages/admin/Products/ListProduct";
-import AddProduct from "./pages/admin/Products/AddProduct";
-import EditProduct from "./pages/admin/Products/EditProduct";
-=======
 import UpdateInfor from "./pages/auth/UpdateInfor";
 import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
@@ -45,12 +38,15 @@ import ProfilePageLayout from './components/profile/ProfilePageLayout';
 import OrderDetailPage from "./components/profile/OrderDetailPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
->>>>>>> origin/main
 // Protected Route Component - check JWT token via getUserRole
 import OrderHistory from "./pages/client/OrderHistory";
 import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
+import AdminLogin from "./pages/auth/AdminLogin";
+import AddProduct from "./pages/admin/Products/AddProduct";
+import ListProduct from "./pages/admin/Products/ListProduct";
+import EditProduct from "./pages/admin/Products/EditProduct";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -112,10 +108,10 @@ const router = createBrowserRouter(
       ),
     },
     {
-<<<<<<< HEAD
       path: "/admin-login",
       element: <AdminLogin />,
-=======
+    },
+    {
       path: "/payment",
       element: <Payment />,
     },
@@ -130,12 +126,7 @@ const router = createBrowserRouter(
     {
       path: "/orders",
       element: <OrderHistory />,
-    },
-    {
-      path: "/signup",
-      element: <Signup />,
->>>>>>> origin/main
-    },
+    },    
     {
       path: "/update",
       element: <UpdateInfor />,
