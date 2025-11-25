@@ -8,7 +8,6 @@ import java.util.List;
 
 @Builder
 public record RevenueStatisticResponse(
-        Summary summaries,
         List<ChartData> chartData,
         List<PaymentMethodDto> paymentMethods,
         Page<OrderDetailDto> orders
@@ -26,9 +25,6 @@ public record RevenueStatisticResponse(
             String status,
             String paymentMethod
     ) {}
-
-    public record Summary(BigDecimal totalRevenue, Long totalOrders, BigDecimal totalProfit,
-                          String bestSellerName, Long bestSellerUnits){}
 }
 
 

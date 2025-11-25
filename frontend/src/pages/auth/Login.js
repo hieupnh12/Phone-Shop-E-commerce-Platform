@@ -12,8 +12,6 @@ import {
   Zap,
   TrendingUp,
 } from "lucide-react";
-import loginApi from "../../services/loginService";
-import Cookies from "js-cookie";
 import { Navigate, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 

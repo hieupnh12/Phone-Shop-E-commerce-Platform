@@ -55,9 +55,6 @@ import EditProduct from "./pages/admin/Products/EditProduct";
 //   return children;
 // };
 
-// Bypass login check tạm thời
-const ProtectedRoute = ({ children }) => children;
-
 const RouterInitializer = () => {
     useUrlTokenHandler();
     return <ClientHomePage />;
@@ -92,9 +89,7 @@ const router = createBrowserRouter(
     {
       path: "/cart",
       element: (
-        <ProtectedRoute>
           <CartLayout />
-        </ProtectedRoute>
       ),
       children: [{ index: true, element: <Cart /> }],
     },
@@ -102,9 +97,7 @@ const router = createBrowserRouter(
     {
       path: "/login",
       element: (
-        <AuthRedirect>
           <Login />
-        </AuthRedirect>
       ),
     },
     {
@@ -134,9 +127,7 @@ const router = createBrowserRouter(
       {
           path: "/profile",
           element: (
-              <ProtectedRoute>
                   <ProfilePageLayout />
-              </ProtectedRoute>
           ),
           children: [
               { index: true, element: <Navigate to="info" replace /> }, // Tự động chuyển đến /profile/info

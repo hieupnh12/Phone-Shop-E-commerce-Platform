@@ -13,12 +13,12 @@ import {
   Menu,
   ChartNoAxesCombined,
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuthFullOptions } from "../../contexts/AuthContext";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthFullOptions();
   const navigate = useNavigate();
 
   useEffect(() => {

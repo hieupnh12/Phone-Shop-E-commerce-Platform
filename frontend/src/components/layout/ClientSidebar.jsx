@@ -8,12 +8,12 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuthFullOptions } from "../../contexts/AuthContext";
 
 const ClientSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logoutCustomer } = useAuth();
+  const { logoutCustomer } = useAuthFullOptions();
 
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
