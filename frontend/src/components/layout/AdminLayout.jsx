@@ -36,7 +36,7 @@ export default function AdminLayout() {
   useEffect(() => {
     if (windowWidth >= 1024) {
       // lg breakpoint
-      setSidebarOpen(true);
+      setSidebarOpen(false);
     } else {
       setSidebarOpen(false);
     }
@@ -50,13 +50,6 @@ export default function AdminLayout() {
       label: "Dashboard",
       path: "/admin/dashboard",
     },
-    { id: "users", icon: Users, label: "Người dùng", path: "/admin/users" },
-    {
-      id: "messages",
-      icon: MessageSquare,
-      label: "Tin nhắn",
-      path: "/admin/messages",
-    },
     { id: "products", icon: Grid, label: "Sản phẩm", path: "/admin/products" },
     {
       id: "statistic",
@@ -64,7 +57,7 @@ export default function AdminLayout() {
       label: "Thống kê",
       path: "/admin/statistic",
     },
-    { id: "profile", icon: User, label: "Hồ sơ", path: "/admin/profile" },
+    { id: "orders", icon: User, label: "Đặt hàng", path: "/admin/orders" },
   ];
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);

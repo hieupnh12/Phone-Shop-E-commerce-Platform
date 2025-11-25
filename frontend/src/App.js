@@ -145,7 +145,7 @@ const router = createBrowserRouter(
         {
           element: <AdminLayout />,
           children: [
-            { index: true, element: <HomeAdmin /> },
+            { index: true, element: <Navigate to="dashboard" replace /> },
             { path: "dashboard", element: <HomeAdmin /> },
             // {
             //   path: "products",
