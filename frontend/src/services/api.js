@@ -140,6 +140,13 @@ export const orderService = {
   getOrder: (id) => api.get(`/orders/${id}`).then(r => r.data),
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(r => r.data),
 };
+
+// Customer services
+export const customerService = {
+  getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
+  updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
+};
+
 // User services
 export const userService = {
   getProfile: () => api.get('/users/profile').then(r => r.data),

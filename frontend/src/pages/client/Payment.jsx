@@ -48,18 +48,36 @@ export default function Payment() {
         // Load customer info from API
         try {
           const customerData = await customerService.getMyCustomerInfo();
-          if (customerData?.result) {
-            const customer = customerData.result;
+          console.log('Customer data received:', customerData);
+          
+          // API trả về { code, message, result: CustomerResponse }
+          const customer = customerData?.result || customerData;
+          
+          if (customer && (customer.fullName || customer.phoneNumber || customer.email || customer.address)) {
             setCustomerInfo({
-              name: customer.fullName || customer.name || 'Khách hàng',
-              phone: customer.phoneNumber || customer.phone || '',
+              name: customer.fullName || 'Khách hàng',
+              phone: customer.phoneNumber || '',
               email: customer.email || '',
               address: customer.address || ''
+            });
+            console.log('Customer info set successfully:', {
+              name: customer.fullName || 'Khách hàng',
+              phone: customer.phoneNumber || '',
+              email: customer.email || '',
+              address: customer.address || ''
+            });
+          } else {
+            console.warn('No customer data in response or all fields are empty:', customer);
+            setCustomerInfo({
+              name: 'Khách hàng',
+              phone: '',
+              email: '',
+              address: ''
             });
           }
         } catch (e) {
           // Nếu không lấy được customer info, dùng default
-          console.warn('Could not load customer info:', e);
+          console.error('Could not load customer info:', e);
           setCustomerInfo({
             name: 'Khách hàng',
             phone: '',
@@ -149,7 +167,8 @@ export default function Payment() {
         subtotal: subtotal,
         shippingFee: shippingFee,
         paymentMethod: paymentMethod,
-        note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.'
+        note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.',
+        address: customerInfo.address || ''
       };
 
       const response = await cartService.createOrder(orderData);
@@ -198,7 +217,7 @@ export default function Payment() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1">Họ và tên</span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.name}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.name || 'Chưa cập nhật'}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -206,7 +225,7 @@ export default function Payment() {
                     <Phone className="w-4 h-4" />
                     Số điện thoại
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.phone}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || 'Chưa cập nhật'}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -214,7 +233,7 @@ export default function Payment() {
                     <Mail className="w-4 h-4" />
                     Email
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.email}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.email || 'Chưa cập nhật'}</span>
                 </div>
                 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -222,7 +241,7 @@ export default function Payment() {
                     <MapPin className="w-4 h-4" />
                     Địa chỉ giao hàng
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.address}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.address || 'Chưa cập nhật'}</span>
                 </div>
               </div>
             </div>

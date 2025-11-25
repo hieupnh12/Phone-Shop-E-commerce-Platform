@@ -9,6 +9,7 @@ import com.websales.enums.PaymentStatus;
 import com.websales.enums.TransactionType;
 import com.websales.repository.CartItemRepository;
 import com.websales.repository.CartRepository;
+import com.websales.repository.CustomerRepo;
 import com.websales.repository.PaymentMethodRepository;
 import com.websales.repository.PaymentTransactionRepository;
 import com.websales.repository.ProductVersionRepository;
@@ -37,6 +38,7 @@ public class CartController {
     private final PaymentMethodRepository paymentMethodRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PayOSService payOSService;
+    private final CustomerRepo customerRepo;
 
     public CartController(CartRepository cartRepository,
             CartItemRepository cartItemRepository,
@@ -44,7 +46,8 @@ public class CartController {
             OrderService orderService,
             PaymentMethodRepository paymentMethodRepository,
             PaymentTransactionRepository paymentTransactionRepository,
-            PayOSService payOSService) {
+            PayOSService payOSService,
+            CustomerRepo customerRepo) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productVersionRepository = productVersionRepository;
@@ -52,6 +55,7 @@ public class CartController {
         this.paymentMethodRepository = paymentMethodRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.payOSService = payOSService;
+        this.customerRepo = customerRepo;
     }
 
     // --- GET GIỎ HÀNG ---
@@ -415,7 +419,17 @@ public class CartController {
             paymentMethodStr = "cod"; // Mặc định là COD
         }
         final String finalPaymentMethodStr = paymentMethodStr; // Make it final for lambda
+        
+        // Lấy address từ orderData, nếu không có thì lấy từ thông tin khách hàng trong database
         String address = (String) orderData.get("address");
+        if (address == null || address.isEmpty()) {
+            // Lấy thông tin khách hàng từ database
+            Optional<Customer> customerOpt = customerRepo.findById(customerId);
+            if (customerOpt.isPresent()) {
+                Customer customer = customerOpt.get();
+                address = customer.getAddress();
+            }
+        }
         
         // Lấy hoặc tạo PaymentMethod
         PaymentMethod paymentMethod = paymentMethodRepository.findByPaymentMethodType(finalPaymentMethodStr)
@@ -434,29 +448,29 @@ public class CartController {
         boolean isPaid = false; // PayOS: chưa thanh toán, chờ webhook
         OrderStatus status = OrderStatus.PENDING; // Tất cả đều PENDING ban đầu
         PaymentStatus paymentStatus = PaymentStatus.PENDING; // Chờ thanh toán
-        
+
         String payOSPaymentLink = null;
         Long payOSOrderCode = null;
-        
+
         // Nếu là bank (PayOS), tạo payment link
         if ("bank".equals(finalPaymentMethodStr)) {
             try {
                 // Tạo order code từ order ID (sẽ tạo sau khi có order)
                 // Tạm thời dùng timestamp, sẽ cập nhật sau
                 payOSOrderCode = System.currentTimeMillis() / 1000;
-                
+
                 // Tạo base URL
                 String baseUrl = payOSService.getBaseUrl(
                         request.getScheme(),
                         request.getServerName(),
                         request.getServerPort());
-                
+
                 String returnUrl = baseUrl + "/payment/success?orderId=";
                 String cancelUrl = baseUrl + "/payment/cancel?orderId=";
                 String description = "Thanh toán đơn hàng";
-                
+
                 // Tạo payment link từ PayOS (sẽ cập nhật order code sau)
-                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = 
+                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse =
                         payOSService.createPaymentLink(
                                 payOSOrderCode,
                                 totalAmount,
@@ -464,7 +478,7 @@ public class CartController {
                                 returnUrl + "{orderId}",
                                 cancelUrl + "{orderId}"
                         );
-                
+
                 payOSPaymentLink = payOSResponse.getCheckoutUrl();
             } catch (Exception e) {
                 // Nếu không tạo được PayOS link, vẫn tạo order nhưng báo lỗi
@@ -512,17 +526,17 @@ public class CartController {
                 // Hủy payment link cũ nếu cần (optional)
                 // Tạo payment link mới với order ID thật
                 long realOrderCode = order.getOrderId().longValue();
-                
+
                 String baseUrl = payOSService.getBaseUrl(
                         request.getScheme(),
                         request.getServerName(),
                         request.getServerPort());
-                
+
                 String returnUrl = baseUrl + "/payment/success?orderId=" + order.getOrderId();
                 String cancelUrl = baseUrl + "/payment/cancel?orderId=" + order.getOrderId();
                 String description = "Thanh toán đơn hàng #" + order.getOrderId();
-                
-                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse = 
+
+                vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse payOSResponse =
                         payOSService.createPaymentLink(
                                 realOrderCode,
                                 totalAmount,
@@ -530,7 +544,7 @@ public class CartController {
                                 returnUrl,
                                 cancelUrl
                         );
-                
+
                 payOSPaymentLink = payOSResponse.getCheckoutUrl();
                 payOSOrderCode = realOrderCode;
             } catch (Exception e) {
@@ -541,11 +555,11 @@ public class CartController {
 
         // Tạo PaymentTransaction
         String transactionId = "TXN-" + System.currentTimeMillis() + "-" + order.getOrderId();
-        String transactionCode = payOSOrderCode != null 
-                ? "PAYOS-" + payOSOrderCode 
+        String transactionCode = payOSOrderCode != null
+                ? "PAYOS-" + payOSOrderCode
                 : "CODE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        
-        String responseMessage = "bank".equals(finalPaymentMethodStr) 
+
+        String responseMessage = "bank".equals(finalPaymentMethodStr)
                 ? "Chờ thanh toán qua PayOS. Order Code: " + payOSOrderCode
                 : "Chờ thanh toán khi nhận hàng";
         
@@ -583,7 +597,7 @@ public class CartController {
         response.put("transactionId", transactionId);
         response.put("transactionCode", transactionCode);
         response.put("message", "Đặt hàng thành công!");
-        
+
         // Nếu là PayOS, thêm payment link và requiresPayment flag
         if ("bank".equals(finalPaymentMethodStr) && payOSPaymentLink != null) {
             response.put("requiresPayment", true);
@@ -591,7 +605,7 @@ public class CartController {
         } else {
             response.put("requiresPayment", false);
         }
-        
+
         return ResponseEntity.ok(response);
     }
 }

@@ -73,6 +73,23 @@ createOrder: async (orderData) => {
   return res;
 },
 
+  // POST /cart/preview-payment
+  previewPayment: async (orderData) => {
+    const res = await axiosClient[POST]('/cart/preview-payment', orderData);
+    return res;
+  },
+
+  // POST /cart/checkout (alias for createOrder)
+  createOrder: async (orderData) => {
+    const res = await axiosClient[POST]('/cart/checkout', orderData);
+
+    try { 
+      window.dispatchEvent(new CustomEvent('cartUpdated')); 
+    } catch (_) {}
+
+    return res;
+  },
+
   // CLEAR CART — xoá từng sản phẩm (nếu cần)
   clearCart: async () => {
     const data = await axiosClient[GET]('/cart').then(r => r.data);
