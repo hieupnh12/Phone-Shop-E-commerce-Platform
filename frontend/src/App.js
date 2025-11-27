@@ -55,6 +55,7 @@ import UserHomePage from "./pages/client/UserHomePage";
 import Customers from "./pages/admin/Customer";
 import Employee from "./pages/admin/Employee";
 import Role from "./pages/admin/Role";
+import AuditLogPage from "./pages/admin/Employee/AuditLogPage";
 
 const RouterInitializer = () => {
   useUrlTokenHandler();
@@ -157,6 +158,7 @@ const router = createBrowserRouter(
             { path: "roles", element: <RoleManagementPage /> },
             { path: "customers", element: <Customers /> },
             { path: "employee", element: <EmployeeManagementPage /> },
+            { path: "audit", element: <AuditLogPage /> },
           ],
         },
       ],
