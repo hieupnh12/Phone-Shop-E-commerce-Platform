@@ -134,18 +134,6 @@ const router = createBrowserRouter(
             //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
           ],
         },
-         {
-          path: "role",
-          element: <Role />,
-        },
-         {
-          path: "customers",
-          element: <Customers />,
-        },
-         {
-          path: "employee",
-          element: <Employee />,
-        },
       ],
     },
     {
@@ -185,6 +173,18 @@ const router = createBrowserRouter(
                 { path: "revenue", element: <RevenueStatistic /> },
                 { path: "setting", element: <Settings /> },
               ],
+            },
+            {
+              path: "role",
+              element: <Role />,
+            },
+            {
+              path: "customers",
+              element: <Customers />,
+            },
+            {
+              path: "employee",
+              element: <Employee />,
             },
           ],
         },
