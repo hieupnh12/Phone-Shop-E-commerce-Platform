@@ -1,0 +1,28 @@
+{
+  "navigation": {
+    "home": "Home",
+    "products": "Products",
+    "solutions": "Feedbacks",
+    "pricing": "Pricing",
+    "contact": "Contact"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "profile": "Profile",
+    "transactions": "Transaction History",
+    "account": "Account"
+  },
+  "cart": {
+    "viewCart": "View Cart"
+  },
+  "feedback": {
+    "title": "Product Review",
+    "writeReview": "Write a Review",
+    "rating": "Rating",
+    "content": "Review Content",
+    "submit": "Submit Review",
+    "myReviews": "My Reviews"
+  },
+  "language": "Language"
+}

@@ -9,6 +9,7 @@ import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -48,6 +49,7 @@ import AddProduct from "./pages/admin/Products/AddProduct";
 import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
 import Orders from "./pages/admin/Order";
+import MyFeedbacksPage from "./pages/client/MyFeedbacks";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -125,6 +127,10 @@ const router = createBrowserRouter(
       path: "/update",
       element: <UpdateInfor />,
     },
+    {
+      path: "/feedbacks",
+      element: <MyFeedbacksPage />,
+    },
       {
           path: "/profile",
           element: (
@@ -191,12 +197,14 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
         <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <Chatbot />
+          <RouterProvider router={router} />
+          <Chatbot />
         </QueryClientProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 
