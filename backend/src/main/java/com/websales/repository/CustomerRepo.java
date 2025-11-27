@@ -29,3 +29,5 @@ from orders where customer_id = ?1 and status = 'DELIVERED'
 """, nativeQuery = true)
     CustomerCountOrders getCustomerCountOrders(Long customerId);
 }
+
+

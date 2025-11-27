@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       Cookies.set(constants.ACCESS_TOKEN_KEY, token);
 
       await getCurrentUser();
-
+      
     }
 
     return response;
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
 
     if (token) {
       // Cookies.set(constants.ACCESS_TOKEN_KEY, token);
-      // setUser(info?.rawPhone);
+      setUser(info?.rawPhone);
       handleCustomerLoginSuccess(token);
     }
     return response;
@@ -109,6 +109,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    setUser,
     loading,
     loginEmployee,
     logout,

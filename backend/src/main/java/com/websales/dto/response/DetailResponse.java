@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public interface DetailResponse {
         Integer getOrderId();
-        BigDecimal getUnitPriceBefore();
+        BigDecimal getUnitPriceAfter();
         String getProductName();
         String getPicture();
         Integer getRemainingProducts();

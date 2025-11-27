@@ -17,7 +17,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/orders", icon: Package, label: "Orders" },
+    { to: "/profile/order", icon: Package, label: "Orders" },
     { to: "/products", icon: Box, label: "Products" },
     { to: "/settings", icon: Settings, label: "Settings" },
     { to: "/logout", icon: LogOut, label: "Logout", isLogout: true },

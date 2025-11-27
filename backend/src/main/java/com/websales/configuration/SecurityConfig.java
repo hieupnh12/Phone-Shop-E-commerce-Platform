@@ -35,7 +35,8 @@ public class SecurityConfig {
                     "/customer/auth_verify_otp", "/employee/auth_check_valid", "/product", "/product/count",
                     "/customer/total_orders/{id}",
                     "/customer/order/{id}",
-                    "/customer/order_detail/{id}"
+                    "/customer/order_detail/{id}",
+                    "/index.html", "/*.js", "/*.css", "/*.ico", "/*.json", "/image/**", "/video/**"
             };
 //, "/customer/update/{id}"
     @Lazy
@@ -50,7 +51,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests ->
                             requests.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                                .anyRequest().authenticated());
+                                    .requestMatchers("/api/**").authenticated()  // All /api/** require authentication
+                                .anyRequest().permitAll());  // Everything else is public (for React routing)
 
         httpSecurity.oauth2Login(oauth2 -> oauth2.loginPage("/customer-login")
                 .successHandler(loginSuccessHandler)

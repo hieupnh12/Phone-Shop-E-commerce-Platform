@@ -11,7 +11,6 @@ const API_BASE_URL = 'http://localhost:8080/phoneShop';
 console.log('🔧 API Base URL:', API_BASE_URL);
 console.log('🔧 REACT_APP_API_URL env:', process.env.REACT_APP_API_URL);
 
-// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // important for session-based auth
@@ -20,10 +19,8 @@ const api = axios.create({
   },
 });
 
-// Add token to requests (if you use JWT alongside session, keep it)
 api.interceptors.request.use(
   (config) => {
-    // Debug: Check token sources
     const cookieToken = Cookies.get('token');
     const localToken = localStorage.getItem('token');
     const token = cookieToken || localToken;
@@ -100,39 +97,33 @@ export const cartService = {
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
-    // ✅ THÊM MỚI: POST /cart/update-quantity  body: { productVersionId, quantity }
   updateQuantity: async (productVersionId, quantity) => {
     const res = await api.post('/cart/update-quantity', { productVersionId, quantity }).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
 
-  // ✅ THÊM MỚI: POST /api/cart/preview-payment  body: { total, subtotal, shippingFee, paymentMethod, note }
   previewPayment: async (orderData) => {
     const res = await api.post('/cart/preview-payment', orderData).then(r => r.data);
     return res;
   },
 
-  // ✅ THÊM MỚI: POST /api/cart/checkout  body: { items, subtotal, shippingFee, total, orderDate }
   createOrder: async (orderData) => {
     const res = await api.post('/cart/checkout', orderData).then(r => r.data);
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
     return res;
   },
 
-  // Không có API clearCart -> gọi remove cho từng item, dùng removeByProductVersionId để phát event
   clearCart: async () => {
     const data = await api.get('/cart').then(r => r.data);
     const items = data?.cartItems || [];
     for (const it of items) {
       await api.post('/cart/remove', { productVersionId: it.productVersionId }).then(r => r.data);
     }
-    // một lần notify sau khi clear xong
     try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch (e) { /* noop */ }
   },
 };
 
-// Order services
 export const orderService = {
   createOrder: (orderData) => api.post('/orders', orderData).then(r => r.data),
   getOrders: () => api.get('/orders').then(r => r.data),
@@ -141,13 +132,52 @@ export const orderService = {
   updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, { status }).then(r => r.data),
 };
 
-// Customer services
 export const customerService = {
   getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
   updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
+  // Address book services
+  getAddresses: () => {
+    console.log("Calling GET /customer/address-book");
+    return api.get('/customer/address-book').then(r => {
+      console.log("GET addresses response:", r.data);
+      return r.data?.result || r.data || [];
+    }).catch(err => {
+      console.error("Error getting addresses:", err);
+      throw err;
+    });
+  },
+  addAddress: (addressData) => {
+    console.log("Calling POST /customer/address-book with data:", addressData);
+    return api.post('/customer/address-book', addressData).then(r => {
+      console.log("POST address response:", r.data);
+      return r.data?.result || r.data;
+    }).catch(err => {
+      console.error("Error adding address:", err);
+      throw err;
+    });
+  },
+  updateAddress: (id, addressData) => {
+    console.log("Calling PUT /customer/address-book/" + id + " with data:", addressData);
+    return api.put(`/customer/address-book/${id}`, addressData).then(r => {
+      console.log("PUT address response:", r.data);
+      return r.data?.result || r.data;
+    }).catch(err => {
+      console.error("Error updating address:", err);
+      throw err;
+    });
+  },
+  deleteAddress: (id) => {
+    console.log("Calling DELETE /customer/address-book/" + id);
+    return api.delete(`/customer/address-book/${id}`).then(r => {
+      console.log("DELETE address response:", r.data);
+      return r.data;
+    }).catch(err => {
+      console.error("Error deleting address:", err);
+      throw err;
+    });
+  },
 };
 
-// User services
 export const userService = {
   getProfile: () => api.get('/users/profile').then(r => r.data),
   updateProfile: (userData) => api.put('/users/profile', userData).then(r => r.data),
@@ -158,7 +188,6 @@ export const userService = {
   deleteAddress: (id) => api.delete(`/users/addresses/${id}`).then(r => r.data),
 };
 
-// Admin services
 export const adminService = {
   // Products
   createProduct: (productData) => api.post('/admin/products', productData).then(r => r.data),
@@ -180,6 +209,16 @@ export const adminService = {
 
   // Dashboard
   getDashboardStats: () => api.get('/admin/dashboard/stats').then(r => r.data),
+
+
+  getAllRoles: () => api.get('/role').then(r => r.data),
+  getAllPermissions: () => api.get('/role/permission').then(r => r.data),
+
+  updateRole: (id, updateData) => api.put(`/role/${id}`, updateData).then(r => r.data),
+
+  createRole: (roleData) => api.post('/role', roleData).then(r => r.data),
+
+  deleteRole: (id) => api.delete(`/role/${id}`).then(r => r.data),
 };
 
 export const cusAuth = {

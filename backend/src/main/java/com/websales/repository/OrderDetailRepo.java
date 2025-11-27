@@ -16,7 +16,7 @@ public interface OrderDetailRepo extends CrudRepository<OrderDetail, Integer> {
     @Query(value = """
 SELECT 
     od.order_id,
-    od.unit_price_before,
+    od.unit_price_after,
     p.product_name,
     p.picture,
     (
@@ -35,7 +35,7 @@ LIMIT 1
             select od.order_id,
                        p.product_id,
                            pv.product_version_id, 
-                               od.unit_price_before, 
+                               od.unit_price_after, 
                                    p.product_name, 
                                        p.picture, 
                                            od.quantity

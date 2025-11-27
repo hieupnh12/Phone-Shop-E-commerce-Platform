@@ -12,6 +12,12 @@ import {
   User,
   Menu,
   ChartNoAxesCombined,
+  UserPlus,
+  UserCheck,
+  Shield,
+  ShoppingCart,
+  UserMinus,
+  Users2,
 } from "lucide-react";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 
@@ -57,7 +63,10 @@ export default function AdminLayout() {
       label: "Thống kê",
       path: "/admin/statistic",
     },
-    { id: "orders", icon: User, label: "Đặt hàng", path: "/admin/orders" },
+    { id: "orders", icon: ShoppingCart, label: "Đặt hàng", path: "/admin/orders" },
+    { id: "roles", icon: Shield, label: "Phân quyền", path: "/admin/roles" },
+    { id: "customers", icon: Users2, label: "Khách hàng", path: "/admin/customers" },
+    { id: "employee", icon: UserMinus, label: "Nhân Viên", path: "/admin/employee" },
   ];
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -78,7 +87,7 @@ console.log(user);
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-30">
+      <nav className="bg-white shadow-md h-16 flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -93,11 +102,11 @@ console.log(user);
               <Menu  size={24} className="text-gray-700" />
             )}
           </button>
-          <h1 className={`text-xl font-bold text-gray-800 ${!isDesktop? "hidden":""}`}>Admin Dashboard</h1>
+          <h1 className={`text-xl font-bold text-sky-600 underline ${!isDesktop? "hidden":""}`}>Admin Dashboard</h1>
         </div>
         
         <div className="sm:flex-1 sm:max-w-md sm:mx-4 lg:mx-8">
-          <div className="relative">
+          {/* <div className="relative">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               size={20}
@@ -107,14 +116,14 @@ console.log(user);
               placeholder="Tìm kiếm..."
               className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+          {/* <button className="p-2 rounded-lg hover:bg-gray-100 relative">
             <Bell size={20} />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          </button> */}
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">

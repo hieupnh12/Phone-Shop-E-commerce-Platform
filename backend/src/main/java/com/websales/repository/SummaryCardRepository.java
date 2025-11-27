@@ -13,9 +13,10 @@ public interface SummaryCardRepository extends JpaRepository<Order, Integer> {
 
     // 1) DOANH THU
     @Query(value = """
-            SELECT COALESCE(SUM(o.total_amount), 0)
+            SELECT COALESCE(SUM(od.unit_price_after * od.quantity), 0)
                       FROM orders o
-                      WHERE o.status = 'DELIVERED'
+                        JOIN order_details od ON o.order_id = od.order_id
+                        WHERE o.status = 'DELIVERED'
                         AND (:fromDate IS NULL OR :fromDate = '' OR o.end_datetime >= :fromDate)
                         AND (:toDate   IS NULL OR :toDate   = '' OR o.end_datetime <  :toDate);
         """, nativeQuery = true)
