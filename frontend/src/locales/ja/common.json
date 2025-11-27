@@ -1,0 +1,28 @@
+{
+  "navigation": {
+    "home": "ホーム",
+    "products": "製品",
+    "feedbacks": "評価",
+    "pricing": "価格",
+    "contact": "お問い合わせ"
+  },
+  "auth": {
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "profile": "プロフィール",
+    "transactions": "取引履歴",
+    "account": "アカウント"
+  },
+  "cart": {
+    "viewCart": "カートを表示"
+  },
+  "feedback": {
+    "title": "商品レビュー",
+    "writeReview": "レビューを書く",
+    "rating": "評価",
+    "content": "レビュー内容",
+    "submit": "レビューを送信",
+    "myReviews": "マイレビュー"
+  },
+  "language": "言語"
+}

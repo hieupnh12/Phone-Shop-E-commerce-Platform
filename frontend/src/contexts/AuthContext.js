@@ -19,10 +19,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const handleCustomerLoginSuccess = (token) => {
+  const handleCustomerLoginSuccess = async (token) => {
     if (token) {
       Cookies.set(constants.ACCESS_TOKEN_KEY, token);
-      getCurrentUser();
+      await getCurrentUser();
     }
   };
   useEffect(() => {
@@ -44,16 +44,21 @@ export const AuthProvider = ({ children }) => {
       if (isEmployeeRole) {
         response = await loginApi.getInfo();
       } else if (role === 'USER') {
+
         response = await profileService.getCustomerInfo();
+   
       } else {
         setLoading(false);
         return;
       }
 
-      setUser(response?.result);
+      // Backend trả {customerId, fullName, ...} hoặc {result: {...}}
+      const userData = response?.result || response;
+      console.log("✅ Setting user:", userData);
+      setUser(userData);
 
     } catch (error) {
-      console.error("Lỗi khi fetch thông tin người dùng:", error);
+
       Cookies.remove(constants.ACCESS_TOKEN_KEY);
       setUser(null);
     } finally {
@@ -69,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       Cookies.set(constants.ACCESS_TOKEN_KEY, token);
 
       await getCurrentUser();
-
+      
     }
 
     return response;
@@ -96,19 +101,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   const verifyOtp = async (info) => {
+    console.log("🔍 verifyOtp called with:", info);
     const response = await loginApi.verifySDT(info);
+    console.log("🔍 verifySDT response:", response);
     const token = response?.result;
 
     if (token) {
-      // Cookies.set(constants.ACCESS_TOKEN_KEY, token);
-      // setUser(info?.rawPhone);
-      handleCustomerLoginSuccess(token);
+      console.log("✅ Token received:", token.substring(0, 20) + "...");
+      await handleCustomerLoginSuccess(token);
+      console.log("✅ handleCustomerLoginSuccess completed");
+    } else {
+      console.log("⚠️ No token in response");
     }
     return response;
   }
 
   const value = {
     user,
+    setUser,
     loading,
     loginEmployee,
     logout,
@@ -141,5 +151,4 @@ export const getUserRole = () => {
   }
 };
 
-// Named export for direct context access in route wrappers
 export { AuthContext };

@@ -29,6 +29,33 @@ const orderService = {
         );
         return res.result;
     },
+
+
+    getCompletedOrders: async () => {
+        try {
+            // Lấy tất cả orders của khách hàng hiện tại
+            const res = await axiosClient.get("/orders/me");
+            // Filter chỉ các đơn DELIVERED hoặc PAID (đã hoàn thành)
+            const allOrders = Array.isArray(res?.result) ? res.result : res || [];
+            return allOrders.filter(order => 
+                order.status === 'DELIVERED' || order.status === 'PAID'
+            );
+        } catch (error) {
+            console.error('Error fetching completed orders:', error);
+            return [];
+        }
+    },
+
+    // --- Lấy đơn hàng của khách hàng (tất cả trạng thái) ---
+    getMyOrders: async () => {
+        try {
+            const res = await axiosClient.get("/api/orders/my-orders");
+            return res?.result || res || [];
+        } catch (error) {
+            console.error('Error fetching my orders:', error);
+            return [];
+        }
+    },
 };
 
 export default orderService;

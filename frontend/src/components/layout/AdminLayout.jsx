@@ -64,7 +64,7 @@ export default function AdminLayout() {
       path: "/admin/statistic",
     },
     { id: "orders", icon: ShoppingCart, label: "Đặt hàng", path: "/admin/orders" },
-    { id: "role", icon: Shield, label: "Phân quyền", path: "/admin/role" },
+    { id: "roles", icon: Shield, label: "Phân quyền", path: "/admin/roles" },
     { id: "customers", icon: Users2, label: "Khách hàng", path: "/admin/customers" },
     { id: "employee", icon: UserMinus, label: "Nhân Viên", path: "/admin/employee" },
   ];

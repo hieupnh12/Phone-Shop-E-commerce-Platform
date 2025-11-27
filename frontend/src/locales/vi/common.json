@@ -1,0 +1,28 @@
+{
+  "navigation": {
+    "home": "Trang chủ",
+    "products": "Sản phẩm",
+    "feedbacks": "Đánh giá",
+    "pricing": "Giá cả",
+    "contact": "Liên hệ"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "profile": "Hồ sơ",
+    "transactions": "Lịch sử giao dịch",
+    "account": "Tài khoản"
+  },
+  "cart": {
+    "viewCart": "Xem giỏ hàng"
+  },
+  "feedback": {
+    "title": "Đánh giá sản phẩm",
+    "writeReview": "Viết đánh giá",
+    "rating": "Xếp hạng",
+    "content": "Nội dung đánh giá",
+    "submit": "Gửi đánh giá",
+    "myReviews": "Đánh giá của tôi"
+  },
+  "language": "Ngôn ngữ"
+}

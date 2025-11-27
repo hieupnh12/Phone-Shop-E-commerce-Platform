@@ -8,6 +8,10 @@ spring:
   application:
     name: web-sales-backend
 
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
   security:
     oauth2:
       client:
@@ -119,7 +123,7 @@ cloudinary:
 
 
 speedsms:
-  access_token: "keZn3M1sLGxNoLXAokT814YRisuw0L47"
+  access_token: "v2kJbiXLnpYV5vMGJ7yKRP48Ek6GcdG4"
 
 # PayOS Configuration
 payos:
