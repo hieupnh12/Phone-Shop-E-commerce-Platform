@@ -40,7 +40,7 @@ export default function DashboardStatistic() {
       console.log("dđ",dataCard);
 
   if (authLoading) return <Loading fullScreen type="dots" />;
-  if (error) return <Loading fullScreen message={error.message}/>;
+  if (error) return <Loading />;
 // <p>Error: {error.message}</p> || 
   return (
     <div className="w-full">

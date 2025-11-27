@@ -5,6 +5,9 @@ import {
   Calendar,
   FileSpreadsheet,
   Settings2,
+  Send,
+  Upload,
+  UploadIcon,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import statisticApi from "../../../../../services/statisticService";
@@ -35,6 +38,7 @@ export default function Settings() {
       const res = await statisticApi.getSetting();
       return res ?? {}; // <-- FIX
     },
+    staleTime: 0,
   });
 
   // ---- SET STATE FROM BE ----
@@ -137,12 +141,34 @@ export default function Settings() {
 
       <div className="w-full max-w-7xl">
         {/* Header */}
-        <div className="mb-8 text-center md:text-left bg-white/80 rounded-2xl shadow-lg p-4">
-          <label className="flex items-center gap-2 text-gray-700 font-medium text-2xl">
-            <Settings2 className="w-5 h-5 text-blue-500" />
-            Report Settings
-          </label>
-          <p className="text-gray-600">Cấu hình báo cáo doanh thu điện thoại</p>
+        <div className="flex items-center justify-between mb-4 bg-white p-4 rounded-2xl shadow-lg">
+          <div>
+            <label className="flex items-center gap-2 text-gray-700 font-medium text-2xl">
+              <Settings2 className="w-5 h-5 text-blue-500" />
+              Report Settings
+            </label>
+            <p className="text-gray-600">
+              Cấu hình báo cáo doanh thu điện thoại
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleSubmit}
+              disabled={sending2}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-cyan-500 border border-gray-600 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm text-white"
+            >
+              <UploadIcon size={18} />
+              {sending2 ? "Đang gửi..." : "Cập nhật"}
+            </button>
+            <button
+              onClick={() => sendNow()}
+              disabled={sending}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
+            >
+              <Send size={18} />
+              Gửi báo cáo
+            </button>
+          </div>
         </div>
 
         {/* Main Form Card */}
@@ -226,26 +252,6 @@ export default function Settings() {
                   enabled ? "translate-x-7" : ""
                 }`}
               ></div>
-            </div>
-
-            <div>
-              {/* BUTTON GỬI NGAY */}
-              <button
-                onClick={() => sendNow()}
-                disabled={sending}
-                className="px-4 py-2 mr-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
-              >
-                {sending ? "Đang gửi..." : "Gửi báo cáo ngay"}
-              </button>
-
-              {/* BUTTON CẬP NHẬT */}
-              <button
-                onClick={handleSubmit}
-                disabled={sending2}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-blue-300"
-              >
-                {sending2 ? "Đang gửi..." : "Cập nhật"}
-              </button>
             </div>
           </div>
         </div>

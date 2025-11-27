@@ -12,7 +12,7 @@ export default function CardOrder({dataSumOrder, isLoading}) {
     { label: 'Trả lại', value: dataSumOrder?.returnedOrders, icon: XCircle, color: 'from-rose-400 to-red-500', percent: '' },
   ];
   if (isLoading) {
-    return <Loading type='dots' message='đang tải'/>
+    return <Loading />
   }
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
