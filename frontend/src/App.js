@@ -38,9 +38,10 @@ import ProfilePageLayout from "./components/profile/ProfilePageLayout";
 import OrderDetailPage from "./components/profile/OrderDetailPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
+import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 // Protected Route Component - check JWT token via getUserRole
 import OrderHistory from "./pages/client/OrderHistory";
-import { useUrlTokenHandler } from "./hooks/useUrlTokenHandler";
+
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
 import AdminLogin from "./pages/auth/AdminLogin";

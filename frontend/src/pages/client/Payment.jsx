@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2 } from 'lucide-react';
-import customerService from '../../services/customerService';
+import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2, Plus } from 'lucide-react';
+import { customerService } from '../../services/api';
 import cartService from '../../services/cartService';
+
+import AddressForm from '../../components/common/AddressForm';
 
 // Format tiền VND
 const vnd = (n) =>
@@ -22,6 +24,7 @@ export default function Payment() {
   const [payOSQRCode, setPayOSQRCode] = useState('');
   const [payOSLink, setPayOSLink] = useState('');
   const [loadingQR, setLoadingQR] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [cartItems, setCartItems] = useState([]);
   const [customerInfo, setCustomerInfo] = useState({
@@ -30,6 +33,34 @@ export default function Payment() {
     email: '',
     address: ''
   });
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+
+  // Load addresses from address book
+  const loadAddresses = async () => {
+    try {
+      setLoadingAddresses(true);
+      const response = await customerService.getAddresses();
+      const addressList = response?.result || response || [];
+      setAddresses(addressList);
+      
+      // Nếu có địa chỉ và chưa chọn, chọn địa chỉ đầu tiên (hoặc địa chỉ mặc định)
+      if (addressList.length > 0 && !selectedAddressId) {
+        const defaultAddress = addressList[0];
+        setSelectedAddressId(defaultAddress.addressBookId);
+        setCustomerInfo(prev => ({
+          ...prev,
+          address: defaultAddress.address || prev.address
+        }));
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải địa chỉ:", error);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
 
   // Load cart data and customer info
   useEffect(() => {
@@ -85,6 +116,9 @@ export default function Payment() {
             address: ''
           });
         }
+
+        // Load addresses from address book
+        await loadAddresses();
       } catch (e) {
         setError(e.message || 'Lỗi kết nối');
       } finally {
@@ -94,6 +128,49 @@ export default function Payment() {
 
     loadData();
   }, []);
+
+  // Handle address selection
+  const handleAddressChange = (addressBookId) => {
+    const selectedAddress = addresses.find(addr => addr.addressBookId === addressBookId);
+    if (selectedAddress) {
+      setSelectedAddressId(addressBookId);
+      setCustomerInfo(prev => ({
+        ...prev,
+        address: selectedAddress.address
+      }));
+    }
+  };
+
+  // Handle save new address
+  const handleSaveAddress = async (formData, isEditMode) => {
+    try {
+      setLoadingAddresses(true);
+      // Trong Payment chỉ cho phép thêm mới, không edit
+      const result = await customerService.addAddress(formData);
+      // Sau khi thêm, reload và chọn địa chỉ vừa thêm
+      await loadAddresses();
+      if (result?.addressBookId) {
+        setSelectedAddressId(result.addressBookId);
+        setCustomerInfo(prev => ({
+          ...prev,
+          address: result.address || prev.address
+        }));
+      } else if (result && result.addressBookId) {
+        // Nếu result là object trực tiếp
+        setSelectedAddressId(result.addressBookId);
+        setCustomerInfo(prev => ({
+          ...prev,
+          address: result.address || prev.address
+        }));
+      }
+      setShowAddressForm(false);
+    } catch (error) {
+      console.error("Lỗi khi lưu địa chỉ:", error);
+      alert("Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."));
+    } finally {
+      setLoadingAddresses(false);
+    }
+  };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
   const FREE_SHIP_LIMIT = 1000;   // giống ShoppingCart.jsx
@@ -180,7 +257,7 @@ export default function Payment() {
           window.location.href = response.paymentLink;
         } else {
           // Navigate to orders page cho COD hoặc nếu PayOS link không có
-          navigate('/orders');
+          navigate('/profile/order');
         }
       } else {
         setError(response?.message || 'Không thể đặt hàng');
@@ -197,8 +274,10 @@ export default function Payment() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-5 px-5">
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div className="min-h-screen bg-gray-100">
+
+      <div className="pt-20 sm:pt-24 py-5 px-5">
+        <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
         {/* Header */}
         <div className="bg-rose-600 text-white px-8 py-5 flex items-center gap-3">
           <CreditCard className="w-6 h-6" />
@@ -237,12 +316,45 @@ export default function Payment() {
                   <span className="text-right font-medium text-gray-900">{customerInfo.email || 'Chưa cập nhật'}</span>
                 </div>
 
-                <div className="flex justify-between items-center py-2.5 text-sm">
-                  <span className="text-gray-600 flex-1 flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    Địa chỉ giao hàng
-                  </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.address || 'Chưa cập nhật'}</span>
+                <div className="py-2.5 text-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="w-4 h-4 text-gray-600" />
+                    <span className="text-gray-600">Địa chỉ giao hàng</span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={selectedAddressId || ''}
+                      onChange={(e) => handleAddressChange(Number(e.target.value))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+                      disabled={loadingAddresses || addresses.length === 0}
+                    >
+                      {addresses.length === 0 ? (
+                        <option value="">Chưa có địa chỉ</option>
+                      ) : (
+                        <>
+                          <option value="">Chọn địa chỉ...</option>
+                          {addresses.map((addr) => (
+                            <option key={addr.addressBookId} value={addr.addressBookId}>
+                              {addr.address}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressForm(true)}
+                      className="px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg flex items-center gap-1 text-sm transition-colors"
+                    >
+                      <Plus size={16} />
+                      Thêm
+                    </button>
+                  </div>
+                  {selectedAddressId && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      {addresses.find(addr => addr.addressBookId === selectedAddressId)?.address}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -460,6 +572,16 @@ export default function Payment() {
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Address Form Modal */}
+      {showAddressForm && (
+        <AddressForm
+          addressToEdit={null}
+          onClose={() => setShowAddressForm(false)}
+          onSave={handleSaveAddress}
+        />
+      )}
     </div>
   );
 }
