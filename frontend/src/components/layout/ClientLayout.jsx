@@ -181,7 +181,6 @@ const ClientLayout = ({ children, showHero = true }) => {
                     {slogan.description}{" "}
                   </p>{" "}
                   <button 
-                  onClick={navigate("/user/products")}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2 rounded-full text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50">
                     {" "}
                     Buy Now{" "}

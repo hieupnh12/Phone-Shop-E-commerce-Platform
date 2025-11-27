@@ -116,7 +116,7 @@ export default function OrderStatistic() {
   const debouncedEmail = useDebounce(searchEmail, 500);
   const debouncedStaff = useDebounce(searchStaff, 500);
 
-  const { data: timelineData } = useQuery({
+  const { data: timelineData, isLoading: loadingV2 } = useQuery({
     queryKey: [
       "timelineData",
       startDate,

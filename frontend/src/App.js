@@ -49,6 +49,9 @@ import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
 import Orders from "./pages/admin/Order";
 import UserHomePage from "./pages/client/UserHomePage";
+import Customers from "./pages/admin/Customer";
+import Employee from "./pages/admin/Employee";
+import Role from "./pages/admin/Role";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -73,6 +76,7 @@ const router = createBrowserRouter(
       path: "/user",
       element: <UserHomePage />,
       children: [
+        { index: true, element: <Home /> },
         {
           path: "products",
           element: <Products />,
@@ -129,6 +133,18 @@ const router = createBrowserRouter(
             // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
             //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
           ],
+        },
+         {
+          path: "role",
+          element: <Role />,
+        },
+         {
+          path: "customers",
+          element: <Customers />,
+        },
+         {
+          path: "employee",
+          element: <Employee />,
         },
       ],
     },
