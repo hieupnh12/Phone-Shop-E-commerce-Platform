@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {useParams, Link, useOutletContext} from 'react-router-dom';
+import {useParams, Link, useOutletContext, useLocation} from 'react-router-dom';
 import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
 import {useAuthFullOptions} from "../../contexts/AuthContext";
 import { profileService } from "../../services/api";
@@ -8,6 +8,7 @@ import { profileService } from "../../services/api";
 
 const OrderDetailPage = () => {
     const { orderId } = useParams();
+    const location = useLocation();
     const [orderData, setOrderData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -23,7 +24,17 @@ const OrderDetailPage = () => {
                 setIsLoading(true);
                 const apiResult = await profileService.getOrderDetail(orderId); // orderId là string hoặc Integer (Backend dùng Integer)
 
-                const normalizedData = normalizeOrderDetail(apiResult, orderId, customerInfo );
+                const normalizedData = normalizeOrderDetail(
+                    apiResult,
+                    orderId,
+                    customerInfo,
+                    location.state?.totalAmount,
+                    {
+                        createDatetime: location.state?.createDatetime,
+                        endDateTime: location.state?.endDateTime,
+                        status: location.state?.status
+                    }
+                );
 
                 setOrderData(normalizedData);
                 setError(null);
@@ -38,39 +49,115 @@ const OrderDetailPage = () => {
         fetchDetail();
     }, [orderId, customerInfo]);
 
-    const normalizeOrderDetail = (apiProducts, id, customerData) => {
-
-
-
+    const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderDates) => {
         const products = apiProducts.map(p => ({
             id: p.productId,
             name: p.productName,
             image: p.picture,
-            price: p.unitPriceBefore,
+            price: p.unitPriceAfter,
             quantity: 1,
             warrantyEnd: '23/03/2026',
             canRepurchase: true,
         }));
 
-        const totalAmount = products.reduce((sum, p) => sum + p.price, 0);
+        const subtotal = products.reduce((sum, p) => sum + p.price, 0);
+        const FREE_SHIP_LIMIT = 1000;
+        const SHIPPING_FEE = 30000;
+        const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : SHIPPING_FEE;
+        const totalAmount = passedTotalAmount ?? subtotal + shippingFee;
         const defaultCustomer = {
             name: customerData?.fullName || 'Khách hàng',
             phone: customerData?.phoneNumber || 'Đang cập nhật',
             address: customerData?.address || 'Chưa có địa chỉ',
             note: '-',
         };
+
+        // Tạo timeline dựa trên dữ liệu thực từ API
+        const createDate = orderDates?.createDatetime ? new Date(orderDates.createDatetime) : new Date();
+        const endDate = orderDates?.endDateTime ? new Date(orderDates.endDateTime) : null;
+        const orderStatus = orderDates?.status || 'pending';
+
+        // Format ngày giờ
+        const formatDateTime = (date) => {
+            if (!date) return { date: '', time: '' };
+            const dateStr = date.toLocaleDateString('vi-VN');
+            const timeStr = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            return { date: dateStr, time: timeStr };
+        };
+
+        const createDateTime = formatDateTime(createDate);
+        const endDateTime = endDate ? formatDateTime(endDate) : null;
+
+        // Tạo timeline dựa trên status
+        const timeline = [];
+        
+        // Bước 1: Đặt hàng thành công (luôn có)
+        timeline.push({
+            status: 'Đặt hàng thành công',
+            date: createDateTime.date,
+            time: createDateTime.time,
+            completed: true
+        });
+
+        // Bước 2: Đang xử lý (nếu status là pending hoặc đã qua pending)
+        if (orderStatus === 'pending' || orderStatus === 'shipping' || orderStatus === 'delivered') {
+            timeline.push({
+                status: 'Đang xử lý',
+                date: createDateTime.date,
+                time: createDateTime.time,
+                completed: orderStatus !== 'pending'
+            });
+        }
+
+        // Bước 3: Đang vận chuyển (nếu status là shipping hoặc delivered)
+        if (orderStatus === 'shipping' || orderStatus === 'delivered') {
+            timeline.push({
+                status: 'Đang vận chuyển',
+                date: createDateTime.date,
+                time: createDateTime.time,
+                completed: orderStatus === 'delivered'
+            });
+        }
+
+        // Bước 4: Đã giao hàng (nếu status là delivered và có endDateTime)
+        if (orderStatus === 'delivered' && endDateTime) {
+            timeline.push({
+                status: 'Đã giao hàng',
+                date: endDateTime.date,
+                time: endDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu bị hủy
+        if (orderStatus === 'cancelled') {
+            timeline.push({
+                status: 'Đơn hàng đã hủy',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Map status để hiển thị
+        const statusMap = {
+            'pending': 'Đang xử lý',
+            'shipping': 'Đang vận chuyển',
+            'delivered': 'Đã giao hàng',
+            'cancelled': 'Đã hủy',
+            'returned': 'Trả hàng'
+        };
+
         return {
             id: id,
             orderCode: `#${id}`,
-            date: new Date().toLocaleDateString('vi-VN'), // Mock ngày hiện tại
-            status: 'Đã nhận hàng', // Mock
-            // ... các thông tin Mock khác (customer, summary, timeline, supportInfo)
-            // ... cần được fetch từ các API khác nếu có
+            date: createDateTime.date,
+            status: statusMap[orderStatus] || 'Đang xử lý',
             products: products,
             summary: {
-                subtotal: totalAmount,
+                subtotal: subtotal,
                 discount: 0,
-                shippingFee: 0,
+                shippingFee: shippingFee,
                 totalPaid: totalAmount,
                 totalAmountPaid: totalAmount,
                 vatIncluded: true,
@@ -79,15 +166,12 @@ const OrderDetailPage = () => {
             supportInfo: {
                 storeAddress: '244 Nam Kì khởi Nghĩa , P. Hoà Quí, Q. Ngữ Hành Sơn, Đà Nẵng', storePhone: '0909696999',
             },
-            timeline: [
-                { status: 'Đặt hàng thành công', date: '24/03/2025', time: '19:02', completed: true },
-                { status: 'Đã giao hàng', date: '24/03/2025', time: '19:02', completed: true },
-            ],
+            timeline: timeline,
         };
     };
 
     const formatCurrency = (amount) => {
-        return amount.toLocaleString('vi-VN') + 'đ';
+        return amount?.toLocaleString('vi-VN') + 'đ';
     };
 
     if (isLoading) {
@@ -149,7 +233,7 @@ const OrderDetailPage = () => {
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
                 <InfoRow
                     label="Tổng số tiền"
-                    value={orderData.summary.totalPaid}
+                    value={orderData.summary.totalAmountPaid}
                     currency
                     highlight
                     note={orderData.summary.vatIncluded ? 'Đã bao gồm VAT' : ''}
@@ -165,42 +249,47 @@ const OrderDetailPage = () => {
         </div>
     );
 
-    // const OrderTimeline = () => {
-    //     const steps = orderData.timeline;
-    //     const totalSteps = steps.length;
-    //
-    //     return (
-    //         <div className="my-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-x-auto">
-    //             <div className="flex justify-between items-center relative w-full min-w-[600px] pb-6 pt-3">
-    //
-    //                 {steps.map((step, index) => (
-    //                     <div key={index} className="flex flex-col items-center w-1/4 relative z-10">
-    //                         {/* Icon/Dot */}
-    //                         <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500
-    //                             ${step.completed ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-500'}`}
-    //                         >
-    //                             {step.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
-    //                         </div>
-    //
-    //                         {/* Line nối */}
-    //                         {index < totalSteps - 1 && (
-    //                             <div className={`absolute h-1 top-4 left-1/2 w-full transition-colors duration-500
-    //                                 ${steps[index + 1]?.completed ? 'bg-blue-600' : 'bg-gray-200'} z-0`}
-    //                                  style={{ width: `calc(100% + ${100 / totalSteps}%)`, transform: 'translateX(-50%)' }}>
-    //                             </div>
-    //                         )}
-    //
-    //                         {/* Text */}
-    //                         <p className={`mt-3 text-sm font-medium text-center ${step.completed ? 'text-blue-700' : 'text-gray-500'}`}>
-    //                             {step.status}
-    //                         </p>
-    //                         <p className="text-xs text-gray-400">{step.date}</p>
-    //                     </div>
-    //                 ))}
-    //             </div>
-    //         </div>
-    //     );
-    // };
+    const OrderTimeline = () => {
+        const steps = orderData.timeline;
+        const totalSteps = steps.length;
+
+        if (totalSteps === 0) return null;
+
+        return (
+            <div className="my-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-x-auto">
+                <h4 className="font-bold text-gray-800 mb-4">Tiến trình đơn hàng</h4>
+                <div className="flex justify-between items-center relative w-full min-w-[600px] pb-6 pt-3">
+                    {steps.map((step, index) => (
+                        <div key={index} className="flex flex-col items-center flex-1 relative z-10">
+                            {/* Icon/Dot */}
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500
+                                ${step.completed ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-200 text-gray-500'}`}
+                            >
+                                {step.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
+                            </div>
+
+                            {/* Line nối */}
+                            {index < totalSteps - 1 && (
+                                <div className={`absolute h-1 top-4 left-1/2 w-full transition-colors duration-500
+                                    ${steps[index + 1]?.completed ? 'bg-red-600' : 'bg-gray-200'} z-0`}
+                                     style={{ width: 'calc(100% - 2rem)', transform: 'translateX(1rem)' }}>
+                                </div>
+                            )}
+
+                            {/* Text */}
+                            <div className="mt-3 text-center max-w-[120px]">
+                                <p className={`text-sm font-medium ${step.completed ? 'text-red-700' : 'text-gray-500'}`}>
+                                    {step.status}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">{step.date}</p>
+                                <p className="text-xs text-gray-400">{step.time}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
 
     return (
@@ -256,7 +345,7 @@ const OrderDetailPage = () => {
             </div>
 
             {/* Thanh tiến trình đơn hàng */}
-            {/*<OrderTimeline />*/}
+            <OrderTimeline />
 
             {/* Thông tin Khách hàng & Thanh toán & Hỗ trợ (2 Cột) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

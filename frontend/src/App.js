@@ -38,7 +38,6 @@ import ProfilePageLayout from './components/profile/ProfilePageLayout';
 import OrderDetailPage from "./components/profile/OrderDetailPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
-// Protected Route Component - check JWT token via getUserRole
 import OrderHistory from "./pages/client/OrderHistory";
 import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 import PaymentSuccess from "./pages/client/PaymentSuccess";
@@ -47,6 +46,9 @@ import AdminLogin from "./pages/auth/AdminLogin";
 import AddProduct from "./pages/admin/Products/AddProduct";
 import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
+import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
+import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
+import SetPasswordPage from "./pages/auth/SetPasswordPage";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -142,9 +144,14 @@ const router = createBrowserRouter(
       ],
       },
 
+      {
+          path: "/set-password",
+          element: <SetPasswordPage />,
+      },
+
     {
       path: "/admin",
-        element: <AdminRoute allowedRoles={["ROLE_SALE"]} />,
+        element: <AdminRoute allowedRoles={["ROLE_ADMIN", "ROLE_SALE", "ROLE_SALE_LEAD"]} />,
       children: [
         {
           element: <AdminLayout />,
@@ -159,7 +166,10 @@ const router = createBrowserRouter(
                 { path: ":id/edit", element: <EditProduct /> },
               ],
             },
-            {
+              { path: "roles", element: <RoleManagementPage /> },
+              { path: "employee", element: <EmployeeManagementPage /> },
+
+              {
               path: "statistic",
               element: <Statistic />,
               children: [

@@ -6,7 +6,7 @@ public interface ListOrderDetailResponse {
     Integer getOrderId();
      Long getProductId();
      String getProductVersionId();
-    BigDecimal getUnitPriceBefore();
+    BigDecimal getUnitPriceAfter();
     String getProductName();
     String getPicture();
 }
