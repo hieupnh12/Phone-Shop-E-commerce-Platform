@@ -47,10 +47,10 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
       name: t('navigation.home'),
       link: '/',
     },
-    { id: 2, name: t('navigation.products'), link: '/products' },
-    { id: 3, name: t('navigation.feedbacks'), link: '/feedbacks' },
-    { id: 4, name: t('navigation.pricing'), link: '/pricing' },
-    { id: 5, name: t('navigation.contact'), link: '/contact' },
+    { id: 2, name: t('navigation.products'), link: '/user/products' },
+    { id: 3, name: t('navigation.feedbacks'), link: '/user/feedbacks' },
+    { id: 4, name: t('navigation.pricing'), link: '/user/pricing' },
+    { id: 5, name: t('navigation.contact'), link: '/user/contact' },
   ], [t]);
 
   return (
