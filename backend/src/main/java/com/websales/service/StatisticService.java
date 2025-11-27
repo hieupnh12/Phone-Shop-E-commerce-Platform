@@ -43,51 +43,79 @@ public class StatisticService {
     }
 
     public RevenueStatisticResponse getRevenueStatistics(RevenueStatisticRequest req) {
-        // 1. Summary + Best Seller
+
+        // 1. Summary
         Map<String, Object> summaryMap = statisticRepository.getSummary(
-                req.startDate().toString(),
-                req.endDate().toString()
+                req.startDate(),
+                req.endDate()
         );
 
-        // 2. Chart Data
-        List<Object[]> chartRows = statisticRepository.getChartData(req.startDate(), req.endDate());
+        // 2. Chart Data (có rangeType)
+        List<Object[]> chartRows = statisticRepository.getChartData(
+                req.startDate(),
+                req.endDate()
+        );
+
         List<RevenueStatisticResponse.ChartData> chartData = chartRows.stream()
-                .map(row -> new RevenueStatisticResponse.ChartData((String) row[0], (BigDecimal) row[1], ((Long) row[2])))
+                .map(row -> new RevenueStatisticResponse.ChartData(
+                        (String) row[0],             // date key (day, month...)
+                        (BigDecimal) row[1],         // revenue
+                        ((Long) row[2]) // orders (some DB return BigInteger)
+                ))
                 .toList();
 
-        // 4. Payment Methods Stats
-        List<Object[]> payRows = statisticRepository.getPaymentMethodStats(req.startDate(), req.endDate(), req.paymentMethodId());
+        // 3. Payment Method Statistics
+        List<Object[]> payRows = statisticRepository.getPaymentMethodStats(
+                req.startDate(),
+                req.endDate(),
+                req.paymentMethodId()
+        );
+
         BigDecimal totalRevenue = (BigDecimal) summaryMap.get("totalRevenue");
+
         List<RevenueStatisticResponse.PaymentMethodDto> paymentMethods = payRows.stream()
                 .map(row -> {
-                    BigDecimal rev = (BigDecimal) row[1];
+                    BigDecimal revenue = (BigDecimal) row[1];
                     double percent = totalRevenue.compareTo(BigDecimal.ZERO) == 0 ? 0.0 :
-                            rev.divide(totalRevenue, 4, RoundingMode.HALF_UP)
-                                    .multiply(BigDecimal.valueOf(100)).doubleValue();
-                    return new RevenueStatisticResponse.PaymentMethodDto((String) row[0], rev, percent);
-                })
-                .toList();
+                            revenue.divide(totalRevenue, 4, RoundingMode.HALF_UP)
+                                    .multiply(BigDecimal.valueOf(100))
+                                    .doubleValue();
 
-        // 5. Orders Page (phân trang + tìm kiếm + sort)
-        Sort sort = Sort.by(req.sort().contains(",desc") ?
-                        Sort.Direction.DESC : Sort.Direction.ASC,
-                req.sort().split(",")[0]);
+                    return new RevenueStatisticResponse.PaymentMethodDto(
+                            (String) row[0],   // payment method name
+                            revenue,
+                            percent
+                    );
+                }).toList();
+
+        // 4. Orders Pagination + Search + Sort
+        Sort sort = Sort.by(
+                req.sort().contains(",desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
+                req.sort().split(",")[0]
+        );
+
         Pageable pageable = PageRequest.of(req.page(), req.size(), sort);
 
         Page<Object[]> orderPage = statisticRepository.getOrderDetailsPage(
-                req.startDate(), req.endDate(), req.search(), pageable);
+                req.startDate(),
+                req.endDate(),
+                req.search(),
+                req.rangeType(),
+                pageable
+        );
 
-        Page<RevenueStatisticResponse.OrderDetailDto> orders = orderPage.map(row -> new RevenueStatisticResponse.OrderDetailDto(
-                String.valueOf(row[0]),           // order_id
-                (String) row[1],                  // date formatted
-                (String) row[2],                  // product name + config
-                (Integer) row[3],                 // quantity
-                (BigDecimal) row[4],              // unit_price_after
-                (BigDecimal) row[5],              // revenue
-                (BigDecimal) row[6],              // profit
-                (String) row[7],                  // status
-                (String) row[8]                   // payment_method_type
-        ));
+        Page<RevenueStatisticResponse.OrderDetailDto> orders =
+                orderPage.map(row -> new RevenueStatisticResponse.OrderDetailDto(
+                        String.valueOf(row[0]),
+                        (String) row[1],
+                        (String) row[2],
+                        (Integer) row[3],
+                        (BigDecimal) row[4],
+                        (BigDecimal) row[5],
+                        (BigDecimal) row[6],
+                        (String) row[7],
+                        (String) row[8]
+                ));
 
         return new RevenueStatisticResponse(chartData, paymentMethods, orders);
     }
@@ -101,18 +129,14 @@ public class StatisticService {
     public SummaryDashboardResponse getSummaryCardDashboard() {
         LocalDate today = LocalDate.now();
         LocalDate startOfThisWeek = today.with(DayOfWeek.MONDAY);
-        LocalDate startOfNextWeek = startOfThisWeek.plusDays(7); // exclusive end
+        LocalDate startOfNextWeek = startOfThisWeek.plusDays(7);
 
-        // Nếu repository expects date strings (yyyy-MM-dd) and SQL uses DATE(...):
-        String fromDateThisWeek = startOfThisWeek.toString();        // inclusive
-        String toDateThisWeek   = startOfNextWeek.toString();       // exclusive
+        String fromDateThisWeek = startOfThisWeek.toString();
+        String toDateThisWeek   = startOfNextWeek.toString();
 
-        // Nếu repository expects datetime strings for revenue (o.end_datetime compared as datetime),
-        // truyền startOfThisWeek.atStartOfDay() và startOfNextWeek.atStartOfDay() (exclusive)
-        String revenueFrom = startOfThisWeek.atStartOfDay().toString();     // e.g. "2025-11-24T00:00"
-        String revenueTo   = startOfNextWeek.atStartOfDay().toString();     // exclusive
+        String revenueFrom = startOfThisWeek.atStartOfDay().toString();
+        String revenueTo   = startOfNextWeek.atStartOfDay().toString();
 
-        // previous period = previous week (same length)
         LocalDate startOfLastWeek = startOfThisWeek.minusWeeks(1);
         LocalDate startOfNextLastWeek = startOfLastWeek.plusDays(7);
         String fromDateLastWeek = startOfLastWeek.toString();
@@ -197,7 +221,7 @@ public class StatisticService {
             String toDate,
             String rangeType,
             String orderStatus,
-            String searchEmail,
+            String search,
             String searchStaff
     ) {
         if (rangeType == null || rangeType.isEmpty()) {
@@ -212,7 +236,7 @@ public class StatisticService {
                 toDate,
                 rangeType,
                 orderStatus,
-                searchEmail,
+                search,
                 searchStaff
         );
 
