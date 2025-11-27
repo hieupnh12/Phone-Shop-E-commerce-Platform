@@ -99,19 +99,41 @@ public class StatisticService {
     }
 
     public SummaryDashboardResponse getSummaryCardDashboard() {
-        LocalDateTime prevFrom = LocalDate.now().minusDays(1).atStartOfDay();
-        LocalDateTime prevTo = LocalDate.now().minusDays(1).atTime(LocalTime.MAX);
-        Map<String, Object> result = summaryCardRepository.getTopProductAsArray(LocalDate.now().with(DayOfWeek.MONDAY).toString(), LocalDate.now().toString());
-        String topProduct = (String) result.get("bestSellerName");;
+        LocalDate today = LocalDate.now();
+        LocalDate startOfThisWeek = today.with(DayOfWeek.MONDAY);
+        LocalDate startOfNextWeek = startOfThisWeek.plusDays(7); // exclusive end
 
+        // Nếu repository expects date strings (yyyy-MM-dd) and SQL uses DATE(...):
+        String fromDateThisWeek = startOfThisWeek.toString();        // inclusive
+        String toDateThisWeek   = startOfNextWeek.toString();       // exclusive
 
-        Long revenue = summaryCardRepository.getRevenue(LocalDate.now().atStartOfDay().toString(), LocalDate.now().atTime(LocalTime.MAX).toString());
-        Long orderCount = summaryCardRepository.getOrderCount(LocalDate.now().with(DayOfWeek.MONDAY).toString(), LocalDate.now().toString());
-        Long profit = summaryCardRepository.getProfit(LocalDate.now().with(DayOfWeek.MONDAY).toString(), LocalDate.now().toString());
+        // Nếu repository expects datetime strings for revenue (o.end_datetime compared as datetime),
+        // truyền startOfThisWeek.atStartOfDay() và startOfNextWeek.atStartOfDay() (exclusive)
+        String revenueFrom = startOfThisWeek.atStartOfDay().toString();     // e.g. "2025-11-24T00:00"
+        String revenueTo   = startOfNextWeek.atStartOfDay().toString();     // exclusive
 
-        Long revenuePrev = summaryCardRepository.getRevenue(prevFrom.toString(), prevTo.toString());
-        Long profitPrev = summaryCardRepository.getProfit(LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1).toString(), LocalDate.now().with(DayOfWeek.SUNDAY).atTime(LocalTime.MAX).minusWeeks(1).toString());
-        Long ordersPrev = summaryCardRepository.getOrderCount(LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1).toString(), LocalDate.now().with(DayOfWeek.SUNDAY).atTime(LocalTime.MAX).minusWeeks(1).toString());
+        // previous period = previous week (same length)
+        LocalDate startOfLastWeek = startOfThisWeek.minusWeeks(1);
+        LocalDate startOfNextLastWeek = startOfLastWeek.plusDays(7);
+        String fromDateLastWeek = startOfLastWeek.toString();
+        String toDateLastWeek   = startOfNextLastWeek.toString();
+        String revenueFromLastWeek = startOfLastWeek.atStartOfDay().toString();
+        String revenueToLastWeek   = startOfNextLastWeek.atStartOfDay().toString();
+
+        // Top product - nếu getTopProductAsArray expects date-only, use date strings:
+        Map<String, Object> result = summaryCardRepository.getTopProductAsArray(fromDateThisWeek, toDateThisWeek);
+        String topProduct = (String) result.get("bestSellerName");
+
+        // Revenue (use datetime-range if repo expects datetimes)
+        Long revenue = summaryCardRepository.getRevenue(revenueFrom, revenueTo);
+        Long revenuePrev = summaryCardRepository.getRevenue(revenueFromLastWeek, revenueToLastWeek);
+
+        // Orders and profit (use date-only range if SQL uses DATE(...) comparators)
+        Long orderCount = summaryCardRepository.getOrderCount(fromDateThisWeek, toDateThisWeek);
+        Long ordersPrev = summaryCardRepository.getOrderCount(fromDateLastWeek, toDateLastWeek);
+
+        Long profit = summaryCardRepository.getProfit(revenueFrom, revenueTo);
+        Long profitPrev = summaryCardRepository.getProfit(revenueFromLastWeek, revenueToLastWeek);
 
         return new SummaryDashboardResponse(
                 new SummaryDashboardResponse.ValueSummary(revenue.toString(), calcPercent(revenue, revenuePrev)),
@@ -179,7 +201,7 @@ public class StatisticService {
             String searchStaff
     ) {
         if (rangeType == null || rangeType.isEmpty()) {
-            rangeType = "week";
+            rangeType = "day";
         }
         if (orderStatus == null || orderStatus.isEmpty()) {
             orderStatus = "all";
