@@ -32,7 +32,7 @@ public class SecurityConfig {
             {"/employee/auth", "/customer/auth","/role", "/employee/auth_set_password","/employee/auth_refresh",
                     "/customer/auth_verify_otp", "/employee/auth_check_valid",
                     "/payment/success", "/payment/cancel", "/payment/payos/webhook",
-                    "/customer/auth_verify_otp", "/employee/auth_check_valid", "/product",
+                    "/customer/auth_verify_otp", "/employee/auth_check_valid", "/product", "/product/count",
                     "/customer/total_orders/{id}",
                     "/customer/order/{id}",
                     "/customer/order_detail/{id}",

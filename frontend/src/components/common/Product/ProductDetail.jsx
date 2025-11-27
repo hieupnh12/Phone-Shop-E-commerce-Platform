@@ -249,19 +249,19 @@ const ProductDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Đang tải...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+        <div className="text-xl text-cyan-400">Đang tải...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-red-600 mb-4">{error}</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+        <div className="text-xl text-red-400 mb-4">{error}</div>
         <button
           onClick={() => fetchProductDetail(productId)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700 transition"
         >
           Tải lại trang
         </button>
@@ -271,52 +271,37 @@ const ProductDetailPage = () => {
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Không tìm thấy sản phẩm</div>
-        <button
-          onClick={() => fetchProductDetail(productId)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition ml-4"
-        >
-          Tải lại trang
-        </button>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+        <div className="text-xl text-cyan-100">Không tìm thấy sản phẩm</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      {/* <div className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <button className="text-blue-600 hover:text-blue-700 font-medium"
-            onClick={() => navigate('/products')}>
-            ← Quay lại
-          </button>
-        </div>
-      </div> */}
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Product Title & Rating */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-3">
             Điện thoại {product.name}
           </h1>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold">{product.rating}</span>
-              <span className="text-gray-500">
+              <span className="font-semibold text-cyan-100">{product.rating}</span>
+              <span className="text-cyan-200/70">
                 ({product.reviewCount} đánh giá)
               </span>
             </div>
             <button
               onClick={() => setIsFavorite(!isFavorite)}
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+              className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               <Heart
-                className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : ""
-                  }`}
+                className={`w-5 h-5 transition-all ${
+                  isFavorite ? "fill-red-500 text-red-500 scale-110" : ""
+                }`}
               />
               <span>Yêu thích</span>
             </button>
@@ -376,9 +361,8 @@ const ProductDetailPage = () => {
           {/* Left - Images */}
           <div className="lg:col-span-2">
             {currentImageIndex === 0 ? (
-              <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-orange-200 rounded-2xl p-8 h-[500px] flex flex-col justify-between">
-                {/* Main Image (first) */}
-                <div className="bg-white rounded-xl p-6 mb-4 flex-1 flex items-center justify-center">
+              <div className="bg-gradient-to-br from-pink-200 via-rose-200 to-orange-200 rounded-2xl p-8 h-[500px] flex flex-col justify-between shadow-xl">
+                <div className="bg-white rounded-xl p-6 mb-4 flex-1 flex items-center justify-center shadow-lg">
                   <img
                     src={images[currentImageIndex]}
                     alt={product.name}
@@ -418,8 +402,7 @@ const ProductDetailPage = () => {
                 </div>
               </div>
             ) : (
-              // Non-first images: consistent height with first section
-              <div className="bg-white rounded-2xl p-8 h-[500px] flex items-center justify-center border-2 border-gray-100">
+              <div className="bg-white rounded-2xl p-8 h-[500px] flex items-center justify-center shadow-xl">
                 <img
                   src={images[currentImageIndex]}
                   alt={product.name}
@@ -428,7 +411,7 @@ const ProductDetailPage = () => {
               </div>
             )}
 
-            {/* Thumbnail Images with Smooth Scroll */}
+            {/* Thumbnail Images */}
             {images.length > 1 && (
               <div className="relative mt-6">
                 <div className="flex items-center gap-2">
@@ -440,12 +423,11 @@ const ProductDetailPage = () => {
                           : currentImageIndex - 1;
                       setCurrentImageIndex(newIndex);
                     }}
-                    className="p-2 bg-white rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-shrink-0"
+                    className="p-2 bg-white rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex-shrink-0"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5 text-cyan-600" />
                   </button>
-                  <div
-                    className="flex-1 overflow-hidden"
+                  <div className="flex-1 overflow-hidden"
                     ref={(el) => {
                       if (el && images.length > 0) {
                         const containerWidth = el.offsetWidth;
@@ -461,11 +443,10 @@ const ProductDetailPage = () => {
                         // Lưu giá trị này để sử dụng trong style
                         el.dataset.maxScroll = maxScroll.toString();
                       }
-                    }}
-                  >
-                    <div
-                      className="flex gap-3 transition-transform duration-300 ease-in-out"
-                      style={{
+                    }}>
+
+                    <div className="flex gap-3 transition-transform duration-300 ease-in-out"
+                    style={{
                         transform: `translateX(-${(() => {
                           const container = document.querySelector(
                             ".flex-1.overflow-hidden"
@@ -481,16 +462,16 @@ const ProductDetailPage = () => {
                           );
                           return scrollPosition * 98;
                         })()}px)`,
-                      }}
-                    >
+                      }}>
                       {images.map((img, idx) => (
                         <button
                           key={idx}
                           onClick={() => setCurrentImageIndex(idx)}
-                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${currentImageIndex === idx
-                            ? "border-blue-600 shadow-md scale-105 opacity-100"
-                            : "border-gray-200 hover:border-gray-300 opacity-40 hover:opacity-70"
-                            }`}
+                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                            currentImageIndex === idx
+                              ? "border-cyan-500 shadow-lg shadow-cyan-500/50 scale-105 opacity-100 ring-2 ring-cyan-400"
+                              : "border-gray-300 hover:border-gray-400 opacity-50 hover:opacity-80 bg-white"
+                          }`}
                         >
                           <img
                             src={img}
@@ -509,21 +490,19 @@ const ProductDetailPage = () => {
                           : currentImageIndex + 1;
                       setCurrentImageIndex(newIndex);
                     }}
-                    className="p-2 bg-white rounded-lg shadow hover:shadow-md hover:bg-gray-50 transition-all duration-200 flex-shrink-0"
+                    className="p-2 bg-white rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex-shrink-0"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-5 h-5 text-cyan-600" />
                   </button>
                 </div>
-                {/* Image Counter */}
-                <div className="text-center mt-3 text-sm text-gray-500">
+                <div className="text-center mt-3 text-sm text-cyan-100">
                   {currentImageIndex + 1} / {images.length}
                 </div>
               </div>
             )}
-            {/* </div>
-</div> */}
+
             {/* Cam kết sản phẩm */}
-            <div className="mt-6 bg-white rounded-xl p-4">
+            <div className="mt-6 bg-white rounded-xl p-4 shadow-lg">
               <h3 className="font-bold text-gray-900 mb-3">Cam kết sản phẩm</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
@@ -547,13 +526,13 @@ const ProductDetailPage = () => {
 
           {/* Right - Product Info */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl p-6">
+            <div className="bg-white rounded-xl p-6 shadow-xl">
               {/* Price Box */}
               <div className="bg-gray-50 rounded-xl p-6 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Giá sản phẩm</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                    <p className="text-3xl font-bold text-cyan-600">
                       {formatPrice(currentDiscountedPrice)}
                     </p>
                     {(selectedVersion?.discount || product.discount) > 0 && (
@@ -562,14 +541,14 @@ const ProductDetailPage = () => {
                       </p>
                     )}
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+                    <p className="text-sm text-gray-700 mb-1">
                       Thu cũ lên đời chi từ
                     </p>
                     <p className="text-2xl font-bold text-blue-600">
                       {formatPrice(currentDiscountedPrice - 2000000)}
                     </p>
-                    <button className="text-sm text-red-600 font-medium mt-1">
+                    <button className="text-sm text-cyan-600 font-medium mt-1 hover:text-cyan-700">
                       Trợ giá đến 2.000.000{" "}
                       <span className="text-blue-600">Định giá ngay →</span>
                     </button>
@@ -577,7 +556,7 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-              {/* Versions (dynamic filtering) */}
+              {/* Versions */}
               <div className="mb-6">
                 <h3 className="font-bold text-gray-900 mb-3">Phiên bản</h3>
 
@@ -667,12 +646,13 @@ const ProductDetailPage = () => {
                                 key={r}
                                 onClick={() => isAvailable && handleSelect('rom', r)}
                                 disabled={!isAvailable}
-                                className={`px-5 py-3 rounded-xl text-base border-2 transition ${isSelected
-                                  ? "border-red-600 bg-red-50"
-                                  : isAvailable
-                                    ? "border-gray-200 hover:border-gray-300"
-                                    : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
-                                  }`}
+                                className={`px-7 py-4 rounded-xl text-base border-2 transition-all ${
+                                  isSelected
+                                    ? "border-cyan-500 bg-cyan-50 text-cyan-700 shadow-lg font-semibold"
+                                    : isAvailable
+                                    ? "border-gray-300 bg-white text-gray-700 hover:border-cyan-400 hover:bg-cyan-50/50"
+                                    : "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+                                }`}
                               >
                                 {r}
                               </button>
@@ -682,7 +662,7 @@ const ProductDetailPage = () => {
                       </div>
 
                       <div>
-                        <div className="text-sm text-gray-600 mb-2">Màu sắc</div>
+                        <div className="font-bold text-gray-900 mb-3">Màu sắc</div>
                         <div className="flex flex-wrap gap-2">
                           {allColors.map((c) => {
                             const isAvailable = availableColors.has(c);
@@ -692,12 +672,13 @@ const ProductDetailPage = () => {
                                 key={c}
                                 onClick={() => isAvailable && handleSelect('color', c)}
                                 disabled={!isAvailable}
-                                className={`px-5 py-3 rounded-xl text-base border-2 transition ${isSelected
-                                  ? "border-red-600 bg-red-50"
-                                  : isAvailable
-                                    ? "border-gray-200 hover:border-gray-300"
-                                    : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
-                                  }`}
+                                className={`px-7 py-4 rounded-xl text-base border-2 transition-all ${
+                                  isSelected
+                                    ? "border-cyan-500 bg-cyan-50 text-cyan-700 shadow-lg font-semibold"
+                                    : isAvailable
+                                    ? "border-gray-300 bg-white text-gray-700 hover:border-cyan-400 hover:bg-cyan-50/50"
+                                    : "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+                                }`}
                               >
                                 {c}
                               </button>
@@ -723,8 +704,8 @@ const ProductDetailPage = () => {
               </div>
 
               {/* Smember Savings */}
-              <div className="bg-red-50 rounded-lg p-4 flex items-center gap-3 mb-6">
-                <div className="bg-red-600 text-white p-2 rounded-lg">
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-4 flex items-center gap-3 mb-6 border border-red-200">
+                <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white p-2 rounded-lg shadow-lg">
                   <Gift className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
@@ -734,40 +715,40 @@ const ProductDetailPage = () => {
                     Smember
                   </p>
                 </div>
-                <button className="text-red-600 font-medium">
+                <button className="text-red-600 font-medium hover:text-red-700">
                   Kiểm tra giá cuối →
                 </button>
               </div>
 
-              {/* Promotions (hardcode vì không có trong data, có thể fetch riêng) */}
-              <div className="bg-blue-50 rounded-xl p-4 mb-6">
+              {/* Promotions */}
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 mb-6 border border-blue-200">
                 <div className="flex items-center gap-2 mb-3">
-                  <Gift className="w-5 h-5 text-red-600" />
+                  <Gift className="w-5 h-5 text-blue-600" />
                   <h3 className="font-bold text-gray-900">
                     Khuyến mãi hấp dẫn
                   </h3>
                 </div>
                 <div className="space-y-2">
                   <div className="flex gap-3">
-                    <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg">
                       1
                     </div>
                     <div className="text-sm text-gray-700 flex-1">
                       Đặc quyền trợ giá lên đến 3 triệu khi thu cũ lên đời
                       iPhone{" "}
-                      <button className="text-blue-600 font-medium ml-1">
+                      <button className="text-blue-600 font-medium ml-1 hover:text-blue-700">
                         Xem chi tiết
                       </button>
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg">
                       2
                     </div>
                     <div className="text-sm text-gray-700 flex-1">
                       Giảm ngay 5% tối đa 500k mua Apple Watch/Airpods khi mua
                       iPhone{" "}
-                      <button className="text-blue-600 font-medium ml-1">
+                      <button className="text-blue-600 font-medium ml-1 hover:text-blue-700">
                         Xem chi tiết
                       </button>
                     </div>
@@ -777,7 +758,7 @@ const ProductDetailPage = () => {
               </div>
 
               {/* Installment */}
-              <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-4 mb-6">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 mb-6 border border-purple-200">
                 <div className="flex items-center gap-2 mb-2">
                   <CreditCard className="w-5 h-5 text-purple-600" />
                   <h3 className="font-bold text-gray-900">
@@ -821,10 +802,10 @@ const ProductDetailPage = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-3">
-                <button className="border-2 border-blue-600 text-blue-600 py-3 rounded-xl font-medium hover:bg-blue-50 transition">
+                <button className="border-2 border-blue-600 text-blue-600 py-3 rounded-xl font-medium hover:bg-blue-50 transition-all">
                   TRẢ GÓP 0% (Duyệt nhanh)
                 </button>
-                <button className="border-2 border-blue-600 text-blue-600 py-3 rounded-xl font-medium hover:bg-blue-50 transition">
+                <button className="border-2 border-blue-600 text-blue-600 py-3 rounded-xl font-medium hover:bg-blue-50 transition-all">
                   MUA TẠI CỬA HÀNG
                 </button>
               </div>

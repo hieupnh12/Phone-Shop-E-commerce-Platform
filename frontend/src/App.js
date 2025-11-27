@@ -74,7 +74,7 @@ const router = createBrowserRouter(
       element: <UserHomePage />,
       children: [
         { index: true, element: <Home /> },
-        {path: "feedbacks", element: <MyFeedbacksPage />},
+        { path: "feedbacks", element: <MyFeedbacksPage /> },
 
         {
           path: "products",
@@ -152,7 +152,6 @@ const router = createBrowserRouter(
                 { path: "orders", element: <OrderStatistic /> },
                 { path: "revenue", element: <RevenueStatistic /> },
                 { path: "setting", element: <Settings /> },
-                
               ],
             },
             { path: "roles", element: <RoleManagementPage /> },

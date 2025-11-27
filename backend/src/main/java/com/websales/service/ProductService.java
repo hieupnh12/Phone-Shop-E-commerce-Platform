@@ -323,7 +323,7 @@ public class ProductService {
                 // Lọc ProductItem với export_id IS NULL
                 version.setProductItems(
                         version.getProductItems().stream()
-//                                .filter(pi -> pi.get == null)
+                                .filter(pi -> pi.getOrderDetail() == null)
                                 .collect(Collectors.toList())
                 );
             });
@@ -424,12 +424,31 @@ public class ProductService {
                                                    String originName,
                                                    String operatingSystemName,
                                                    String productName,
+//                                                   String categoryName,
+                                                   String battery,
+                                                   String scanFrequency,
+                                                   String screenSize,
+                                                   String screenResolution,
+                                                   String screenTech,
+                                                   String chipset,
+                                                   String rearCamera,
+                                                   String frontCamera,
+//                                                   String image,
+                                                   Integer warrantyPeriod,
+//                                                   Integer stockQuantity,
+                                                   Boolean status,
                                                    Pageable pageable) {
         return productRepository.findProductsWithFilters(
-                        brandName,warehouseAreaName,originName,operatingSystemName,productName,pageable)
+                        brandName, warehouseAreaName, originName, operatingSystemName, productName,
+                        battery, scanFrequency, screenSize, screenResolution, screenTech, chipset,
+                        rearCamera, frontCamera, warrantyPeriod, status, pageable)
                 .map(productMapper::toProductFULLResponse);
     }
 
+
+     public Long CountProduct() {
+        return productRepository.count();
+     }
 
 
 

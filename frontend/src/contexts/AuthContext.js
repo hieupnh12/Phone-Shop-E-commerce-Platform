@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       Cookies.set(constants.ACCESS_TOKEN_KEY, token);
 
       await getCurrentUser();
-
+      
     }
 
     return response;
@@ -118,6 +118,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    setUser,
     loading,
     loginEmployee,
     logout,

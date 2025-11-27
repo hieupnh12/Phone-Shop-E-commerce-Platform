@@ -201,7 +201,7 @@ export default function ShoppingCart() {
                     Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
                   </p>
                   <button
-                    onClick={() => navigate('/products')}
+                    onClick={() => navigate('/user/products')}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                   >
                     Khám phá sản phẩm
@@ -332,7 +332,7 @@ export default function ShoppingCart() {
               </div>
 
               <button
-                onClick={() => navigate('/payment')}
+                onClick={() => navigate('/user/payment')}
                 disabled={items.length === 0 || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >
