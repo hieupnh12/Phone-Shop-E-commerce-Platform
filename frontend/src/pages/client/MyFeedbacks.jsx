@@ -13,7 +13,7 @@ const MyFeedbacksPage = () => {
   const user = authContext?.user;
   const [toast, setToast] = useState(null);
   
-  // My Feedbacks state
+
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -25,7 +25,7 @@ const MyFeedbacksPage = () => {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [completedOrders, setCompletedOrders] = useState([]);
   
-  // All Feedbacks state
+
   const [allFeedbacks, setAllFeedbacks] = useState([]);
   const [allFeedbacksLoading, setAllFeedbacksLoading] = useState(true);
   const [allFeedbacksPage, setAllFeedbacksPage] = useState(0);
@@ -36,7 +36,6 @@ const MyFeedbacksPage = () => {
   useEffect(() => {
     const load = async () => {
       if (!user) {
-        // Không load my feedbacks nếu chưa login
         setFeedbacks([]);
         setTotalPages(0);
         setLoading(false);
@@ -55,14 +54,11 @@ const MyFeedbacksPage = () => {
       }
     };
     load();
-    // Chỉ load orders nếu user đã login
     if (user) {
       loadCompletedOrdersForFeedback();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, refreshTrigger, user]);
 
-  // Load all feedbacks from all customers
   useEffect(() => {
     const load = async () => {
       setAllFeedbacksLoading(true);
@@ -82,7 +78,6 @@ const MyFeedbacksPage = () => {
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allFeedbacksPage, selectedRating]);
 
   const loadCompletedOrdersForFeedback = async () => {
