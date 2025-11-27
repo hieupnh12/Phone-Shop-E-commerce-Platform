@@ -73,7 +73,7 @@ const statisticApi = {
       endDate: params.endDate?.trim() || "",
       rangeType: params.rangeType?.trim(),
       orderStatus: params.orderStatus?.trim() || "all",
-      searchEmail: params.searchEmail?.trim(),
+      search: params.searchEmail?.trim(),
       searchStaff: params.searchStaff?.trim(),
     };
 

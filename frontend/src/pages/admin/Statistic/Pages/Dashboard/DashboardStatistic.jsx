@@ -17,7 +17,7 @@ export default function DashboardStatistic() {
       return res?.result || [];
     },
     enabled: !!isAuth, 
-    staleTime: 1000 * 60 * 5, 
+    staleTime: 0, 
     refetchOnWindowFocus: true, 
     refetchInterval: 0, 
   })
@@ -31,7 +31,7 @@ export default function DashboardStatistic() {
       return res?.result || []; 
     },
     enabled: !!isAuth, 
-    staleTime: 1000 * 60 * 5, 
+    staleTime: 0, 
     refetchOnWindowFocus: true, 
     refetchInterval: 0, 
   });

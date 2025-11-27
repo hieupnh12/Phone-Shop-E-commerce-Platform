@@ -15,7 +15,6 @@ const ClientHomePage = () => {
   return (
     <div>
       <ClientLayout></ClientLayout>
-        <HomeClient></HomeClient>
         <Outlet></Outlet>
         <Footer></Footer>
     </div>

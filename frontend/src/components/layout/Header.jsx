@@ -45,16 +45,14 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const navItems = [
     {
       id: 1,
-      name: 'Home',
-      link: '/',
+      name: "Home",
+      link: "/",
     },
-    { id: 2, name: 'Products', link: '/products'
-    },
-    { id: 3, name: 'Solutions', link: '/solutions' },
-    { id: 4, name: 'Pricing', link: '/pricing' },
-    { id: 5, name: 'Contact', link: '/contact' },
+    { id: 2, name: "Products", link: "/user/products" },
+    { id: 3, name: "Solutions", link: "/user/solutions" },
+    { id: 4, name: "Pricing", link: "/user/pricing" },
+    { id: 5, name: "Contact", link: "/user/contact" },
   ];
-
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-sm bg-transparent">
@@ -79,10 +77,10 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               onClick={() => navigate("/")}
             >
               <img
-  src="/image/flogo.png"
-  alt="FShop Logo"
-  className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-/>
+                src="/image/flogo.png"
+                alt="FShop Logo"
+                className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+              />
 
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                 Shop
@@ -96,7 +94,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               <a
                 key={item.id}
                 href={item.link}
-                                className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-white hover:text-blue-400 transition-all duration-300 group font-medium"
+                className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-white hover:text-blue-400 transition-all duration-300 group font-medium"
               >
                 {item.name}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-blue-600 group-hover:w-full transition-all duration-300" />
@@ -121,8 +119,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             ) : (
               <div
                 className="relative"
-                onMouseEnter={() => setShowUserMenu(true)}
-                onMouseLeave={() => setShowUserMenu(false)}
               >
                 <button
                   onClick={() => setShowUserMenu((s) => !s)}

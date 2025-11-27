@@ -60,7 +60,7 @@ export default function RevenueStatistic() {
       return res?.result || [];
     },
     enabled: !!isAuth,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
     refetchOnWindowFocus: true,
     refetchInterval: 0,
   });
@@ -69,7 +69,7 @@ export default function RevenueStatistic() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["orders", { ...filters, search: debouncedSearch }],
     queryFn: () => statisticApi.getRevenue({ ...filters, search: debouncedSearch }),
-    staleTime: 60 * 1000,
+    staleTime: 0,
     placeholderData: (prev) => prev, // tương đương keepPreviousData
   });
 
