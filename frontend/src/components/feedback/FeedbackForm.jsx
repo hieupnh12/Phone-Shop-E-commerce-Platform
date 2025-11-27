@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuthFullOptions } from '../../contexts/AuthContext';
 import { Star, X, ChevronDown } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 import orderService from '../../services/orderService';
 
 const FeedbackForm = ({ productId, onSuccess, onClose }) => {
   const { t } = useLanguage();
+  const authContext = useAuthFullOptions();
+  const user = authContext?.user;
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,6 +20,25 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
   const [showOrderDropdown, setShowOrderDropdown] = useState(false);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [myFeedbackProducts, setMyFeedbackProducts] = useState(new Set());
+
+  // Load user's existing feedbacks to filter them out from product list
+  useEffect(() => {
+    const loadMyFeedbacks = async () => {
+      if (!user) return;
+      try {
+        const response = await feedbackService.getMyFeedbacks(0, 1000);
+        const feedbackProductIds = new Set(
+          (response.content || []).map(fb => fb.product_id)
+        );
+        setMyFeedbackProducts(feedbackProductIds);
+      } catch (err) {
+        console.error('Error loading my feedbacks:', err);
+      }
+    };
+    loadMyFeedbacks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Tải danh sách đơn hàng hoàn thành
   useEffect(() => {
@@ -47,15 +69,21 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
           // Lấy products từ orderDetails của order
           if (selectedOrder?.orderDetails && selectedOrder.orderDetails.length > 0) {
             // Map orderDetails để có product information
-            const products = selectedOrder.orderDetails.map(detail => ({
-              productId: detail.productId, // Use actual productId from product
-              nameProduct: detail.productName || 'Unknown Product'
-            }));
-            console.log('Products loaded:', products);
+            // FILTER OUT products that user already has feedbacks for
+            const products = selectedOrder.orderDetails
+              .filter(detail => !myFeedbackProducts.has(detail.productId))
+              .map(detail => ({
+                productId: detail.productId, // Use actual productId from product
+                nameProduct: detail.productName || 'Unknown Product'
+              }));
+            console.log('Available products (excluding already reviewed):', products);
             setOrderProducts(products);
-            // Tự động chọn sản phẩm đầu tiên
+            // Tự động chọn sản phẩm đầu tiên nếu còn
             if (products.length > 0) {
               setSelectedProductId(products[0].productId);
+            } else {
+              console.log('All products in this order have been reviewed');
+              setSelectedProductId(null);
             }
           } else {
             console.log('No orderDetails found');
@@ -71,7 +99,7 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOrder?.orderId]);
+  }, [selectedOrder?.orderId, myFeedbackProducts]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,11 +121,15 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
 
     setLoading(true);
     try {
+      const finalProductId = selectedProductId || productId;
       await feedbackService.createFeedback({
-        product_id: selectedProductId || productId,
+        product_id: finalProductId,
         rate: rating,
         content: content.trim()
       });
+      
+      // Add to myFeedbackProducts set to exclude from future list
+      setMyFeedbackProducts(prev => new Set([...prev, finalProductId]));
       
       onSuccess?.();
       setRating(0);
@@ -120,6 +152,31 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
     return product?.nameProduct || 'Chọn sản phẩm';
   };
 
+  // If user is not logged in, don't render the form at all
+  if (!user) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">{t('feedback.writeReview') || 'Viết đánh giá'}</h2>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-200 rounded"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-center">
+            <p className="font-medium mb-3">Vui lòng đăng nhập để viết đánh giá</p>
+            <a href="/login" className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Đăng nhập
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-96 overflow-y-auto">
@@ -133,13 +190,15 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
-            {error}
-          </div>
-        )}
+        {(
+          <>
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
           {/* Order Selection - chỉ hiển thị nếu không có productId */}
           {!productId && (
             <div>
@@ -272,10 +331,13 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
               {loading ? 'Đang gửi...' : t('feedback.submit') || 'Gửi'}
             </button>
           </div>
-        </form>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 export default FeedbackForm;
+

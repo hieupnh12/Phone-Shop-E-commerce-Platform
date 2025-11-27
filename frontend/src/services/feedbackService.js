@@ -45,6 +45,26 @@ const feedbackService = {
     return response.data;
   },
 
+  // Get all feedbacks from all customers (no auth required)
+  getAllFeedbacks: async (page = 0, size = 10) => {
+    const response = await api.get('/api/feedbacks/all', {
+      params: { page, size }
+    });
+    return response.data;
+  },
+
+  // Get all feedbacks filtered by rating (no auth required)
+  getAllFeedbacksByRating: async (page = 0, size = 10, rating = null) => {
+    const params = { page, size };
+    if (rating) {
+      params.rating = rating;
+    }
+    const response = await api.get('/api/feedbacks/all/by-rating', {
+      params
+    });
+    return response.data;
+  },
+
   // Get rating statistics
   getRatingStats: async (productId) => {
     const response = await api.get(`/api/feedbacks/stats/product/${productId}`);

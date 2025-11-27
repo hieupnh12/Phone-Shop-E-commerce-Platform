@@ -29,4 +29,9 @@ public interface FeedbackRepository extends JpaRepository<Feedback, Integer> {
     Optional<Feedback> findByFeedbackIdAndCustomerId(Integer feedbackId, Long customerId);
     
     boolean existsByCustomerIdAndProductId(Long customerId, Integer productId);
+    
+    Page<Feedback> findByStatusTrueOrderByDateDesc(Pageable pageable);
+    
+    @Query("SELECT f FROM Feedback f WHERE f.rate = :rating AND f.status = true ORDER BY f.date DESC")
+    Page<Feedback> findByRateAndStatusTrueOrderByDateDesc(@Param("rating") Integer rating, Pageable pageable);
 }

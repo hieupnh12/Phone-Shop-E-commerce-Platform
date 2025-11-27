@@ -162,6 +162,28 @@ public class FeedbackService {
                 .build();
     }
 
+    /**
+     * Get all feedbacks from all customers (no auth required)
+     */
+    public Page<FeedbackDTO> getAllFeedbacks(Pageable pageable) {
+        Page<Feedback> page = feedbackRepository.findByStatusTrueOrderByDateDesc(pageable);
+        List<FeedbackDTO> dtos = page.getContent().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtos, pageable, page.getTotalElements());
+    }
+
+    /**
+     * Get all feedbacks filtered by rating (no auth required)
+     */
+    public Page<FeedbackDTO> getAllFeedbacksByRating(Integer rating, Pageable pageable) {
+        Page<Feedback> page = feedbackRepository.findByRateAndStatusTrueOrderByDateDesc(rating, pageable);
+        List<FeedbackDTO> dtos = page.getContent().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtos, pageable, page.getTotalElements());
+    }
+
     private FeedbackDTO mapToDTO(Feedback feedback) {
         return FeedbackDTO.builder()
                 .feedbackId(feedback.getFeedbackId())

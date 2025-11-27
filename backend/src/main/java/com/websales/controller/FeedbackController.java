@@ -38,9 +38,7 @@ public class FeedbackController {
         }
     }
 
-    /**
-     * Get feedbacks by product with optional rating filter
-     */
+
     @GetMapping("/product/{productId}")
     public ResponseEntity<?> getFeedbacksByProduct(
             @PathVariable Integer productId,
@@ -63,9 +61,6 @@ public class FeedbackController {
         }
     }
 
-    /**
-     * Get feedbacks by customer with pagination
-     */
     @GetMapping("/my-feedbacks")
     public ResponseEntity<?> getFeedbacksByCustomer(
             @RequestParam(defaultValue = "0") int page,
@@ -115,9 +110,6 @@ public class FeedbackController {
         }
     }
 
-    /**
-     * Delete feedback (only by owner)
-     */
     @DeleteMapping("/{feedbackId}")
     public ResponseEntity<?> deleteFeedback(
             @PathVariable Integer feedbackId,
@@ -133,9 +125,6 @@ public class FeedbackController {
         }
     }
 
-    /**
-     * Get rating statistics for a product
-     */
     @GetMapping("/stats/product/{productId}")
     public ResponseEntity<?> getRatingStats(@PathVariable Integer productId) {
         try {
@@ -146,14 +135,38 @@ public class FeedbackController {
         }
     }
 
-    /**
-     * Get average rating for a product
-     */
     @GetMapping("/rating/product/{productId}")
     public ResponseEntity<?> getAverageRating(@PathVariable Integer productId) {
         try {
             Double averageRating = feedbackService.getAverageRating(productId);
             return ResponseEntity.ok(averageRating);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllFeedbacks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            var pageable = PageRequest.of(page, size);
+            Page<FeedbackDTO> feedbacks = feedbackService.getAllFeedbacks(pageable);
+            return ResponseEntity.ok(feedbacks);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/all/by-rating")
+    public ResponseEntity<?> getAllFeedbacksByRating(
+            @RequestParam Integer rating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            var pageable = PageRequest.of(page, size);
+            Page<FeedbackDTO> feedbacks = feedbackService.getAllFeedbacksByRating(rating, pageable);
+            return ResponseEntity.ok(feedbacks);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
         }
