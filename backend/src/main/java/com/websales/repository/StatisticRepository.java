@@ -44,7 +44,7 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
             JOIN order_details od2 ON o2.order_id = od2.order_id
             JOIN product_versions pv2 ON od2.product_version_id = pv2.product_version_id
             JOIN products p ON pv2.product_id = p.product_id
-            WHERE o2.is_paid = 1 AND o2.status = 'DELIVERED'
+            WHERE o2.status = 'DELIVERED'
               AND (:fromDate IS NULL OR :fromDate = '' OR DATE(o2.end_datetime) >= :fromDate)
               AND (:toDate IS NULL OR :toDate = '' OR DATE(o2.end_datetime) < :toDate)
             GROUP BY p.product_id, p.product_name
@@ -57,7 +57,7 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
             JOIN order_details od2 ON o2.order_id = od2.order_id
             JOIN product_versions pv2 ON od2.product_version_id = pv2.product_version_id
             JOIN products p ON pv2.product_id = p.product_id
-            WHERE o2.is_paid = 1 AND o2.status = 'DELIVERED'
+            WHERE o2.status = 'DELIVERED'
               AND (:fromDate IS NULL OR :fromDate = '' OR DATE(o2.end_datetime) >= :fromDate)
               AND (:toDate IS NULL OR :toDate = '' OR DATE(o2.end_datetime) < :toDate)
             GROUP BY p.product_id, p.product_name
@@ -67,8 +67,7 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
     FROM orders o
     JOIN order_details od ON o.order_id = od.order_id
     JOIN product_versions pv ON od.product_version_id = pv.product_version_id
-    WHERE o.is_paid = 1 
-      AND o.status IN ('DELIVERED')
+    WHERE o.status IN ('DELIVERED')
       AND (:fromDate IS NULL OR :fromDate = '' OR DATE(o.end_datetime) >= :fromDate)
       AND (:toDate IS NULL OR :toDate = '' OR DATE(o.end_datetime) < :toDate)
 """, nativeQuery = true)
@@ -90,7 +89,6 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
         WHERE o.end_datetime >= :start
         AND o.end_datetime < :end
         AND o.status IN ('DELIVERED')
-        AND o.is_paid = true
         ) t
         GROUP BY order_day
         ORDER BY order_day                            
@@ -107,7 +105,7 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
         JOIN product_versions pv ON od.product_version_id = pv.product_version_id
         JOIN products p ON pv.product_id = p.product_id
         WHERE DATE(o.end_datetime) BETWEEN :start AND :end
-          AND o.status IN ('DELIVERED') AND o.is_paid = true
+          AND o.status IN ('DELIVERED') 
         GROUP BY p.product_name, pv.color_id, pv.ram_id, pv.rom_id
         ORDER BY SUM(od.quantity) DESC LIMIT 5
         """, nativeQuery = true)
@@ -152,7 +150,6 @@ LEFT JOIN payment_methods pm ON pt.payment_method_id = pm.payment_method_id
 WHERE o.end_datetime >= :start
   AND o.end_datetime < :end
   AND o.status IN ('DELIVERED')
-  AND o.is_paid = true
   AND (:search IS NULL OR :search = '' OR CAST(o.order_id AS CHAR) LIKE CONCAT('%', :search, '%'))
 ORDER BY o.end_datetime DESC
 """,
@@ -167,7 +164,6 @@ LEFT JOIN payment_methods pm ON pt.payment_method_id = pm.payment_method_id
 WHERE o.end_datetime >= :start
   AND o.end_datetime < :end
   AND o.status IN ('DELIVERED')
-  AND o.is_paid = true
   AND (:search IS NULL OR :search = '' OR CAST(o.order_id AS CHAR) LIKE CONCAT('%', :search, '%'))
 """,
              nativeQuery = true)

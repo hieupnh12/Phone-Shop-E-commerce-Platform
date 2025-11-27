@@ -5,10 +5,10 @@ import cartService from "../../services/cartService";
 
 // Format tiền VND
 const vnd = (n) =>
-  new Intl.NumberFormat("vi-VN", { 
-    style: "currency", 
-    currency: "VND", 
-    maximumFractionDigits: 0 
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
   }).format(Number.isFinite(n) ? n : 0);
 
 export default function ShoppingCart() {
@@ -56,25 +56,25 @@ export default function ShoppingCart() {
   const updateQuantity = async (productVersionId, delta) => {
     const item = items.find(x => x.productVersionId === productVersionId);
     if (!item) return;
-    
+
     const newQuantity = (item.quantity || 1) + delta;
     if (newQuantity < 1) return;
-    
+
     try {
       setUpdatingProductVersionId(productVersionId);
-      setItems(prev => prev.map(x => 
+      setItems(prev => prev.map(x =>
         x.productVersionId === productVersionId ? { ...x, quantity: newQuantity } : x
       ));
-      
+
       const res = await cartService.updateQuantity(productVersionId, newQuantity);
       if (!res?.success) {
-        setItems(prev => prev.map(x => 
+        setItems(prev => prev.map(x =>
           x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
         ));
         setErr(res?.message || "Không cập nhật được số lượng");
       }
     } catch (e) {
-      setItems(prev => prev.map(x => 
+      setItems(prev => prev.map(x =>
         x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
       ));
       setErr(e.message || "Lỗi mạng");
@@ -115,7 +115,7 @@ export default function ShoppingCart() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <button 
+          <button
             onClick={() => window.history.back()}
             className="p-2.5 hover:bg-white rounded-xl transition-all duration-200 hover:shadow-sm group"
           >
@@ -158,26 +158,24 @@ export default function ShoppingCart() {
                         Miễn phí vận chuyển
                       </p>
                       <p className="text-sm text-slate-700 mt-0.5">
-                        {freeShipProgress >= 100 
-                          ? '🎉 Bạn được freeship!' 
+                        {freeShipProgress >= 100
+                          ? '🎉 Bạn được freeship!'
                           : `Mua thêm ${vnd(10000000 - subtotal)} để được freeship`
                         }
                       </p>
                     </div>
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    freeShipProgress >= 100 
-                      ? 'bg-green-100 text-green-700' 
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${freeShipProgress >= 100
+                      ? 'bg-green-100 text-green-700'
                       : 'bg-slate-100 text-slate-600'
-                  }`}>
+                    }`}>
                     {freeShipProgress >= 100 ? '✓ Đạt' : `${Math.round(freeShipProgress)}%`}
                   </span>
                 </div>
                 <div className="bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      freeShipProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'
-                    }`}
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${freeShipProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'
+                      }`}
                     style={{ width: `${freeShipProgress}%` }}
                   />
                 </div>
@@ -202,25 +200,28 @@ export default function ShoppingCart() {
                   <p className="text-slate-600 mb-6">
                     Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
                   </p>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors">
+                  <button
+                    onClick={() => navigate('/products')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+                  >
                     Khám phá sản phẩm
                   </button>
+
                 </div>
               ) : (
                 items.map((item) => (
                   <div
                     key={item.productVersionId}
-                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${
-                      removingProductVersionId === item.productVersionId ? 'opacity-50' : ''
-                    }`}
+                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${removingProductVersionId === item.productVersionId ? 'opacity-50' : ''
+                      }`}
                   >
                     <div className="flex gap-4">
                       {/* Image */}
                       <div className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-xl flex-shrink-0 bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 overflow-hidden">
                         {item.image ? (
-                          <img 
-                            src={item.image} 
-                            alt={item.productName} 
+                          <img
+                            src={item.image}
+                            alt={item.productName}
                             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
@@ -240,7 +241,7 @@ export default function ShoppingCart() {
                             Chính hãng
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center justify-between mt-4">
                           <div>
                             <div className="text-xl lg:text-2xl font-bold text-blue-600">
@@ -252,7 +253,7 @@ export default function ShoppingCart() {
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             {/* Quantity Controls */}
                             <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
@@ -330,7 +331,7 @@ export default function ShoppingCart() {
                 <span className="text-2xl font-bold text-blue-600">{vnd(total)}</span>
               </div>
 
-              <button 
+              <button
                 onClick={() => navigate('/payment')}
                 disabled={items.length === 0 || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"

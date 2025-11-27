@@ -15,8 +15,7 @@ public interface SummaryCardRepository extends JpaRepository<Order, Integer> {
     @Query(value = """
             SELECT COALESCE(SUM(o.total_amount), 0)
                       FROM orders o
-                      WHERE o.is_paid = 1
-                        AND o.status = 'DELIVERED'
+                      WHERE o.status = 'DELIVERED'
                         AND (:fromDate IS NULL OR :fromDate = '' OR o.end_datetime >= :fromDate)
                         AND (:toDate   IS NULL OR :toDate   = '' OR o.end_datetime <  :toDate);
         """, nativeQuery = true)
@@ -63,8 +62,7 @@ public interface SummaryCardRepository extends JpaRepository<Order, Integer> {
         JOIN order_details od ON o.order_id = od.order_id
         JOIN product_versions pv ON od.product_version_id = pv.product_version_id
         JOIN products p ON pv.product_id = p.product_id
-        WHERE o.is_paid = 1 
-          AND o.status = 'DELIVERED'
+        WHERE o.status = 'DELIVERED'
           AND (:fromDate IS NULL OR :fromDate = '' OR o.end_datetime >= :fromDate)
           AND (:toDate   IS NULL OR :toDate   = '' OR o.end_datetime <  :toDate)
         GROUP BY p.product_id, p.product_name
@@ -82,8 +80,7 @@ public interface SummaryCardRepository extends JpaRepository<Order, Integer> {
         SELECT COUNT(DISTINCT o.order_id)
         FROM orders o
         WHERE (:fromDate IS NULL OR DATE(o.end_datetime) >= :fromDate)
-          AND (:toDate   IS NULL OR DATE(o.end_datetime) <  :toDate)
-          AND o.is_paid = 1 
+          AND (:toDate   IS NULL OR DATE(o.end_datetime) <  :toDate) 
           AND o.status IN ('DELIVERED')
     ), 0)
     """, nativeQuery = true)
@@ -102,15 +99,7 @@ public interface SummaryCardRepository extends JpaRepository<Order, Integer> {
                 JOIN product_versions pv ON od.product_version_id = pv.product_version_id
                 WHERE (:fromDate IS NULL OR :fromDate = '' OR DATE(o.end_datetime) >= :fromDate)
                     AND (:toDate   IS NULL OR :toDate   = '' OR DATE(o.end_datetime) < :toDate)
-                    AND o.is_paid = 1
                     AND o.status IN ('DELIVERED')
-                    AND EXISTS (
-                        SELECT 1
-                        FROM order_details od2
-                        JOIN product_items pi ON od2.order_detail_id = pi.order_detail_id
-                        WHERE od2.order_id = o.order_id
-                          AND pi.status IN ('SOLD')
-                    )
         ), 0)
         """, nativeQuery = true)
     Long getProfit(
