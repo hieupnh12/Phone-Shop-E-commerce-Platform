@@ -114,7 +114,7 @@ const router = createBrowserRouter([
         path: "profile",
         element: <ProfilePageLayout />,
         children: [
-          { index: true, element: <Navigate to="info" replace /> }, // Automatically redirect
+          { index: true, element: <Navigate to="info" replace /> }, 
           { path: "info", element: <PersonalInfoForm /> },
           { path: "order", element: <OrderHistoryPage /> },
           { path: "order/order-detail/:orderId", element: <OrderDetailPage /> },
@@ -156,9 +156,9 @@ const router = createBrowserRouter([
               { path: "setting", element: <Settings /> },
             ],
           },
-          { path: "roles", element: <Role /> },
+          { path: "roles", element: <RoleManagementPage /> },
           { path: "customers", element: <Customers /> },
-          { path: "employee", element: <Employee /> },
+          { path: "employee", element: <EmployeeManagementPage /> },
         ],
       },
     ],
