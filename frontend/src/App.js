@@ -48,6 +48,9 @@ import AdminLogin from "./pages/auth/AdminLogin";
 import AddProduct from "./pages/admin/Products/AddProduct";
 import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
+import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
+import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
+import SetPasswordPage from "./pages/auth/SetPasswordPage";
 import Orders from "./pages/admin/Order";
 import UserHomePage from "./pages/client/UserHomePage";
 import Customers from "./pages/admin/Customer";
@@ -131,23 +134,23 @@ const router = createBrowserRouter(
               element: <OrderDetailPage />,
             },
 
-            // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
-            //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
-          ],
-        },
+              // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
+              //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
       ],
-    },
-    {
-      path: "/login",
-      element: <Login />,
-    },
-    {
-      path: "/admin-login",
-      element: <AdminLogin />,
-    },
+      },
+
+      {
+          path: "/set-password",
+          element: <SetPasswordPage />,
+      },
+          {
+              path: "/login",
+              element: <Login />,
+          },
+
     {
       path: "/admin",
-      element: <AdminRoute allowedRoles={["ROLE_SALE", "ROLE_ADMIN"]} />,
+        element: <AdminRoute allowedRoles={["ROLE_ADMIN", "ROLE_SALE", "ROLE_SALE_LEAD"]} />,
       children: [
         {
           element: <AdminLayout />,
@@ -176,7 +179,7 @@ const router = createBrowserRouter(
               ],
             },
             {
-              path: "role",
+              path: "roles",
               element: <Role />,
             },
             {

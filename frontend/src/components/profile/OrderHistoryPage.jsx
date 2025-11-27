@@ -33,11 +33,8 @@ const OrderHistoryPage = () => {
         const fetchOrders = async () => {
             try {
                 setLoading(true);
-                // Gọi API lấy danh sách đơn hàng theo CustomerID
                 const data = await profileService.getOrdersByCustomer(customerId);
 
-                // 💡 Xử lý/Chuẩn hóa dữ liệu từ API:
-                // Nhóm các OrderDetail lại với nhau theo OrderId
                 const groupedOrders = groupAndNormalizeOrders(data);
 
                 setOrders(groupedOrders);
@@ -57,12 +54,12 @@ const OrderHistoryPage = () => {
         const orderMap = {};
 
         apiData.forEach(item => {
-            const { orderId, createDatetime, totalAmount, status, orderDetail } = item;
+            const { orderId, createDatetime, totalAmount, status, endDateTime, orderDetail } = item;
 
             const product = {
                 image: orderDetail.picture,
                 name: orderDetail.productName,
-                price: orderDetail.unitPriceBefore,
+                price: orderDetail.unitPriceAfter,
                 quantity: orderDetail.remainingProducts,
             };
 
@@ -73,6 +70,8 @@ const OrderHistoryPage = () => {
                     date: new Date(createDatetime).toLocaleDateString('vi-VN'),
                     status: status.toLowerCase(),
                     totalAmount: totalAmount,
+                    createDatetime: createDatetime,
+                    endDateTime: endDateTime,
                     products: [product],
                 };
             } else {
@@ -199,8 +198,13 @@ const OrderHistoryPage = () => {
                                         <p className="text-red-500 font-bold text-lg">{formatCurrency(order.totalAmount)}</p>
 
                                         <Link
-
-                                            to={`/profile/order/order-detail/${order.id.replace('#', '')}`}
+                                            to={`/profile/order/order-detail/${order.orderId}`}
+                                            state={{ 
+                                                totalAmount: order.totalAmount,
+                                                createDatetime: order.createDatetime,
+                                                endDateTime: order.endDateTime,
+                                                status: order.status
+                                            }}
                                             className="text-blue-600 hover:text-blue-800 text-sm flex items-center mt-1"
                                         >
                                             Xem chi tiết
