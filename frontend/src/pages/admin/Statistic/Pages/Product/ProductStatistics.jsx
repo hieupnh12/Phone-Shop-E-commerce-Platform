@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { Package, TrendingUp, DollarSign, Calendar } from "lucide-react";
 import statisticApi from "../../../../../services/statisticService";
+import Loading from "../../../../../components/common/Loading";
 
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"];
 
@@ -33,9 +34,9 @@ const { data: apiData, isLoading } = useQuery({
     const res = await statisticApi.getProducts(params);
     return res.result;
   },
+  staleTime: 0,
   keepPreviousData: true, // <- phải đặt ở đây
 });
-console.log("cossss", apiData);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
@@ -43,7 +44,7 @@ console.log("cossss", apiData);
   };
 
   if (isLoading || !apiData) {
-    return <div className="p-4">Loading...</div>;
+    return <Loading/>;
   }
 
   const { topProduct, totalQuantity, inventoryProduct, topProducts, byBrand } =

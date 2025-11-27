@@ -43,51 +43,79 @@ public class StatisticService {
     }
 
     public RevenueStatisticResponse getRevenueStatistics(RevenueStatisticRequest req) {
-        // 1. Summary + Best Seller
+
+        // 1. Summary
         Map<String, Object> summaryMap = statisticRepository.getSummary(
-                req.startDate().toString(),
-                req.endDate().toString()
+                req.startDate(),
+                req.endDate()
         );
 
-        // 2. Chart Data
-        List<Object[]> chartRows = statisticRepository.getChartData(req.startDate(), req.endDate());
+        // 2. Chart Data (có rangeType)
+        List<Object[]> chartRows = statisticRepository.getChartData(
+                req.startDate(),
+                req.endDate()
+        );
+
         List<RevenueStatisticResponse.ChartData> chartData = chartRows.stream()
-                .map(row -> new RevenueStatisticResponse.ChartData((String) row[0], (BigDecimal) row[1], ((Long) row[2])))
+                .map(row -> new RevenueStatisticResponse.ChartData(
+                        (String) row[0],             // date key (day, month...)
+                        (BigDecimal) row[1],         // revenue
+                        ((Long) row[2]) // orders (some DB return BigInteger)
+                ))
                 .toList();
 
-        // 4. Payment Methods Stats
-        List<Object[]> payRows = statisticRepository.getPaymentMethodStats(req.startDate(), req.endDate(), req.paymentMethodId());
+        // 3. Payment Method Statistics
+        List<Object[]> payRows = statisticRepository.getPaymentMethodStats(
+                req.startDate(),
+                req.endDate(),
+                req.paymentMethodId()
+        );
+
         BigDecimal totalRevenue = (BigDecimal) summaryMap.get("totalRevenue");
+
         List<RevenueStatisticResponse.PaymentMethodDto> paymentMethods = payRows.stream()
                 .map(row -> {
-                    BigDecimal rev = (BigDecimal) row[1];
+                    BigDecimal revenue = (BigDecimal) row[1];
                     double percent = totalRevenue.compareTo(BigDecimal.ZERO) == 0 ? 0.0 :
-                            rev.divide(totalRevenue, 4, RoundingMode.HALF_UP)
-                                    .multiply(BigDecimal.valueOf(100)).doubleValue();
-                    return new RevenueStatisticResponse.PaymentMethodDto((String) row[0], rev, percent);
-                })
-                .toList();
+                            revenue.divide(totalRevenue, 4, RoundingMode.HALF_UP)
+                                    .multiply(BigDecimal.valueOf(100))
+                                    .doubleValue();
 
-        // 5. Orders Page (phân trang + tìm kiếm + sort)
-        Sort sort = Sort.by(req.sort().contains(",desc") ?
-                        Sort.Direction.DESC : Sort.Direction.ASC,
-                req.sort().split(",")[0]);
+                    return new RevenueStatisticResponse.PaymentMethodDto(
+                            (String) row[0],   // payment method name
+                            revenue,
+                            percent
+                    );
+                }).toList();
+
+        // 4. Orders Pagination + Search + Sort
+        Sort sort = Sort.by(
+                req.sort().contains(",desc") ? Sort.Direction.DESC : Sort.Direction.ASC,
+                req.sort().split(",")[0]
+        );
+
         Pageable pageable = PageRequest.of(req.page(), req.size(), sort);
 
         Page<Object[]> orderPage = statisticRepository.getOrderDetailsPage(
-                req.startDate(), req.endDate(), req.search(), pageable);
+                req.startDate(),
+                req.endDate(),
+                req.search(),
+                req.rangeType(),
+                pageable
+        );
 
-        Page<RevenueStatisticResponse.OrderDetailDto> orders = orderPage.map(row -> new RevenueStatisticResponse.OrderDetailDto(
-                String.valueOf(row[0]),           // order_id
-                (String) row[1],                  // date formatted
-                (String) row[2],                  // product name + config
-                (Integer) row[3],                 // quantity
-                (BigDecimal) row[4],              // unit_price_after
-                (BigDecimal) row[5],              // revenue
-                (BigDecimal) row[6],              // profit
-                (String) row[7],                  // status
-                (String) row[8]                   // payment_method_type
-        ));
+        Page<RevenueStatisticResponse.OrderDetailDto> orders =
+                orderPage.map(row -> new RevenueStatisticResponse.OrderDetailDto(
+                        String.valueOf(row[0]),
+                        (String) row[1],
+                        (String) row[2],
+                        (Integer) row[3],
+                        (BigDecimal) row[4],
+                        (BigDecimal) row[5],
+                        (BigDecimal) row[6],
+                        (String) row[7],
+                        (String) row[8]
+                ));
 
         return new RevenueStatisticResponse(chartData, paymentMethods, orders);
     }
@@ -99,19 +127,37 @@ public class StatisticService {
     }
 
     public SummaryDashboardResponse getSummaryCardDashboard() {
-        LocalDateTime prevFrom = LocalDate.now().minusDays(1).atStartOfDay();
-        LocalDateTime prevTo = LocalDate.now().minusDays(1).atTime(LocalTime.MAX);
-        Map<String, Object> result = summaryCardRepository.getTopProductAsArray(LocalDate.now().with(DayOfWeek.MONDAY).toString(), LocalDate.now().toString());
-        String topProduct = (String) result.get("bestSellerName");;
+        LocalDate today = LocalDate.now();
+        LocalDate startOfThisWeek = today.with(DayOfWeek.MONDAY);
+        LocalDate startOfNextWeek = startOfThisWeek.plusDays(7);
 
+        String fromDateThisWeek = startOfThisWeek.toString();
+        String toDateThisWeek   = startOfNextWeek.toString();
 
-        Long revenue = summaryCardRepository.getRevenue(LocalDate.now().atStartOfDay().toString(), LocalDate.now().atTime(LocalTime.MAX).toString());
-        Long orderCount = summaryCardRepository.getOrderCount(LocalDate.now().with(DayOfWeek.MONDAY).toString(), LocalDate.now().toString());
-        Long profit = summaryCardRepository.getProfit(LocalDate.now().with(DayOfWeek.MONDAY).toString(), LocalDate.now().toString());
+        String revenueFrom = startOfThisWeek.atStartOfDay().toString();
+        String revenueTo   = startOfNextWeek.atStartOfDay().toString();
 
-        Long revenuePrev = summaryCardRepository.getRevenue(prevFrom.toString(), prevTo.toString());
-        Long profitPrev = summaryCardRepository.getProfit(LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1).toString(), LocalDate.now().with(DayOfWeek.SUNDAY).atTime(LocalTime.MAX).minusWeeks(1).toString());
-        Long ordersPrev = summaryCardRepository.getOrderCount(LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1).toString(), LocalDate.now().with(DayOfWeek.SUNDAY).atTime(LocalTime.MAX).minusWeeks(1).toString());
+        LocalDate startOfLastWeek = startOfThisWeek.minusWeeks(1);
+        LocalDate startOfNextLastWeek = startOfLastWeek.plusDays(7);
+        String fromDateLastWeek = startOfLastWeek.toString();
+        String toDateLastWeek   = startOfNextLastWeek.toString();
+        String revenueFromLastWeek = startOfLastWeek.atStartOfDay().toString();
+        String revenueToLastWeek   = startOfNextLastWeek.atStartOfDay().toString();
+
+        // Top product - nếu getTopProductAsArray expects date-only, use date strings:
+        Map<String, Object> result = summaryCardRepository.getTopProductAsArray(fromDateThisWeek, toDateThisWeek);
+        String topProduct = (String) result.get("bestSellerName");
+
+        // Revenue (use datetime-range if repo expects datetimes)
+        Long revenue = summaryCardRepository.getRevenue(revenueFrom, revenueTo);
+        Long revenuePrev = summaryCardRepository.getRevenue(revenueFromLastWeek, revenueToLastWeek);
+
+        // Orders and profit (use date-only range if SQL uses DATE(...) comparators)
+        Long orderCount = summaryCardRepository.getOrderCount(fromDateThisWeek, toDateThisWeek);
+        Long ordersPrev = summaryCardRepository.getOrderCount(fromDateLastWeek, toDateLastWeek);
+
+        Long profit = summaryCardRepository.getProfit(revenueFrom, revenueTo);
+        Long profitPrev = summaryCardRepository.getProfit(revenueFromLastWeek, revenueToLastWeek);
 
         return new SummaryDashboardResponse(
                 new SummaryDashboardResponse.ValueSummary(revenue.toString(), calcPercent(revenue, revenuePrev)),
@@ -175,11 +221,11 @@ public class StatisticService {
             String toDate,
             String rangeType,
             String orderStatus,
-            String searchEmail,
+            String search,
             String searchStaff
     ) {
         if (rangeType == null || rangeType.isEmpty()) {
-            rangeType = "week";
+            rangeType = "day";
         }
         if (orderStatus == null || orderStatus.isEmpty()) {
             orderStatus = "all";
@@ -190,7 +236,7 @@ public class StatisticService {
                 toDate,
                 rangeType,
                 orderStatus,
-                searchEmail,
+                search,
                 searchStaff
         );
 

@@ -46,10 +46,8 @@ public class StatisticController {
 
     @GetMapping("/revenue")
     public ApiResponse<RevenueStatisticResponse> getRevenueStatistic(
-            @RequestParam String startDate,                    // yyyy-MM-dd
-            @RequestParam String endDate,
-            @RequestParam(defaultValue = "all") String categoryId,
-            @RequestParam(defaultValue = "all") String orderStatus,
+            @RequestParam(required = false) String startDate,                    // yyyy-MM-dd
+            @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "all") String paymentMethodId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -57,10 +55,8 @@ public class StatisticController {
             @RequestParam(defaultValue = "create_datetime,desc") String sort
     ) {
         RevenueStatisticRequest request = RevenueStatisticRequest.builder()
-                .startDate(LocalDate.parse(startDate))
-                .endDate(LocalDate.parse(endDate))
-                .categoryId("all".equals(categoryId) ? null : Long.valueOf(categoryId))
-                .orderStatus("all".equals(orderStatus) ? null : orderStatus)
+                .startDate((startDate))
+                .endDate((endDate))
                 .paymentMethodId("all".equals(paymentMethodId) ? null : Long.valueOf(paymentMethodId))
                 .page(page)
                 .size(size)
@@ -102,7 +98,7 @@ public class StatisticController {
             @RequestParam(name = "endDate", required = false)   String toDate,
             @RequestParam(name = "rangeType", required = false) String rangeType,
             @RequestParam(name = "orderStatus", required = false, defaultValue = "all") String orderStatus,
-            @RequestParam(name = "searchEmail", required = false) String searchEmail,
+            @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "searchStaff", required = false) String searchStaff
     ) {
 
@@ -112,7 +108,7 @@ public class StatisticController {
                 toDate,
                 rangeType,
                 orderStatus,
-                searchEmail,
+                search,
                 searchStaff
         );
         ApiResponse<List<StatisticOrderResponse>> response = new ApiResponse<>();

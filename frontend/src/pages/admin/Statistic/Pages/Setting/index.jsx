@@ -8,6 +8,9 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import statisticApi from "../../../../../services/statisticService";
+import Loading from "../../../../../components/common/Loading";
+import Toast from "../../../../../components/common/Toast";
+import Modal from "../../../../../components/common/Modal";
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -19,8 +22,8 @@ export default function Settings() {
 
   const [contentType, setContentType] = useState("full");
   const [fileFormat, setFileFormat] = useState("excel");
-  console.log(enabled);
-
+  const [toast, setToast] = useState(null);
+  const [open, setOpen] = useState(false);
   // ---- GET SETTING ----
   const {
     data: dataCard,
@@ -48,10 +51,16 @@ export default function Settings() {
   const { mutate: sendNow, isLoading: sending } = useMutation({
     mutationFn: async () => await statisticApi.sendMailNow(),
     onSuccess: () => {
-      alert.success("Đã gửi báo cáo ngay lập tức!");
+      setToast({
+        message: "Đã gửi báo cáo ngay lập tức!",
+        type: "success",
+      });
     },
     onError: () => {
-      alert.error("Gửi thất bại!");
+      setToast({
+        message: "Gửi thất bại!",
+        type: "error",
+      });
     },
   });
 
@@ -59,11 +68,17 @@ export default function Settings() {
   const { mutate: updateSetting, isLoading: sending2 } = useMutation({
     mutationFn: async (payload) => await statisticApi.postSetting(payload),
     onSuccess: () => {
-      alert.success("Cập nhật thành công!");
+      setToast({
+        message: "Cập nhật thành công!",
+        type: "success",
+      });
       queryClient.invalidateQueries(["setting", 7]); // <-- FIX
     },
     onError: () => {
-      alert.error("Cập nhật thất bại!");
+      setToast({
+        message: "Cập nhật thất bại!",
+        type: "error",
+      });
     },
   });
 
@@ -82,9 +97,44 @@ export default function Settings() {
 
     updateSetting(payload);
   };
+  if (isLoadingCard) {
+    return <Loading type="spinner" />;
+  }
+  if (errorCard) {
+    return <Loading message={errorCard} type="spinner" />;
+  }
 
   return (
     <div className="flex items-center justify-center">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      <Modal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title="Cập nhật"
+        footer={
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 text-white bg-green-600 rounded-lg"
+          >
+            Lưu
+          </button>
+        }
+      >
+        <div className="space-y-3">
+          <input
+            className="border p-2 rounded w-full"
+            placeholder="Tên sản phẩm"
+          />
+          <input className="border p-2 rounded w-full" placeholder="Giá" />
+        </div>
+      </Modal>
+
       <div className="w-full max-w-7xl">
         {/* Header */}
         <div className="mb-8 text-center md:text-left bg-white/80 rounded-2xl shadow-lg p-4">
