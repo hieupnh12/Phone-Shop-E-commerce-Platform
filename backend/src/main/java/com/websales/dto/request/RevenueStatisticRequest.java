@@ -6,15 +6,13 @@ import java.time.LocalDate;
 
 @Builder
 public record RevenueStatisticRequest(
-        LocalDate startDate,
-        LocalDate endDate,
-        Long categoryId,
-        String orderStatus,
+        String startDate,
+        String endDate,
+        String rangeType,               // day, month, week, year
         Long paymentMethodId,
         int page,
         int size,
-        String search,
+        String search,                  // search all: email, phone, product, orderId
         String sort
 ) {
-
 }

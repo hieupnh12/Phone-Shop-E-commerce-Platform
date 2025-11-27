@@ -28,6 +28,7 @@ import statisticApi from "../../../../../services/statisticService";
 import { useAuth } from "../../../../../reducers";
 import CardOrder from "./CardOrder";
 import formatDate from "../../../../../contexts/formatDate";
+import useDebounce from "../../../../../contexts/useDebounce";
 
 export default function OrderStatistic() {
   const [chartType, setChartType] = useState("line");
@@ -49,8 +50,8 @@ export default function OrderStatistic() {
         start = new Date(now);
         start.setHours(0, 0, 0, 0);
         end = new Date(now);
-end.setDate(end.getDate() + 2);
-end.setHours(0, 0, 0, 0);
+        end.setDate(end.getDate() + 2);
+        end.setHours(0, 0, 0, 0);
         break;
 
       case "week":
@@ -107,46 +108,42 @@ end.setHours(0, 0, 0, 0);
       return res?.result || [];
     },
     enabled: !!isAuth,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
     refetchOnWindowFocus: true,
     refetchInterval: 0,
   });
 
-  const { data: timelineData } = useQuery({
+  const debouncedEmail = useDebounce(searchEmail, 500);
+  const debouncedStaff = useDebounce(searchStaff, 500);
+
+  const { data: timelineData, isLoading: loadingV2 } = useQuery({
     queryKey: [
       "timelineData",
       startDate,
       endDate,
       dateFilter,
       orderStatus,
-      searchEmail,
-      searchStaff,
+      debouncedEmail,
+      debouncedStaff,
     ],
     queryFn: async () => {
       const params = {
-        startDate:
-          startDate && startDate.trim() !== "" ? startDate : "",
-        endDate: endDate && endDate.trim() !== "" ? endDate : "",
+        startDate: startDate?.trim() || "",
+        endDate: endDate?.trim() || "",
         rangeType: dateFilter,
-        orderStatus:
-          orderStatus && orderStatus.trim() !== "" ? orderStatus : "all",
-        searchEmail:
-          searchEmail && searchEmail.trim() !== "" ? searchEmail : undefined,
-        searchStaff:
-          searchStaff && searchStaff.trim() !== "" ? searchStaff : undefined,
+        orderStatus: orderStatus?.trim() || "all",
+        search: debouncedEmail?.trim() || undefined,
+        searchStaff: debouncedStaff?.trim() || undefined,
       };
-console.log("có",params);
 
-      // 2. Gọi API
-      const res = await statisticApi.getOrder(params);      
+      const res = await statisticApi.getOrder(params);
       return res?.result;
     },
-    enabled: !!isAuth,
+    enabled: !!isAuth, // chỉ chạy khi user auth
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchInterval: 0,
   });
-
   const [totalOrder, setTotalOrder] = useState(0);
 
   useEffect(() => {
@@ -178,8 +175,6 @@ console.log("có",params);
     }
   }, [timelineData, dateFilter]);
 
-  console.log("chatDataa", chartData);
-  
   const quickFilters = [
     { label: "Hôm nay", value: "day" },
     { label: "Tháng này", value: "week" },
@@ -269,7 +264,10 @@ console.log("có",params);
                   <input
                     type="date"
                     value={endDate}
-                    onChange={(e) => {setEndDate(e.target.value); setDateFilter("")}}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setDateFilter("");
+                    }}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
                   />
                 </div>

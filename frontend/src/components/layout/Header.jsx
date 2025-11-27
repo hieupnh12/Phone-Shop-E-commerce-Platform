@@ -42,7 +42,17 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     return () => window.removeEventListener("cartUpdated", onCartUpdated);
   }, []);
 
-  const navItems = ["Home", "Products", "Solutions", "Pricing", "Contact"];
+  const navItems = [
+    {
+      id: 1,
+      name: "Home",
+      link: "/",
+    },
+    { id: 2, name: "Products", link: "/user/products" },
+    { id: 3, name: "Solutions", link: "/user/solutions" },
+    { id: 4, name: "Pricing", link: "/user/pricing" },
+    { id: 5, name: "Contact", link: "/user/contact" },
+  ];
 
   return (
     <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-sm bg-transparent">
@@ -63,14 +73,17 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             </button>
 
             <div
-              className="flex items-center gap-2 group cursor-pointer"
+              className="flex items-center gap-1 group cursor-pointer"
               onClick={() => navigate("/")}
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white rounded-md" />
-              </div>
+              <img
+                src="/image/flogo.png"
+                alt="FShop Logo"
+                className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+              />
+
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                FShop
+                Shop
               </span>
             </div>
           </div>
@@ -79,10 +92,11 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           <nav className="hidden md:flex items-center gap-1 lg:gap-2">
             {navItems.map((item) => (
               <a
-                key={item}
-                href="#" className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-white hover:text-blue-400 transition-all duration-300 group font-medium"
+                key={item.id}
+                href={item.link}
+                className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-white hover:text-blue-400 transition-all duration-300 group font-medium"
               >
-                {item}
+                {item.name}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-blue-600 group-hover:w-full transition-all duration-300" />
               </a>
             ))}
@@ -105,8 +119,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             ) : (
               <div
                 className="relative"
-                onMouseEnter={() => setShowUserMenu(true)}
-                onMouseLeave={() => setShowUserMenu(false)}
               >
                 <button
                   onClick={() => setShowUserMenu((s) => !s)}
@@ -124,9 +136,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg text-sm text-gray-800 z-50">
                     <button
                       onClick={() => {
-                        /* placeholder: navigate to profile later */ setShowUserMenu(
-                          false
-                        );
+                        setShowUserMenu(false);
+                        navigate("/user/profile/info");
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
@@ -137,6 +148,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                         /* placeholder: navigate to transactions later */ setShowUserMenu(
                           false
                         );
+                        navigate("/user/profile/order");
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
@@ -159,7 +171,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             )}
 
             <button
-              onClick={() => navigate("/cart")}
+              onClick={() => navigate("/user/cart")}
               className="relative p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 hover:from-cyan-500/30 hover:to-blue-600/30 transition-all duration-300 hover:scale-105 group"
               aria-label="View cart"
             >

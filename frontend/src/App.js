@@ -34,11 +34,14 @@ import CartLayout from "./components/layout/CartLayout";
 import UpdateInfor from "./pages/auth/UpdateInfor";
 import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
-import ProfilePageLayout from './components/profile/ProfilePageLayout';
+import ProfilePageLayout from "./components/profile/ProfilePageLayout";
 import OrderDetailPage from "./components/profile/OrderDetailPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
 import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
+// Protected Route Component - check JWT token via getUserRole
+import OrderHistory from "./pages/client/OrderHistory";
+
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
 import AdminLogin from "./pages/auth/AdminLogin";
@@ -46,6 +49,10 @@ import AddProduct from "./pages/admin/Products/AddProduct";
 import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
 import Orders from "./pages/admin/Order";
+import UserHomePage from "./pages/client/UserHomePage";
+import Customers from "./pages/admin/Customer";
+import Employee from "./pages/admin/Employee";
+import Role from "./pages/admin/Role";
 
 // Protected Route Component (Tạm comment để test cart)
 // const ProtectedRoute = ({ children }) => {
@@ -55,91 +62,92 @@ import Orders from "./pages/admin/Order";
 // };
 
 const RouterInitializer = () => {
-    useUrlTokenHandler();
-    return <ClientHomePage />;
-}
+  useUrlTokenHandler();
+  return <ClientHomePage />;
+};
 
 const router = createBrowserRouter(
   [
     {
-        path: "/",
-        element: <RouterInitializer />,
+      path: "/",
+      element: <RouterInitializer />,
+      children: [{ index: true, element: <Home /> }],
+    },
+    {
+      path: "/user",
+      element: <UserHomePage />,
       children: [
         { index: true, element: <Home /> },
-
-      ],
-    },
-    {
-      path: "/products",
-      element: <Products />,
-      children: [
         {
-          index: true, element: <ProductsContainer />
+          path: "products",
+          element: <Products />,
+          children: [
+            {
+              index: true,
+              element: <ProductsContainer />,
+            },
+            {
+              path: ":id",
+              element: <ProductDetailPage />,
+            },
+          ],
         },
         {
-          path: ":id", element: <ProductDetailPage />
-        }
+          path: "cart",
+          element: <CartLayout />,
+          children: [{ index: true, element: <Cart /> }],
+        },
+        {
+          path: "payment",
+          element: <Payment />,
+        },
+        {
+          path: "payment/success",
+          element: <PaymentSuccess />,
+        },
+        {
+          path: "payment/cancel",
+          element: <PaymentCancel />,
+        },
+        {
+          path: "orders",
+          element: <OrderHistory />,
+        },
+        {
+          path: "update",
+          element: <UpdateInfor />,
+        },
+        {
+          path: "profile",
+          element: <ProfilePageLayout />,
+          children: [
+            { index: true, element: <Navigate to="info" replace /> }, // Tự động chuyển đến /profile/info
+
+            { path: "info", element: <PersonalInfoForm /> },
+
+            { path: "order", element: <OrderHistoryPage /> },
+            {
+              path: "order/order-detail/:orderId",
+              element: <OrderDetailPage />,
+            },
+
+            // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
+            //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
+          ],
+        },
       ],
     },
-        // {
-        //   path: "products/id",
-        //   element: <ProductDetails />,
-        // },
-    {
-      path: "/cart",
-      element: (
-          <CartLayout />
-      ),
-      children: [{ index: true, element: <Cart /> }],
-    },
-
     {
       path: "/login",
-      element: (
-          <Login />
-      ),
+      element: <Login />,
     },
     {
       path: "/admin-login",
       element: <AdminLogin />,
     },
     {
-      path: "/payment",
-      element: <Payment />,
-    },
-    {
-      path: "/payment/success",
-      element: <PaymentSuccess />,
-    },
-    {
-      path: "/payment/cancel",
-      element: <PaymentCancel />,
-    },
-    {
-      path: "/update",
-      element: <UpdateInfor />,
-    },
-      {
-          path: "/profile",
-          element: (
-                  <ProfilePageLayout />
-          ),
-          children: [
-              { index: true, element: <Navigate to="info" replace /> }, // Tự động chuyển đến /profile/info
-
-              { path: "info", element: <PersonalInfoForm /> },
-
-              { path: "order", element: <OrderHistoryPage /> },
-              { path: "order/order-detail/:orderId", element: <OrderDetailPage /> },
-
-              // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
-              //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
-      ],
-      },
-
-    {
       path: "/admin",
-        element: <AdminRoute allowedRoles={["ROLE_ADMIN", "ROLE_SALE"]} />,
+      element: <AdminRoute allowedRoles={["ROLE_SALE", "ROLE_ADMIN"]} />,
       children: [
         {
           element: <AdminLayout />,
@@ -167,6 +175,18 @@ const router = createBrowserRouter(
                 { path: "setting", element: <Settings /> },
               ],
             },
+            {
+              path: "role",
+              element: <Role />,
+            },
+            {
+              path: "customers",
+              element: <Customers />,
+            },
+            {
+              path: "employee",
+              element: <Employee />,
+            },
           ],
         },
       ],
@@ -181,15 +201,13 @@ const router = createBrowserRouter(
 );
 const queryClient = new QueryClient();
 
-
-
 function App() {
   return (
     <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <Chatbot />
-        </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Chatbot />
+      </QueryClientProvider>
     </AuthProvider>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2, Plus } from 'lucide-react';
 import { customerService } from '../../services/api';
 import cartService from '../../services/cartService';
-import Header2 from '../../components/layout/Header2';
+
 import AddressForm from '../../components/common/AddressForm';
 
 // Format tiền VND
@@ -275,10 +275,7 @@ export default function Payment() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header2 
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-        isSidebarOpen={isSidebarOpen} 
-      />
+
       <div className="pt-20 sm:pt-24 py-5 px-5">
         <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
         {/* Header */}
