@@ -136,9 +136,8 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                   <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg text-sm text-gray-800 z-50">
                     <button
                       onClick={() => {
-                        /* placeholder: navigate to profile later */ setShowUserMenu(
-                          false
-                        );
+                        setShowUserMenu(false);
+                        navigate("/user/profile/info");
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
@@ -149,6 +148,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                         /* placeholder: navigate to transactions later */ setShowUserMenu(
                           false
                         );
+                        navigate("/user/profile/order");
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
@@ -171,7 +171,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             )}
 
             <button
-              onClick={() => navigate("/cart")}
+              onClick={() => navigate("/user/cart")}
               className="relative p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 hover:from-cyan-500/30 hover:to-blue-600/30 transition-all duration-300 hover:scale-105 group"
               aria-label="View cart"
             >
