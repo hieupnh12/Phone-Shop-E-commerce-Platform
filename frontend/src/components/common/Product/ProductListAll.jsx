@@ -1,44 +1,126 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
-import productWorker, { fetchCountProduct } from '../../../services/productWorker'; // ← THÊM: Import productWorker (điều chỉnh đường dẫn nếu cần)
-import { useNavigate, Outlet } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { fetchProductAll, fetchSearchAll } from '../../../services/productWorker';
+import { useNavigate } from "react-router-dom";
 
 const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProducts thay fetch thủ công
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0); // ← THÊM: Để lưu totalPages từ API
-  const [totalCount, setTotalCount] = useState(0); // ← THÊM MỚI: State cho tổng số sản phẩm toàn bộ
+  const [totalCount, setTotalCount] = useState(0);
   const [favorites, setFavorites] = useState(new Set());
-  const [pageSize, setPagesize] = useState(0);
   const navigate = useNavigate();
+  const PAGE_SIZE = 8;
+
+  const normalizedFilters = useMemo(() => {
+    if (!props.filters) return {};
+    return Object.entries(props.filters).reduce((acc, [key, value]) => {
+      if (value === undefined || value === null) {
+        return acc;
+      }
+      if (typeof value === 'string' && value.trim() === '') {
+        return acc; 
+      }
+      acc[key] = value;
+      return acc;
+    }, {});
+  }, [props.filters]);
+
+  const filtersKey = useMemo(() => JSON.stringify(normalizedFilters), [normalizedFilters]);
 
   useEffect(() => {
-    fetchProducts(currentPage);
-  }, [currentPage]);
+    setCurrentPage(0);
+  }, [filtersKey]);
 
   // CẬP NHẬT (của tôi):
 const [error, setError] = useState(null);  // ← THÊM: State error
 
 
 
-const fetchProducts = async (page) => {
-  setLoading(true); 
-  setError(null);  // ← THÊM: Reset error
+const loadAllProducts = async () => {
+  setLoading(true);
+  setError(null);
   try {
-    const data = await productWorker.fetchAllProducts(page,8);
-    setProducts(data.products || []);
-    setTotalPages(data.totalPages || 1);
+    const data = await fetchProductAll(0, 1000);
+    const list = data.products || [];
+    setAllProducts(list);
+    setFilteredProducts(list);
+    const count = data.total || list.length;
+    setTotalCount(count);
+    props.onProductsCountChange?.(count);
   } catch (error) {
-    console.error('Lỗi fetch sản phẩm:', error);
-    setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');  // ← THÊM: Thông báo lỗi user-friendly
-    setProducts([]);  // ← THAY: Rỗng thay vì mock
-    setTotalPages(1);
-    setTotalCount(0); // ← THÊM: Reset totalCount khi lỗi
+    console.error('Lỗi tải danh sách sản phẩm:', error);
+    setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');
+    setAllProducts([]);
+    setFilteredProducts([]);
+    setTotalCount(0);
+    props.onProductsCountChange?.(0);
   } finally {
     setLoading(false);
   }
 };
+ 
+useEffect(() => {
+  loadAllProducts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+
+
+const hasFilters = useMemo(() => {
+  const nonPriceFilters = Object.entries(normalizedFilters).filter(([k]) => !['minPrice', 'maxPrice', 'priceRange'].includes(k));
+  return nonPriceFilters.length > 0 || (normalizedFilters.priceRange && normalizedFilters.priceRange !== 'all');
+}, [normalizedFilters]);
+
+
+useEffect(() => {
+  if (!allProducts.length) {
+    return;
+  }
+
+
+if (!hasFilters) {
+    setFilteredProducts(allProducts);
+    setTotalCount(allProducts.length);
+    props.onProductsCountChange?.(allProducts.length);
+    setError(null);
+    setLoading(false);
+    return;
+  }
+
+  const runSearch = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const searchData = await fetchSearchAll(normalizedFilters, 0, 200);
+      // 👇 FIX: Sử dụng searchData.products thay vì .versions (vì fetchSearchAll giờ return products enriched)
+      // Không cần matchedNames nữa, vì search đã filter và enrich sẵn
+      const matches = searchData.products || [];
+
+      setFilteredProducts(matches);
+      const count = matches.length;
+      setTotalCount(count);  // Hoặc searchData.total * searchData.size nếu cần total pages, nhưng với size=200 lớn, length ≈ total
+      props.onProductsCountChange?.(count);
+      if (!count) {
+        setError('Không tìm thấy sản phẩm phù hợp.');
+      } else {
+        setError(null);
+      }
+    } catch (error) {
+      console.error('Lỗi tìm kiếm sản phẩm:', error);
+      setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
+      setFilteredProducts([]);
+      setTotalCount(0);
+      props.onProductsCountChange?.(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  runSearch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [filtersKey, allProducts]);
 // useEffect(() => {
 //   // Fetch the total count asynchronously on mount (or when dependencies change, if any)
 //   const loadTotalCount = async () => {
@@ -86,8 +168,10 @@ const fetchProducts = async (page) => {
   
   // ← GIỮ: formatPrice
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN').format(price * 1000) + 'đ';
+    return new Intl.NumberFormat('vi-VN').format(price * 1) + 'đ';
   };
+
+
 
 
   //  const handleViewProductId = () =>{
@@ -107,6 +191,12 @@ const fetchProducts = async (page) => {
 
 
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const paginatedProducts = filteredProducts.slice(
+    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE + PAGE_SIZE
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center">
@@ -118,13 +208,19 @@ const fetchProducts = async (page) => {
     );
   }
 
-  if (error) {
+  if (error && !filteredProducts.length) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 text-lg mb-4">{error}</p>
           <button 
-            onClick={() => fetchProducts(currentPage)}
+            onClick={() => {
+              if (Object.keys(normalizedFilters).length > 0) {
+                setFilteredProducts([]);
+                setCurrentPage(0);
+              }
+              loadAllProducts();
+            }}
             className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
           >
             Thử lại
@@ -157,7 +253,7 @@ const fetchProducts = async (page) => {
         {/* Products Grid */}
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product) => {
+            {paginatedProducts.map((product) => {
               const version = product.versions?.[0];
               const isFavorite = favorites.has(product.id);
               const discount = product.discount || 0;
@@ -278,7 +374,7 @@ const fetchProducts = async (page) => {
             </button>
             
             <span className="px-6 py-3 bg-white rounded-full shadow-lg font-semibold text-gray-800 border border-gray-200">
-              Trang {currentPage + 1} / {totalPages}
+              Trang {Math.min(currentPage + 1, totalPages)} / {totalPages}
             </span>
             
             <button 

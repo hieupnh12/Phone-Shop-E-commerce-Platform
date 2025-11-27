@@ -55,6 +55,10 @@ const clearCache = (key) => {
 export const transformProductResponse = (backendProduct) => {
   if (!backendProduct) return null;
 
+
+// Fix name field: handle both 'nameProduct' and 'productName'
+  const name = backendProduct.nameProduct || backendProduct.productName || "";
+
   // Extract first version for default values (price, etc.)
   const firstVersion = backendProduct.productVersionResponses?.[0];
 
@@ -151,6 +155,10 @@ export const fetchSearchProductVersion = async (
   }
 };
 
+
+
+
+
 /**
  * Fetch all products with pagination and filtering
  * @param {number} page - Page number (0-indexed)
@@ -217,6 +225,9 @@ export const fetchAllProducts = async (page = 0, size = 0, filters = {}) => {
   }
 };
 
+export const fetchProductAll = async (page = 0, size = 0, filters = {}) =>
+  fetchAllProducts(page, size, filters);
+
 
 
 
@@ -256,36 +267,36 @@ export const fetchProductById = async (idProduct) => {
   }
 };
 
-/**
- * Search products
- * @param {Object} filters - Search filters
- * @param {string} filters.productName - Product name (partial match)
- * @param {string} filters.brandName - Brand name
- * @param {string} filters.originName - Origin name
- * @param {string} filters.operatingSystemName - OS name
- * @param {string} filters.warehouseAreaName - Warehouse area
- * @param {number} page - Page number
- * @param {number} size - Page size
- * @returns {Promise<Object>} Paginated products
- */
-export const searchProducts = async (filters, page = 0, size = 10) => {
-  try {
-    console.log("📡 Searching products:", filters);
-    const response = await axiosClient[GET]("/search", {
-      params: { ...filters, page, size },
-    });
-    const result = response.data?.result || response.data;
-    return {
-      products: (result.content || result || []).map(transformProductResponse),
-      total: result.totalElements || 0,
-      page: result.number || page,
-      size: result.size || size,
-    };
-  } catch (error) {
-    console.error("❌ Error searching products:", error);
-    throw error;
-  }
-};
+// /**
+//  * Search products
+//  * @param {Object} filters - Search filters
+//  * @param {string} filters.productName - Product name (partial match)
+//  * @param {string} filters.brandName - Brand name
+//  * @param {string} filters.originName - Origin name
+//  * @param {string} filters.operatingSystemName - OS name
+//  * @param {string} filters.warehouseAreaName - Warehouse area
+//  * @param {number} page - Page number
+//  * @param {number} size - Page size
+//  * @returns {Promise<Object>} Paginated products
+//  */
+// export const searchProducts = async (filters, page = 0, size = 10) => {
+//   try {
+//     console.log("📡 Searching products:", filters);
+//     const response = await axiosClient[GET]("/search", {
+//       params: { ...filters, page, size },
+//     });
+//     const result = response.data?.result || response.data;
+//     return {
+//       products: (result.content || result || []).map(transformProductResponse),
+//       total: result.totalElements || 0,
+//       page: result.number || page,
+//       size: result.size || size,
+//     };
+//   } catch (error) {
+//     console.error("❌ Error searching products:", error);
+//     throw error;
+//   }
+// };
 
 
 
@@ -303,7 +314,7 @@ export const searchProducts = async (filters, page = 0, size = 10) => {
 export const fetchProductStats = async () => {
   try {
     console.log("📡 Fetching product stats...");
-    const response = await axiosClient[GET]("/countProduct");
+    const response = await axiosClient[GET](`${API_BASE_URL}/countProduct`);
     const result = response.data?.result || response.data;
     console.log("✓ Stats fetched:", result);
     return result;
@@ -351,7 +362,6 @@ export const invalidateProductsCache = () => {
 
 
 
-
 /**
  * Search all product versions
  * @param {Object} filters - Search filters
@@ -383,22 +393,173 @@ export const invalidateProductsCache = () => {
  * @param {number} size - Page size
  * @returns {Promise<Object>} Paginated products with versions
  */
-export const fetchSearchAll = async (filters = {}, page = 0, size = 10) => {
+export const fetchSearchAll = async (filters = {}, page = 0, size = 0) => {
   try {
     console.log("📡 Searching all versions:", filters);
-    const response = await axiosClient[GET]("/searchVersionFULLVIP", {
+
+    const response = await axiosClient[GET](`productVersion/searchVersionFULLVIP`, {
       params: { ...filters, page, size },
     });
-    const result = response.data?.result || response.data;
+
+    // Enhanced logging for debugging
+    console.log("🔍 Full API response:", response);
+    console.log("🔍 Response status:", response?.status);
+    console.log("🔍 Response data:", response?.data);
+    console.log("🔍 Response content:", response?.content);
+
+    // Handle potential response structures (data, content, or result)
+    let result;
+    if (response?.data) {
+      result = response.data;
+    } else if (response?.content) {
+      result = response.content;
+    } else if (response?.result) {
+      result = response.result;
+    } else {
+      console.error("❌ Invalid API response structure:", response);
+      throw new Error("Invalid API response: No data, content, or result found");
+    }
+
+    console.log("✓ Search all versions API response received", result);
+    console.log("✓ Result keys:", Object.keys(result || {}));
+
+    const versionsList = result.content || result.versions || result || [];
+    console.log("🔍 Versions list:", versionsList);
+
+    if (!Array.isArray(versionsList)) {
+      console.warn("⚠️ Versions list is not an array, treating as empty:", versionsList);
+      versionsList = [];
+    }
+
+    if (versionsList.length === 0) {
+      // Return empty pagination based on result
+      const total = result.totalPages || result.totalPage || 0;
+      const currentPage = result.number || result.pageNumber || page;
+      const pageSize = result.size || result.pageSize || size;
+
+      return {
+        products: [],
+        versions: null,
+        total,
+        page: currentPage,
+        size: pageSize,
+      };
+    }
+
+    // Collect unique product IDs from versions
+    const uniqueProductIds = [...new Set(versionsList.map(v => v.idProduct).filter(Boolean))];
+    console.log("🔍 Unique product IDs:", uniqueProductIds);
+
+    if (uniqueProductIds.length === 0) {
+      console.warn("⚠️ No valid product IDs found in versions");
+      return {
+        products: [],
+        versions: null,
+        total: 0,
+        page,
+        size,
+      };
+    }
+
+    // Fetch full product details for each unique ID (combine with fetchProductById)
+    // Wrap in try-catch to handle individual fetch failures
+    const productsPromises = uniqueProductIds.map(async (idProduct) => {
+      try {
+        return await fetchProductById(idProduct);
+      } catch (fetchError) {
+        console.error(`❌ Failed to fetch product ${idProduct}:`, fetchError);
+        return null;
+      }
+    });
+    const fullProductsRaw = await Promise.all(productsPromises);
+    const fullProducts = fullProductsRaw.filter(Boolean);  // Remove failed fetches
+    console.log("✓ Full products fetched:", fullProducts.length, "out of", uniqueProductIds.length);
+
+    if (fullProducts.length === 0) {
+      console.warn("⚠️ No full products could be fetched");
+      return {
+        products: [],
+        versions: null,
+        total: 0,
+        page,
+        size,
+      };
+    }
+
+    // Group search versions by product ID
+    const groupedVersions = {};
+    versionsList.forEach(version => {
+      const id = version.idProduct;
+      if (id && !groupedVersions[id]) {
+        groupedVersions[id] = [];
+      }
+      if (id) {
+        groupedVersions[id].push(version);
+      }
+    });
+
+    // Enrich full products with filtered versions from search
+    const enrichedProducts = fullProducts
+      .map(product => {
+        const matchingVersions = groupedVersions[product.id] || [];
+        if (matchingVersions.length === 0) {
+          console.warn(`⚠️ No matching versions for product ${product.id}`);
+          return null;
+        }
+
+        const totalStock = matchingVersions.reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+        const firstVersion = matchingVersions[0];
+
+        // Transform versions to match expected structure
+        const transformedVersions = matchingVersions.map(v => ({
+          id: v.idVersion || v.idProductVersion || null,
+          ram: v.ramName,
+          rom: v.romName,
+          color: v.colorName,
+          picture: Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : "NotFound.jpg",
+          price: v.exportPrice || v.price || 0,
+          discount: v.discount || 0,
+          imei: Array.isArray(v.imei) && v.imei.length > 0 ? v.imei[0].imei : null,
+          stockQuantity: v.stockQuantity || 0,
+          status: v.status,
+        }));
+
+        return {
+          ...product,
+          // Override with aggregated/filtered data from search
+          versions: transformedVersions,
+          price: firstVersion ? (firstVersion.exportPrice || firstVersion.price || product.price) : product.price,
+          stockQuantity: totalStock,
+          inStock: totalStock > 0,
+        };
+      })
+      .filter(Boolean);  // Filter out nulls
+
+    // Pagination from search result (adjust fields based on structure)
+    const total = result.totalPages || result.totalPage || Math.ceil(versionsList.length / size) || 0;
+    const currentPage = result.number || result.pageNumber || page;
+    const pageSize = result.size || result.pageSize || size || versionsList.length;
+
+    // 👉 LOG TẤT CẢ TRƯỚC KHI RETURN
+    console.log("🟦 products:", enrichedProducts);
+    console.log("🟩 versions: null");
+    console.log("🟨 total:", total);
+    console.log("🟪 page:", currentPage);
+    console.log("🟫 size:", pageSize);
+
+    // Return kết quả
     return {
-      products: (result.content || result || []).map(transformProductResponse).filter(Boolean),
-      total: result.totalElements || 0,
-      page: result.number || page,
-      size: result.size || size,
+      products: enrichedProducts,
+      versions: null,  // Or remove this if not used
+      total,
+      page: currentPage,
+      size: pageSize,
     };
+
   } catch (error) {
     console.error("❌ Error fetching search results:", error);
-    throw error;
+    // Re-throw with more context
+    throw new Error(`Search failed: ${error.message}`);
   }
 };
 
@@ -414,9 +575,10 @@ export const fetchSearchAll = async (filters = {}, page = 0, size = 10) => {
 
 const productWorkerExport = {
   fetchAllProducts,
+  fetchProductAll,
   fetchProductById,
   fetchSearchProductVersion,
-  searchProducts,
+  // searchProducts,
   fetchCountProduct,
   fetchProductStats,
   initializeProducts,

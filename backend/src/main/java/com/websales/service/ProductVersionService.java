@@ -6,11 +6,14 @@ import com.websales.dto.request.ImageRequest;
 import com.websales.dto.request.ImageVersionRequest;
 import com.websales.dto.request.ProductVersionRequest;
 import com.websales.dto.request.ProductVersionUpdateRequest;
+import com.websales.dto.response.NewVersionResponse;
+import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductResponse;
 import com.websales.dto.response.ProductVersionResponse;
 import com.websales.entity.*;
 import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
+import com.websales.mapper.ProductMapper;
 import com.websales.mapper.ProductVersionMapper;
 import com.websales.repository.ProductVersionRepository;
 import lombok.AccessLevel;
@@ -39,6 +42,7 @@ public class ProductVersionService {
     ProductVersionRepository pvr;
     ProductVersionMapper pvm;
 
+    ProductMapper pm;
 
     RamService ramservice;
     RomService romservice;
@@ -128,7 +132,7 @@ public class ProductVersionService {
 
 
 
-    public Page<ProductVersionResponse> SearchProductVersionCombined(
+    public Page<NewVersionResponse> SearchProductVersionCombined(
             // Params cũ giữ nguyên cho keyword/exact
             String brandName,
             String warehouseAreaName,
@@ -260,7 +264,7 @@ public class ProductVersionService {
                         minScreenSize,
                         maxScreenSize,
                         pageable)
-                .map(pvm::ToProductVersionResponse); // Giả sử pvm là mapper instance
+                .map(pvm::ToNewVersionResponse); // Giả sử pvm là mapper instance
     }
 
 

@@ -1,19 +1,19 @@
-import React, { useState } from "react";
-import { ChevronDown, Filter } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ChevronDown, Filter, Search } from "lucide-react";
 
-const Section = ({ title, children }) => {
-  const [open, setOpen] = useState(true);
+const Section = ({ title, children, defaultOpen = true }) => {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b pb-4 mb-4">
+    <div className="border-b border-slate-200 pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setOpen((prev) => !prev)}
         className="flex justify-between items-center w-full text-left"
       >
-        <span className="font-semibold text-gray-800">{title}</span>
+        <span className="font-semibold text-slate-800">{title}</span>
         <ChevronDown
           size={18}
-          className={`transition-transform ${open ? "rotate-180" : ""}`}
+          className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -25,8 +25,12 @@ const Section = ({ title, children }) => {
 const Pill = ({ active, children, onClick }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 rounded-xl border text-sm mr-2 mb-2 transition
-        ${active ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 text-gray-700"}
+    className={`px-3 py-1.5 rounded-xl border text-sm transition mr-2 mb-2
+      ${
+        active
+          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+          : "border-slate-300 text-slate-700 hover:border-blue-400"
+      }
     `}
   >
     {children}
@@ -41,81 +45,133 @@ const Checkbox = ({ label, checked, onChange }) => (
       onChange={onChange}
       className="w-4 h-4 accent-blue-600"
     />
-    <span className="text-gray-700 text-sm">{label}</span>
+    <span className="text-slate-700 text-sm">{label}</span>
   </label>
 );
 
+const ratingOptions = [
+  { label: "Tất cả", value: 0 },
+  { label: "Từ 3 sao", value: 3 },
+  { label: "Từ 4 sao", value: 4 },
+  { label: "Từ 4.5 sao", value: 4.5 },
+  { label: "Từ 5 sao", value: 5 },
+];
+
 const ProductFilter = ({
-  brand,
-  onBrandChange,
+  searchQuery = "",
+  onSearchChange = () => {},
+  brand = "",
+  onBrandChange = () => {},
   brands = [],
-
-  priceRange, // Đổi thành string: "all", "under2", "2-4", etc.
-  onPriceChange,
-
+  priceRange = "all",
+  onPriceChange = () => {},
   customMinPrice = "",
   customMaxPrice = "",
-  onCustomMinPriceChange,
-  onCustomMaxPriceChange,
-
-  os,
-  onOsChange,
-
-  cpu,
-  onCpuChange,
-
-  battery, // String: "all", "under3000", "3-4", etc.
-  onBatteryChange,
-
-  ram,
-  onRamChange,
-
-  rom,
-  onRomChange,
-
-  screenSize, // String: "all", "small", "5-6.5", etc.
-  onScreenSizeChange,
-
-  refreshRate,
-  onRefreshRateChange,
+  onCustomMinPriceChange = () => {},
+  onCustomMaxPriceChange = () => {},
+  os = "",
+  onOsChange = () => {},
+  cpu = "",
+  onCpuChange = () => {},
+  battery = "all",
+  onBatteryChange = () => {},
+  ram = "",
+  onRamChange = () => {},
+  rom = "",
+  onRomChange = () => {},
+  screenSize = "all",
+  onScreenSizeChange = () => {},
+  refreshRate = "",
+  onRefreshRateChange = () => {},
+  minRating = 0,
+  onMinRatingChange = () => {},
+  onResetFilters = () => {},
 }) => {
-  // Helper để check priceRange (bây giờ là string)
   const isPriceRangeSelected = (range) => priceRange === range;
-
-  // Helper cho battery (đã là string)
   const isBatterySelected = (range) => battery === range;
-
-  // Helper cho screenSize (đã là string)
   const isScreenSizeSelected = (range) => screenSize === range;
 
+  const hasAnyFilter = useMemo(() => {
+    return (
+      searchQuery ||
+      brand ||
+      priceRange !== "all" ||
+      customMinPrice ||
+      customMaxPrice ||
+      os ||
+      cpu ||
+      battery !== "all" ||
+      ram ||
+      rom ||
+      screenSize !== "all" ||
+      refreshRate ||
+      minRating > 0
+    );
+  }, [
+    battery,
+    brand,
+    cpu,
+    customMaxPrice,
+    customMinPrice,
+    minRating,
+    os,
+    priceRange,
+    ram,
+    refreshRate,
+    rom,
+    screenSize,
+    searchQuery,
+  ]);
+
   return (
-    <div className="w-72 bg-white shadow-lg rounded-2xl p-5 overflow-y-auto max-h-screen">
-      <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-        <Filter size={18} /> Bộ lọc tìm kiếm
-      </h2>
+    <div className="w-full lg:w-72 bg-white shadow-lg rounded-2xl p-5 sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Filter size={18} /> Bộ lọc tìm kiếm
+        </h2>
+        <button
+          type="button"
+          onClick={onResetFilters}
+          disabled={!hasAnyFilter}
+          className="text-sm text-blue-600 hover:text-blue-700 disabled:text-slate-300 disabled:cursor-not-allowed"
+        >
+          Đặt lại
+        </button>
+      </div>
 
-      {/* BRAND */}
-      <Section title="Hãng sản xuất">
-        <div className="grid grid-cols-2 gap-3">
-          {brands.map((b) => (
-            <button
-              key={b.value}
-              onClick={() => onBrandChange(b.value)}
-              className={`flex items-center justify-center gap-2 p-2 border rounded-xl shadow-sm
-                transition text-sm 
-                ${brand === b.value ? "border-blue-600 bg-blue-50" : "border-gray-300"}
-              `}
-            >
-              <img src={b.logo} className="w-5 h-5" />
-              <span>{b.label}</span>
-            </button>
-          ))}
+      <Section title="Từ khóa">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={onSearchChange}
+            placeholder="Tên sản phẩm, mã..."
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 text-sm"
+          />
         </div>
-
-        <button className="text-blue-600 text-sm mt-2">Xem thêm</button>
       </Section>
 
-      {/* PRICE */}
+      {brands.length > 0 && (
+        <Section title="Hãng sản xuất">
+          <div className="grid grid-cols-2 gap-3">
+            {brands.map((b) => (
+              <button
+                key={b.value}
+                onClick={() => onBrandChange(brand === b.value ? "" : b.value)}
+                className={`flex items-center justify-center gap-2 p-2 border rounded-xl shadow-sm text-sm transition
+                  ${brand === b.value ? "border-blue-600 bg-blue-50 text-blue-600" : "border-slate-200 text-slate-700"}
+                `}
+              >
+                {b.logo ? <img src={b.logo} alt={b.label} className="w-5 h-5" /> : null}
+                <span>{b.label}</span>
+              </button>
+            ))}
+          </div>
+          {/* <button className="text-blue-600 text-sm mt-2">Xem thêm</button> */}
+        </Section>
+      )}
+
       <Section title="Mức giá">
         <Checkbox label="Tất cả" checked={isPriceRangeSelected("all")} onChange={() => onPriceChange("all")} />
         <Checkbox label="Dưới 2 triệu" checked={isPriceRangeSelected("under2")} onChange={() => onPriceChange("under2")} />
@@ -125,46 +181,60 @@ const ProductFilter = ({
         <Checkbox label="Từ 13 - 20 triệu" checked={isPriceRangeSelected("13-20")} onChange={() => onPriceChange("13-20")} />
         <Checkbox label="Trên 20 triệu" checked={isPriceRangeSelected("20+")} onChange={() => onPriceChange("20+")} />
 
-        <p className="text-sm text-gray-500 mt-2">Hoặc nhập khoảng giá phù hợp với bạn:</p>
-
+        <p className="text-xs text-slate-500 mt-2">Hoặc nhập khoảng giá (VND):</p>
         <div className="flex items-center gap-2 mt-2">
           <input
             type="number"
             placeholder="Từ"
             value={customMinPrice}
             onChange={(e) => onCustomMinPriceChange(e.target.value)}
-            className="w-1/2 px-2 py-1 border rounded-lg"
+            className="w-1/2 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <input
             type="number"
             placeholder="Đến"
             value={customMaxPrice}
             onChange={(e) => onCustomMaxPriceChange(e.target.value)}
-            className="w-1/2 px-2 py-1 border rounded-lg"
+            className="w-1/2 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </Section>
 
-      {/* OS */}
+      <Section title="Đánh giá tối thiểu">
+        <div className="flex flex-wrap">
+          {ratingOptions.map((option) => (
+            <Pill
+              key={option.value}
+              active={minRating === option.value}
+              onClick={() => onMinRatingChange(option.value)}
+            >
+              {option.label}
+            </Pill>
+          ))}
+        </div>
+      </Section>
+
       <Section title="Hệ điều hành">
         <div className="flex flex-wrap">
-          <Pill active={os === "ios"} onClick={() => onOsChange("ios")}>iOS</Pill>
-          <Pill active={os === "android"} onClick={() => onOsChange("android")}>Android</Pill>
+          <Pill active={os === "ios"} onClick={() => onOsChange(os === "ios" ? "" : "ios")}>
+            iOS
+          </Pill>
+          <Pill active={os === "android"} onClick={() => onOsChange(os === "android" ? "" : "android")}>
+            Android
+          </Pill>
         </div>
       </Section>
 
-      {/* CPU */}
       <Section title="Chip xử lý">
         <div className="flex flex-wrap">
-          <Pill active={cpu === "snapdragon"} onClick={() => onCpuChange("snapdragon")}>Snapdragon</Pill>
-          <Pill active={cpu === "mediatek"} onClick={() => onCpuChange("mediatek")}>MediaTek</Pill>
-          <Pill active={cpu === "apple"} onClick={() => onCpuChange("apple")}>Apple A-series</Pill>
-          <Pill active={cpu === "exynos"} onClick={() => onCpuChange("exynos")}>Exynos</Pill>
-          <Pill active={cpu === "kirin"} onClick={() => onCpuChange("kirin")}>Kirin</Pill>
+          {["snapdragon", "mediatek", "apple", "exynos", "kirin"].map((chip) => (
+            <Pill key={chip} active={cpu === chip} onClick={() => onCpuChange(cpu === chip ? "" : chip)}>
+              {chip === "apple" ? "Apple A-series" : chip.charAt(0).toUpperCase() + chip.slice(1)}
+            </Pill>
+          ))}
         </div>
       </Section>
 
-      {/* BATTERY */}
       <Section title="Dung lượng pin">
         <Checkbox label="Tất cả" checked={isBatterySelected("all")} onChange={() => onBatteryChange("all")} />
         <Checkbox label="Dưới 3000 mAh" checked={isBatterySelected("under3000")} onChange={() => onBatteryChange("under3000")} />
@@ -173,29 +243,26 @@ const ProductFilter = ({
         <Checkbox label="Trên 5500 mAh" checked={isBatterySelected("5500+")} onChange={() => onBatteryChange("5500+")} />
       </Section>
 
-      {/* RAM */}
       <Section title="RAM">
         <div className="flex flex-wrap">
           {["16", "12", "8", "6", "4", "3"].map((r) => (
-            <Pill key={r} active={ram === r} onClick={() => onRamChange(r)}>
+            <Pill key={r} active={ram === r} onClick={() => onRamChange(ram === r ? "" : r)}>
               {r} GB
             </Pill>
           ))}
         </div>
       </Section>
 
-      {/* ROM - Updated to internal storage */}
       <Section title="Bộ nhớ trong">
         <div className="flex flex-wrap">
           {["64", "128", "256", "512", "1024"].map((s) => (
-            <Pill key={s} active={rom === s} onClick={() => onRomChange(s)}>
+            <Pill key={s} active={rom === s} onClick={() => onRomChange(rom === s ? "" : s)}>
               {s} GB
             </Pill>
           ))}
         </div>
       </Section>
 
-      {/* SCREEN SIZE */}
       <Section title="Màn hình">
         <Checkbox label="Tất cả" checked={isScreenSizeSelected("all")} onChange={() => onScreenSizeChange("all")} />
         <Checkbox label="Màn hình nhỏ" checked={isScreenSizeSelected("small")} onChange={() => onScreenSizeChange("small")} />
@@ -204,11 +271,10 @@ const ProductFilter = ({
         <Checkbox label="Trên 6.8 inch" checked={isScreenSizeSelected("6.8+")} onChange={() => onScreenSizeChange("6.8+")} />
       </Section>
 
-      {/* REFRESH RATE */}
       <Section title="Tần số quét">
         <div className="flex flex-wrap">
           {["144", "120", "90", "60"].map((hz) => (
-            <Pill key={hz} active={refreshRate === hz} onClick={() => onRefreshRateChange(hz)}>
+            <Pill key={hz} active={refreshRate === hz} onClick={() => onRefreshRateChange(refreshRate === hz ? "" : hz)}>
               {hz} Hz
             </Pill>
           ))}

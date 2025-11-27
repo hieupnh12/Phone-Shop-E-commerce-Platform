@@ -2,6 +2,7 @@ package com.websales.repository;
 
 
 import com.websales.dto.response.ProductVersionResponse;
+import com.websales.entity.Product;
 import com.websales.entity.ProductVersion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

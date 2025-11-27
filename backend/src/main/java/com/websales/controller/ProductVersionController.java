@@ -4,6 +4,8 @@ package com.websales.controller;
 
 import com.websales.dto.request.*;
 import com.websales.dto.response.ApiResponse;
+import com.websales.dto.response.NewVersionResponse;
+import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductVersionResponse;
 import com.websales.service.ProductService;
 import com.websales.service.ProductVersionService;
@@ -66,7 +68,7 @@ public class ProductVersionController {
 
 
     @GetMapping("/searchVersionFULLVIP")
-    public Page<ProductVersionResponse> searchVersionCombined(
+    public Page<NewVersionResponse> searchVersionCombined(
             @RequestParam(required = false) String brandName,
             @RequestParam(required = false) String warehouseAreaName,
             @RequestParam(required = false) String originName,

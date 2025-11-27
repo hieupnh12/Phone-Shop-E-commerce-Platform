@@ -9,6 +9,7 @@ import com.websales.dto.request.ProductVersionRequest;
 import com.websales.dto.request.ProductVersionUpdateRequest;
 import com.websales.dto.response.ImageVersionResponse;
 import com.websales.dto.response.ImeiResponse;
+import com.websales.dto.response.NewVersionResponse;
 import com.websales.dto.response.ProductVersionResponse;
 import com.websales.entity.*;
 import org.mapstruct.*;
@@ -35,6 +36,15 @@ public interface ProductVersionMapper {
     @Mapping(source = "images", target = "images") // Map List<ProductVersionImage> → List<ImageVersionResponse>
     @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
     ProductVersionResponse ToProductVersionResponse (ProductVersion productVersion);
+
+
+    @Mapping(source= "ram.nameRam", target="ramName")
+    @Mapping(source ="rom.nameRom", target = "romName")
+    @Mapping(source = "color.nameColor" , target="colorName")
+    @Mapping(source = "product.idProduct", target ="idProduct")
+    @Mapping(source = "images", target = "images") // Map List<ProductVersionImage> → List<ImageVersionResponse>
+    @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
+    NewVersionResponse ToNewVersionResponse (ProductVersion productVersion);
 
 
 
