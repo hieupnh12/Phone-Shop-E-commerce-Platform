@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Search, Loader2, AlertTriangle, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Eye } from 'lucide-react';
+import { 
+    Shield, 
+    Search, 
+    Loader2, 
+    AlertTriangle, 
+    ChevronsLeft, 
+    ChevronLeft, 
+    ChevronRight, 
+    ChevronsRight, 
+    Eye, 
+    X 
+} from 'lucide-react';
 import api from "../../../services/api";
 import Toast from "../../../components/common/Toast";
 import { format } from 'date-fns';

@@ -34,6 +34,4 @@ public class AuditLog {
     @JoinColumn(name = "employee_id")
     @JsonIgnore
     Employee employee;
-
-
 }

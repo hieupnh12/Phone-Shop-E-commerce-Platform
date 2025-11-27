@@ -4,7 +4,8 @@ import Cookie from "js-cookie"
 
 const env = process.env.NODE_ENV;
 const BASE_URL = !env || env === "development" ? 
-    process.env.REACT_APP_API_URL_LOCAL : process.env.REACT_APP_API_URL;
+    (process.env.REACT_APP_API_URL_LOCAL || 'http://localhost:8080/phoneShop') : 
+    (process.env.REACT_APP_API_URL || 'http://localhost:8080/phoneShop');
 
 const axiosClient = axios.create({
     baseURL: BASE_URL,
