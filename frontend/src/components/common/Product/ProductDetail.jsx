@@ -13,8 +13,10 @@ import productWorker from "../../../services/productWorker";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { useParams } from "react-router-dom"; // Import useParams
 import cartService from "../../../services/cartService";
+import Toast from "../../../components/common/Toast";
 
 const ProductDetailPage = () => {
+  const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
   const [selectedRam, setSelectedRam] = useState(null);
@@ -64,8 +66,8 @@ const ProductDetailPage = () => {
     }
   };
 
-  
-  
+
+
 
 
 
@@ -214,23 +216,32 @@ const ProductDetailPage = () => {
     }
   };
   // === ADD TO CART ===
- const handleAddToCart = async () => {
-  try {
-    if (!selectedVersion?.id) {
-      alert("Không có phiên bản hợp lệ!");
-      return;
+  const handleAddToCart = async () => {
+    try {
+      if (!selectedVersion?.id) {
+        setToast({
+        type: 'error',
+        message: 'Không tìm thấy phiên bản hợp lệ',
+      });
+        return;
+      }
+
+      console.log("CALL ADD TO CART:", selectedVersion.id);
+
+      const res = await cartService.addToCart(selectedVersion.id, 1);
+
+      setToast({
+        type: 'success',
+        message: 'Đã thêm vào giỏ hàng!',
+      });
+    } catch (err) {
+      console.log("Add to cart error:", err);
+      setToast({
+        type: 'error',
+        message: 'Không thể thêm vào giỏ hàng ',
+      });
     }
-
-    console.log("CALL ADD TO CART:", selectedVersion.id);
-
-    const res = await cartService.addToCart(selectedVersion.id, 1);
-
-    alert("Đã thêm vào giỏ hàng!");
-  } catch (err) {
-    console.log("Add to cart error:", err);
-    alert("Không thể thêm vào giỏ hàng.");
-  }
-};
+  };
 
 
 
@@ -294,6 +305,54 @@ const ProductDetailPage = () => {
               />
               <span>Yêu thích</span>
             </button>
+            <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+              <span>Hỏi đáp</span>
+            </button>
+            <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <span>Thông số</span>
+            </button>
+            <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+                />
+              </svg>
+              <span>So sánh</span>
+            </button>
           </div>
         </div>
 
@@ -311,6 +370,7 @@ const ProductDetailPage = () => {
                   />
                 </div>
 
+                {/* Feature Highlights (only on first image) */}
                 <div className="text-white text-l">
                   <h3 className="text-sm font-semibold mb-2">
                     TÍNH NĂNG NỔI BẬT
@@ -384,7 +444,7 @@ const ProductDetailPage = () => {
                         el.dataset.maxScroll = maxScroll.toString();
                       }
                     }}>
-                  
+
                     <div className="flex gap-3 transition-transform duration-300 ease-in-out"
                     style={{
                         transform: `translateX(-${(() => {
@@ -468,7 +528,7 @@ const ProductDetailPage = () => {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-xl p-6 shadow-xl">
               {/* Price Box */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-6 border border-gray-200">
+              <div className="bg-gray-50 rounded-xl p-6 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Giá sản phẩm</p>
@@ -499,7 +559,9 @@ const ProductDetailPage = () => {
               {/* Versions */}
               <div className="mb-6">
                 <h3 className="font-bold text-gray-900 mb-3">Phiên bản</h3>
+
                 {product.versions && product.versions.length > 0 && (() => {
+                  // Filter available versions based on current selections
                   const filteredVersions = product.versions.filter(v => {
                     if (selectedRam && v.ram !== selectedRam) return false;
                     if (selectedRom && v.rom !== selectedRom) return false;
@@ -507,14 +569,17 @@ const ProductDetailPage = () => {
                     return true;
                   });
 
+                  // Get available options from filtered versions
                   const availableRams = new Set(filteredVersions.map(v => v.ram));
                   const availableRoms = new Set(filteredVersions.map(v => v.rom));
                   const availableColors = new Set(filteredVersions.map(v => v.color));
 
+                  // Get all possible options
                   const allRams = Array.from(new Set(product.versions.map(v => v.ram)));
                   const allRoms = Array.from(new Set(product.versions.map(v => v.rom)));
                   const allColors = Array.from(new Set(product.versions.map(v => v.color)));
 
+                  // Handle selection and auto-update
                   const handleSelect = (type, value) => {
                     let newRam = selectedRam;
                     let newRom = selectedRom;
@@ -528,6 +593,7 @@ const ProductDetailPage = () => {
                     setSelectedRom(newRom);
                     setSelectedColor(newColor);
 
+                    // Auto-find matching version
                     const match = product.versions.find(v => {
                       if (newRam && v.ram !== newRam) return false;
                       if (newRom && v.rom !== newRom) return false;
@@ -544,7 +610,33 @@ const ProductDetailPage = () => {
 
                   return (
                     <div className="space-y-3">
+                      {/* <div>
+                        <div className="text-sm text-gray-600 mb-2">RAM</div>
+                        <div className="flex flex-wrap gap-2">
+                          {allRams.map((r) => {
+                            const isAvailable = availableRams.has(r);
+                            const isSelected = selectedRam === r;
+                            return (
+                              <button
+                                key={r}
+                                onClick={() => isAvailable && handleSelect('ram', r)}
+                                disabled={!isAvailable}
+                                className={`px-3 py-2 rounded-lg border-2 transition ${
+                                  isSelected 
+                                    ? "border-red-600 bg-red-50" 
+                                    : isAvailable
+                                    ? "border-gray-200 hover:border-gray-300"
+                                    : "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-50"
+                                }`}
+                              >
+                                {r}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div> */}
                       <div>
+                        <div className="text-sm text-gray-600 mb-2">ROM</div>
                         <div className="flex flex-wrap gap-2">
                           {allRoms.map((r) => {
                             const isAvailable = availableRoms.has(r);
@@ -594,6 +686,18 @@ const ProductDetailPage = () => {
                           })}
                         </div>
                       </div>
+
+                      {/* Show currently selected version */}
+                      {/* {selectedVersion && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="text-sm font-medium text-gray-900">
+                            {selectedVersion.ram} / {selectedVersion.rom} / {selectedVersion.color}
+                          </div>
+                          <div className="text-lg font-bold text-red-600 mt-1">
+                            {formatPrice(selectedVersion.price)}
+                          </div>
+                        </div>
+                      )} */}
                     </div>
                   );
                 })()}
@@ -649,6 +753,7 @@ const ProductDetailPage = () => {
                       </button>
                     </div>
                   </div>
+                  {/* Thêm các promo khác nếu cần */}
                 </div>
               </div>
 
@@ -668,14 +773,32 @@ const ProductDetailPage = () => {
 
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4">
-                <button className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-500/30">
+                <button
+                  onClick={async () => {
+                    if (!selectedVersion?.id) {
+                      alert("Không tìm thấy phiên bản hợp lệ!");
+                      return;
+                    }
+
+                    await cartService.addToCart(selectedVersion.id, 1);
+                    navigate('/payment');
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
+                >
                   MUA NGAY
                   <span className="text-sm font-normal">(Giao tận nơi)</span>
                 </button>
-                <button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
+
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
+                  onClick={handleAddToCart}
+                >
                   <ShoppingCart className="w-6 h-6" />
                   THÊM VÀO GIỎ
                 </button>
+
+
+
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-3">
@@ -689,7 +812,23 @@ const ProductDetailPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Promotional Banner */}
+        {/* <div className="mt-6">
+          <img
+            src="https://via.placeholder.com/1200x150/ff1493/ffffff?text=Chào+Bạn+Mới+-+Giảm+thêm+300k+-+Nhận+ngay"
+            alt="Promotion"
+            className="w-full rounded-xl"
+          />
+        </div> */}
       </div>
+      {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
     </div>
   );
 };

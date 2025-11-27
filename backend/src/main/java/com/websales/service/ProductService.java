@@ -323,7 +323,7 @@ public class ProductService {
                 // Lọc ProductItem với export_id IS NULL
                 version.setProductItems(
                         version.getProductItems().stream()
-//                                .filter(pi -> pi.get == null)
+                                .filter(pi -> pi.getOrderDetail() == null)
                                 .collect(Collectors.toList())
                 );
             });

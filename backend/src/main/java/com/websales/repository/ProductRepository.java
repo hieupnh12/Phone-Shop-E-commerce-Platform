@@ -18,14 +18,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
 
 
-    @Query("SELECT p FROM Product p " +
+    @Query(value ="SELECT p FROM Product p " +
             "LEFT JOIN FETCH p.origin " +
             "LEFT JOIN FETCH p.brand " +
             "LEFT JOIN FETCH p.operatingSystem " +
             "LEFT JOIN FETCH p.warehouseArea " +
             "LEFT JOIN FETCH p.productVersion " +
             "left JOIN FETCH p.category" +
-            " ORDER BY p.idProduct DESC" )
+            " ORDER BY p.idProduct DESC",
+            countQuery = "SELECT count(p) FROM Product p " +  // Tùy chỉnh: loại join productVersion
+                    "LEFT JOIN p.origin " +
+                    "LEFT JOIN p.brand " +
+                    "LEFT JOIN p.operatingSystem " +
+                    "LEFT JOIN p.warehouseArea " +
+                    "LEFT JOIN p.category")  // Không có productVersion = đếm sản phẩm duy nhất)
     Page<Product> findProductsWithRelations(Pageable pageable);
 
 

@@ -144,7 +144,7 @@ const router = createBrowserRouter(
 
     {
       path: "/admin",
-      element: <AdminRoute allowedRoles={"ROLE_SALE"} />,
+        element: <AdminRoute allowedRoles={["ROLE_SALE"]} />,
       children: [
         {
           element: <AdminLayout />,

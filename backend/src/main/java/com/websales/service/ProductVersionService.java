@@ -129,36 +129,138 @@ public class ProductVersionService {
 
 
     public Page<ProductVersionResponse> SearchProductVersionCombined(
+            // Params cũ giữ nguyên cho keyword/exact
             String brandName,
             String warehouseAreaName,
             String originName,
             String operatingSystemName,
             String productName,
-//            String categoryName,
-            String battery,
+            // String categoryName, // Uncomment nếu cần
+            String battery, // Giữ cho exact search (e.g., "3500 mAh")
             String scanFrequency,
-            String screenSize,
+            String screenSize, // Giữ cho exact (e.g., "6.2 inch")
             String screenResolution,
             String screenTech,
             String chipset,
             String rearCamera,
             String frontCamera,
-//            String image,
+            // String image,
             Integer warrantyPeriod,
-//            Integer stockQuantity,
-//            Boolean status,
+            // Integer stockQuantity,
+            // Boolean status,
             String romName,
             String ramName,
             String colorName,
             BigDecimal importPrice,
-            BigDecimal exportPrice,
-            Pageable pageable){
+            BigDecimal exportPrice, // Giữ cho exact match nếu cần
+
+            // Params mới cho categorical ranges (từ frontend)
+            String priceRange, // e.g., "all", "under2", "2-4", "4-7", "7-13", "13-20", "20+", hoặc custom min/max strings
+            String customMinPrice, // String cho custom, parse sau
+            String customMaxPrice,
+            String batteryRange, // e.g., "all", "under3000", "3-4", "4-5.5", "5500+"
+            String screenSizeRange, // e.g., "all", "small", "5-6.5", "6.5-6.8", "6.8+"
+
+            Pageable pageable) {
+
+        // Map priceRange sang min/max
+        BigDecimal minExportPrice = null;
+        BigDecimal maxExportPrice = null;
+        if ("all".equals(priceRange)) {
+            // Không filter
+        } else if ("under2".equals(priceRange)) {
+            maxExportPrice = new BigDecimal("2000000");
+        } else if ("2-4".equals(priceRange)) {
+            minExportPrice = new BigDecimal("2000000");
+            maxExportPrice = new BigDecimal("4000000");
+        } else if ("4-7".equals(priceRange)) {
+            minExportPrice = new BigDecimal("4000000");
+            maxExportPrice = new BigDecimal("7000000");
+        } else if ("7-13".equals(priceRange)) {
+            minExportPrice = new BigDecimal("7000000");
+            maxExportPrice = new BigDecimal("13000000");
+        } else if ("13-20".equals(priceRange)) {
+            minExportPrice = new BigDecimal("13000000");
+            maxExportPrice = new BigDecimal("20000000");
+        } else if ("20+".equals(priceRange)) {
+            minExportPrice = new BigDecimal("20000000");
+        } else if (customMinPrice != null && !customMinPrice.isEmpty()) {
+            minExportPrice = new BigDecimal(customMinPrice);
+            if (customMaxPrice != null && !customMaxPrice.isEmpty()) {
+                maxExportPrice = new BigDecimal(customMaxPrice);
+            }
+        }
+
+        // Map batteryRange (giả sử battery là String "3500 mAh", range ở mAh)
+        Integer minBattery = null;
+        Integer maxBattery = null;
+        if (!"all".equals(batteryRange)) {
+            if ("under3000".equals(batteryRange)) {
+                maxBattery = 2999;
+            } else if ("3-4".equals(batteryRange)) {
+                minBattery = 3000;
+                maxBattery = 4000;
+            } else if ("4-5.5".equals(batteryRange)) {
+                minBattery = 4000;
+                maxBattery = 5500;
+            } else if ("5500+".equals(batteryRange)) {
+                minBattery = 5501;
+            }
+            // Nếu battery param là exact, ưu tiên exact trước range (hoặc merge logic tùy ý)
+        }
+
+        // Map screenSizeRange (giả sử screenSize là "6.2 inch", range ở inch)
+        Double minScreenSize = null;
+        Double maxScreenSize = null;
+        if (!"all".equals(screenSizeRange)) {
+            if ("small".equals(screenSizeRange)) { // Giả sử small <5 inch
+                maxScreenSize = 4.99;
+            } else if ("5-6.5".equals(screenSizeRange)) {
+                minScreenSize = 5.0;
+                maxScreenSize = 6.5;
+            } else if ("6.5-6.8".equals(screenSizeRange)) {
+                minScreenSize = 6.5;
+                maxScreenSize = 6.8;
+            } else if ("6.8+".equals(screenSizeRange)) {
+                minScreenSize = 6.81;
+            }
+        }
+
+        // Map các filter khác từ frontend (giả sử operatingSystemName = os, chipset = cpu, etc.)
+        // Nếu frontend gửi "ios" → set operatingSystemName = "ios"
+        // Tương tự: scanFrequency = refreshRate (e.g., "120")
+        // ramName = ram (e.g., "8")
+        // romName = rom (e.g., "128")
+
+        // Gọi repository với tất cả params (set null cho unused)
         return productVersionRepository.findProductVersionsWithCombinedFilters(
-                        brandName, warehouseAreaName, originName, operatingSystemName, productName,
-                        battery, scanFrequency, screenSize, screenResolution, screenTech, chipset,
-                        rearCamera, frontCamera, warrantyPeriod,
-                        romName, ramName, colorName, importPrice, exportPrice, pageable)
-                .map(pvm::ToProductVersionResponse);
+                        brandName,
+                        warehouseAreaName,
+                        originName,
+                        operatingSystemName,
+                        productName,
+                        battery, // Exact string nếu có
+                        scanFrequency,
+                        screenSize, // Exact nếu có
+                        screenResolution,
+                        screenTech,
+                        chipset,
+                        rearCamera,
+                        frontCamera,
+                        warrantyPeriod,
+                        romName,
+                        ramName,
+                        colorName,
+                        importPrice,
+                        exportPrice, // Exact nếu cần, range sẽ override qua min/max
+                        minExportPrice,
+                        maxExportPrice,
+                        minBattery,
+                        maxBattery,
+                        minScreenSize,
+                        maxScreenSize,
+                        pageable)
+                .map(pvm::ToProductVersionResponse); // Giả sử pvm là mapper instance
     }
 
 

@@ -158,7 +158,7 @@ export const fetchSearchProductVersion = async (
  * @param {Object} filters - Optional filters
  * @returns {Promise<Object>} { products: [], total, page, size }
  */
-export const fetchAllProducts = async (page = 0, size = 10, filters = {}) => {
+export const fetchAllProducts = async (page = 0, size = 0, filters = {}) => {
   try {
     // Build params and cache key
     const params = { page, size, ...filters };
@@ -358,22 +358,27 @@ export const invalidateProductsCache = () => {
  * @param {string} filters.brandName - Brand name
  * @param {string} filters.warehouseAreaName - Warehouse area name
  * @param {string} filters.originName - Origin name
- * @param {string} filters.operatingSystemName - Operating system name
+ * @param {string} filters.operatingSystemName - Operating system name (e.g., "ios", "android")
  * @param {string} filters.productName - Product name
- * @param {string|number} filters.battery - Battery spec
- * @param {string|number} filters.scanFrequency - Scan frequency
- * @param {string|number} filters.screenSize - Screen size
+ * @param {string} filters.battery - Battery spec (exact search)
+ * @param {string} filters.batteryRange - Battery range (e.g., "all", "under3000", "3-4", "4-5.5", "5500+")
+ * @param {string} filters.scanFrequency - Scan frequency (e.g., "120")
+ * @param {string} filters.screenSize - Screen size (exact search)
+ * @param {string} filters.screenSizeRange - Screen size range (e.g., "all", "small", "5-6.5", "6.5-6.8", "6.8+")
  * @param {string} filters.screenResolution - Screen resolution
  * @param {string} filters.screenTech - Screen technology
- * @param {string} filters.chipset - Chipset
- * @param {string|number} filters.rearCamera - Rear camera spec
- * @param {string|number} filters.frontCamera - Front camera spec
+ * @param {string} filters.chipset - Chipset (e.g., "snapdragon")
+ * @param {string} filters.rearCamera - Rear camera spec
+ * @param {string} filters.frontCamera - Front camera spec
  * @param {number} filters.warrantyPeriod - Warranty period
- * @param {string} filters.romName - ROM name
- * @param {string} filters.ramName - RAM name
+ * @param {string} filters.romName - ROM name (e.g., "128")
+ * @param {string} filters.ramName - RAM name (e.g., "8")
  * @param {string} filters.colorName - Color name
  * @param {number} filters.importPrice - Import price
- * @param {number} filters.exportPrice - Export price
+ * @param {number} filters.exportPrice - Export price (exact match)
+ * @param {string} filters.priceRange - Price range (e.g., "all", "under2", "2-4", "4-7", "7-13", "13-20", "20+")
+ * @param {string} filters.customMinPrice - Custom min price (e.g., "2000000")
+ * @param {string} filters.customMaxPrice - Custom max price (e.g., "4000000")
  * @param {number} page - Page number
  * @param {number} size - Page size
  * @returns {Promise<Object>} Paginated products with versions

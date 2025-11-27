@@ -50,7 +50,7 @@ const ProductFilter = ({
   onBrandChange,
   brands = [],
 
-  priceRange,
+  priceRange, // Đổi thành string: "all", "under2", "2-4", etc.
   onPriceChange,
 
   customMinPrice = "",
@@ -64,7 +64,7 @@ const ProductFilter = ({
   cpu,
   onCpuChange,
 
-  battery,
+  battery, // String: "all", "under3000", "3-4", etc.
   onBatteryChange,
 
   ram,
@@ -73,12 +73,21 @@ const ProductFilter = ({
   rom,
   onRomChange,
 
-  screenSize,
+  screenSize, // String: "all", "small", "5-6.5", etc.
   onScreenSizeChange,
 
   refreshRate,
   onRefreshRateChange,
 }) => {
+  // Helper để check priceRange (bây giờ là string)
+  const isPriceRangeSelected = (range) => priceRange === range;
+
+  // Helper cho battery (đã là string)
+  const isBatterySelected = (range) => battery === range;
+
+  // Helper cho screenSize (đã là string)
+  const isScreenSizeSelected = (range) => screenSize === range;
+
   return (
     <div className="w-72 bg-white shadow-lg rounded-2xl p-5 overflow-y-auto max-h-screen">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
@@ -108,13 +117,13 @@ const ProductFilter = ({
 
       {/* PRICE */}
       <Section title="Mức giá">
-        <Checkbox label="Tất cả" checked={priceRange.type === "all"} onChange={() => onPriceChange("all")} />
-        <Checkbox label="Dưới 2 triệu" checked={priceRange.type === "under2"} onChange={() => onPriceChange("under2")} />
-        <Checkbox label="Từ 2 - 4 triệu" checked={priceRange.type === "2-4"} onChange={() => onPriceChange("2-4")} />
-        <Checkbox label="Từ 4 - 7 triệu" checked={priceRange.type === "4-7"} onChange={() => onPriceChange("4-7")} />
-        <Checkbox label="Từ 7 - 13 triệu" checked={priceRange.type === "7-13"} onChange={() => onPriceChange("7-13")} />
-        <Checkbox label="Từ 13 - 20 triệu" checked={priceRange.type === "13-20"} onChange={() => onPriceChange("13-20")} />
-        <Checkbox label="Trên 20 triệu" checked={priceRange.type === "20+"} onChange={() => onPriceChange("20+")} />
+        <Checkbox label="Tất cả" checked={isPriceRangeSelected("all")} onChange={() => onPriceChange("all")} />
+        <Checkbox label="Dưới 2 triệu" checked={isPriceRangeSelected("under2")} onChange={() => onPriceChange("under2")} />
+        <Checkbox label="Từ 2 - 4 triệu" checked={isPriceRangeSelected("2-4")} onChange={() => onPriceChange("2-4")} />
+        <Checkbox label="Từ 4 - 7 triệu" checked={isPriceRangeSelected("4-7")} onChange={() => onPriceChange("4-7")} />
+        <Checkbox label="Từ 7 - 13 triệu" checked={isPriceRangeSelected("7-13")} onChange={() => onPriceChange("7-13")} />
+        <Checkbox label="Từ 13 - 20 triệu" checked={isPriceRangeSelected("13-20")} onChange={() => onPriceChange("13-20")} />
+        <Checkbox label="Trên 20 triệu" checked={isPriceRangeSelected("20+")} onChange={() => onPriceChange("20+")} />
 
         <p className="text-sm text-gray-500 mt-2">Hoặc nhập khoảng giá phù hợp với bạn:</p>
 
@@ -157,11 +166,11 @@ const ProductFilter = ({
 
       {/* BATTERY */}
       <Section title="Dung lượng pin">
-        <Checkbox label="Tất cả" checked={battery === "all"} onChange={() => onBatteryChange("all")} />
-        <Checkbox label="Dưới 3000 mAh" checked={battery === "under3000"} onChange={() => onBatteryChange("under3000")} />
-        <Checkbox label="3000 - 4000 mAh" checked={battery === "3-4"} onChange={() => onBatteryChange("3-4")} />
-        <Checkbox label="4000 - 5500 mAh" checked={battery === "4-5.5"} onChange={() => onBatteryChange("4-5.5")} />
-        <Checkbox label="Trên 5500 mAh" checked={battery === "5500+"} onChange={() => onBatteryChange("5500+")} />
+        <Checkbox label="Tất cả" checked={isBatterySelected("all")} onChange={() => onBatteryChange("all")} />
+        <Checkbox label="Dưới 3000 mAh" checked={isBatterySelected("under3000")} onChange={() => onBatteryChange("under3000")} />
+        <Checkbox label="3000 - 4000 mAh" checked={isBatterySelected("3-4")} onChange={() => onBatteryChange("3-4")} />
+        <Checkbox label="4000 - 5500 mAh" checked={isBatterySelected("4-5.5")} onChange={() => onBatteryChange("4-5.5")} />
+        <Checkbox label="Trên 5500 mAh" checked={isBatterySelected("5500+")} onChange={() => onBatteryChange("5500+")} />
       </Section>
 
       {/* RAM */}
@@ -188,11 +197,11 @@ const ProductFilter = ({
 
       {/* SCREEN SIZE */}
       <Section title="Màn hình">
-        <Checkbox label="Tất cả" checked={screenSize === "all"} onChange={() => onScreenSizeChange("all")} />
-        <Checkbox label="Màn hình nhỏ" checked={screenSize === "small"} onChange={() => onScreenSizeChange("small")} />
-        <Checkbox label="Từ 5 - 6.5 inch" checked={screenSize === "5-6.5"} onChange={() => onScreenSizeChange("5-6.5")} />
-        <Checkbox label="6.5 - 6.8 inch" checked={screenSize === "6.5-6.8"} onChange={() => onScreenSizeChange("6.5-6.8")} />
-        <Checkbox label="Trên 6.8 inch" checked={screenSize === "6.8+"} onChange={() => onScreenSizeChange("6.8+")} />
+        <Checkbox label="Tất cả" checked={isScreenSizeSelected("all")} onChange={() => onScreenSizeChange("all")} />
+        <Checkbox label="Màn hình nhỏ" checked={isScreenSizeSelected("small")} onChange={() => onScreenSizeChange("small")} />
+        <Checkbox label="Từ 5 - 6.5 inch" checked={isScreenSizeSelected("5-6.5")} onChange={() => onScreenSizeChange("5-6.5")} />
+        <Checkbox label="6.5 - 6.8 inch" checked={isScreenSizeSelected("6.5-6.8")} onChange={() => onScreenSizeChange("6.5-6.8")} />
+        <Checkbox label="Trên 6.8 inch" checked={isScreenSizeSelected("6.8+")} onChange={() => onScreenSizeChange("6.8+")} />
       </Section>
 
       {/* REFRESH RATE */}

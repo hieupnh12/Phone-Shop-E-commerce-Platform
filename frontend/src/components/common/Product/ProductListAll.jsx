@@ -7,7 +7,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(1); // ← THÊM: Để lưu totalPages từ API
+  const [totalPages, setTotalPages] = useState(0); // ← THÊM: Để lưu totalPages từ API
   const [totalCount, setTotalCount] = useState(0); // ← THÊM MỚI: State cho tổng số sản phẩm toàn bộ
   const [favorites, setFavorites] = useState(new Set());
   const [pageSize, setPagesize] = useState(0);
@@ -29,7 +29,6 @@ const fetchProducts = async (page) => {
     const data = await productWorker.fetchAllProducts(page,8);
     setProducts(data.products || []);
     setTotalPages(data.totalPages || 1);
-
   } catch (error) {
     console.error('Lỗi fetch sản phẩm:', error);
     setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');  // ← THÊM: Thông báo lỗi user-friendly
@@ -58,7 +57,7 @@ const fetchProducts = async (page) => {
 // }, []);
 
 
-  // Sau fetch thành công - gửi count lên component cha khi products thay đổi
+//   Sau fetch thành công - gửi count lên component cha khi products thay đổi
 // ← SỬA: Gửi TỔNG SỐ sản phẩm (totalCount) thay vì products.length (per page)
   // useEffect(() => {
   //   props.onProductsCountChange?.(totalCount || 0); // ← THAY ĐỔI: Dùng totalCount để gửi tổng toàn bộ

@@ -70,34 +70,45 @@ public class ProductVersionController {
             @RequestParam(required = false) String brandName,
             @RequestParam(required = false) String warehouseAreaName,
             @RequestParam(required = false) String originName,
-            @RequestParam(required = false) String operatingSystemName,
+            @RequestParam(required = false) String operatingSystemName, // e.g., from os param in frontend ("ios", "android")
             @RequestParam(required = false) String productName,
-//            @RequestParam(required = false) String categoryName,
-            @RequestParam(required = false) String battery,
-            @RequestParam(required = false) String scanFrequency,
-            @RequestParam(required = false) String screenSize,
+            // @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) String battery, // Exact search nếu cần (e.g., "3500 mAh")
+            @RequestParam(required = false) String scanFrequency, // e.g., from refreshRate param in frontend ("120")
+            @RequestParam(required = false) String screenSize, // Exact search nếu cần (e.g., "6.2 inch")
             @RequestParam(required = false) String screenResolution,
             @RequestParam(required = false) String screenTech,
-            @RequestParam(required = false) String chipset,
+            @RequestParam(required = false) String chipset, // e.g., from cpu param in frontend ("snapdragon")
             @RequestParam(required = false) String rearCamera,
             @RequestParam(required = false) String frontCamera,
-//            @RequestParam(required = false) String image,
+            // @RequestParam(required = false) String image,
             @RequestParam(required = false) Integer warrantyPeriod,
-//            @RequestParam(required = false) Integer stockQuantity,
-//            @RequestParam(required = false) Boolean status,
-            @RequestParam(required = false) String romName,
-            @RequestParam(required = false) String ramName,
+            // @RequestParam(required = false) Integer stockQuantity,
+            // @RequestParam(required = false) Boolean status,
+            @RequestParam(required = false) String romName, // e.g., from rom param in frontend ("128")
+            @RequestParam(required = false) String ramName, // e.g., from ram param in frontend ("8")
             @RequestParam(required = false) String colorName,
             @RequestParam(required = false) BigDecimal importPrice,
-            @RequestParam(required = false) BigDecimal exportPrice,
+            @RequestParam(required = false) BigDecimal exportPrice, // Exact nếu cần
+
+            // Thêm params cho categorical ranges từ frontend
+            @RequestParam(required = false) String priceRange, // e.g., "all", "under2", "2-4", etc.
+            @RequestParam(required = false) String customMinPrice, // e.g., "2000000"
+            @RequestParam(required = false) String customMaxPrice, // e.g., "4000000"
+            @RequestParam(required = false) String batteryRange, // e.g., "all", "under3000", "3-4", etc.
+            @RequestParam(required = false) String screenSizeRange, // e.g., "all", "small", "5-6.5", etc.
+
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
         Pageable pageable = PageRequest.of(page, size);
         return pvs.SearchProductVersionCombined(
                 brandName, warehouseAreaName, originName, operatingSystemName, productName,
                 battery, scanFrequency, screenSize, screenResolution, screenTech, chipset,
                 rearCamera, frontCamera, warrantyPeriod,
-                romName, ramName, colorName, importPrice, exportPrice, pageable);
+                romName, ramName, colorName, importPrice, exportPrice,
+                priceRange, customMinPrice, customMaxPrice, batteryRange, screenSizeRange,
+                pageable);
     }
 
 

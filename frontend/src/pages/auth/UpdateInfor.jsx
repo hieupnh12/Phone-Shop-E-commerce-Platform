@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import loginService from "../../services/loginService";
 import Cookies from "js-cookie";
 import constants from "../../constants";
+import { useAuthFullOptions } from "../../contexts/AuthContext";
 
 export default function RegistrationForm() {
     const location = useLocation();
@@ -10,6 +11,8 @@ export default function RegistrationForm() {
 
     const [tempToken, setTempToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    const { handleCustomerLoginSuccess } = useAuthFullOptions();
 
     // 1. Loại bỏ Email khỏi state
     const [formData, setFormData] = useState({
@@ -65,9 +68,9 @@ export default function RegistrationForm() {
 
            // localStorage.setItem('jwtToken', finalJwt)
 
-             Cookies.set(constants.ACCESS_TOKEN_KEY, finalJwt);
-            console.log(finalJwt + "")
-
+            //  Cookies.set(constants.ACCESS_TOKEN_KEY, finalJwt);
+            // console.log(finalJwt + "")
+            handleCustomerLoginSuccess(finalJwt);
 
             navigate('/', { replace: true });
 

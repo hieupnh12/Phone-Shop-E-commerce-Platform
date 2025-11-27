@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2 } from 'lucide-react';
-import customerService  from '../../services/customerService';
+import customerService from '../../services/customerService';
 import cartService from '../../services/cartService';
 
 // Format tiền VND
 const vnd = (n) =>
-  new Intl.NumberFormat("vi-VN", { 
-    style: "currency", 
-    currency: "VND", 
-    maximumFractionDigits: 0 
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
   }).format(Number.isFinite(n) ? n : 0);
 
 export default function Payment() {
@@ -22,7 +22,7 @@ export default function Payment() {
   const [payOSQRCode, setPayOSQRCode] = useState('');
   const [payOSLink, setPayOSLink] = useState('');
   const [loadingQR, setLoadingQR] = useState(false);
-  
+
   const [cartItems, setCartItems] = useState([]);
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -36,7 +36,7 @@ export default function Payment() {
     const loadData = async () => {
       try {
         setLoading(true);
-        
+
         // Load cart
         const cartData = await cartService.getCart();
         if (cartData?.success && cartData.cartItems) {
@@ -44,7 +44,7 @@ export default function Payment() {
         } else {
           setError('Không thể tải giỏ hàng');
         }
-        
+
         // Load customer info from API
         try {
           const customerData = await customerService.getMyCustomerInfo();
@@ -96,20 +96,22 @@ export default function Payment() {
   }, []);
 
   const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
-  const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
+  const FREE_SHIP_LIMIT = 1000;   // giống ShoppingCart.jsx
+  const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : 30000;
   const total = subtotal + shippingFee;
 
   const handlePaymentChange = async (method) => {
     setPaymentMethod(method);
-    
+
     // Nếu chọn bank, tạo payment link preview để lấy QR code
     if (method === 'bank' && cartItems.length > 0) {
       setLoadingQR(true);
       try {
         const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (item.quantity || 1), 0);
-        const shippingFee = cartItems.length > 0 && subtotal >= 10000000 ? 0 : 30000;
+        const FREE_SHIP_LIMIT = 1000;   // giống ShoppingCart.jsx
+        const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : 30000;
         const total = subtotal + shippingFee;
-        
+
         const orderData = {
           total: total,
           subtotal: subtotal,
@@ -117,11 +119,11 @@ export default function Payment() {
           paymentMethod: 'bank',
           note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.'
         };
-        
+
         console.log('Calling previewPayment with:', orderData);
         const response = await cartService.previewPayment(orderData);
         console.log('Preview payment response:', response);
-        
+
         if (response?.success) {
           if (response?.qrCode) {
             console.log('QR Code received:', response.qrCode.substring(0, 50) + '...');
@@ -140,7 +142,6 @@ export default function Payment() {
         }
       } catch (e) {
         console.error('Error creating payment preview:', e);
-        setError('Không thể tạo mã QR. Vui lòng thử lại.');
       } finally {
         setLoadingQR(false);
       }
@@ -160,7 +161,7 @@ export default function Payment() {
     try {
       setPlacingOrder(true);
       setError('');
-      
+
       // Gọi API checkout để tạo order
       const orderData = {
         total: total,
@@ -172,7 +173,7 @@ export default function Payment() {
       };
 
       const response = await cartService.createOrder(orderData);
-      
+
       if (response?.success) {
         // Nếu có paymentLink (PayOS), redirect đến trang thanh toán
         if (response.requiresPayment && response.paymentLink) {
@@ -213,13 +214,13 @@ export default function Payment() {
                 <User className="w-5 h-5" />
                 Thông tin khách hàng
               </h3>
-              
+
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1">Họ và tên</span>
                   <span className="text-right font-medium text-gray-900">{customerInfo.name || 'Chưa cập nhật'}</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1 flex items-center gap-2">
                     <Phone className="w-4 h-4" />
@@ -227,7 +228,7 @@ export default function Payment() {
                   </span>
                   <span className="text-right font-medium text-gray-900">{customerInfo.phone || 'Chưa cập nhật'}</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1 flex items-center gap-2">
                     <Mail className="w-4 h-4" />
@@ -235,7 +236,7 @@ export default function Payment() {
                   </span>
                   <span className="text-right font-medium text-gray-900">{customerInfo.email || 'Chưa cập nhật'}</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1 flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
@@ -267,14 +268,13 @@ export default function Payment() {
                 <CreditCard className="w-5 h-5" />
                 Phương thức thanh toán
               </h3>
-              
+
               <div className="space-y-3">
-                <label 
-                  className={`flex items-center p-3.5 border-2 rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'cod' 
-                      ? 'border-rose-600 bg-rose-50' 
-                      : 'border-gray-200 bg-white hover:border-rose-300'
-                  }`}
+                <label
+                  className={`flex items-center p-3.5 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'cod'
+                    ? 'border-rose-600 bg-rose-50'
+                    : 'border-gray-200 bg-white hover:border-rose-300'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -291,12 +291,11 @@ export default function Payment() {
                   </div>
                 </label>
 
-                <label 
-                  className={`flex items-center p-3.5 border-2 rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'bank' 
-                      ? 'border-rose-600 bg-rose-50' 
-                      : 'border-gray-200 bg-white hover:border-rose-300'
-                  }`}
+                <label
+                  className={`flex items-center p-3.5 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'bank'
+                    ? 'border-rose-600 bg-rose-50'
+                    : 'border-gray-200 bg-white hover:border-rose-300'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -325,17 +324,17 @@ export default function Payment() {
                   ) : payOSQRCode ? (
                     <>
                       <div className="inline-block p-2 border border-gray-200 rounded-lg bg-white">
-                        <img 
-                          src={payOSQRCode} 
+                        <img
+                          src={payOSQRCode}
                           alt="PayOS QR Code"
                           className="w-[200px] h-[200px] rounded"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
                       {payOSLink && (
-                        <a 
-                          href={payOSLink} 
-                          target="_blank" 
+                        <a
+                          href={payOSLink}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="mt-2 inline-block text-xs text-rose-600 hover:text-rose-700 underline"
                         >
@@ -427,7 +426,7 @@ export default function Payment() {
                   </div>
                 )}
 
-                <button 
+                <button
                   onClick={handlePlaceOrder}
                   disabled={loading || placingOrder || cartItems.length === 0}
                   className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2 hover:transform hover:-translate-y-0.5"
@@ -445,7 +444,7 @@ export default function Payment() {
                   )}
                 </button>
 
-                <button 
+                <button
                   onClick={handleEditOrder}
                   className="w-full bg-transparent hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
                 >
