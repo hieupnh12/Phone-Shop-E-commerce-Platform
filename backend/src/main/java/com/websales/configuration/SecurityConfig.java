@@ -5,6 +5,7 @@ import com.websales.handler.OAuth2LoginSuccessHandler;
 import com.websales.service.GoogleAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,6 +27,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS =
@@ -93,9 +95,8 @@ public class SecurityConfig {
     @Bean
     JwtAuthenticationConverter jwtConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthorityPrefix("");
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("scope");
-
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("scopes");
+        grantedAuthoritiesConverter.setAuthorityPrefix("SCOPE_");
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return converter;
