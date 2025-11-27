@@ -1,123 +1,131 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MapPin, Edit, Trash2, CheckCircle, Loader2 } from 'lucide-react';
-
+import { Plus, MapPin, Edit, Trash2, Home, Loader2 } from 'lucide-react';
 import AddressForm from "../common/AddressForm";
-
-const STORAGE_KEY = 'customer_addresses';
-
-const getLocalAddresses = () => {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.error("Lỗi khi đọc LocalStorage:", e);
-        return [];
-    }
-};
-
-const saveLocalAddresses = (addresses) => {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(addresses));
-    } catch (e) {
-        console.error("Lỗi khi ghi LocalStorage:", e);
-    }
-};
-// ------------------------------------------------
+import { customerService } from '../../services/api';
 
 const AddressBook = () => {
     const [addresses, setAddresses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-
     const [showForm, setShowForm] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState(null);
+    const [defaultAddressId, setDefaultAddressId] = useState(null); // Lưu địa chỉ mặc định (địa chỉ đầu tiên)
+    const [customerInfo, setCustomerInfo] = useState({
+        fullName: '',
+        phoneNumber: ''
+    });
 
-    // Load dữ liệu khi component được mount
+    // Load dữ liệu từ API
     useEffect(() => {
-        setIsLoading(true);
-        // Mô phỏng việc tải dữ liệu chậm từ API (thực tế là LocalStorage)
-        setTimeout(() => {
-            setAddresses(getLocalAddresses());
-            setIsLoading(false);
-        }, 300);
+        loadCustomerInfo();
+        loadAddresses();
     }, []);
 
-    // --- Handlers & Local State Operations ---
-
-    const handleSaveAddress = async (formData, isEditMode) => {
-        setIsLoading(true);
-        let updatedAddresses = [...addresses];
-
-        // Xử lý isDefault (chỉ có một địa chỉ mặc định)
-        if (formData.isDefault) {
-            updatedAddresses = updatedAddresses.map(addr => ({ ...addr, isDefault: false }));
+    const loadCustomerInfo = async () => {
+        try {
+            const response = await customerService.getMyCustomerInfo();
+            const customer = response?.result || response;
+            setCustomerInfo({
+                fullName: customer.fullName || '',
+                phoneNumber: customer.phoneNumber || ''
+            });
+        } catch (error) {
+            console.error("Lỗi khi tải thông tin khách hàng:", error);
         }
-
-        if (isEditMode) {
-            // Chế độ Sửa
-            updatedAddresses = updatedAddresses.map(addr =>
-                addr.id === formData.id ? { ...formData } : addr
-            );
-        } else {
-            // Chế độ Thêm mới
-            const newAddress = { ...formData, id: Date.now().toString() };
-            updatedAddresses.push(newAddress);
-        }
-
-        // Đảm bảo luôn có ít nhất 1 địa chỉ mặc định nếu có địa chỉ
-        if (updatedAddresses.length === 1 && updatedAddresses[0].id) {
-            updatedAddresses[0].isDefault = true;
-        }
-
-        setAddresses(updatedAddresses);
-        saveLocalAddresses(updatedAddresses);
-        setIsLoading(false);
     };
 
-    const handleDelete = (id) => {
-        // Thay thế window.confirm bằng alert/custom modal
+    const loadAddresses = async () => {
+        try {
+            setIsLoading(true);
+            const response = await customerService.getAddresses();
+            const addressList = response?.result || response || [];
+            setAddresses(addressList);
+            // Đặt địa chỉ đầu tiên làm mặc định nếu chưa có
+            if (addressList.length > 0 && !defaultAddressId) {
+                setDefaultAddressId(addressList[0].addressBookId);
+            }
+        } catch (error) {
+            console.error("Lỗi khi tải địa chỉ:", error);
+            setAddresses([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSaveAddress = async (formData, isEditMode) => {
+        try {
+            setIsLoading(true);
+            console.log("Saving address:", formData, "isEditMode:", isEditMode);
+            
+            if (isEditMode) {
+                // Cập nhật địa chỉ
+                console.log("Updating address with ID:", addressToEdit.addressBookId);
+                const result = await customerService.updateAddress(addressToEdit.addressBookId, formData);
+                console.log("Update result:", result);
+            } else {
+                // Tạo địa chỉ mới
+                console.log("Creating new address");
+                const result = await customerService.addAddress(formData);
+                console.log("Create result:", result);
+            }
+            
+            console.log("Reloading addresses...");
+            await loadAddresses();
+            setShowForm(false);
+            setAddressToEdit(null);
+        } catch (error) {
+            console.error("Lỗi khi lưu địa chỉ:", error);
+            console.error("Error details:", error.response?.data || error.message);
+            alert("Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) return;
 
-        const addressToDelete = addresses.find(a => a.id === id);
-
-        if (addressToDelete && addressToDelete.isDefault && addresses.length > 1) {
+        const addressToDelete = addresses.find(a => a.addressBookId === id);
+        
+        // Không cho xóa địa chỉ mặc định nếu còn nhiều địa chỉ
+        if (addressToDelete && defaultAddressId === id && addresses.length > 1) {
             alert("Lỗi: Vui lòng đặt một địa chỉ khác làm mặc định trước khi xóa địa chỉ mặc định hiện tại.");
             return;
         }
 
-        let updatedAddresses = addresses.filter(addr => addr.id !== id);
-
-        // Nếu địa chỉ mặc định bị xóa, đặt địa chỉ đầu tiên (nếu còn) làm mặc định mới
-        if (addressToDelete && addressToDelete.isDefault && updatedAddresses.length > 0) {
-            updatedAddresses[0].isDefault = true;
+        try {
+            setIsLoading(true);
+            await customerService.deleteAddress(id);
+            await loadAddresses();
+            // Nếu xóa địa chỉ mặc định, đặt địa chỉ đầu tiên (nếu còn) làm mặc định
+            if (defaultAddressId === id && addresses.length > 1) {
+                const remaining = addresses.filter(a => a.addressBookId !== id);
+                if (remaining.length > 0) {
+                    setDefaultAddressId(remaining[0].addressBookId);
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi khi xóa địa chỉ:", error);
+            alert("Lỗi: Không thể xóa địa chỉ. Vui lòng thử lại.");
+        } finally {
+            setIsLoading(false);
         }
-
-        setAddresses(updatedAddresses);
-        saveLocalAddresses(updatedAddresses);
     };
 
     const handleSetDefault = (id) => {
-        const updatedAddresses = addresses.map(addr => ({
-            ...addr,
-            isDefault: addr.id === id ? true : false,
-        }));
-
-        setAddresses(updatedAddresses);
-        saveLocalAddresses(updatedAddresses);
+        setDefaultAddressId(id);
     };
 
-    // Mở form Thêm mới
     const handleAddAddress = () => {
         setAddressToEdit(null);
         setShowForm(true);
     };
 
-    // Mở form Sửa
     const handleEditAddress = (address) => {
         setAddressToEdit(address);
         setShowForm(true);
     };
 
-    // --- Render Phần Địa chỉ ---
+    // Render danh sách địa chỉ
     const renderAddressList = () => {
         if (isLoading) {
             return (
@@ -141,61 +149,84 @@ const AddressBook = () => {
             );
         }
 
-        // Sắp xếp địa chỉ mặc định lên đầu
-        const sortedAddresses = [...addresses].sort((a, b) => (b.isDefault ? 1 : a.isDefault ? -1 : 0));
+        // Sắp xếp: địa chỉ mặc định lên đầu
+        const sortedAddresses = [...addresses].sort((a, b) => {
+            if (a.addressBookId === defaultAddressId) return -1;
+            if (b.addressBookId === defaultAddressId) return 1;
+            return 0;
+        });
 
         return (
-            <div className="space-y-4">
-                {sortedAddresses.map((addr) => (
-                    <div key={addr.id} className={`p-4 border rounded-lg transition-shadow ${addr.isDefault ? 'border-red-500 bg-red-50 shadow-md' : 'border-gray-200 hover:shadow-sm'}`}>
-
-                        <div className="flex justify-between items-start">
-                            <div className="flex items-center space-x-2 text-gray-800 font-semibold mb-2">
-                                <MapPin size={18} className="text-red-500" />
-                                <span>Địa chỉ {addr.isDefault ? 'MẶC ĐỊNH' : ''}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {sortedAddresses.map((addr) => {
+                    const isDefault = addr.addressBookId === defaultAddressId;
+                    return (
+                        <div 
+                            key={addr.addressBookId} 
+                            className={`p-4 border rounded-lg transition-shadow ${
+                                isDefault ? 'border-red-500 bg-red-50 shadow-md' : 'border-gray-200 hover:shadow-sm'
+                            }`}
+                        >
+                            {/* Header với label và buttons */}
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-2">
+                                    
+                                    <button
+                                        className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded flex items-center gap-1"
+                                        disabled
+                                    >
+                                        <Home size={12} />
+                                        Nhà
+                                    </button>
+                                    {isDefault && (
+                                        <button
+                                            className="px-2 py-1 text-xs bg-blue-500 text-white rounded"
+                                            disabled
+                                        >
+                                            Mặc định
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="flex space-x-3">
+                            {/* Thông tin địa chỉ */}
+                            <div className="text-sm text-gray-700 space-y-1 mb-3">
+                                <p><span className="font-medium">Người nhận:</span> {customerInfo.fullName || 'N/A'}</p>
+                                <p><span className="font-medium">SĐT:</span> {customerInfo.phoneNumber || 'N/A'}</p>
+                                <p><span className="font-medium">Địa chỉ:</span> {addr.address || 'Chưa có'}</p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                {!isDefault && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSetDefault(addr.addressBookId)}
+                                        className="text-xs text-blue-500 hover:text-blue-600 font-medium"
+                                    >
+                                        Đặt làm mặc định
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => handleEditAddress(addr)}
-                                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                                    className="text-xs text-blue-500 hover:text-blue-600 font-medium"
                                 >
-                                    <Edit size={16} />
+                                    Cập nhật
                                 </button>
-
-                                {!(addr.isDefault && addresses.length === 1) && (
+                                {!(isDefault && addresses.length === 1) && (
                                     <button
                                         type="button"
-                                        onClick={() => handleDelete(addr.id)}
-                                        className="text-red-500 hover:text-red-700 transition-colors"
+                                        onClick={() => handleDelete(addr.addressBookId)}
+                                        className="text-xs text-red-500 hover:text-red-600 font-medium"
                                     >
-                                        <Trash2 size={16} />
+                                        Xóa
                                     </button>
                                 )}
                             </div>
                         </div>
-
-                        <div className="text-sm text-gray-700 space-y-1 border-t pt-3">
-                            <p>Người nhận: <span className="font-medium">{addr.name}</span></p>
-                            <p>SĐT: <span className="font-medium">{addr.phone}</span></p>
-                            <p>Địa chỉ: {addr.street}, {addr.ward}, {addr.district}, {addr.city}</p>
-                        </div>
-
-                        {!addr.isDefault && (
-                            <div className="mt-3 pt-3 border-t border-gray-100">
-                                <button
-                                    type="button"
-                                    onClick={() => handleSetDefault(addr.id)}
-                                    className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center"
-                                >
-                                    <CheckCircle size={14} className="mr-1" />
-                                    Đặt làm địa chỉ mặc định
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         );
     };
@@ -207,7 +238,7 @@ const AddressBook = () => {
                 <button
                     onClick={handleAddAddress}
                     className="flex items-center text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
-                    disabled={isLoading} // Chỉ disabled trong thời gian tải data
+                    disabled={isLoading}
                 >
                     <Plus size={18} className="mr-2" />
                     Thêm địa chỉ
@@ -220,7 +251,10 @@ const AddressBook = () => {
             {showForm && (
                 <AddressForm
                     addressToEdit={addressToEdit}
-                    onClose={() => {setShowForm(false); setAddressToEdit(null);}}
+                    onClose={() => {
+                        setShowForm(false);
+                        setAddressToEdit(null);
+                    }}
                     onSave={handleSaveAddress}
                 />
             )}

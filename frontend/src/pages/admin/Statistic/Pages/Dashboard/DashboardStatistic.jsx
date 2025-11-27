@@ -17,7 +17,7 @@ export default function DashboardStatistic() {
       return res?.result || [];
     },
     enabled: !!isAuth, 
-    staleTime: 1000 * 60 * 5, 
+    staleTime: 0, 
     refetchOnWindowFocus: true, 
     refetchInterval: 0, 
   })
@@ -31,7 +31,7 @@ export default function DashboardStatistic() {
       return res?.result || []; 
     },
     enabled: !!isAuth, 
-    staleTime: 1000 * 60 * 5, 
+    staleTime: 0, 
     refetchOnWindowFocus: true, 
     refetchInterval: 0, 
   });
@@ -40,7 +40,7 @@ export default function DashboardStatistic() {
       console.log("dđ",dataCard);
 
   if (authLoading) return <Loading fullScreen type="dots" />;
-  if (error) return <Loading fullScreen message={error.message}/>;
+  if (error) return <Loading />;
 // <p>Error: {error.message}</p> || 
   return (
     <div className="w-full">

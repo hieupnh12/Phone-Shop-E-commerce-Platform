@@ -6,6 +6,9 @@ import Cookies from 'js-cookie'
 const LOGIN_API_ENDPOINT = '/employee';
 
 const loginApi = {
+  setPasswordFirst: (payload) => {
+    return axiosClient[POST](`${LOGIN_API_ENDPOINT}/auth_set_password`, payload);
+  },
 
   // admin/ staff và manager login thông thường
   postLogin: (account) => {

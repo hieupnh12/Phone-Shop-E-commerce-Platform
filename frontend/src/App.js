@@ -4,7 +4,6 @@ import {
   Outlet,
   Navigate,
 } from "react-router-dom";
-
 import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
@@ -35,165 +34,143 @@ import CartLayout from "./components/layout/CartLayout";
 import UpdateInfor from "./pages/auth/UpdateInfor";
 import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
-import ProfilePageLayout from './components/profile/ProfilePageLayout';
+import ProfilePageLayout from "./components/profile/ProfilePageLayout";
 import OrderDetailPage from "./components/profile/OrderDetailPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
-// Protected Route Component - check JWT token via getUserRole
+import { useUrlTokenHandler } from "./hooks/useUrlTokenHandler";
 import OrderHistory from "./pages/client/OrderHistory";
-import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
 import AdminLogin from "./pages/auth/AdminLogin";
 import AddProduct from "./pages/admin/Products/AddProduct";
 import ListProduct from "./pages/admin/Products/ListProduct";
 import EditProduct from "./pages/admin/Products/EditProduct";
+import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
+import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
+import SetPasswordPage from "./pages/auth/SetPasswordPage";
 import Orders from "./pages/admin/Order";
 import MyFeedbacksPage from "./pages/client/MyFeedbacks";
-
-// Protected Route Component (Tạm comment để test cart)
-// const ProtectedRoute = ({ children }) => {
-//   const { user } = useAuth();
-//   if (!user) return <Navigate to="/login" replace />;
-//   return children;
-// };
-
+import UserHomePage from "./pages/client/UserHomePage";
+import Customers from "./pages/admin/Customer";
+import Employee from "./pages/admin/Employee";
+import Role from "./pages/admin/Role";
 const RouterInitializer = () => {
-    useUrlTokenHandler();
-    return <ClientHomePage />;
-}
+  useUrlTokenHandler();
+  return <Home />; // Ensure this fits your needs, can be adjusted
+};
 
-const router = createBrowserRouter(
-  [
-    {
-        path: "/",
-        element: <RouterInitializer />,
-      children: [
-        { index: true, element: <Home /> },
+const queryClient = new QueryClient();
 
-      ],
-    },
-    {
-      path: "/products",
-      element: <Products />,
-      children: [
-        {
-          index: true, element: <ProductsContainer />
-        },
-        {
-          path: ":id", element: <ProductDetailPage />
-        }
-      ],
-    },
-        // {
-        //   path: "products/id",
-        //   element: <ProductDetails />,
-        // },
-    {
-      path: "/cart",
-      element: (
-          <CartLayout />
-      ),
-      children: [{ index: true, element: <Cart /> }],
-    },
-
-    {
-      path: "/login",
-      element: (
-          <Login />
-      ),
-    },
-    {
-      path: "/admin-login",
-      element: <AdminLogin />,
-    },
-    {
-      path: "/payment",
-      element: <Payment />,
-    },
-    {
-      path: "/payment/success",
-      element: <PaymentSuccess />,
-    },
-    {
-      path: "/payment/cancel",
-      element: <PaymentCancel />,
-    },
-    {
-      path: "/orders",
-      element: <OrderHistory />,
-    },    
-    {
-      path: "/update",
-      element: <UpdateInfor />,
-    },
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RouterInitializer />,
+    children: [{ index: true, element: <Home /> }],
+  },
+  {
+    path: "/user",
+    element: <UserHomePage />,
+    children: [
+      { index: true, element: <Home /> },
+      {
+        path: "products",
+        element: <Products />,
+        children: [
+          {
+            index: true,
+            element: <ProductsContainer />,
+          },
+          {
+            path: ":id",
+            element: <ProductDetailPage />,
+          },
+        ],
+      },
+      {
+        path: "cart",
+        element: <CartLayout />,
+        children: [{ index: true, element: <Cart /> }],
+      },
+      {
+        path: "payment",
+        element: <Payment />,
+      },
+      {
+        path: "payment/success",
+        element: <PaymentSuccess />,
+      },
+      {
+        path: "payment/cancel",
+        element: <PaymentCancel />,
+      },
+      {
+        path: "orders",
+        element: <OrderHistory />,
+      },
+      {
+        path: "update",
+        element: <UpdateInfor />,
+      },
     {
       path: "/feedbacks",
       element: <MyFeedbacksPage />,
     },
       {
-          path: "/profile",
-          element: (
-                  <ProfilePageLayout />
-          ),
-          children: [
-              { index: true, element: <Navigate to="info" replace /> }, // Tự động chuyển đến /profile/info
-
-              { path: "info", element: <PersonalInfoForm /> },
-
-              { path: "order", element: <OrderHistoryPage /> },
-              { path: "order/order-detail/:orderId", element: <OrderDetailPage /> },
-
-              // { path: "warranty", element={<div>Thông tin bảo hành</div>} },
-              //   { path: "support", element={<div>Góp ý - Hỗ trợ</div>} },
-      ],
+        path: "profile",
+        element: <ProfilePageLayout />,
+        children: [
+          { index: true, element: <Navigate to="info" replace /> }, 
+          { path: "info", element: <PersonalInfoForm /> },
+          { path: "order", element: <OrderHistoryPage /> },
+          { path: "order/order-detail/:orderId", element: <OrderDetailPage /> },
+        ],
       },
-
-    {
-      path: "/admin",
-        element: <AdminRoute allowedRoles={["ROLE_ADMIN", "ROLE_SALE"]} />,
-      children: [
-        {
-          element: <AdminLayout />,
-          children: [
-            { index: true, element: <Navigate to="dashboard" replace /> },
-            { path: "dashboard", element: <HomeAdmin /> },
-            {
-              path: "products",
-              children: [
-                { index: true, element: <ListProduct /> },
-                { path: "create", element: <AddProduct /> },
-                { path: ":id/edit", element: <EditProduct /> },
-              ],
-            },
-            { path: "orders", element: <Orders /> },
-            {
-              path: "statistic",
-              element: <Statistic />,
-              children: [
-                { index: true, element: <Navigate to="dashboard" replace /> },
-                { path: "dashboard", element: <DashboardStatistic /> },
-                { path: "products", element: <ProductStatistic /> },
-                { path: "orders", element: <OrderStatistic /> },
-                { path: "revenue", element: <RevenueStatistic /> },
-                { path: "setting", element: <Settings /> },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    { path: "*", element: <NotFound /> },
-  ],
+    ],
+  },
   {
-    future: {
-      v7_startTransition: true,
-    },
-  }
-);
-const queryClient = new QueryClient();
-
-
+    path: "/admin",
+    element: (
+      <AdminRoute
+        allowedRoles={["ROLE_ADMIN", "ROLE_SALE", "ROLE_SALE_LEAD"]}
+      />
+    ),
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          { path: "dashboard", element: <HomeAdmin /> },
+          {
+            path: "products",
+            children: [
+              { index: true, element: <ListProduct /> },
+              { path: "create", element: <AddProduct /> },
+              { path: ":id/edit", element: <EditProduct /> },
+            ],
+          },
+          { path: "orders", element: <Orders /> },
+          {
+            path: "statistic",
+            element: <Statistic />,
+            children: [
+              { index: true, element: <Navigate to="dashboard" replace /> },
+              { path: "dashboard", element: <DashboardStatistic /> },
+              { path: "products", element: <ProductStatistic /> },
+              { path: "orders", element: <OrderStatistic /> },
+              { path: "revenue", element: <RevenueStatistic /> },
+              { path: "setting", element: <Settings /> },
+            ],
+          },
+          { path: "roles", element: <RoleManagementPage /> },
+          { path: "customers", element: <Customers /> },
+          { path: "employee", element: <EmployeeManagementPage /> },
+        ],
+      },
+    ],
+  },
+  { path: "*", element: <NotFound /> },
+]);
 
 function App() {
   return (

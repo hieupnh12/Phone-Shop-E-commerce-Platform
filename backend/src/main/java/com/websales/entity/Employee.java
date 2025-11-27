@@ -24,7 +24,7 @@ public class Employee {
     String passwordHash;
     String fullName;
     @Builder.Default
-    Boolean isActive = true;
+    Boolean isActive = false;
     @CreationTimestamp
     LocalDateTime createdAt;
     @UpdateTimestamp
@@ -34,6 +34,6 @@ public class Employee {
             joinColumns = @JoinColumn(name = "employee_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id") )
     Set<Role> employeeRoles;
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "employee")
     Set<AuditLog> auditLogs;
 }

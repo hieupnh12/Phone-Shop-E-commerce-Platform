@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PasswordResetService {
-    private static final long TOKEN_EXPIRY_SECONDS = 300;
+    private static final long TOKEN_EXPIRY_SECONDS = 86400;
     EmailService emailService;
     EmployeeRepo employeeRepo;
     PasswordResetTokenRepo tokenRepository;
@@ -29,7 +29,9 @@ public class PasswordResetService {
 
 
     public void initiatePasswordReset(ConfirmEmailRequest request) {
-        Employee employee = employeeRepo.findByEmail(request.getEmail());
+        Employee employee = employeeRepo.findByEmail(request.getEmail()).orElseThrow(
+                () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
+        );
 
 
         tokenRepository.findByEmployee(employee).ifPresent(existingToken -> {
@@ -49,12 +51,14 @@ public class PasswordResetService {
         tokenRepository.save(resetToken);
 
 
-        String resetLink = "http://localhost:3000/forgot-password?token=" + token;
+        String resetLink = "http://localhost:3000/set-password?token=" + token;
         emailService.sendPasswordResetEmail(request.getEmail(), resetLink);
     }
 
     public void sendMailResetPassword(String email) {
-        Employee employee = employeeRepo.findByEmail(email);
+        Employee employee = employeeRepo.findByEmail(email).orElseThrow(
+                () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
+        );
 
 
         tokenRepository.findByEmployee(employee).ifPresent(existingToken -> {
@@ -74,7 +78,7 @@ public class PasswordResetService {
         tokenRepository.save(resetToken);
 
 
-        String resetLink = "http://localhost:3000/forgot-password?token=" + token;
+        String resetLink = "http://localhost:3000/set-password?token=" + token;
         emailService.sendPasswordResetEmail(email, resetLink);
     }
 
@@ -90,6 +94,7 @@ public class PasswordResetService {
 
         Employee employee = resetToken.getEmployee();
         employee.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        employee.setIsActive(Boolean.TRUE);
         employeeRepo.save(employee);
 
         tokenRepository.deleteById(resetToken.getId());

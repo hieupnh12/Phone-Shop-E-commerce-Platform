@@ -60,10 +60,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             String jwtToken = customerAuthService.generateCustomerToken(customUser.getCustomerId());
 
-
             String redirectUrl = FRONTEND_BASE_URL + "?token=" + jwtToken;
-
-
 
             response.sendRedirect(redirectUrl);
 

@@ -34,6 +34,7 @@ const { data: apiData, isLoading } = useQuery({
     const res = await statisticApi.getProducts(params);
     return res.result;
   },
+  staleTime: 0,
   keepPreviousData: true, // <- phải đặt ở đây
 });
 

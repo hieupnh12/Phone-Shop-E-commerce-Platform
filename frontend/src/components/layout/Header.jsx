@@ -53,7 +53,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
     { id: 5, name: t('navigation.contact'), link: '/contact' },
   ], [t]);
 
-
   return (
     <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-sm bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,10 +75,10 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               onClick={() => navigate("/")}
             >
               <img
-  src="/image/flogo.png"
-  alt="FShop Logo"
-  className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-/>
+                src="/image/flogo.png"
+                alt="FShop Logo"
+                className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+              />
 
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                 Shop
@@ -93,7 +92,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
               <a
                 key={item.id}
                 href={item.link}
-                                className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-white hover:text-blue-400 transition-all duration-300 group font-medium"
+                className="relative px-3 lg:px-4 py-2 text-sm lg:text-base text-white hover:text-blue-400 transition-all duration-300 group font-medium"
               >
                 {item.name}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-blue-600 group-hover:w-full transition-all duration-300" />
@@ -116,8 +115,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             ) : (
               <div
                 className="relative"
-                onMouseEnter={() => setShowUserMenu(true)}
-                onMouseLeave={() => setShowUserMenu(false)}
               >
                 <button
                   onClick={() => setShowUserMenu((s) => !s)}
@@ -136,6 +133,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
+                        navigate("/user/profile/info");
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
@@ -143,7 +141,10 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
                     </button>
                     <button
                       onClick={() => {
-                        setShowUserMenu(false);
+                        /* placeholder: navigate to transactions later */ setShowUserMenu(
+                          false
+                        );
+                        navigate("/user/profile/order");
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
@@ -166,7 +167,7 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             )}
 
             <button
-              onClick={() => navigate("/cart")}
+              onClick={() => navigate("/user/cart")}
               className="relative p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/20 hover:from-cyan-500/30 hover:to-blue-600/30 transition-all duration-300 hover:scale-105 group"
               aria-label="View cart"
             >
