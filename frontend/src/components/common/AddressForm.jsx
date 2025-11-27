@@ -1,31 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin } from 'lucide-react';
 import InputField from '../common/InputField';
-
-const initialFormState = {
-    name: '',
-    phone: '',
-    city: '',
-    district: '',
-    ward: '',
-    street: '',
-    isDefault: false,
-};
+import { customerService } from '../../services/api';
 
 const AddressForm = ({ addressToEdit, onClose, onSave }) => {
-    const [formData, setFormData] = useState(addressToEdit || initialFormState);
+    const [formData, setFormData] = useState({
+        city: '',
+        ward: '',
+        street: '',
+    });
+    const [customerInfo, setCustomerInfo] = useState({
+        fullName: '',
+        phoneNumber: ''
+    });
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingCustomer, setIsLoadingCustomer] = useState(true);
     const [error, setError] = useState(null);
 
+    // Load customer info để lấy tên và số điện thoại
     useEffect(() => {
-        setFormData(addressToEdit || initialFormState);
+        const loadCustomerInfo = async () => {
+            try {
+                setIsLoadingCustomer(true);
+                const response = await customerService.getMyCustomerInfo();
+                const customer = response?.result || response;
+                setCustomerInfo({
+                    fullName: customer.fullName || '',
+                    phoneNumber: customer.phoneNumber || ''
+                });
+            } catch (err) {
+                console.error("Lỗi khi tải thông tin khách hàng:", err);
+            } finally {
+                setIsLoadingCustomer(false);
+            }
+        };
+        loadCustomerInfo();
+    }, []);
+
+    useEffect(() => {
+        if (addressToEdit) {
+            // Parse address từ string: "street, ward, city"
+            const addressParts = addressToEdit.address ? addressToEdit.address.split(',').map(s => s.trim()) : [];
+            setFormData({
+                city: addressParts.length >= 3 ? addressParts[addressParts.length - 1] : '',
+                ward: addressParts.length >= 2 ? addressParts[addressParts.length - 2] : '',
+                street: addressParts.length >= 1 ? addressParts.slice(0, -2).join(', ') : '',
+            });
+        } else {
+            setFormData({
+                city: '',
+                ward: '',
+                street: '',
+            });
+        }
     }, [addressToEdit]);
 
     const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: value
         }));
     };
 
@@ -35,23 +69,42 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
         setIsLoading(true);
 
         try {
-            await onSave(formData, !!addressToEdit);
+            // Tạo địa chỉ đầy đủ: "street, ward, city"
+            const fullAddress = `${formData.street}, ${formData.ward}, ${formData.city}`.trim();
+            
+            if (!formData.street || !formData.ward || !formData.city) {
+                setError("Vui lòng điền đầy đủ thông tin địa chỉ");
+                setIsLoading(false);
+                return;
+            }
+
+            console.log("Submitting form with address:", fullAddress);
+            await onSave({ address: fullAddress }, !!addressToEdit);
+            console.log("Save successful, closing form");
             onClose();
         } catch (err) {
             console.error("Lỗi khi lưu địa chỉ:", err);
-            setError("Lỗi: Không thể lưu địa chỉ. Vui lòng thử lại.");
-        } finally {
+            console.error("Error response:", err.response);
+            setError("Lỗi: Không thể lưu địa chỉ. " + (err.response?.data?.message || err.message || "Vui lòng thử lại."));
             setIsLoading(false);
         }
     };
 
     const isEditMode = !!addressToEdit;
 
+    if (isLoadingCustomer) {
+        return (
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                    <p className="text-center text-gray-500">Đang tải thông tin...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        // Modal Wrapper
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg relative animate-fade-in">
-
                 {/* Header Modal */}
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-gray-800 flex items-center">
@@ -65,76 +118,53 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
 
                 {/* Form Nội dung */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-
-                    {/* Hàng 1: Tên và SĐT */}
+                    {/* Tên người nhận và SĐT - Disabled */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField
                             label="Tên người nhận"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            required
+                            name="fullName"
+                            value={customerInfo.fullName}
+                            disabled
+                            helperText="Lấy từ thông tin cá nhân"
                         />
                         <InputField
                             label="Số điện thoại"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            type="tel"
-                            required
+                            name="phoneNumber"
+                            value={customerInfo.phoneNumber}
+                            disabled
+                            helperText="Lấy từ thông tin cá nhân"
                         />
                     </div>
 
-                    {/* Hàng 2: Tỉnh/Thành phố & Quận/Huyện */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <InputField
-                            label="Tỉnh/Thành phố"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleInputChange}
-                            required
-                        />
-                        <InputField
-                            label="Quận/Huyện"
-                            name="district"
-                            value={formData.district}
-                            onChange={handleInputChange}
-                            required
-                        />
-                    </div>
+                    {/* Tỉnh/Thành phố */}
+                    <InputField
+                        label="Tỉnh/Thành phố"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Ví dụ: Đà Nẵng"
+                    />
 
-                    {/* Hàng 3: Phường/Xã & Địa chỉ chi tiết */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <InputField
-                            label="Phường/Xã"
-                            name="ward"
-                            value={formData.ward}
-                            onChange={handleInputChange}
-                            required
-                        />
-                        <InputField
-                            label="Địa chỉ chi tiết (Số nhà, đường)"
-                            name="street"
-                            value={formData.street}
-                            onChange={handleInputChange}
-                            required
-                        />
-                    </div>
+                    {/* Phường/Xã */}
+                    <InputField
+                        label="Phường/Xã"
+                        name="ward"
+                        value={formData.ward}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Ví dụ: Phường Hoà Quý"
+                    />
 
-                    {/* Checkbox Mặc định */}
-                    <div className="flex items-center pt-2">
-                        <input
-                            id="isDefault"
-                            name="isDefault"
-                            type="checkbox"
-                            checked={formData.isDefault}
-                            onChange={handleInputChange}
-                            className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                        />
-                        <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-900">
-                            Đặt làm địa chỉ mặc định
-                        </label>
-                    </div>
+                    {/* Địa chỉ chi tiết */}
+                    <InputField
+                        label="Địa chỉ chi tiết (Số nhà, đường)"
+                        name="street"
+                        value={formData.street}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Ví dụ: 27 Tran Dai Nghia"
+                    />
 
                     {/* Footer Modal */}
                     <div className="pt-4 flex justify-end space-x-3">
@@ -152,11 +182,10 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
                             className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors disabled:bg-red-300"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Đang lưu...' : (isEditMode ? 'Lưu Thay Đổi' : 'Thêm Địa Chỉ')}
+                            {isLoading ? 'Đang lưu...' : (isEditMode ? 'Cập nhật' : 'Thêm Địa Chỉ')}
                         </button>
                     </div>
                 </form>
-
             </div>
         </div>
     );

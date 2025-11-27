@@ -34,6 +34,7 @@ const PersonalInfoForm = () => {
                 gender: genderString,
                 email: customerInfo.email || '',
                 dateOfBirth: customerInfo.birthDate?.split('T')[0] || '',
+                address: customerInfo.address || '',
             });
         }
     }, [customerInfo]);
@@ -49,13 +50,18 @@ const PersonalInfoForm = () => {
 
     const handleCancelClick = () => {
         if (customerInfo) {
+            let genderString = '';
+            if (customerInfo.gender === true) genderString = 'male';
+            else if (customerInfo.gender === false) genderString = 'female';
+            
             setFormData({
                 customerId: customerInfo.customerId,
                 fullName: customerInfo.fullName || '',
                 phone: customerInfo.phoneNumber || '',
-                gender: customerInfo.gender || '',
+                gender: genderString,
                 email: customerInfo.email || '',
                 dateOfBirth: customerInfo.birthDate?.split('T')[0] || '',
+                address: customerInfo.address || '',
             });
         }
         setIsEditing(false);
@@ -73,7 +79,7 @@ const PersonalInfoForm = () => {
             // Chuyển đổi lại giới tính từ string sang boolean
             gender: formData.gender === 'male' ? true : (formData.gender === 'female' ? false : null),
             birthDate: formData.dateOfBirth, // Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
-            address: customerInfo.address, // Giữ nguyên address hiện tại (nếu API update không yêu cầu nó)
+            address: formData.address || '', // Gửi địa chỉ từ form
         };
 
         const customerId = formData.customerId;
@@ -117,119 +123,124 @@ const PersonalInfoForm = () => {
     }
 
     return (
-        <form onSubmit={handleSaveClick} className="space-y-6">
-
-            {/* Phần Thông tin cá nhân */}
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                <div className="flex items-center justify-between border-b pb-4 mb-6">
-                    <h3 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h3>
-                    {isEditing ? (
-                        <div className="flex space-x-3">
-                            <button
-                                type="submit"
-                                className="flex items-center text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors"
-                            >
-                                <Save size={18} className="mr-2" />
-                                Lưu thay đổi
-                            </button>
+        <div className="space-y-6">
+            <form onSubmit={handleSaveClick}>
+                {/* Phần Thông tin cá nhân */}
+                <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                    <div className="flex items-center justify-between border-b pb-4 mb-6">
+                        <h3 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h3>
+                        {isEditing ? (
+                            <div className="flex space-x-3">
+                                <button
+                                    type="submit"
+                                    className="flex items-center text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    <Save size={18} className="mr-2" />
+                                    Lưu thay đổi
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCancelClick}
+                                    className="flex items-center text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    <X size={18} className="mr-2" />
+                                    Hủy
+                                </button>
+                            </div>
+                        ) : (
                             <button
                                 type="button"
-                                onClick={handleCancelClick}
-                                className="flex items-center text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors"
+                                onClick={handleUpdateClick}
+                                className="flex items-center text-red-500 hover:text-red-600 transition-colors"
                             >
-                                <X size={18} className="mr-2" />
-                                Hủy
+                                <Edit size={18} className="mr-2" />
+                                Cập nhật
                             </button>
-                        </div>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={handleUpdateClick}
-                            className="flex items-center text-red-500 hover:text-red-600 transition-colors"
-                        >
-                            <Edit size={18} className="mr-2" />
-                            Cập nhật
-                        </button>
-                    )}
-                </div>
+                        )}
+                    </div>
 
-                {/* ✅ Bố cục 2 cột cho View và Edit Mode */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    {isEditing ? (
-                        <>
-                            {/* 1. Họ và tên */}
-                            <InputField
-                                label="Họ và tên"
-                                name="fullName"
-                                value={formData.fullName}
-                                onChange={handleInputChange}
-                                required
-                            />
-                            {/* 2. Số điện thoại (disabled) */}
-                            <InputField
-                                label="Số điện thoại"
-                                name="phone"
-                                value={formData.phone}
-                                disabled
-                                helperText="Liên hệ CSKH để đổi số điện thoại"
-                            />
-                            {/* 3. Email */}
-                            <InputField
-                                label="Email"
-                                name="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                required
-                                placeholder="Nhập địa chỉ email"
-                            />
-                            {/* 4. Ngày sinh */}
-                            <InputField
-                                label="Ngày sinh"
-                                name="dateOfBirth"
-                                type="date"
-                                value={formData.dateOfBirth}
-                                onChange={handleInputChange}
-                            />
-                            {/* 5. Giới tính (Select - Chiếm 1 cột) */}
-                            {/* 🚨 Lưu ý: Giữ lại div wrapper cho Select */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới tính</label>
-                                <select
-                                    name="gender"
-                                    value={formData.gender}
+                    {/* ✅ Bố cục 2 cột cho View và Edit Mode */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        {isEditing ? (
+                            <>
+                                {/* 1. Họ và tên */}
+                                <InputField
+                                    label="Họ và tên"
+                                    name="fullName"
+                                    value={formData.fullName}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
-                                >
-                                    <option value="">Chọn giới tính</option>
-                                    <option value="male">Nam</option>
-                                    <option value="female">Nữ</option>
-                                    <option value="other">Khác</option>
-                                </select>
-                            </div>
-                            {/* Phần còn lại của bố cục 2 cột (ví dụ: một ô trống) */}
-                            <div className="hidden md:block"></div>
-                        </>
-                    ) : (
-                        <>
-                            <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
-                            <InfoDisplayItem label="Số điện thoại" value={formData.phone} />
-                            <InfoDisplayItem label="Email" value={formData.email} />
-                            <InfoDisplayItem
-                                label="Ngày sinh"
-                                value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('vi-VN') : '-'}
-                            />
-                            <InfoDisplayItem label="Giới tính" value={displayGender(formData.gender)} />
-                            <InfoDisplayItem label="Địa chỉ mặc định" value={customerInfo.address || "Chưa có"} />
-                        </>
-                    )}
+                                    required
+                                />
+                                {/* 2. Số điện thoại (disabled) */}
+                                <InputField
+                                    label="Số điện thoại"
+                                    name="phone"
+                                    value={formData.phone}
+                                    disabled
+                                    helperText="Liên hệ CSKH để đổi số điện thoại"
+                                />
+                                {/* 3. Email */}
+                                <InputField
+                                    label="Email"
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    required
+                                    placeholder="Nhập địa chỉ email"
+                                />
+                                {/* 4. Ngày sinh */}
+                                <InputField
+                                    label="Ngày sinh"
+                                    name="dateOfBirth"
+                                    type="date"
+                                    value={formData.dateOfBirth}
+                                    onChange={handleInputChange}
+                                />
+                                {/* 5. Giới tính (Select - Chiếm 1 cột) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới tính</label>
+                                    <select
+                                        name="gender"
+                                        value={formData.gender}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
+                                    >
+                                        <option value="">Chọn giới tính</option>
+                                        <option value="male">Nam</option>
+                                        <option value="female">Nữ</option>
+                                        <option value="other">Khác</option>
+                                    </select>
+                                </div>
+                                {/* 6. Địa chỉ (Chiếm 1 cột) */}
+                                <InputField
+                                    label="Địa chỉ mặc định"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleInputChange}
+                                    placeholder="Nhập địa chỉ"
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
+                                <InfoDisplayItem label="Số điện thoại" value={formData.phone} />
+                                <InfoDisplayItem label="Email" value={formData.email} />
+                                <InfoDisplayItem
+                                    label="Ngày sinh"
+                                    value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('vi-VN') : '-'}
+                                />
+                                <InfoDisplayItem label="Giới tính" value={displayGender(formData.gender)} />
+                                <InfoDisplayItem label="Địa chỉ mặc định" value={customerInfo.address || "Chưa có"} />
+                            </>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </form>
 
-
-            {/* Phần Sổ địa chỉ */}
+            {/* Phần Sổ địa chỉ - Đặt ra ngoài form để tránh form nesting */}
             <AddressBook />
-        </form>
+        </div>
     );
 };
 

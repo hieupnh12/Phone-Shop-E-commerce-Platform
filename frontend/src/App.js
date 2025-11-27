@@ -38,8 +38,6 @@ import ProfilePageLayout from './components/profile/ProfilePageLayout';
 import OrderDetailPage from "./components/profile/OrderDetailPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
-// Protected Route Component - check JWT token via getUserRole
-import OrderHistory from "./pages/client/OrderHistory";
 import {useUrlTokenHandler} from "./hooks/useUrlTokenHandler";
 import PaymentSuccess from "./pages/client/PaymentSuccess";
 import PaymentCancel from "./pages/client/PaymentCancel";
@@ -118,10 +116,6 @@ const router = createBrowserRouter(
       element: <PaymentCancel />,
     },
     {
-      path: "/orders",
-      element: <OrderHistory />,
-    },    
-    {
       path: "/update",
       element: <UpdateInfor />,
     },
@@ -145,7 +139,7 @@ const router = createBrowserRouter(
 
     {
       path: "/admin",
-        element: <AdminRoute allowedRoles={["ROLE_SALE"]} />,
+        element: <AdminRoute allowedRoles={["ROLE_ADMIN", "ROLE_SALE"]} />,
       children: [
         {
           element: <AdminLayout />,

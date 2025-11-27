@@ -145,6 +145,47 @@ export const orderService = {
 export const customerService = {
   getMyCustomerInfo: () => api.get('/customer/me').then(r => r.data),
   updateCustomer: (id, customerData) => api.put(`/customer/update/${id}`, customerData).then(r => r.data),
+  // Address book services
+  getAddresses: () => {
+    console.log("Calling GET /customer/address-book");
+    return api.get('/customer/address-book').then(r => {
+      console.log("GET addresses response:", r.data);
+      return r.data?.result || r.data || [];
+    }).catch(err => {
+      console.error("Error getting addresses:", err);
+      throw err;
+    });
+  },
+  addAddress: (addressData) => {
+    console.log("Calling POST /customer/address-book with data:", addressData);
+    return api.post('/customer/address-book', addressData).then(r => {
+      console.log("POST address response:", r.data);
+      return r.data?.result || r.data;
+    }).catch(err => {
+      console.error("Error adding address:", err);
+      throw err;
+    });
+  },
+  updateAddress: (id, addressData) => {
+    console.log("Calling PUT /customer/address-book/" + id + " with data:", addressData);
+    return api.put(`/customer/address-book/${id}`, addressData).then(r => {
+      console.log("PUT address response:", r.data);
+      return r.data?.result || r.data;
+    }).catch(err => {
+      console.error("Error updating address:", err);
+      throw err;
+    });
+  },
+  deleteAddress: (id) => {
+    console.log("Calling DELETE /customer/address-book/" + id);
+    return api.delete(`/customer/address-book/${id}`).then(r => {
+      console.log("DELETE address response:", r.data);
+      return r.data;
+    }).catch(err => {
+      console.error("Error deleting address:", err);
+      throw err;
+    });
+  },
 };
 
 // User services
