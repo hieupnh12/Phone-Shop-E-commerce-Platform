@@ -8,6 +8,7 @@ import React from "react";
 import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
@@ -49,6 +50,7 @@ import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
 import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
 import SetPasswordPage from "./pages/auth/SetPasswordPage";
 import Orders from "./pages/admin/Order";
+import MyFeedbacksPage from "./pages/client/MyFeedbacks";
 import UserHomePage from "./pages/client/UserHomePage";
 import Customers from "./pages/admin/Customer";
 import Employee from "./pages/admin/Employee";
@@ -72,6 +74,7 @@ const router = createBrowserRouter(
       element: <UserHomePage />,
       children: [
         { index: true, element: <Home /> },
+        {path: "feedbacks", element: <MyFeedbacksPage />},
 
         {
           path: "products",
@@ -148,6 +151,7 @@ const router = createBrowserRouter(
                 { path: "orders", element: <OrderStatistic /> },
                 { path: "revenue", element: <RevenueStatistic /> },
                 { path: "setting", element: <Settings /> },
+                
               ],
             },
             { path: "roles", element: <RoleManagementPage /> },
@@ -169,12 +173,14 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Chatbot />
-      </QueryClientProvider>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+          <Chatbot />
+        </QueryClientProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

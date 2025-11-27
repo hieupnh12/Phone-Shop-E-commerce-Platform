@@ -10,6 +10,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface OrderDetailMapper {
     @Mapping(target = "productVersionId", ignore = true)
+    @Mapping(target = "productId", ignore = true)
     @Mapping(target = "productName", ignore = true)
     @Mapping(target = "subtotal", ignore = true)
     OrderDetailResponse toOrderDetailResponse(OrderDetail orderDetail);
@@ -26,6 +27,10 @@ public interface OrderDetailMapper {
         if (orderDetail.getProductVersion() != null &&
             orderDetail.getProductVersion().getProduct() != null) {
             var product = orderDetail.getProductVersion().getProduct();
+            // Set product ID for feedback
+            if (product.getIdProduct() != null) {
+                response.setProductId(product.getIdProduct());
+            }
             if (product.getNameProduct() != null) {
                 response.setProductName(product.getNameProduct());
             }

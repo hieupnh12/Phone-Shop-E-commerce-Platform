@@ -8,6 +8,10 @@ spring:
   application:
     name: web-sales-backend
 
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
   security:
     oauth2:
       client:
