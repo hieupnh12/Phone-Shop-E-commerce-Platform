@@ -34,11 +34,11 @@ const orderService = {
     getCompletedOrders: async () => {
         try {
             // Lấy tất cả orders của khách hàng hiện tại
-            const res = await axiosClient.get("/api/orders/me");
+            const res = await axiosClient.get("/orders/me");
             // Filter chỉ các đơn DELIVERED hoặc PAID (đã hoàn thành)
             const allOrders = Array.isArray(res?.result) ? res.result : res || [];
             return allOrders.filter(order => 
-                order.status === 'DELIVERED'
+                order.status === 'DELIVERED' || order.status === 'PAID'
             );
         } catch (error) {
             console.error('Error fetching completed orders:', error);

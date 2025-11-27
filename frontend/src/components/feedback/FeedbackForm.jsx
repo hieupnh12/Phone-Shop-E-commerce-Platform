@@ -44,17 +44,28 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
     const load = async () => {
       if (selectedOrder?.orderId) {
         try {
-          // Nếu API có endpoint để lấy products từ order, sử dụng nó
-          // Tạm thời, giả sử order object chứa product list
-          if (selectedOrder?.products) {
-            setOrderProducts(selectedOrder.products);
-            if (selectedOrder.products.length > 0) {
-              setSelectedProductId(selectedOrder.products[0].productId);
+          // Lấy products từ orderDetails của order
+          if (selectedOrder?.orderDetails && selectedOrder.orderDetails.length > 0) {
+            // Map orderDetails để có product information
+            const products = selectedOrder.orderDetails.map(detail => ({
+              productId: detail.productId, // Use actual productId from product
+              nameProduct: detail.productName || 'Unknown Product'
+            }));
+            console.log('Products loaded:', products);
+            setOrderProducts(products);
+            // Tự động chọn sản phẩm đầu tiên
+            if (products.length > 0) {
+              setSelectedProductId(products[0].productId);
             }
+          } else {
+            console.log('No orderDetails found');
+            setOrderProducts([]);
+            setSelectedProductId(null);
           }
         } catch (err) {
           console.error('Error loading order products:', err);
           setOrderProducts([]);
+          setSelectedProductId(null);
         }
       }
     };

@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 public class OrderDetailResponse {
     Integer orderDetailId;
     String productVersionId;
+    Long productId;  // Add this to get actual product ID for feedback
     String productName;
     String productImage;
     BigDecimal unitPriceBefore;
