@@ -257,7 +257,7 @@ export default function Payment() {
           window.location.href = response.paymentLink;
         } else {
           // Navigate to orders page cho COD hoặc nếu PayOS link không có
-          navigate('/profile/order');
+          navigate('/user/profile/order');
         }
       } else {
         setError(response?.message || 'Không thể đặt hàng');
@@ -270,7 +270,7 @@ export default function Payment() {
   };
 
   const handleEditOrder = () => {
-    navigate('/cart');
+    navigate('/user/cart');
   };
 
   return (
@@ -478,7 +478,7 @@ export default function Payment() {
                     <div className="p-8 text-center text-gray-500">
                       <p>Giỏ hàng trống</p>
                       <button
-                        onClick={() => navigate('/cart')}
+                        onClick={() => navigate('/user/cart')}
                         className="mt-4 text-rose-600 hover:text-rose-700 font-medium"
                       >
                         Quay lại giỏ hàng

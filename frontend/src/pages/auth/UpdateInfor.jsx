@@ -12,8 +12,9 @@ export default function RegistrationForm() {
     const [tempToken, setTempToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const { handleCustomerLoginSuccess } = useAuthFullOptions();
-
+    const { handleCustomerLoginSuccess, setUser, user } = useAuthFullOptions();
+    console.log("uss", user);
+    
     // 1. Loại bỏ Email khỏi state
     const [formData, setFormData] = useState({
         fullName: '',
@@ -27,7 +28,6 @@ export default function RegistrationForm() {
 
         if (token) {
             setTempToken(token);
-
         } else {
             navigate('/login', { replace: true });
         }
@@ -63,6 +63,7 @@ export default function RegistrationForm() {
             };
 
             const response = await loginService.postCompleteProfile(requestData, tempToken);
+            setUser("dđ");
 
             const finalJwt = response.result.token;
 
@@ -71,7 +72,6 @@ export default function RegistrationForm() {
             //  Cookies.set(constants.ACCESS_TOKEN_KEY, finalJwt);
             // console.log(finalJwt + "")
             handleCustomerLoginSuccess(finalJwt);
-
             navigate('/', { replace: true });
 
         } catch (error) {
