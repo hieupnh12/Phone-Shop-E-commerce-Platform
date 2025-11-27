@@ -4,6 +4,7 @@ import com.websales.dto.request.CustomerCreateRequest;
 import com.websales.dto.request.CustomerUpdateRequest;
 import com.websales.dto.response.*;
 import com.websales.entity.Customer;
+import com.websales.entity.Employee;
 import com.websales.entity.Order;
 import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
@@ -14,6 +15,10 @@ import com.websales.repository.OrderRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -105,6 +110,20 @@ public class CustomerService {
                 getListOrderDetailByOrderId(orderId);
     }
 
+    public Page<CustomerResponse> searchCustomers(String keyword, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "createAt"); // đúng tên field trong entity
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Customer> customerPage;
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            customerPage = customerRepository.findCustomerByPhoneNumber(keyword, pageable);
+        } else {
+            customerPage = customerRepository.findAll(pageable);
+        }
+
+        return customerPage.map(customerMapper::toCustomerResponse);
+    }
 }
 
 
