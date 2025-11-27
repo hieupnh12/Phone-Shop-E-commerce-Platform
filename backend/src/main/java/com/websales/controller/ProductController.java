@@ -189,30 +189,7 @@ public class ProductController {
              .build();
     }
 
-//    @GetMapping("/imei/{imei}")
-//    public ApiResponse<ProductFULLResponse> getProductByImei(@PathVariable("imei") String imei) {
-//        return  ApiResponse.<ProductFULLResponse>builder()
-//                .result(productService.GetProductByImei(imei))
-//                .build();
-//    }
-//
-//
-//
-//    @PutMapping("/update-stock")
-//    public ApiResponse<Void> updateStockProduct() {
-//        productService.fixStock();
-//        return ApiResponse.<Void>builder()
-//                .message("UPDATE STOCK PRODUCT SUCCESSFULLY")
-//                .build();
-//    }
-//
-//
-//    @GetMapping("/countProduct")
-//    public ApiResponse<Map<String, Object>> CountProduct() {
-//        return  ApiResponse.<Map<String, Object>>builder()
-//                .result(countQuantityOfAll.calculateProductStats())
-//                .build();
-//    }
+
 
 
 

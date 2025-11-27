@@ -255,7 +255,7 @@ export const fetchCountProduct = async () => {
 export const fetchProductById = async (idProduct) => {
   try {
     console.log(`📡 Fetching product by ID: ${idProduct}`);
-    const response = await axiosClient[GET](`${API_BASE_URL}/${idProduct}`);
+    const response = await axiosClient[GET](`product/${idProduct}`);
 
     console.log("✓ Product by ID API response received", response);
 

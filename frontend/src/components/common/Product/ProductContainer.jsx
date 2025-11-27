@@ -88,12 +88,15 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
   ]);
 
   const brandOptions = useMemo(
-    () => [
-      { label: 'Apple', value: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
-      { label: 'Samsung', value: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg' },
-      { label: 'Xiaomi', value: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
-      { label: 'OPPO', value: 'OPPO', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/98/OPPO_LOGO_2019.svg' },
-    ],
+    () =>[
+  { label: 'Apple', value: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
+  { label: 'Samsung', value: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg' },
+  { label: 'Xiaomi', value: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
+  { label: 'OPPO', value: 'OPPO', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/98/OPPO_LOGO_2019.svg' },
+  { label: 'iPhone', value: 'iPhone', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/APPLE_IPHONE_LOGO.svg' },
+  { label: 'Sony', value: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
+  { label: 'Google', value: 'Google', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' }
+],
     []
   );
 

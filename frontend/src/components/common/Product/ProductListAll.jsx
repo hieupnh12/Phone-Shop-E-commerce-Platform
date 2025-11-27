@@ -185,8 +185,8 @@ if (!hasFilters) {
       console.error('Invalid product ID:', id);
       return; // Không navigate nếu id undefined/null
     }
-    navigate(`/products/${id}`); // Navigate với ID đúng
-    console.log('Navigated to /products/', id); // Log sau navigate
+    navigate(`${id}`); // Navigate với ID đúng
+    console.log('Navigated to to /products/',id); // Log sau navigate
   };
 
 
@@ -236,7 +236,7 @@ if (!hasFilters) {
       <div className="bg-slate-800/60 backdrop-blur-md border-b border-cyan-500/20 sticky top-0 z-50 shadow-lg shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">Điện thoại</h1>
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {/* <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {['OPPO', 'HONOR', 'Nubia', 'Sony', 'Nokia', 'Infinix', 'Nothing Phone', 'Masstel', 'Realme', 'Itel', 'vivo'].map(brand => (
               <button 
                 key={brand} 
@@ -245,7 +245,7 @@ if (!hasFilters) {
                 {brand}
               </button>
             ))}
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -281,8 +281,8 @@ if (!hasFilters) {
                   {/* Image Container */}
                   <button
                     onClick={() => {
-                      console.log('Product ID:', product.id);
-                      handleViewProductId(product.id);
+                      console.log('Product ID 1:', product.idProduct);
+                      handleViewProductId(product.idProduct);
                     }}
                     className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-6 group-hover:from-gray-100 group-hover:to-gray-200 transition-all"
                   >
@@ -297,7 +297,7 @@ if (!hasFilters) {
                   <div className="p-4 bg-white">
                     <button
                       onClick={() => {
-                        console.log('Product ID:', product.id);
+                        console.log('Product ID 2:', product.id);
                         handleViewProductId(product.id);
                       }}
                       className="text-base font-semibold text-gray-800 mb-2 line-clamp-2 min-h-[40px] hover:text-cyan-600 transition-colors text-left"
