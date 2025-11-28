@@ -206,7 +206,9 @@ public class CustomerAuthenticationService {
         var customer = customerRepo.findById(customerId).orElseThrow(
                 () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
         );
-        customer.setPhoneNumber(request.getPhoneNumber());
+        String normalizedPhone = PhoneUtils.normalize(request.getPhoneNumber());
+
+        customer.setPhoneNumber(normalizedPhone);
         if (request.getFullName() != null) {
             customer.setFullName(request.getFullName());
         }

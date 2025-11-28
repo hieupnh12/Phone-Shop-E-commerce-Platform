@@ -93,6 +93,8 @@ public enum ErrorCode {
     OTP_SEND_LIMIT(1039,"OTP co the gui toi da 5 lan tren 10 phut",HttpStatus.BAD_REQUEST),
     EMAIL_NEW(1040,"Email chua dang ki",HttpStatus.CONTINUE),
     CONSTRAINT_VIOLATION(1041, "Role đang được sử dụng", HttpStatus.BAD_REQUEST),
+    CUSTOMER_EXIST(1027, "Customer  exist.",HttpStatus.BAD_REQUEST),
+
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

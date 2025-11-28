@@ -6,10 +6,10 @@ import { ShoppingBag, User, Shield, MessageSquare, LogOut } from 'lucide-react';
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 
 const navItems = [
-    { name: 'Đơn hàng của tôi', icon: ShoppingBag, path: '/profile/order' },
-    { name: 'Thông tin tài khoản', icon: User, path: '/profile/info' },
-    { name: 'Thông tin bảo hành', icon: Shield, path: '/profile/warranty' },
-    { name: 'Góp ý - Hỗ trợ', icon: MessageSquare, path: '/profile/support' },
+    { name: 'Đơn hàng của tôi', icon: ShoppingBag, path: '/user/profile/order' },
+    { name: 'Thông tin tài khoản', icon: User, path: '/user/profile/info' },
+    { name: 'Thông tin bảo hành', icon: Shield, path: '/user/profile/warranty' },
+    { name: 'Góp ý - Hỗ trợ', icon: MessageSquare, path: 'user/profile/support' },
 ];
 
 

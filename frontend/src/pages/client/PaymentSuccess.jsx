@@ -125,7 +125,7 @@ export default function PaymentSuccess() {
               {/* Actions */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={() => navigate('/profile/order')}
+                  onClick={() => navigate('/user/profile/order')}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
                 >
                   <Package className="w-5 h-5" />

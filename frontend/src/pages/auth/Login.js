@@ -17,7 +17,7 @@ import { AuthContext } from "../../contexts/AuthContext";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [loginMethod, setLoginMethod] = useState("email");
+  const [loginMethod, setLoginMethod] = useState("phone");
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -235,7 +235,7 @@ const Login = () => {
                   <h2 className="text-3xl font-bold text-gray-900">
                     {isLogin ? "Đăng nhập" : "Đăng ký"}
                   </h2>
-                  <p className="text-gray-600 text-sm">
+                  {/* <p className="text-gray-600 text-sm">
                     {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
                     <button
                       onClick={() => {
@@ -246,13 +246,13 @@ const Login = () => {
                     >
                       {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
                     </button>
-                  </p>
+                  </p> */}
                 </div>
 
                 {/* Login Method Tabs */}
                 <div className="flex gap-2 bg-gray-100 rounded-xl p-1 mb-6">
-                  <button
-                    onClick={() => setLoginMethod("email")}
+                  {/* <button
+                    onClick={() => setLoginMethod("phone")}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
                       loginMethod === "email"
                         ? "bg-white text-indigo-600 shadow-md"
@@ -261,7 +261,7 @@ const Login = () => {
                   >
                     <Mail className="w-5 h-5" />
                     Email
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => {
                       setLoginMethod("phone");

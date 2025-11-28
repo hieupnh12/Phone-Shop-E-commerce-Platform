@@ -297,7 +297,7 @@ const OrderDetailPage = () => {
 
             {/* Thanh điều hướng Breadcrumb */}
             <nav className="text-sm text-gray-500 flex items-center space-x-2">
-                <Link to="/profile/order" className="hover:text-red-500">Lịch sử mua hàng</Link>
+                <Link to="/user/profile/order" className="hover:text-red-500">Lịch sử mua hàng</Link>
                 <ChevronRight size={16} />
                 <span className="font-semibold text-gray-800">Chi tiết đơn hàng</span>
             </nav>
@@ -329,7 +329,7 @@ const OrderDetailPage = () => {
                                 <p className="font-semibold text-gray-800 mb-1">{product.name}</p>
                                 <p className="text-sm text-gray-600">{formatCurrency(product.price)}</p>
                                 <p className="text-xs text-gray-500">Thời hạn bảo hành đến: {product.warrantyEnd}</p>
-                                <Link to={`/warranty/${product.id}`} className="text-xs text-blue-500 hover:text-blue-700 font-medium mt-1 inline-block">Xem</Link>
+                                <Link to={`/user/warranty/${product.id}`} className="text-xs text-blue-500 hover:text-blue-700 font-medium mt-1 inline-block">Xem</Link>
                             </div>
                             <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
                                 <p className="text-sm text-gray-600">Số lượng: {product.quantity}</p>

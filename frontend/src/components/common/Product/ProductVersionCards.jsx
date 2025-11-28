@@ -10,7 +10,7 @@ function ProductVersionCards({ products }) {
           <div
             key={version.idVersion}
             className="border rounded-lg shadow hover:shadow-lg cursor-pointer overflow-hidden transition"
-            onClick={() => navigate(`/product/${product.idProduct}`)}
+            onClick={() => navigate(`/user/product/${product.idProduct}`)}
           >
             {/* Ảnh sản phẩm */}
             <img

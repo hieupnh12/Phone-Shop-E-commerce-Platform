@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Phone, Chrome, MessageCircle, ArrowRight, Sparkles, Shield, Zap, Users } from 'lucide-react';
 
 const Login = () => {
-  const [loginMethod, setLoginMethod] = useState('email');
+  const [loginMethod, setLoginMethod] = useState('phone');
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -195,7 +195,7 @@ const Login = () => {
 
                 {/* Form */}
                 <div className="space-y-4">
-                  {loginMethod === 'email' ? (
+                  {/* {loginMethod === 'email' ? (
                     <>
                       {!isLogin && (
                         <div className="space-y-2">
@@ -244,7 +244,8 @@ const Login = () => {
                         </div>
                       </div>
                     </>
-                  ) : (
+                  ) :  */}
+                  (
                     <>
                       <div className="space-y-2">
                         <label className="text-gray-700 text-sm font-medium">Số điện thoại</label>
@@ -298,9 +299,10 @@ const Login = () => {
                         </div>
                       )}
                     </>
-                  )}
+                  )
+                  {/* } */}
 
-                  {isLogin && loginMethod === 'email' && (
+                  {/* {isLogin && loginMethod === 'email' && (
                     <div className="flex items-center justify-between text-sm">
                       <label className="flex items-center text-gray-600 cursor-pointer hover:text-gray-900 transition-all">
                         <input type="checkbox" className="mr-2 rounded" />
@@ -310,7 +312,7 @@ const Login = () => {
                         Quên mật khẩu?
                       </a>
                     </div>
-                  )}
+                  )} */}
 
                   <button
                     onClick={handleSubmit}
