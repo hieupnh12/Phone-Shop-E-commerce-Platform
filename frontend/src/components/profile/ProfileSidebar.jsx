@@ -4,7 +4,20 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Shield, MessageSquare, LogOut } from 'lucide-react';
 import { useAuthFullOptions } from "../../contexts/AuthContext";
+<<<<<<< HEAD
 import { useLanguage } from "../../contexts/LanguageContext";
+=======
+
+const navItems = [
+    { name: 'Đơn hàng của tôi', icon: ShoppingBag, path: '/user/profile/order' },
+    { name: 'Thông tin tài khoản', icon: User, path: '/user/profile/info' },
+    { name: 'Thông tin bảo hành', icon: Shield, path: '/user/profile/warranty' },
+    { name: 'Góp ý - Hỗ trợ', icon: MessageSquare, path: 'user/profile/support' },
+];
+
+
+
+>>>>>>> origin/hieunm
 
 const ProfileSidebar = () => {
     const { t } = useLanguage();

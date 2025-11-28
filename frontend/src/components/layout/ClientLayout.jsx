@@ -227,7 +227,7 @@ const ClientLayout = ({ children, showHero = true }) => {
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {/* <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {hotProducts.map((product) => (
                   <div
                     key={product.id}
@@ -270,7 +270,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                     </div>
                   </div>
                 ))}
-              </div>
+              </div> */}
 
 
 

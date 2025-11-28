@@ -76,18 +76,18 @@ Liệt kê 6 điện thoại HOT NHẤT %d (CNET, PCMag, The Verge) bằng **vă
                 .mapToObj(i -> "• " + hot.hotPhones().get(i) + " (" + hot.reasons().get(i) + ")")
                 .collect(Collectors.joining("\n"));
 
-        String shopList = products.stream()
-                .map(p -> "• " + p.getNameProduct() + " (image " + p.getImage() + "đ, origin " + p.getOriginName() + ")")
-                .collect(Collectors.joining("\n"));
+//        String shopList = products.stream()
+//                .map(p -> "• " + p.getNameProduct() + " (image " + p.getImage() + "đ, origin " + p.getOriginName() + ")")
+//                .collect(Collectors.joining("\n"));
 
         return """
             Chào bạn! Các điện thoại hot trên thị trường hiện nay là:
             %s
             
-            Và cửa hàng chúng tôi cũng có:
-            %s
+//            Và cửa hàng chúng tôi cũng có:
+//            %s
             
             Bạn quan tâm mẫu nào? Ghé shop ngay nhé! 🔥
-            """.formatted(hotList, shopList);
+            """.formatted(hotList, null);
     }
 }
