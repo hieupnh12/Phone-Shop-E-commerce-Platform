@@ -118,7 +118,7 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
   };
 
   const handleViewDetail = (productId) => {
-    navigate(`/products/${productId}`);
+    navigate(`/user/products/${productId}`);
   };
 
   const handleResetFilters = () => {

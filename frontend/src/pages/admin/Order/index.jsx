@@ -4,12 +4,24 @@ import { Eye, X, RefreshCw, Search, Calendar } from "lucide-react";
 import Toast from "../../../components/common/Toast";
 
 const STATUS_CONFIG = {
-  PENDING: { label: "PENDING", badge: "bg-yellow-300 text-yellow-900" },
-  PAID: { label: "PAID", badge: "bg-indigo-300 text-indigo-900" },
-  SHIPPED: { label: "SHIPPING", badge: "bg-blue-300 text-blue-900" },
-  DELIVERED: { label: "DELIVERED", badge: "bg-green-300 text-green-900" },
-  CANCELED: { label: "CANCELED", badge: "bg-red-300 text-red-900" },
-  RETURNED: { label: "RETURNED", badge: "bg-orange-300 text-orange-900" },
+  PENDING: {
+    label: "PENDING",
+    badge: "bg-yellow-300 text-yellow-900",
+    order: 0,
+  },
+  PAID: { label: "PAID", badge: "bg-indigo-300 text-indigo-900", order: 1 },
+  SHIPPED: { label: "SHIPPING", badge: "bg-blue-300 text-blue-900", order: 2 },
+  DELIVERED: {
+    label: "DELIVERED",
+    badge: "bg-green-300 text-green-900",
+    order: 3,
+  },
+  CANCELED: { label: "CANCELED", badge: "bg-red-300 text-red-900", order: -1 }, // Special: can be set anytime but can't go back
+  RETURNED: {
+    label: "RETURNED",
+    badge: "bg-orange-300 text-orange-900",
+    order: -1,
+  }, // Special: only after SHIPPED/DELIVERED
 };
 
 const STATUS_OPTIONS = Object.entries(STATUS_CONFIG).map(([value, meta]) => ({
@@ -32,7 +44,6 @@ export default function Orders() {
   const [toast, setToast] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [phoneQuery, setPhoneQuery] = useState("");
-  
   // Date filter states
   const [dateSort, setDateSort] = useState("newest");
   const [startDate, setStartDate] = useState("");
@@ -64,7 +75,9 @@ export default function Orders() {
     if (!updatedOrder?.orderId) return;
     setOrders((prev) =>
       prev.map((o) =>
-        o.orderId === updatedOrder.orderId ? { ...o, status: updatedOrder.status } : o
+        o.orderId === updatedOrder.orderId
+          ? { ...o, status: updatedOrder.status }
+          : o
       )
     );
   }, []);
@@ -74,8 +87,10 @@ export default function Orders() {
       const matchStatus = filter === "ALL" || o.status === filter;
       const matchPhone =
         !phoneQuery ||
-        o.customerPhone?.toLowerCase().includes(phoneQuery.trim().toLowerCase());
-      
+        o.customerPhone
+          ?.toLowerCase()
+          .includes(phoneQuery.trim().toLowerCase());
+
       // Date range filter
       let matchDate = true;
       if (startDate || endDate) {
@@ -93,7 +108,7 @@ export default function Orders() {
           }
         }
       }
-      
+
       return matchStatus && matchPhone && matchDate;
     });
 
@@ -171,7 +186,10 @@ export default function Orders() {
             disabled={loadingOrders}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
-            <RefreshCw size={16} className={loadingOrders ? "animate-spin" : ""} />
+            <RefreshCw
+              size={16}
+              className={loadingOrders ? "animate-spin" : ""}
+            />
             Làm mới
           </button>
         </div>
@@ -182,7 +200,7 @@ export default function Orders() {
             <Calendar size={18} className="text-gray-600" />
             <h3 className="font-semibold text-gray-700">Lọc theo ngày</h3>
           </div>
-          
+
           <div className="flex flex-wrap items-end gap-3">
             {/* Date Sort */}
             <div className="flex-1 min-w-[150px]">
@@ -245,7 +263,6 @@ export default function Orders() {
           Hiển thị <strong>{filteredOrders.length}</strong> đơn hàng
         </div>
       </div>
-
       {/* Orders table */}
       <div className="overflow-x-auto border rounded-lg shadow-sm bg-white">
         <table className="w-full border-collapse">
@@ -264,37 +281,40 @@ export default function Orders() {
             {loadingOrders
               ? skeletonRows
               : filteredOrders.map((o) => (
-              <tr key={o.orderId} className="hover:bg-gray-50">
-                <td className="p-3 border">{o.orderId}</td>
-                <td className="p-3 border">{o.customerPhone || "N/A"}</td>
-                <td className="p-3 border">
-                  {o.createDatetime
-                    ? new Date(o.createDatetime).toLocaleString("vi-VN")
-                    : "—"}
-                </td>
-                <td className="p-3 border">
-                  {o.totalAmount?.toLocaleString("vi-VN")} ₫
-                </td>
-                <td className="p-3 border">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      STATUS_CONFIG[o.status]?.badge || "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {STATUS_CONFIG[o.status]?.label || o.status || "UNKNOWN"}
-                  </span>
-                </td>
+                  <tr key={o.orderId} className="hover:bg-gray-50">
+                    <td className="p-3 border">{o.orderId}</td>
+                    <td className="p-3 border">{o.customerPhone || "N/A"}</td>
+                    <td className="p-3 border">
+                      {o.createDatetime
+                        ? new Date(o.createDatetime).toLocaleString("vi-VN")
+                        : "—"}
+                    </td>
+                    <td className="p-3 border">
+                      {o.totalAmount?.toLocaleString("vi-VN")} ₫
+                    </td>
+                    <td className="p-3 border">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          STATUS_CONFIG[o.status]?.badge ||
+                          "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        {STATUS_CONFIG[o.status]?.label ||
+                          o.status ||
+                          "UNKNOWN"}
+                      </span>
+                    </td>
 
-                <td className="p-3 border text-center">
-                  <button
-                    onClick={() => setSelectedOrder(o.orderId)}
-                    className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                  >
-                    <Eye size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    <td className="p-3 border text-center">
+                      <button
+                        onClick={() => setSelectedOrder(o.orderId)}
+                        className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                      >
+                        <Eye size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
           </tbody>
         </table>
       </div>
@@ -328,6 +348,73 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Hàm kiểm tra xem có thể chuyển từ trạng thái hiện tại sang trạng thái mới không
+  const canChangeStatus = (currentStatus, newStatus) => {
+    if (!currentStatus || !newStatus) return true;
+    if (currentStatus === newStatus) return true; // Giữ nguyên trạng thái
+
+    const currentConfig = STATUS_CONFIG[currentStatus];
+    const newConfig = STATUS_CONFIG[newStatus];
+
+    if (!currentConfig || !newConfig) return true; // Cho phép nếu không tìm thấy config
+
+    // Nếu đã CANCELED hoặc RETURNED, không thể quay lại trạng thái khác
+    if (currentStatus === "CANCELED" || currentStatus === "RETURNED") {
+      return false;
+    }
+
+    // Nếu muốn đặt CANCELED, luôn cho phép (trừ khi đã DELIVERED)
+    if (newStatus === "CANCELED") {
+      return currentStatus !== "DELIVERED";
+    }
+
+    // Nếu muốn đặt RETURNED, chỉ cho phép khi đã SHIPPED hoặc DELIVERED
+    if (newStatus === "RETURNED") {
+      return currentStatus === "SHIPPED" || currentStatus === "DELIVERED";
+    }
+
+    // Kiểm tra thứ tự: chỉ cho phép tiến lên, không cho lùi lại
+    if (currentConfig.order !== -1 && newConfig.order !== -1) {
+      return newConfig.order > currentConfig.order;
+    }
+
+    return true;
+  };
+
+  // Lấy danh sách các trạng thái hợp lệ có thể chuyển đến từ trạng thái hiện tại
+  const getValidStatusOptions = (currentStatus) => {
+    if (!currentStatus) return STATUS_OPTIONS;
+
+    const validOptions = STATUS_OPTIONS.filter((option) =>
+      canChangeStatus(currentStatus, option.value)
+    );
+
+    // Đảm bảo trạng thái hiện tại luôn có trong danh sách (để hiển thị)
+    const currentOption = STATUS_OPTIONS.find(
+      (opt) => opt.value === currentStatus
+    );
+    if (currentOption) {
+      const alreadyIncluded = validOptions.find(
+        (opt) => opt.value === currentStatus
+      );
+      if (!alreadyIncluded) {
+        // Thêm trạng thái hiện tại vào đầu danh sách
+        validOptions.unshift(currentOption);
+      }
+    } else {
+      // Nếu trạng thái hiện tại không có trong STATUS_OPTIONS, tạo một option tạm
+      const tempOption = {
+        value: currentStatus,
+        label: STATUS_CONFIG[currentStatus]?.label || currentStatus,
+        badge:
+          STATUS_CONFIG[currentStatus]?.badge || "bg-gray-200 text-gray-700",
+      };
+      validOptions.unshift(tempOption);
+    }
+
+    return validOptions;
+  };
+
   const fetchOrder = async () => {
     try {
       setLoading(true);
@@ -352,7 +439,29 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
     }
   }, [id]);
 
+  // Đồng bộ status với order.status khi order thay đổi
+  useEffect(() => {
+    if (order?.status) {
+      setStatus(order.status);
+    }
+  }, [order?.status]);
+
   const updateStatus = async () => {
+    // Kiểm tra xem có thể cập nhật trạng thái không
+    if (!canChangeStatus(order?.status, status)) {
+      notify?.(
+        "Không thể cập nhật trạng thái ngược lại! Chỉ có thể cập nhật trạng thái tiến lên.",
+        "error"
+      );
+      return;
+    }
+
+    // Kiểm tra trạng thái có thay đổi không
+    if (order?.status === status) {
+      notify?.("Trạng thái không thay đổi!", "info");
+      return;
+    }
+
     try {
       setLoading(true);
       const updated = await orderService.updateStatus(id, status);
@@ -391,10 +500,19 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
       <h2 className="text-xl font-bold mb-3">Order #{order.orderId}</h2>
 
       <div className="text-sm text-gray-700 space-y-2">
-        <p><strong>Khách hàng:</strong> {order.customerName || order.customerId || "N/A"}</p>
-        <p><strong>Số điện thoại:</strong> {order.customerPhone || "N/A"}</p>
-        <p><strong>Địa chỉ:</strong> {order.customerAddress || "N/A"}</p>
-        <p><strong>Ghi chú:</strong> {order.note || "Không có"}</p>
+        <p>
+          <strong>Khách hàng:</strong>{" "}
+          {order.customerName || order.customerId || "N/A"}
+        </p>
+        <p>
+          <strong>Số điện thoại:</strong> {order.customerPhone || "N/A"}
+        </p>
+        <p>
+          <strong>Địa chỉ:</strong> {order.customerAddress || "N/A"}
+        </p>
+        <p>
+          <strong>Ghi chú:</strong> {order.note || "Không có"}
+        </p>
       </div>
 
       <h3 className="font-semibold mt-4 mb-2">Danh sách sản phẩm</h3>
@@ -444,12 +562,20 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
         onChange={(e) => setStatus(e.target.value)}
         className="border p-2 rounded-lg w-full"
       >
-        {STATUS_OPTIONS.map(({ value, label }) => (
+        {getValidStatusOptions(order?.status).map(({ value, label }) => (
           <option key={value} value={value}>
             {label}
           </option>
         ))}
       </select>
+
+      {order?.status &&
+        status !== order.status &&
+        !canChangeStatus(order.status, status) && (
+          <p className="text-red-500 text-sm mt-1">
+            ⚠️ Không thể cập nhật trạng thái ngược lại!
+          </p>
+        )}
 
       <button
         onClick={updateStatus}
@@ -465,11 +591,11 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
 // Animation
 const styles = `
 @keyframes slideLeft {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+ from { transform: translateX(100%); }
+ to { transform: translateX(0); }
 }
 .animate-slideLeft {
-  animation: slideLeft 0.25s ease-out;
+ animation: slideLeft 0.25s ease-out;
 }
 `;
 document.head.insertAdjacentHTML("beforeend", `<style>${styles}</style>`);

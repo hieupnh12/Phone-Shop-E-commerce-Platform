@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Truck, X, ShoppingBag, Smartphone, Plus, Minus, CreditCard } from "lucide-react";
+import {
+  ArrowLeft,
+  Truck,
+  X,
+  ShoppingBag,
+  Smartphone,
+  Plus,
+  Minus,
+  CreditCard,
+} from "lucide-react";
 import cartService from "../../services/cartService";
 
 // Format tiền VND
@@ -8,16 +17,21 @@ const vnd = (n) =>
   new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
+
+// Giới hạn số lượng tối đa cho mỗi sản phẩm
+const MAX_QUANTITY = 5;
 
 export default function ShoppingCart() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [removingProductVersionId, setRemovingProductVersionId] = useState(null);
-  const [updatingProductVersionId, setUpdatingProductVersionId] = useState(null);
+  const [removingProductVersionId, setRemovingProductVersionId] =
+    useState(null);
+  const [updatingProductVersionId, setUpdatingProductVersionId] =
+    useState(null);
 
   // Lấy giỏ hàng
   const loadCart = async () => {
@@ -27,13 +41,13 @@ export default function ShoppingCart() {
       const data = await cartService.getCart();
       if (data?.success) {
         // Map dữ liệu từ API về format cần thiết
-        const mappedItems = (data.cartItems || []).map(item => ({
+        const mappedItems = (data.cartItems || []).map((item) => ({
           productVersionId: item.productVersionId,
           productId: item.productId,
           productName: item.productName,
           image: item.image,
           price: item.price,
-          quantity: item.quantity || 1
+          quantity: item.quantity || 1,
         }));
         setItems(mappedItems);
       } else {
@@ -54,29 +68,51 @@ export default function ShoppingCart() {
 
   // Cập nhật số lượng
   const updateQuantity = async (productVersionId, delta) => {
-    const item = items.find(x => x.productVersionId === productVersionId);
+    const item = items.find((x) => x.productVersionId === productVersionId);
     if (!item) return;
 
     const newQuantity = (item.quantity || 1) + delta;
+
+    // Kiểm tra giới hạn tối thiểu và tối đa
     if (newQuantity < 1) return;
+    if (newQuantity > MAX_QUANTITY) {
+      setErr(`Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`);
+      return;
+    }
 
     try {
       setUpdatingProductVersionId(productVersionId);
-      setItems(prev => prev.map(x =>
-        x.productVersionId === productVersionId ? { ...x, quantity: newQuantity } : x
-      ));
+      setErr(""); // Xóa lỗi trước đó
+      setItems((prev) =>
+        prev.map((x) =>
+          x.productVersionId === productVersionId
+            ? { ...x, quantity: newQuantity }
+            : x
+        )
+      );
 
-      const res = await cartService.updateQuantity(productVersionId, newQuantity);
+      const res = await cartService.updateQuantity(
+        productVersionId,
+        newQuantity
+      );
       if (!res?.success) {
-        setItems(prev => prev.map(x =>
-          x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
-        ));
+        setItems((prev) =>
+          prev.map((x) =>
+            x.productVersionId === productVersionId
+              ? { ...x, quantity: item.quantity }
+              : x
+          )
+        );
         setErr(res?.message || "Không cập nhật được số lượng");
       }
     } catch (e) {
-      setItems(prev => prev.map(x =>
-        x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
-      ));
+      setItems((prev) =>
+        prev.map((x) =>
+          x.productVersionId === productVersionId
+            ? { ...x, quantity: item.quantity }
+            : x
+        )
+      );
       setErr(e.message || "Lỗi mạng");
     } finally {
       setUpdatingProductVersionId(null);
@@ -89,7 +125,9 @@ export default function ShoppingCart() {
       setRemovingProductVersionId(productVersionId);
       const res = await cartService.removeItem(productVersionId);
       if (res?.success) {
-        setItems(prev => prev.filter(x => x.productVersionId !== productVersionId));
+        setItems((prev) =>
+          prev.filter((x) => x.productVersionId !== productVersionId)
+        );
       } else {
         setErr(res?.message || "Không xóa được sản phẩm");
       }
@@ -102,7 +140,11 @@ export default function ShoppingCart() {
 
   // Tính toán
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1), 0),
+    () =>
+      items.reduce(
+        (sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1),
+        0
+      ),
     [items]
   );
   const FREE_SHIP_LIMIT = 1000;
@@ -159,23 +201,30 @@ export default function ShoppingCart() {
                       </p>
                       <p className="text-sm text-slate-700 mt-0.5">
                         {freeShipProgress >= 100
-                          ? '🎉 Bạn được freeship!'
-                          : `Mua thêm ${vnd(10000000 - subtotal)} để được freeship`
-                        }
+                          ? "🎉 Bạn được freeship!"
+                          : `Mua thêm ${vnd(
+                              10000000 - subtotal
+                            )} để được freeship`}
                       </p>
                     </div>
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${freeShipProgress >= 100
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-slate-100 text-slate-600'
-                    }`}>
-                    {freeShipProgress >= 100 ? '✓ Đạt' : `${Math.round(freeShipProgress)}%`}
+                  <span
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                      freeShipProgress >= 100
+                        ? "bg-green-100 text-green-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {freeShipProgress >= 100
+                      ? "✓ Đạt"
+                      : `${Math.round(freeShipProgress)}%`}
                   </span>
                 </div>
                 <div className="bg-slate-100 h-2 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${freeShipProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'
-                      }`}
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      freeShipProgress >= 100 ? "bg-green-500" : "bg-blue-500"
+                    }`}
                     style={{ width: `${freeShipProgress}%` }}
                   />
                 </div>
@@ -201,19 +250,21 @@ export default function ShoppingCart() {
                     Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
                   </p>
                   <button
-                    onClick={() => navigate('/user/products')}
+                    onClick={() => navigate("/products")}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                   >
                     Khám phá sản phẩm
                   </button>
-
                 </div>
               ) : (
                 items.map((item) => (
                   <div
                     key={item.productVersionId}
-                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${removingProductVersionId === item.productVersionId ? 'opacity-50' : ''
-                      }`}
+                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${
+                      removingProductVersionId === item.productVersionId
+                        ? "opacity-50"
+                        : ""
+                    }`}
                   >
                     <div className="flex gap-4">
                       {/* Image */}
@@ -258,8 +309,14 @@ export default function ShoppingCart() {
                             {/* Quantity Controls */}
                             <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
                               <button
-                                onClick={() => updateQuantity(item.productVersionId, -1)}
-                                disabled={item.quantity <= 1 || updatingProductVersionId === item.productVersionId}
+                                onClick={() =>
+                                  updateQuantity(item.productVersionId, -1)
+                                }
+                                disabled={
+                                  item.quantity <= 1 ||
+                                  updatingProductVersionId ===
+                                    item.productVersionId
+                                }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title="Giảm số lượng"
                               >
@@ -269,10 +326,20 @@ export default function ShoppingCart() {
                                 {item.quantity || 1}
                               </span>
                               <button
-                                onClick={() => updateQuantity(item.productVersionId, +1)}
-                                disabled={updatingProductVersionId === item.productVersionId}
+                                onClick={() =>
+                                  updateQuantity(item.productVersionId, +1)
+                                }
+                                disabled={
+                                  updatingProductVersionId ===
+                                    item.productVersionId ||
+                                  (item.quantity || 1) >= MAX_QUANTITY
+                                }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                title="Tăng số lượng"
+                                title={
+                                  (item.quantity || 1) >= MAX_QUANTITY
+                                    ? `Số lượng tối đa là ${MAX_QUANTITY}`
+                                    : "Tăng số lượng"
+                                }
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -281,11 +348,15 @@ export default function ShoppingCart() {
                             {/* Remove Button */}
                             <button
                               onClick={() => removeItem(item.productVersionId)}
-                              disabled={removingProductVersionId === item.productVersionId}
+                              disabled={
+                                removingProductVersionId ===
+                                item.productVersionId
+                              }
                               className="flex items-center gap-1 text-slate-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg disabled:opacity-50"
                               title="Xóa khỏi giỏ"
                             >
-                              {removingProductVersionId === item.productVersionId ? (
+                              {removingProductVersionId ===
+                              item.productVersionId ? (
                                 <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                               ) : (
                                 <X className="w-5 h-5" />
@@ -312,7 +383,9 @@ export default function ShoppingCart() {
               <div className="space-y-4 border-b border-slate-200 pb-5 mb-5">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600">Tạm tính</span>
-                  <span className="font-semibold text-slate-900">{vnd(subtotal)}</span>
+                  <span className="font-semibold text-slate-900">
+                    {vnd(subtotal)}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -320,19 +393,27 @@ export default function ShoppingCart() {
                     <Truck className="w-4 h-4" />
                     Phí vận chuyển
                   </span>
-                  <span className={`font-semibold ${shippingFee === 0 ? 'text-green-600' : 'text-slate-900'}`}>
-                    {shippingFee === 0 ? 'Miễn phí' : vnd(shippingFee)}
+                  <span
+                    className={`font-semibold ${
+                      shippingFee === 0 ? "text-green-600" : "text-slate-900"
+                    }`}
+                  >
+                    {shippingFee === 0 ? "Miễn phí" : vnd(shippingFee)}
                   </span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center mb-6 bg-slate-50 rounded-lg p-4">
-                <span className="text-lg font-bold text-slate-900">Tổng cộng</span>
-                <span className="text-2xl font-bold text-blue-600">{vnd(total)}</span>
+                <span className="text-lg font-bold text-slate-900">
+                  Tổng cộng
+                </span>
+                <span className="text-2xl font-bold text-blue-600">
+                  {vnd(total)}
+                </span>
               </div>
 
               <button
-                onClick={() => navigate('/user/payment')}
+                onClick={() => navigate("/payment")}
                 disabled={items.length === 0 || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >

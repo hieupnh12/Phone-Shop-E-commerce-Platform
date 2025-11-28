@@ -31,7 +31,7 @@ public class PaymentRedirectController {
         
         // Build redirect URL với query params
         StringBuilder redirectUrl = new StringBuilder(frontendUrl.split(",")[0].trim()); // Lấy URL đầu tiên
-        redirectUrl.append("/payment/success");
+        redirectUrl.append("/user/payment/success");
         
         boolean hasParams = false;
         if (orderId != null) {
@@ -74,7 +74,7 @@ public class PaymentRedirectController {
         
         // Build redirect URL với query params
         StringBuilder redirectUrl = new StringBuilder(frontendUrl.split(",")[0].trim()); // Lấy URL đầu tiên
-        redirectUrl.append("/payment/cancel");
+        redirectUrl.append("/user/payment/cancel");
         
         boolean hasParams = false;
         if (orderId != null) {

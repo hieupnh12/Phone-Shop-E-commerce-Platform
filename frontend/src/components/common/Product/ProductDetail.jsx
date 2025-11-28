@@ -781,7 +781,7 @@ const ProductDetailPage = () => {
                     }
 
                     await cartService.addToCart(selectedVersion.id, 1);
-                    navigate('/payment');
+                    navigate('/user/payment');
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
                 >
