@@ -6,6 +6,30 @@
     "pricing": "Giá cả",
     "contact": "Liên hệ"
   },
+  "home": {
+    "slogan1Title": "Công Nghệ Đỉnh Cao",
+    "slogan1Subtitle": "Trải nghiệm iPhone mới nhất 2025",
+    "slogan1Description": "Chip A18 Pro - Hiệu năng vượt trội",
+    "slogan2Title": "Giá Tốt Nhất Thị Trường",
+    "slogan2Subtitle": "Cam kết giá rẻ hơn hoàn tiền",
+    "slogan2Description": "Trả góp 0% - Không lãi suất",
+    "slogan3Title": "Bảo Hành Chính Hãng",
+    "slogan3Subtitle": "Apple Authorized Reseller",
+    "slogan3Description": "12 tháng bảo hành toàn cầu",
+    "slogan4Title": "Giao Hàng Siêu Tốc",
+    "slogan4Subtitle": "Nhận hàng trong 2 giờ tại Hà Nội",
+    "slogan4Description": "Miễn phí vận chuyển toàn quốc",
+    "slogan5Title": "Trade-In Máy Cũ",
+    "slogan5Subtitle": "Thu cũ đổi mới giá cao",
+    "slogan5Description": "Lên đời iPhone dễ dàng hơn",
+    "hotProductsTitle": "Sản Phẩm Bán Chạy",
+    "hotProductsSubtitle": "Top điện thoại được yêu thích nhất",
+    "viewAllProducts": "Xem Tất Cả Sản Phẩm",
+    "buyNow": "Mua Ngay"
+  },
+  "common": {
+    "viewDetails": "Xem chi tiết"
+  },
   "auth": {
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
@@ -69,6 +93,13 @@
     "failedLoad": "Không lấy được giỏ hàng",
     "failedUpdate": "Không cập nhật được số lượng",
     "failedDelete": "Không xóa được sản phẩm",
+    "freeShippingLabel": "Miễn phí vận chuyển",
+    "product": "Sản phẩm",
+    "authentic": "Chính hãng",
+    "orderSummary": "Tổng đơn hàng",
+    "shippingFee": "Phí vận chuyển",
+    "paymentNow": "Thanh toán ngay",
+    "returnPolicy": "Miễn phí đổi trả trong 7 ngày",
     "networkError": "Lỗi kết nối",
     "networkError2": "Lỗi mạng",
     "totalOrder": "Tổng đơn hàng"

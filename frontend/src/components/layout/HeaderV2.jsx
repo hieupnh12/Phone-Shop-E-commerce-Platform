@@ -49,7 +49,7 @@ const HeaderV2 = ({ onToggleSidebar, isSidebarOpen }) => {
     },
     { id: 2, name: t('navigation.products'), link: '/user/products' },
     { id: 3, name: t('navigation.feedbacks'), link: '/user/feedbacks' },
-    { id: 4, name: t('navigation.pricing'), link: '/user/pricing' },
+    // { id: 4, name: t('navigation.pricing'), link: '/user/pricing' },
     { id: 5, name: t('navigation.contact'), link: '/user/contact' },
   ], [t]);
 

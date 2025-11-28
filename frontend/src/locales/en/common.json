@@ -2,9 +2,33 @@
   "navigation": {
     "home": "Home",
     "products": "Products",
-    "feedbacks": "Feedbacks",
+    "feedbacks": "Reviews",
     "pricing": "Pricing",
     "contact": "Contact"
+  },
+  "home": {
+    "slogan1Title": "Peak Technology",
+    "slogan1Subtitle": "Experience the latest iPhone 2025",
+    "slogan1Description": "Chip A18 Pro - Superior Performance",
+    "slogan2Title": "Best Market Price",
+    "slogan2Subtitle": "Guaranteed lowest price or refund",
+    "slogan2Description": "0% Installment - No Interest",
+    "slogan3Title": "Official Warranty",
+    "slogan3Subtitle": "Apple Authorized Reseller",
+    "slogan3Description": "12 months worldwide warranty",
+    "slogan4Title": "Super Fast Delivery",
+    "slogan4Subtitle": "Receive within 2 hours in Hanoi",
+    "slogan4Description": "Free shipping nationwide",
+    "slogan5Title": "Trade-In Old Device",
+    "slogan5Subtitle": "Best price for your old phone",
+    "slogan5Description": "Upgrade to iPhone easier",
+    "hotProductsTitle": "Best Sellers",
+    "hotProductsSubtitle": "Most loved phones",
+    "viewAllProducts": "View All Products",
+    "buyNow": "Buy Now"
+  },
+  "common": {
+    "viewDetails": "View Details"
   },
   "auth": {
     "login": "Login",
@@ -69,6 +93,13 @@
     "failedLoad": "Failed to load cart",
     "failedUpdate": "Failed to update quantity",
     "failedDelete": "Failed to delete product",
+    "freeShippingLabel": "Free shipping",
+    "product": "Product",
+    "authentic": "Authentic",
+    "orderSummary": "Order Summary",
+    "shippingFee": "Shipping fee",
+    "paymentNow": "Pay now",
+    "returnPolicy": "Free returns within 7 days",
     "networkError": "Connection error",
     "networkError2": "Network error",
     "totalOrder": "Order Total"

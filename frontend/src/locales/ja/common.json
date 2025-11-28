@@ -2,9 +2,33 @@
   "navigation": {
     "home": "ホーム",
     "products": "製品",
-    "feedbacks": "評価",
-    "pricing": "価格",
+    "feedbacks": "レビュー",
+    "pricing": "料金",
     "contact": "お問い合わせ"
+  },
+  "home": {
+    "slogan1Title": "ピークテクノロジー",
+    "slogan1Subtitle": "最新iPhone 2025を体験する",
+    "slogan1Description": "チップA18 Pro - 優れたパフォーマンス",
+    "slogan2Title": "最高の市場価格",
+    "slogan2Subtitle": "最安値を保証または返金",
+    "slogan2Description": "0%分割払い - 金利なし",
+    "slogan3Title": "公式保証",
+    "slogan3Subtitle": "Apple認定リセラー",
+    "slogan3Description": "12ヶ月の世界規模の保証",
+    "slogan4Title": "超高速配送",
+    "slogan4Subtitle": "ハノイ内なら2時間以内にお受け取り",
+    "slogan4Description": "全国送料無料",
+    "slogan5Title": "下取りサービス",
+    "slogan5Subtitle": "古いデバイスに最高の価格",
+    "slogan5Description": "iPhoneへのアップグレードが簡単に",
+    "hotProductsTitle": "ベストセラー",
+    "hotProductsSubtitle": "最も人気のあるスマートフォン",
+    "viewAllProducts": "すべての製品を表示",
+    "buyNow": "今すぐ購入"
+  },
+  "common": {
+    "viewDetails": "詳細を表示"
   },
   "auth": {
     "login": "ログイン",
@@ -69,6 +93,13 @@
     "failedLoad": "カートの読み込みに失敗しました",
     "failedUpdate": "数量の更新に失敗しました",
     "failedDelete": "製品の削除に失敗しました",
+    "freeShippingLabel": "送料無料",
+    "product": "商品",
+    "authentic": "正規品",
+    "orderSummary": "ご注文サマリー",
+    "shippingFee": "送料",
+    "paymentNow": "今すぐお支払い",
+    "returnPolicy": "7日以内の無料返品",
     "networkError": "接続エラー",
     "networkError2": "ネットワークエラー",
     "totalOrder": "注文合計"

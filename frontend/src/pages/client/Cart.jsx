@@ -157,7 +157,7 @@ export default function ShoppingCart() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                        Miễn phí vận chuyển
+                        {t('cart.freeShippingLabel')}
                       </p>
                       <p className="text-sm text-slate-700 mt-0.5">
                         {freeShipProgress >= 100
@@ -236,11 +236,11 @@ export default function ShoppingCart() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-base lg:text-lg text-slate-900 mb-2 line-clamp-2">
-                          {item.productName || "Sản phẩm"}
+                          {item.productName || t('cart.product')}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                           <span className="inline-flex items-center text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
-                            Chính hãng
+                            {t('cart.authentic')}
                           </span>
                         </div>
 
@@ -308,19 +308,19 @@ export default function ShoppingCart() {
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm lg:sticky lg:top-6">
               <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-slate-600" />
-                Tổng đơn hàng
+                {t('cart.orderSummary')}
               </h2>
 
               <div className="space-y-4 border-b border-slate-200 pb-5 mb-5">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Tạm tính</span>
+                  <span className="text-slate-600">{t('cart.subtotal')}</span>
                   <span className="font-semibold text-slate-900">{vnd(subtotal)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600 flex items-center gap-1">
                     <Truck className="w-4 h-4" />
-                    Phí vận chuyển
+                    {t('cart.shippingFee')}
                   </span>
                   <span className={`font-semibold ${shippingFee === 0 ? 'text-green-600' : 'text-slate-900'}`}>
                     {shippingFee === 0 ? t('cart.freeShipping') : vnd(shippingFee)}
@@ -329,7 +329,7 @@ export default function ShoppingCart() {
               </div>
 
               <div className="flex justify-between items-center mb-6 bg-slate-50 rounded-lg p-4">
-                <span className="text-lg font-bold text-slate-900">Tổng cộng</span>
+                <span className="text-lg font-bold text-slate-900">{t('cart.total')}</span>
                 <span className="text-2xl font-bold text-blue-600">{vnd(total)}</span>
               </div>
 
@@ -339,11 +339,11 @@ export default function ShoppingCart() {
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >
                 <CreditCard className="w-5 h-5" />
-                Thanh toán ngay
+                {t('cart.paymentNow')}
               </button>
 
               <p className="text-xs text-slate-500 text-center mt-4">
-                Miễn phí đổi trả trong 7 ngày
+                {t('cart.returnPolicy')}
               </p>
             </div>
           </div>
