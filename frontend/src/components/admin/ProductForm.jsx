@@ -7,6 +7,7 @@ import Modal from "../common/Modal";
 import Toast from "../common/Toast";
 import VersionForm from "./VersionForm";
 import productService from "../../services/productService";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 /**
  * Component form tạo/sửa sản phẩm
@@ -26,6 +27,7 @@ const ProductForm = ({
   romList = [],
   colorList = [],
 }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     idProduct: null,
     nameProduct: "",
@@ -135,7 +137,7 @@ useEffect(() => {
           ...prev,
           idProduct: result.result.idProduct,
         }));
-        setToast({ type: "success", message: "Khởi tạo sản phẩm thành công" });
+        setToast({ type: "success", message: t('common.productCreateSuccess') });
       }
     } catch (error) {
       setToast({
@@ -429,7 +431,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Độ Phân Giải Màn Hình"
+            label={t('admin.screenResolution')}
             name="screenResolution"
             value={formData.screenResolution}
             onChange={handleInputChange}

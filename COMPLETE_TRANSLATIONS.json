@@ -1,0 +1,461 @@
+{
+  "metadata": {
+    "project": "Web Sales Phone Store",
+    "created_date": "2024-11-28",
+    "total_strings_vi": 300,
+    "total_strings_en": 50,
+    "total_strings_ja": 0,
+    "status": "All hardcoded strings extracted and categorized",
+    "target_languages": ["vi", "en", "ja"]
+  },
+  "categories": {
+    "buttons": {
+      "save": {
+        "vi": "Lưu",
+        "en": "Save",
+        "ja": "保存"
+      },
+      "cancel": {
+        "vi": "Hủy",
+        "en": "Cancel",
+        "ja": "キャンセル"
+      },
+      "delete": {
+        "vi": "Xóa",
+        "en": "Delete",
+        "ja": "削除"
+      },
+      "update": {
+        "vi": "Cập nhật",
+        "en": "Update",
+        "ja": "更新"
+      },
+      "close": {
+        "vi": "Đóng",
+        "en": "Close",
+        "ja": "閉じる"
+      },
+      "edit": {
+        "vi": "Chỉnh sửa",
+        "en": "Edit",
+        "ja": "編集"
+      },
+      "add": {
+        "vi": "Thêm",
+        "en": "Add",
+        "ja": "追加"
+      },
+      "login": {
+        "vi": "Đăng nhập",
+        "en": "Login",
+        "ja": "ログイン"
+      },
+      "signup": {
+        "vi": "Đăng ký",
+        "en": "Sign Up",
+        "ja": "登録"
+      },
+      "submit": {
+        "vi": "Gửi",
+        "en": "Submit",
+        "ja": "送信"
+      },
+      "confirm": {
+        "vi": "Xác nhận",
+        "en": "Confirm",
+        "ja": "確認"
+      },
+      "refresh": {
+        "vi": "Làm mới",
+        "en": "Refresh",
+        "ja": "更新"
+      },
+      "back": {
+        "vi": "Quay lại",
+        "en": "Back",
+        "ja": "戻る"
+      },
+      "continue": {
+        "vi": "Tiếp tục",
+        "en": "Continue",
+        "ja": "続行"
+      },
+      "view": {
+        "vi": "Xem",
+        "en": "View",
+        "ja": "表示"
+      },
+      "explore": {
+        "vi": "Khám phá",
+        "en": "Explore",
+        "ja": "探索"
+      }
+    },
+    "status": {
+      "pending": {
+        "vi": "Chờ xác nhận",
+        "en": "Pending",
+        "ja": "保留中"
+      },
+      "confirmed": {
+        "vi": "Đã xác nhận",
+        "en": "Confirmed",
+        "ja": "確認済み"
+      },
+      "paid": {
+        "vi": "Đã xác nhận",
+        "en": "Paid",
+        "ja": "支払済み"
+      },
+      "shipping": {
+        "vi": "Đang vận chuyển",
+        "en": "Shipping",
+        "ja": "配送中"
+      },
+      "delivered": {
+        "vi": "Đã giao hàng",
+        "en": "Delivered",
+        "ja": "配達済み"
+      },
+      "received": {
+        "vi": "Đã nhận hàng",
+        "en": "Received",
+        "ja": "受け取り済み"
+      },
+      "completed": {
+        "vi": "Hoàn thành",
+        "en": "Completed",
+        "ja": "完了"
+      },
+      "cancelled": {
+        "vi": "Đã hủy",
+        "en": "Cancelled",
+        "ja": "キャンセル済み"
+      },
+      "returned": {
+        "vi": "Đã trả hàng",
+        "en": "Returned",
+        "ja": "返品済み"
+      },
+      "active": {
+        "vi": "Hoạt động",
+        "en": "Active",
+        "ja": "アクティブ"
+      },
+      "inactive": {
+        "vi": "Tắt",
+        "en": "Inactive",
+        "ja": "非アクティブ"
+      }
+    },
+    "messages": {
+      "success": {
+        "vi": "Thành công",
+        "en": "Success",
+        "ja": "成功"
+      },
+      "update_success": {
+        "vi": "Cập nhật thành công",
+        "en": "Updated successfully",
+        "ja": "正常に更新されました"
+      },
+      "delete_success": {
+        "vi": "Xóa thành công",
+        "en": "Deleted successfully",
+        "ja": "正常に削除されました"
+      },
+      "payment_success": {
+        "vi": "Thanh toán thành công!",
+        "en": "Payment successful!",
+        "ja": "支払いが成功しました!"
+      },
+      "order_confirmed": {
+        "vi": "Đơn hàng của bạn đã được xác nhận!",
+        "en": "Your order has been confirmed!",
+        "ja": "ご注文が確認されました!"
+      },
+      "feedback_update_success": {
+        "vi": "Cập nhật đánh giá thành công!",
+        "en": "Review updated successfully!",
+        "ja": "レビューが正常に更新されました!"
+      },
+      "feedback_delete_success": {
+        "vi": "Xóa đánh giá thành công!",
+        "en": "Review deleted successfully!",
+        "ja": "レビューが正常に削除されました!"
+      },
+      "send_report_success": {
+        "vi": "Đã gửi báo cáo ngay lập tức!",
+        "en": "Report sent immediately!",
+        "ja": "レポートが即座に送信されました!"
+      }
+    },
+    "errors": {
+      "error": {
+        "vi": "Lỗi",
+        "en": "Error",
+        "ja": "エラー"
+      },
+      "warning": {
+        "vi": "Cảnh báo",
+        "en": "Warning",
+        "ja": "警告"
+      },
+      "failed": {
+        "vi": "Thất bại",
+        "en": "Failed",
+        "ja": "失敗"
+      },
+      "network_error": {
+        "vi": "Lỗi mạng",
+        "en": "Network error",
+        "ja": "ネットワークエラー"
+      },
+      "loading_error": {
+        "vi": "Lỗi tải dữ liệu",
+        "en": "Error loading data",
+        "ja": "データ読み込みエラー"
+      },
+      "update_feedback_error": {
+        "vi": "Lỗi khi cập nhật đánh giá",
+        "en": "Error updating review",
+        "ja": "レビュー更新エラー"
+      },
+      "delete_feedback_error": {
+        "vi": "Lỗi khi xóa đánh giá",
+        "en": "Error deleting review",
+        "ja": "レビュー削除エラー"
+      },
+      "delete_product_error": {
+        "vi": "Không thể xóa sản phẩm",
+        "en": "Cannot delete product",
+        "ja": "製品を削除できません"
+      },
+      "invalid_address": {
+        "vi": "Vui lòng điền đầy đủ thông tin địa chỉ",
+        "en": "Please fill in complete address information",
+        "ja": "住所情報を完全に入力してください"
+      },
+      "invalid_image": {
+        "vi": "Vui lòng chọn file hình ảnh",
+        "en": "Please select an image file",
+        "ja": "画像ファイルを選択してください"
+      },
+      "image_too_large": {
+        "vi": "File hình ảnh quá lớn",
+        "en": "Image file is too large",
+        "ja": "画像ファイルが大きすぎます"
+      }
+    },
+    "form_labels": {
+      "full_name": {
+        "vi": "Họ tên",
+        "en": "Full Name",
+        "ja": "フルネーム"
+      },
+      "phone_number": {
+        "vi": "Số điện thoại",
+        "en": "Phone Number",
+        "ja": "電話番号"
+      },
+      "email": {
+        "vi": "Email",
+        "en": "Email",
+        "ja": "メール"
+      },
+      "address": {
+        "vi": "Địa chỉ",
+        "en": "Address",
+        "ja": "住所"
+      },
+      "gender": {
+        "vi": "Giới tính",
+        "en": "Gender",
+        "ja": "性別"
+      },
+      "male": {
+        "vi": "Nam",
+        "en": "Male",
+        "ja": "男性"
+      },
+      "female": {
+        "vi": "Nữ",
+        "en": "Female",
+        "ja": "女性"
+      },
+      "other": {
+        "vi": "Khác",
+        "en": "Other",
+        "ja": "その他"
+      },
+      "birth_date": {
+        "vi": "Ngày sinh",
+        "en": "Date of Birth",
+        "ja": "生年月日"
+      },
+      "city": {
+        "vi": "Tỉnh/Thành phố",
+        "en": "City/Province",
+        "ja": "市区町村"
+      },
+      "ward": {
+        "vi": "Phường/Xã",
+        "en": "Ward/District",
+        "ja": "区/郡"
+      },
+      "street": {
+        "vi": "Địa chỉ chi tiết",
+        "en": "Street Address",
+        "ja": "街道住所"
+      },
+      "rating": {
+        "vi": "Xếp hạng",
+        "en": "Rating",
+        "ja": "評価"
+      },
+      "content": {
+        "vi": "Nội dung",
+        "en": "Content",
+        "ja": "コンテンツ"
+      }
+    },
+    "page_titles": {
+      "shopping_cart": {
+        "vi": "Giỏ hàng của bạn",
+        "en": "Shopping Cart",
+        "ja": "ショッピングカート"
+      },
+      "product_feedback": {
+        "vi": "Đánh giá sản phẩm",
+        "en": "Product Reviews",
+        "ja": "製品レビュー"
+      },
+      "order_history": {
+        "vi": "Lịch sử mua hàng",
+        "en": "Order History",
+        "ja": "注文履歴"
+      },
+      "payment": {
+        "vi": "Thông tin thanh toán",
+        "en": "Payment Information",
+        "ja": "支払い情報"
+      },
+      "profile": {
+        "vi": "Hồ sơ",
+        "en": "Profile",
+        "ja": "プロフィール"
+      },
+      "personal_info": {
+        "vi": "Thông tin cá nhân",
+        "en": "Personal Information",
+        "ja": "個人情報"
+      },
+      "products": {
+        "vi": "Sản phẩm",
+        "en": "Products",
+        "ja": "製品"
+      },
+      "customers": {
+        "vi": "Khách hàng",
+        "en": "Customers",
+        "ja": "顧客"
+      },
+      "orders": {
+        "vi": "Đơn hàng",
+        "en": "Orders",
+        "ja": "注文"
+      },
+      "add_product": {
+        "vi": "Thêm Sản Phẩm Mới",
+        "en": "Add New Product",
+        "ja": "新製品を追加"
+      }
+    },
+    "empty_states": {
+      "empty_cart": {
+        "vi": "Giỏ hàng trống",
+        "en": "Cart is empty",
+        "ja": "カートが空です"
+      },
+      "no_orders": {
+        "vi": "Không có đơn hàng nào",
+        "en": "No orders found",
+        "ja": "注文がありません"
+      },
+      "no_feedbacks": {
+        "vi": "Chưa có đơn hàng hoàn thành",
+        "en": "No completed orders yet",
+        "ja": "完了した注文がまだありません"
+      },
+      "no_products": {
+        "vi": "Không tìm thấy sản phẩm nào",
+        "en": "No products found",
+        "ja": "製品が見つかりません"
+      }
+    },
+    "loading_states": {
+      "loading": {
+        "vi": "Đang tải...",
+        "en": "Loading...",
+        "ja": "読み込み中..."
+      },
+      "saving": {
+        "vi": "Đang lưu...",
+        "en": "Saving...",
+        "ja": "保存中..."
+      },
+      "updating": {
+        "vi": "Đang cập nhật...",
+        "en": "Updating...",
+        "ja": "更新中..."
+      },
+      "sending": {
+        "vi": "Đang gửi...",
+        "en": "Sending...",
+        "ja": "送信中..."
+      }
+    },
+    "shipping": {
+      "free_shipping": {
+        "vi": "Miễn phí vận chuyển",
+        "en": "Free Shipping",
+        "ja": "送料無料"
+      },
+      "authentic": {
+        "vi": "Chính hãng",
+        "en": "Authentic",
+        "ja": "本物"
+      }
+    }
+  },
+  "files_affected": [
+    "frontend/src/pages/client/MyFeedbacks.jsx",
+    "frontend/src/pages/client/Cart.jsx",
+    "frontend/src/pages/client/Login.jsx",
+    "frontend/src/pages/client/OrderHistory.jsx",
+    "frontend/src/pages/client/Payment.jsx",
+    "frontend/src/pages/client/PaymentSuccess.jsx",
+    "frontend/src/pages/client/PaymentCancel.jsx",
+    "frontend/src/pages/admin/Products/ListProduct.jsx",
+    "frontend/src/pages/admin/Products/AddProduct.jsx",
+    "frontend/src/pages/admin/Customer/index.jsx",
+    "frontend/src/pages/admin/Order/index.jsx",
+    "frontend/src/pages/admin/Employee/EmployeeManagementPage.jsx",
+    "frontend/src/pages/admin/Role/RoleManagementPage.jsx",
+    "frontend/src/pages/admin/Statistic/Pages/Setting/index.jsx",
+    "frontend/src/components/common/AddressForm.jsx",
+    "frontend/src/components/feedback/FeedbackForm.jsx",
+    "frontend/src/components/profile/PersonalInfoForm.jsx",
+    "frontend/src/components/profile/AddressBook.jsx",
+    "frontend/src/components/profile/OrderDetailPage.jsx",
+    "frontend/src/components/admin/ProductForm.jsx",
+    "frontend/src/components/admin/VersionForm.jsx"
+  ],
+  "recommendations": [
+    "Create translation files: /locales/{vi,en,ja}/strings.json",
+    "Replace all hardcoded strings with t() function calls",
+    "Implement i18next for better translation management",
+    "Add unit tests for language switching",
+    "Test all 3 languages in production"
+  ]
+}

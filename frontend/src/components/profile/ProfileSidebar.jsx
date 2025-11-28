@@ -4,18 +4,17 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Shield, MessageSquare, LogOut } from 'lucide-react';
 import { useAuthFullOptions } from "../../contexts/AuthContext";
-
-const navItems = [
-    { name: 'Đơn hàng của tôi', icon: ShoppingBag, path: '/profile/order' },
-    { name: 'Thông tin tài khoản', icon: User, path: '/profile/info' },
-    { name: 'Thông tin bảo hành', icon: Shield, path: '/profile/warranty' },
-    { name: 'Góp ý - Hỗ trợ', icon: MessageSquare, path: '/profile/support' },
-];
-
-
-
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const ProfileSidebar = () => {
+    const { t } = useLanguage();
+    const navItems = [
+        { name: t('profile.myOrders'), icon: ShoppingBag, path: '/profile/order' },
+        { name: t('profile.accountInfo'), icon: User, path: '/profile/info' },
+        { name: t('profile.warranty'), icon: Shield, path: '/profile/warranty' },
+        { name: t('profile.support'), icon: MessageSquare, path: '/profile/support' },
+    ];
+
     const { logoutCustomer } = useAuthFullOptions();
     const navigate = useNavigate();
     const handleLogout = () => {
