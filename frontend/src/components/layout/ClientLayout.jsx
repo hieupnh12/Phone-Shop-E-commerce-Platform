@@ -211,16 +211,16 @@ const ClientLayout = ({ children, showHero = true }) => {
           <div className="relative py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-950 to-gray-900">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-10">
-                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 drop-shadow-lg">
+                {/* <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 drop-shadow-lg">
                   Sản Phẩm Bán Chạy
-                </h2>
-                <p className="text-gray-300 text-lg drop-shadow">
+                </h2> */}
+                {/* <p className="text-gray-300 text-lg drop-shadow">
                   Top điện thoại được yêu thích nhất
-                </p>
+                </p> */}
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {/* <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {hotProducts.map((product) => (
                   <div
                     key={product.id}
@@ -263,7 +263,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                     </div>
                   </div>
                 ))}
-              </div>
+              </div> */}
 
 
 
