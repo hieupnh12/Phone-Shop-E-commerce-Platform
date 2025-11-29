@@ -1,7 +1,7 @@
 import { Link } from 'lucide-react'
 import React from 'react'
 
-export default function FooterV2() {
+const FooterV2 = () => {
   return (
     <footer className="bg-gray-800 text-white">
           <div className="container mx-auto px-4 py-8">
@@ -59,3 +59,4 @@ export default function FooterV2() {
         </footer>
   )
 }
+export default FooterV2;

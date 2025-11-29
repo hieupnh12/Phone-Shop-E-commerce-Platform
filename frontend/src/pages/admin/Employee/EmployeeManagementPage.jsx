@@ -84,50 +84,55 @@ const DeleteEmployeeModal = ({ isOpen, onClose, employee, onDeleteSuccess, setTo
 const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSuccess, setToast }) => {
     const isEdit = !!employeeToEdit;
 
-    const employeeRolesArray = Array.isArray(employeeToEdit?.employeeRoles)
-        ? employeeToEdit.employeeRoles
-        : [];
-
-    const initialRoles = employeeRolesArray.map(r => r.id);
-
     const [formData, setFormData] = useState({
-        fullName: employeeToEdit?.fullName || '',
-        email: employeeToEdit?.email || '',
-        isActive: employeeToEdit?.isActive || true,
-        roleId: new Set(initialRoles), // Sử dụng Set của IDs
+        fullName: '',
+        email: '',
+        isActive: true,
+        roleId: new Set(),
     });
 
-    useEffect(() => {
-        if (employeeToEdit) {
-            const rolesArr = Array.isArray(employeeToEdit.employeeRoles) ? employeeToEdit.employeeRoles : [];
-
-            setFormData({
-                fullName: employeeToEdit.fullName,
-                email: employeeToEdit.email,
-                isActive: employeeToEdit.isActive,
-                roleId: new Set(rolesArr.map(r => r.id)),
-            });
-        } else {
-            // ...
-        }
-    }, [employeeToEdit]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localError, setLocalError] = useState(null);
     const [isSendingReset, setIsSendingReset] = useState(false);
 
+    // Cập nhật formData khi modal mở hoặc employeeToEdit thay đổi
     useEffect(() => {
-        if (employeeToEdit) {
-            const roles = Array.isArray(employeeToEdit.employeeRoles) ? employeeToEdit.employeeRoles : [];
-            setFormData({
-                fullName: employeeToEdit.fullName,
-                email: employeeToEdit.email,
-                isActive: employeeToEdit.isActive,
-                roleId: new Set(roles.map(r => r.id)),
-            });
-        } else {
-            setFormData({ fullName: '', email: '', isActive: true, roleId: new Set() });
+        if (isOpen) {
+            if (employeeToEdit) {
+                // Backend trả về field 'roles' chứ không phải 'employeeRoles'
+                const rolesArr = Array.isArray(employeeToEdit.roles) 
+                    ? employeeToEdit.roles 
+                    : (Array.isArray(employeeToEdit.employeeRoles) ? employeeToEdit.employeeRoles : []);
+                
+                // Đảm bảo roleIds là number để so sánh đúng với allRoles
+                const roleIds = rolesArr.map(r => Number(r.id)).filter(id => !isNaN(id));
+                
+                console.log('🔍 Loading employee for edit:', {
+                    employee: employeeToEdit,
+                    roles: employeeToEdit.roles,
+                    employeeRoles: employeeToEdit.employeeRoles,
+                    rolesArr,
+                    roleIds,
+                    allRolesIds: allRoles.map(r => Number(r.id))
+                });
+                
+                setFormData({
+                    fullName: employeeToEdit.fullName || '',
+                    email: employeeToEdit.email || '',
+                    isActive: employeeToEdit.isActive !== undefined ? employeeToEdit.isActive : true,
+                    roleId: new Set(roleIds),
+                });
+            } else {
+                // Reset form khi tạo mới
+                setFormData({ 
+                    fullName: '', 
+                    email: '', 
+                    isActive: true, 
+                    roleId: new Set() 
+                });
+            }
         }
-    }, [employeeToEdit]);
+    }, [isOpen, employeeToEdit, allRoles]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -260,17 +265,21 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
                     <div className="space-y-3 p-4 border rounded-lg">
                         <h4 className="font-semibold text-gray-700 flex items-center"><Key className="w-4 h-4 mr-2 text-red-500" /> Gán Vai trò <span className='text-red-500'>*</span></h4>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {allRoles.map(role => (
-                                <label key={role.id} className="flex items-center cursor-pointer p-2 bg-white rounded-md border hover:bg-gray-50 transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.roleId.has(role.id)}
-                                        onChange={(e) => handleRoleChange(role.id, e.target.checked)}
-                                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <span className="ml-2 text-sm font-medium text-gray-800">{role.name}</span>
-                                </label>
-                            ))}
+                            {allRoles.map(role => {
+                                const roleId = Number(role.id);
+                                const isChecked = formData.roleId.has(roleId);
+                                return (
+                                    <label key={role.id} className="flex items-center cursor-pointer p-2 bg-white rounded-md border hover:bg-gray-50 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => handleRoleChange(roleId, e.target.checked)}
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="ml-2 text-sm font-medium text-gray-800">{role.name}</span>
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -366,9 +375,19 @@ const EmployeeManagementPage = () => {
         setIsModalOpen(true);
     };
 
-    const openEditModal = (employee) => {
-        setEmployeeToEdit(employee); // Đặt nhân viên để Edit
-        setIsModalOpen(true);
+    const openEditModal = async (employee) => {
+        try {
+            // Fetch lại chi tiết employee để đảm bảo có đầy đủ employeeRoles
+            const response = await api.get(`${API_ENDPOINTS.GET_EMPLOYEES}/${employee.id}`);
+            const employeeDetail = response.data.result;
+            setEmployeeToEdit(employeeDetail); // Đặt nhân viên với dữ liệu đầy đủ
+            setIsModalOpen(true);
+        } catch (err) {
+            console.error("Lỗi tải chi tiết nhân viên:", err);
+            // Fallback: dùng dữ liệu từ danh sách nếu fetch thất bại
+            setEmployeeToEdit(employee);
+            setIsModalOpen(true);
+        }
     };
 
 
@@ -466,8 +485,8 @@ const EmployeeManagementPage = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{employee.fullName}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{employee.email}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        {/* ✅ FIX: Thêm Optional Chaining để bảo vệ khỏi lỗi .map trên null */}
-                                        {employee.employeeRoles?.map(r => (
+                                        {/* ✅ FIX: Hỗ trợ cả 'roles' và 'employeeRoles' */}
+                                        {(employee.roles || employee.employeeRoles || [])?.map(r => (
                                             <span key={r.id} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1">
                                                     {r.name}
                                                 </span>

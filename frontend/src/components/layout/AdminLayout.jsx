@@ -20,8 +20,10 @@ import {
   Users2,
 } from "lucide-react";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 export default function AdminLayout() {
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const { user, logout } = useAuthFullOptions();
@@ -56,14 +58,14 @@ export default function AdminLayout() {
       label: "Dashboard",
       path: "/admin/dashboard",
     },
-    { id: "products", icon: Grid, label: "Sản phẩm", path: "/admin/products" },
+    { id: "products", icon: Grid, label: t('admin.products'), path: "/admin/products" },
     {
       id: "statistic",
       icon: ChartNoAxesCombined,
       label: "Thống kê",
       path: "/admin/statistic",
     },
-    { id: "orders", icon: ShoppingCart, label: "Đặt hàng", path: "/admin/orders" },
+    { id: "orders", icon: ShoppingCart, label: t('admin.orders'), path: "/admin/orders" },
     { id: "roles", icon: Shield, label: "Phân quyền", path: "/admin/roles" },
     { id: "customers", icon: Users2, label: "Khách hàng", path: "/admin/customers" },
     { id: "employee", icon: UserMinus, label: "Nhân Viên", path: "/admin/employee" },

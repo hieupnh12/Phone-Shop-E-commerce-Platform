@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, MapPin } from 'lucide-react';
 import InputField from '../common/InputField';
 import { customerService } from '../../services/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const AddressForm = ({ addressToEdit, onClose, onSave }) => {
+    const { t } = useLanguage();
     const [formData, setFormData] = useState({
         city: '',
         ward: '',
@@ -128,7 +130,7 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
                             helperText="Lấy từ thông tin cá nhân"
                         />
                         <InputField
-                            label="Số điện thoại"
+                            label={t('common.phone')}
                             name="phoneNumber"
                             value={customerInfo.phoneNumber}
                             disabled
@@ -158,7 +160,7 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
 
                     {/* Địa chỉ chi tiết */}
                     <InputField
-                        label="Địa chỉ chi tiết (Số nhà, đường)"
+                        label={t('profile.detailedAddress')}
                         name="street"
                         value={formData.street}
                         onChange={handleInputChange}
@@ -182,7 +184,7 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
                             className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-colors disabled:bg-red-300"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Đang lưu...' : (isEditMode ? 'Cập nhật' : 'Thêm Địa Chỉ')}
+                            {isLoading ? t('profile.saving') : (isEditMode ? t('profile.update') : t('profile.addAddress'))}
                         </button>
                     </div>
                 </form>

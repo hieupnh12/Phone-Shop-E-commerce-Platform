@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,5 +32,10 @@ public class AuditLogService {
         }
 
         return logPage.map(auditLogMapper::toResponse);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveAuditLog(AuditLog log) {
+        auditLogRepository.save(log);
     }
 }

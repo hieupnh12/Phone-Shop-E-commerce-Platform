@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ShoppingCart, Outlet } from "lucide-react";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { getUserRole } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import Header from "./Header";
 import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
@@ -11,6 +12,7 @@ import { useAuth } from "../../reducers";
 
 
 const ClientLayout = ({ children, showHero = true }) => {
+  const { t } = useLanguage();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
@@ -19,29 +21,29 @@ const ClientLayout = ({ children, showHero = true }) => {
 
   const slogans = [
     {
-      title: "Công Nghệ Đỉnh Cao",
-      subtitle: "Trải nghiệm iPhone mới nhất 2025",
-      description: "Chip A18 Pro - Hiệu năng vượt trội",
+      title: t('home.slogan1Title'),
+      subtitle: t('home.slogan1Subtitle'),
+      description: t('home.slogan1Description'),
     },
     {
-      title: "Giá Tốt Nhất Thị Trường",
-      subtitle: "Cam kết giá rẻ hơn hoàn tiền",
-      description: "Trả góp 0% - Không lãi suất",
+      title: t('home.slogan2Title'),
+      subtitle: t('home.slogan2Subtitle'),
+      description: t('home.slogan2Description'),
     },
     {
-      title: "Bảo Hành Chính Hãng",
-      subtitle: "Apple Authorized Reseller",
-      description: "12 tháng bảo hành toàn cầu",
+      title: t('home.slogan3Title'),
+      subtitle: t('home.slogan3Subtitle'),
+      description: t('home.slogan3Description'),
     },
     {
-      title: "Giao Hàng Siêu Tốc",
-      subtitle: "Nhận hàng trong 2 giờ tại Hà Nội",
-      description: "Miễn phí vận chuyển toàn quốc",
+      title: t('home.slogan4Title'),
+      subtitle: t('home.slogan4Subtitle'),
+      description: t('home.slogan4Description'),
     },
     {
-      title: "Trade-In Máy Cũ",
-      subtitle: "Thu cũ đổi mới giá cao",
-      description: "Lên đời iPhone dễ dàng hơn",
+      title: t('home.slogan5Title'),
+      subtitle: t('home.slogan5Subtitle'),
+      description: t('home.slogan5Description'),
     },
   ];
 
@@ -115,6 +117,10 @@ const ClientLayout = ({ children, showHero = true }) => {
     // TODO: Thêm logic thêm vào giỏ hàng ở đây
   };
 
+  const handleBuyNow = () => {
+    navigate("/user/products");
+  };
+
 // THÊM MỚI: Handler cho button "Xem Tất Cả Sản Phẩm" - navigate đến trang Products (/products)
   const handleViewAllProducts = () => {
     navigate("/user/products"); // Route đến Products/index.jsx (cấu hình trong router)
@@ -181,9 +187,10 @@ const ClientLayout = ({ children, showHero = true }) => {
                     {slogan.description}{" "}
                   </p>{" "}
                   <button 
+                  onClick={handleBuyNow}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2 rounded-full text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50">
                     {" "}
-                    Buy Now{" "}
+                    {t('home.buyNow')}{" "}
                   </button>
                 </div>
               ))}
@@ -211,12 +218,12 @@ const ClientLayout = ({ children, showHero = true }) => {
           <div className="relative py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-950 to-gray-900">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-10">
-                {/* <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 drop-shadow-lg">
-                  Sản Phẩm Bán Chạy
-                </h2> */}
-                {/* <p className="text-gray-300 text-lg drop-shadow">
-                  Top điện thoại được yêu thích nhất
-                </p> */}
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2 drop-shadow-lg">
+                  {t('home.hotProductsTitle')}
+                </h2>
+                <p className="text-gray-300 text-lg drop-shadow">
+                  {t('home.hotProductsSubtitle')}
+                </p>
               </div>
 
               {/* Products Grid */}
@@ -253,7 +260,7 @@ const ClientLayout = ({ children, showHero = true }) => {
 
                     <div className="space-y-2">
                       <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 rounded-lg text-sm font-medium transition-all duration-300">
-                        Xem chi tiết
+                        {t('common.viewDetails')}
                       </button>
                       <button 
                         onClick={handleAddToCart}
@@ -273,7 +280,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                 onClick={handleViewAllProducts}
                  className="bg-white/10 backdrop-blur-lg hover:bg-white/20 text-white px-8 py-3 rounded-full font-semibold border border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105"
                  >
-                  Xem Tất Cả Sản Phẩm →
+                  {t('home.viewAllProducts')} →
                 </button>
               </div>
             </div>

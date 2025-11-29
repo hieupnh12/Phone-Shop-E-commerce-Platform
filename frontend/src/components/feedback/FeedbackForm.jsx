@@ -321,14 +321,14 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
               disabled={loading}
             >
-              Hủy
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? 'Đang gửi...' : t('feedback.submit') || 'Gửi'}
+              {loading ? t('common.loading') : t('feedback.submit')}
             </button>
           </div>
             </form>

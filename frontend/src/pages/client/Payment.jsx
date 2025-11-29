@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2, Plus } from 'lucide-react';
 import { customerService } from '../../services/api';
 import cartService from '../../services/cartService';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 import AddressForm from '../../components/common/AddressForm';
 import Toast from '../../components/common/Toast';
@@ -17,6 +18,7 @@ const vnd = (n) =>
 
 export default function Payment() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,7 @@ export default function Payment() {
         }));
       }
     } catch (error) {
-      console.error("Lỗi khi tải địa chỉ:", error);
+      console.error(t('payment.loadError'), error);
     } finally {
       setLoadingAddresses(false);
     }
@@ -75,7 +77,7 @@ export default function Payment() {
         if (cartData?.success && cartData.cartItems) {
           setCartItems(cartData.cartItems);
         } else {
-          setError('Không thể tải giỏ hàng');
+          setError(t('payment.failedToUpdate'));
         }
 
         // Load customer info from API
@@ -122,7 +124,7 @@ export default function Payment() {
         // Load addresses from address book
         await loadAddresses();
       } catch (e) {
-        setError(e.message || 'Lỗi kết nối');
+        setError(e.message || t('payment.networkError'));
       } finally {
         setLoading(false);
       }
@@ -240,7 +242,7 @@ export default function Payment() {
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
-      setError('Giỏ hàng trống');
+      setError(t('payment.emptyCart'));
       return;
     }
 
@@ -263,7 +265,7 @@ export default function Payment() {
         subtotal: subtotal,
         shippingFee: shippingFee,
         paymentMethod: paymentMethod,
-        note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.',
+        note: note || t('payment.defaultDelivery'),
         address: customerInfo.address || ''
       };
 
@@ -278,7 +280,7 @@ export default function Payment() {
           navigate('/user/profile/order');
         }
       } else {
-        setError(response?.message || 'Không thể đặt hàng');
+        setError(response?.message || t('payment.failedToUpdate'));
       }
     } catch (e) {
       // Xử lý lỗi từ API response
@@ -323,7 +325,7 @@ export default function Payment() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1">Họ và tên</span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.name || 'Chưa cập nhật'}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.name || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -331,7 +333,7 @@ export default function Payment() {
                     <Phone className="w-4 h-4" />
                     Số điện thoại
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || 'Chưa cập nhật'}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -339,7 +341,7 @@ export default function Payment() {
                     <Mail className="w-4 h-4" />
                     Email
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.email || 'Chưa cập nhật'}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.email || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="py-2.5 text-sm">
@@ -389,12 +391,12 @@ export default function Payment() {
             <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
                 <StickyNote className="w-5 h-5" />
-                Ghi chú đơn hàng
+                {t('payment.orderNote')}
               </h3>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Giao hàng trong giờ hành chính. Gọi trước khi giao."
+                placeholder={t('payment.defaultDelivery')}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
                 rows="3"
               />
@@ -482,7 +484,7 @@ export default function Payment() {
                     </>
                   ) : (
                     <div className="py-4">
-                      <p className="text-xs text-gray-500">Nhấn "Đặt hàng" để tạo mã QR thanh toán</p>
+                      <p className="text-xs text-gray-500">{t('payment.orderNote')}</p>
                     </div>
                   )}
                 </div>
@@ -495,19 +497,19 @@ export default function Payment() {
             {loading ? (
               <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-4" />
-                <p className="text-gray-600">Đang tải thông tin đơn hàng...</p>
+                <p className="text-gray-600">{t('payment.loadingOrderInfo')}</p>
               </div>
             ) : (
               <>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   {cartItems.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
-                      <p>Giỏ hàng trống</p>
+                      <p>{t('payment.emptyCart')}</p>
                       <button
                         onClick={() => navigate('/user/cart')}
                         className="mt-4 text-rose-600 hover:text-rose-700 font-medium"
                       >
-                        Quay lại giỏ hàng
+                        {t('payment.backToCart')}
                       </button>
                     </div>
                   ) : (
@@ -516,7 +518,7 @@ export default function Payment() {
                         <div key={item.productVersionId || index} className="p-5 border-b border-gray-200 last:border-b-0">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">{item.productName || 'Sản phẩm'}</div>
+                              <div className="font-medium text-gray-900">{item.productName || t('common.products')}</div>
                               <div className="text-sm text-gray-500 mt-1">
                                 Số lượng: {item.quantity || 1}
                               </div>

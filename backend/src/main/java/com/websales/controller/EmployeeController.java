@@ -82,9 +82,15 @@ public class EmployeeController {
                 .result(employeeAutService.refreshToken(request))
                 .build();
     }
+//    @GetMapping
+//    public ApiResponse<List<EmployeeResponse>> getAllEmployees() {
+//        return ApiResponse.<List<EmployeeResponse>>builder()
+//                .result(employeeService.getAllEmployee())
+//                .build();
+//    }
+
 
     @GetMapping
-    @PreAuthorize("hasAuthority('SCOPE_STAFF_VIEW_ALL')")
     public ApiResponse<Page<EmployeeResponse>> getAllEmployee(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -113,7 +119,6 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{employeeId}")
-    @PreAuthorize("hasAuthority('SCOPE_STAFF_DELETE_ANY')")
     public ApiResponse<Void> deleteEmployee(@PathVariable Long employeeId) {
         employeeService.deleteEmployee(employeeId);
         return ApiResponse.<Void>builder()

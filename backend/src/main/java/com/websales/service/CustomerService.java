@@ -90,7 +90,11 @@ public class CustomerService {
      Customer customer = customerRepository.findById(customerId).orElseThrow(
                 () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
         );
-        List<ListOrderResponse> list = orderRepository.findByCustomerId(customer)
+
+        Sort sortByCreationDate = Sort.by(Sort.Direction.DESC, "createDatetime");
+        List<Order> orders = orderRepository.findByCustomerId(customer, sortByCreationDate);
+
+        List<ListOrderResponse> list = orders
                 .stream().map(o -> {
                     DetailResponse preview = orderDetailRepo.getOrderPreview(o.getOrderId());
                     return  ListOrderResponse.builder()
