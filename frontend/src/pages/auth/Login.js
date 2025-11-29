@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
+import Toast from "../../components/common/Toast";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -33,6 +34,9 @@ const Login = () => {
   const { loading, loginEmployee, sendOtp, verifyOtp } = useContext(AuthContext);
   const { t } = useLanguage();
 
+  const { loading, loginEmployee, sendOtp, verifyOtp } =
+    useContext(AuthContext);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
   const handleChange = (e) => {
     setFormData({
@@ -43,9 +47,19 @@ const Login = () => {
 
   const handleSendOTP = async () => {
     try {
+      const phoneRegex = /^0\d{9}$/;
+
+      if (!phoneRegex.test(formData?.phone)) {
+        setToast({
+          message: `Số điện thoại không hợp lệ. Vui lòng nhập 10 số và bắt đầu bằng 0.`,
+          type: "warning",
+        });
+        return;
+      }
+
       const response = await sendOtp(formData?.phone);
       console.log("gọi otp", response);
-      
+
       if (response?.code === 1000) {
         setOtpSent(true);
       }
@@ -53,15 +67,21 @@ const Login = () => {
       console.log("lỗi dn sdt", error);
     }
   };
-  console.log("dđ", loginMethod);
 
   const handleSubmit = async () => {
     try {
       if (loginMethod === "phone") {
+        const otpRegex = /^\d{6}$/;
+
+        // Validate OTP
+        if (!otpRegex.test(formData?.otp)) {
+          setToast({ message: `Mã OTP phải gồm 6 chữ số.`, type: "warning" });
+          return;
+        }
         const account = {
           rawPhone: formData?.phone,
-          otpCode: formData?.otp
-        }
+          otpCode: formData?.otp,
+        };
         const response = await verifyOtp(account);
         console.log("Login success customer", response);
         navigate("/");
@@ -80,11 +100,19 @@ const Login = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    window.location.href = "http://localhost:8080/phoneShop/oauth2/authorization/google";
+    window.location.href =
+      "http://localhost:8080/phoneShop/oauth2/authorization/google";
   };
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+       {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       {/*Video*/}
       <div className="absolute inset-0 z-0">
         {/* <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
@@ -138,6 +166,8 @@ const Login = () => {
         <div className="absolute w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl top-1/4 -left-20 animate-float-slow"></div>
         <div className="absolute w-96 h-96 bg-purple-500/10 rounded-full blur-3xl bottom-1/4 -right-20 animate-float-slow"></div>
       </div>
+
+     
 
       {/* Main Container */}
       <div className="relative z-20 w-full max-w-7xl mx-auto px-4">
@@ -246,17 +276,6 @@ const Login = () => {
 
                 {/* Login Method Tabs */}
                 <div className="flex gap-2 bg-gray-100 rounded-xl p-1 mb-6">
-                  {/* <button
-                    onClick={() => setLoginMethod("phone")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
-                      loginMethod === "email"
-                        ? "bg-white text-indigo-600 shadow-md"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    <Mail className="w-5 h-5" />
-                    Email
-                  </button> */}
                   <button
                     onClick={() => {
                       setLoginMethod("phone");
@@ -360,6 +379,7 @@ const Login = () => {
                               onChange={handleChange}
                               placeholder="0912345678"
                               disabled={otpSent}
+                              maxLength={10}
                               className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-60"
                             />
                           </div>
@@ -469,7 +489,7 @@ const Login = () => {
                 </div>
 
                 {/* Social Login */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <button
                     onClick={() => handleSocialLogin("Google")}
                     className="flex items-center justify-center gap-2 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"

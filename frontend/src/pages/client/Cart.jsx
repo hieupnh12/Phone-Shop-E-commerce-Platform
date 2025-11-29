@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Truck, X, ShoppingBag, Smartphone, Plus, Minus, CreditCard } from "lucide-react";
+import {
+  ArrowLeft,
+  Truck,
+  X,
+  ShoppingBag,
+  Smartphone,
+  Plus,
+  Minus,
+  CreditCard,
+} from "lucide-react";
 import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
 
@@ -9,8 +18,11 @@ const vnd = (n) =>
   new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
+
+// Giới hạn số lượng tối đa cho mỗi sản phẩm
+const MAX_QUANTITY = 5;
 
 export default function ShoppingCart() {
   const navigate = useNavigate();
@@ -18,8 +30,10 @@ export default function ShoppingCart() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
-  const [removingProductVersionId, setRemovingProductVersionId] = useState(null);
-  const [updatingProductVersionId, setUpdatingProductVersionId] = useState(null);
+  const [removingProductVersionId, setRemovingProductVersionId] =
+    useState(null);
+  const [updatingProductVersionId, setUpdatingProductVersionId] =
+    useState(null);
 
   // Lấy giỏ hàng
   const loadCart = async () => {
@@ -29,13 +43,13 @@ export default function ShoppingCart() {
       const data = await cartService.getCart();
       if (data?.success) {
         // Map dữ liệu từ API về format cần thiết
-        const mappedItems = (data.cartItems || []).map(item => ({
+        const mappedItems = (data.cartItems || []).map((item) => ({
           productVersionId: item.productVersionId,
           productId: item.productId,
           productName: item.productName,
           image: item.image,
           price: item.price,
-          quantity: item.quantity || 1
+          quantity: item.quantity || 1,
         }));
         setItems(mappedItems);
       } else {
@@ -56,19 +70,33 @@ export default function ShoppingCart() {
 
   // Cập nhật số lượng
   const updateQuantity = async (productVersionId, delta) => {
-    const item = items.find(x => x.productVersionId === productVersionId);
+    const item = items.find((x) => x.productVersionId === productVersionId);
     if (!item) return;
 
     const newQuantity = (item.quantity || 1) + delta;
+
+    // Kiểm tra giới hạn tối thiểu và tối đa
     if (newQuantity < 1) return;
+    if (newQuantity > MAX_QUANTITY) {
+      setErr(`Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`);
+      return;
+    }
 
     try {
       setUpdatingProductVersionId(productVersionId);
-      setItems(prev => prev.map(x =>
-        x.productVersionId === productVersionId ? { ...x, quantity: newQuantity } : x
-      ));
+      setErr(""); // Xóa lỗi trước đó
+      setItems((prev) =>
+        prev.map((x) =>
+          x.productVersionId === productVersionId
+            ? { ...x, quantity: newQuantity }
+            : x
+        )
+      );
 
-      const res = await cartService.updateQuantity(productVersionId, newQuantity);
+      const res = await cartService.updateQuantity(
+        productVersionId,
+        newQuantity
+      );
       if (!res?.success) {
         setItems(prev => prev.map(x =>
           x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
@@ -91,7 +119,9 @@ export default function ShoppingCart() {
       setRemovingProductVersionId(productVersionId);
       const res = await cartService.removeItem(productVersionId);
       if (res?.success) {
-        setItems(prev => prev.filter(x => x.productVersionId !== productVersionId));
+        setItems((prev) =>
+          prev.filter((x) => x.productVersionId !== productVersionId)
+        );
       } else {
         setErr(res?.message || t('cart.failedDelete'));
       }
@@ -104,7 +134,11 @@ export default function ShoppingCart() {
 
   // Tính toán
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1), 0),
+    () =>
+      items.reduce(
+        (sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1),
+        0
+      ),
     [items]
   );
   const FREE_SHIP_LIMIT = 1000;
@@ -176,8 +210,9 @@ export default function ShoppingCart() {
                 </div>
                 <div className="bg-slate-100 h-2 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${freeShipProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'
-                      }`}
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      freeShipProgress >= 100 ? "bg-green-500" : "bg-blue-500"
+                    }`}
                     style={{ width: `${freeShipProgress}%` }}
                   />
                 </div>
@@ -203,19 +238,21 @@ export default function ShoppingCart() {
                     {t('cart.addProducts')}
                   </p>
                   <button
-                    onClick={() => navigate('/user/products')}
+                    onClick={() => navigate("/products")}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                   >
                     {t('cart.exploreProducts')}
                   </button>
-
                 </div>
               ) : (
                 items.map((item) => (
                   <div
                     key={item.productVersionId}
-                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${removingProductVersionId === item.productVersionId ? 'opacity-50' : ''
-                      }`}
+                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${
+                      removingProductVersionId === item.productVersionId
+                        ? "opacity-50"
+                        : ""
+                    }`}
                   >
                     <div className="flex gap-4">
                       {/* Image */}
@@ -260,8 +297,14 @@ export default function ShoppingCart() {
                             {/* Quantity Controls */}
                             <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
                               <button
-                                onClick={() => updateQuantity(item.productVersionId, -1)}
-                                disabled={item.quantity <= 1 || updatingProductVersionId === item.productVersionId}
+                                onClick={() =>
+                                  updateQuantity(item.productVersionId, -1)
+                                }
+                                disabled={
+                                  item.quantity <= 1 ||
+                                  updatingProductVersionId ===
+                                    item.productVersionId
+                                }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title={t('cart.decreaseQuantity')}
                               >
@@ -271,8 +314,14 @@ export default function ShoppingCart() {
                                 {item.quantity || 1}
                               </span>
                               <button
-                                onClick={() => updateQuantity(item.productVersionId, +1)}
-                                disabled={updatingProductVersionId === item.productVersionId}
+                                onClick={() =>
+                                  updateQuantity(item.productVersionId, +1)
+                                }
+                                disabled={
+                                  updatingProductVersionId ===
+                                    item.productVersionId ||
+                                  (item.quantity || 1) >= MAX_QUANTITY
+                                }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title={t('cart.increaseQuantity')}
                               >
@@ -283,11 +332,15 @@ export default function ShoppingCart() {
                             {/* Remove Button */}
                             <button
                               onClick={() => removeItem(item.productVersionId)}
-                              disabled={removingProductVersionId === item.productVersionId}
+                              disabled={
+                                removingProductVersionId ===
+                                item.productVersionId
+                              }
                               className="flex items-center gap-1 text-slate-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg disabled:opacity-50"
                               title={t('cart.deleteFromCart')}
                             >
-                              {removingProductVersionId === item.productVersionId ? (
+                              {removingProductVersionId ===
+                              item.productVersionId ? (
                                 <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
                               ) : (
                                 <X className="w-5 h-5" />
@@ -334,7 +387,7 @@ export default function ShoppingCart() {
               </div>
 
               <button
-                onClick={() => navigate('/user/payment')}
+                onClick={() => navigate("/payment")}
                 disabled={items.length === 0 || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >

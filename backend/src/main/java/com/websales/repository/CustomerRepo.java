@@ -32,7 +32,7 @@ from orders where customer_id = ?1 and status = 'DELIVERED'
 """, nativeQuery = true)
     CustomerCountOrders getCustomerCountOrders(Long customerId);
 
-    Page<Customer> findCustomerByPhoneNumber(String phoneNumber, Pageable pageable);
+    Page<Customer> findCustomerByEmail(String email, Pageable pageable);
 }
 
 

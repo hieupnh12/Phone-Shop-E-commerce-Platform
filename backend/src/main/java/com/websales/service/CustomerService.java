@@ -117,7 +117,7 @@ public class CustomerService {
         Page<Customer> customerPage;
 
         if (keyword != null && !keyword.trim().isEmpty()) {
-            customerPage = customerRepository.findCustomerByPhoneNumber(keyword, pageable);
+            customerPage = customerRepository.findCustomerByEmail(keyword, pageable);
         } else {
             customerPage = customerRepository.findAll(pageable);
         }

@@ -198,7 +198,7 @@ const OrderHistoryPage = () => {
                                         <p className="text-red-500 font-bold text-lg">{formatCurrency(order.totalAmount)}</p>
 
                                         <Link
-                                            to={`/profile/order/order-detail/${order.orderId}`}
+                                            to={`/user/profile/order/order-detail/${order.orderId}`}
                                             state={{ 
                                                 totalAmount: order.totalAmount,
                                                 createDatetime: order.createDatetime,

@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.websales.configuration.StatsProcedureConfig;
 import com.websales.entity.Order;
+import com.websales.entity.ProductVersion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -224,5 +225,6 @@ WHERE (:start IS NULL OR :start = '' OR DATE(o.end_datetime) >= :start)
              Pageable pageable
      );
 
-
+     @Query("SELECT p FROM ProductVersion p WHERE p.stockQuantity <= :threshold")
+     List<ProductVersion> findLowStockProducts(@Param("threshold") Integer threshold);
 }

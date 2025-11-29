@@ -2,6 +2,7 @@ package com.websales.handler;
 
 import com.websales.dto.response.StatisticSummaryResponse;
 import com.websales.dto.response.SummaryDashboardResponse;
+import com.websales.entity.ProductVersion;
 import com.websales.service.EmailService;
 import com.websales.service.ExcelExportService;
 import com.websales.service.StatisticService;
@@ -13,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -24,17 +26,23 @@ public class ReportScheduler {
     private final StatisticService statisticService;
     private LocalDate lastSentDate = null;
 
-    @Scheduled(fixedRate = 60_000) // chạy mỗi phút kiểm tra giờ gửi
+    @Scheduled(fixedRate = 60_000)
     public void checkAndSendReport() throws Exception {
         if (!config.isEnabled() || config.getRecipients().isEmpty()) return;
 
         LocalTime now = LocalTime.now();
         LocalTime target = LocalTime.parse(config.getSendTime());
+        DayOfWeek today = LocalDate.now().getDayOfWeek(); // thứ hiện tại
 
         // chỉ gửi 1 lần trong ngày
         if (now.getHour() == target.getHour()
                 && now.getMinute() == target.getMinute()
                 && !LocalDate.now().equals(lastSentDate)) {
+
+            // chỉ gửi Weekly vào thứ Hai
+            if ("WEEKLY".equalsIgnoreCase(config.getReportType()) && today != DayOfWeek.MONDAY) {
+                return;
+            }
 
             sendReportInternal();
             lastSentDate = LocalDate.now();
@@ -52,11 +60,11 @@ public class ReportScheduler {
         LocalDate startDate;
 
         LocalDate today = LocalDate.now();
-        DayOfWeek dayOfWeek = today.getDayOfWeek(); // MONDAY, TUESDAY ...
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
 
         if ("WEEKLY".equalsIgnoreCase(config.getReportType())) {
-            // Chỉ gửi vào thứ 2
-            if (dayOfWeek != DayOfWeek.MONDAY) return;
+
+            if (dayOfWeek != DayOfWeek.SUNDAY) return;
             startDate = today.minusDays(6); // lấy tuần trước
             endDate = today;
         }
@@ -76,5 +84,15 @@ public class ReportScheduler {
         );
 
         System.out.println(">>> Đã gửi báo cáo " + config.getReportType() + " lúc " + LocalTime.now());
+    }
+
+    //second minute hour day-of-month month day-of-week
+    @Scheduled(cron = "0 0 8 * * *")
+    public void checkLowStockAndSend() {
+        int threshold = 5;
+        List<ProductVersion> lowStockProducts = statisticService.getLowStockProducts(threshold);
+
+        List<String> admins = config.getRecipients();
+        emailService.sendLowStockAlert(lowStockProducts, admins);
     }
 }
