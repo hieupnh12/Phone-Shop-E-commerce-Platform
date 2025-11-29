@@ -3,10 +3,12 @@ import {useParams, Link, useOutletContext, useLocation} from 'react-router-dom';
 import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
 import {useAuthFullOptions} from "../../contexts/AuthContext";
 import { profileService } from "../../services/api";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 
 
 const OrderDetailPage = () => {
+    const { t } = useLanguage();
     const { orderId } = useParams();
     const location = useLocation();
     const [orderData, setOrderData] = useState(null);
@@ -93,7 +95,7 @@ const OrderDetailPage = () => {
         
         // Bước 1: Đặt hàng thành công (luôn có)
         timeline.push({
-            status: 'Đặt hàng thành công',
+            status: t('profile.orderSuccess'),
             date: createDateTime.date,
             time: createDateTime.time,
             completed: true
@@ -102,7 +104,7 @@ const OrderDetailPage = () => {
         // Bước 2: Đang xử lý (nếu status là pending hoặc đã qua pending)
         if (orderStatus === 'pending' || orderStatus === 'shipping' || orderStatus === 'delivered') {
             timeline.push({
-                status: 'Đang xử lý',
+                status: t('profile.processing'),
                 date: createDateTime.date,
                 time: createDateTime.time,
                 completed: orderStatus !== 'pending'
@@ -112,7 +114,7 @@ const OrderDetailPage = () => {
         // Bước 3: Đang vận chuyển (nếu status là shipping hoặc delivered)
         if (orderStatus === 'shipping' || orderStatus === 'delivered') {
             timeline.push({
-                status: 'Đang vận chuyển',
+                status: t('profile.shipping'),
                 date: createDateTime.date,
                 time: createDateTime.time,
                 completed: orderStatus === 'delivered'
@@ -122,7 +124,7 @@ const OrderDetailPage = () => {
         // Bước 4: Đã giao hàng (nếu status là delivered và có endDateTime)
         if (orderStatus === 'delivered' && endDateTime) {
             timeline.push({
-                status: 'Đã giao hàng',
+                status: t('profile.delivered'),
                 date: endDateTime.date,
                 time: endDateTime.time,
                 completed: true
@@ -132,7 +134,7 @@ const OrderDetailPage = () => {
         // Nếu bị hủy
         if (orderStatus === 'cancelled') {
             timeline.push({
-                status: 'Đơn hàng đã hủy',
+                status: t('profile.cancelled'),
                 date: endDateTime?.date || createDateTime.date,
                 time: endDateTime?.time || createDateTime.time,
                 completed: true
@@ -141,11 +143,11 @@ const OrderDetailPage = () => {
 
         // Map status để hiển thị
         const statusMap = {
-            'pending': 'Đang xử lý',
-            'shipping': 'Đang vận chuyển',
-            'delivered': 'Đã giao hàng',
-            'cancelled': 'Đã hủy',
-            'returned': 'Trả hàng'
+            'pending': t('profile.processing'),
+            'shipping': t('profile.shipping'),
+            'delivered': t('profile.delivered'),
+            'cancelled': t('profile.cancelled'),
+            'returned': t('profile.returned')
         };
 
         return {
@@ -207,8 +209,8 @@ const OrderDetailPage = () => {
             <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Thông tin khách hàng</h4>
             <div className="space-y-3">
                 <InfoRow label="Họ và tên" value={orderData.customer.name} />
-                <InfoRow label="Số điện thoại" value={orderData.customer.phone} />
-                <InfoRow label="Địa chỉ" value={orderData.customer.address} />
+                <InfoRow label={t('common.phone')} value={orderData.customer.phone} />
+                <InfoRow label={t('common.address')} value={orderData.customer.address} />
                 <InfoRow label="Email" value={customerInfo?.email || 'N/A'} />
                 <InfoRow label="Ghi chú" value={orderData.customer.note} />
             </div>
@@ -219,7 +221,7 @@ const OrderDetailPage = () => {
         <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
             <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Thông tin thanh toán</h4>
             <div className="space-y-2">
-                <InfoRow label="Sản phẩm" value={orderData.products.length} note="số lượng" />
+                <InfoRow label={t('common.products')} value={orderData.products.length} note={t('common.quantityNote')} />
                 <InfoRow label="Tổng tiền hàng" value={orderData.summary.subtotal} currency />
                 <InfoRow label="Giảm giá" value={-orderData.summary.discount} currency highlight />
                 <InfoRow

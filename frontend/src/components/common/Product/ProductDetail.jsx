@@ -14,8 +14,10 @@ import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { useParams } from "react-router-dom"; // Import useParams
 import cartService from "../../../services/cartService";
 import Toast from "../../../components/common/Toast";
+import { useLanguage } from "../../../contexts/LanguageContext";
 
 const ProductDetailPage = () => {
+  const { t } = useLanguage();
   const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
@@ -232,13 +234,13 @@ const ProductDetailPage = () => {
 
       setToast({
         type: 'success',
-        message: 'Đã thêm vào giỏ hàng!',
+        message: t('common.addedToCart'),
       });
     } catch (err) {
       console.log("Add to cart error:", err);
       setToast({
         type: 'error',
-        message: 'Không thể thêm vào giỏ hàng ',
+        message: t('common.cannotAddToCart'),
       });
     }
   };

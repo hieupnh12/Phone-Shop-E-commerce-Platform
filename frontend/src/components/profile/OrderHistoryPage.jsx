@@ -1,24 +1,25 @@
+// file OrderHistoryPage
 import React, { useEffect, useState } from 'react';
 import { Search, Calendar, ChevronRight } from 'lucide-react';
 import {profileService} from "../../services/api"
 import { Link, useOutletContext } from 'react-router-dom';
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const MOCK_CUSTOMER_ID = 11;
 
-const orderTabs = [
-    { id: 'all', label: 'Tất cả' },
-    { id: 'pending', label: 'Đang xử lý' },
-    { id: 'shipping', label: 'Đang vận chuyển' },
-    { id: 'delivered', label: 'Đã giao hàng' },
-    { id: 'cancelled', label: 'Đã hủy' },
-    { id: 'returned', label: 'Trả hàng' },
-];
-
-
-
 const OrderHistoryPage = () => {
+    const { t } = useLanguage();
     const { customerInfo } = useOutletContext();
     const customerId = customerInfo?.customerId;
+
+    const orderTabs = [
+        { id: 'all', label: t('common.all') },
+        { id: 'pending', label: t('profile.processing') },
+        { id: 'shipping', label: t('profile.shipping') },
+        { id: 'delivered', label: t('profile.delivered') },
+        { id: 'cancelled', label: t('profile.cancelled') },
+        { id: 'returned', label: t('profile.returned') },
+    ];
 
 
     const [activeTab, setActiveTab] = useState('all');
@@ -53,12 +54,9 @@ const OrderHistoryPage = () => {
     const groupAndNormalizeOrders = (apiData) => {
         const orderMap = {};
 
-        // 1. Nhóm các Order Detail thành Order chính (Order Aggregation)
         apiData.forEach(item => {
-            // Đảm bảo các trường cần thiết tồn tại
             const { orderId, createDatetime, totalAmount, status, endDateTime, orderDetail } = item;
 
-            // Xử lý orderDetail (giả định là chi tiết 1 sản phẩm)
             const product = {
                 image: orderDetail?.picture,
                 name: orderDetail?.productName,
@@ -82,10 +80,8 @@ const OrderHistoryPage = () => {
             }
         });
 
-        // 2. Chuyển đổi thành mảng và SẮP XẾP CUỐI CÙNG
         const finalOrders = Object.values(orderMap);
 
-        // ✅ FIX: Sắp xếp theo createDatetime (MỚI NHẤT -> CŨ NHẤT)
         finalOrders.sort((a, b) => b.createDatetime.getTime() - a.createDatetime.getTime());
 
         return finalOrders;
