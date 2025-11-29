@@ -6,6 +6,7 @@ import cartService from '../../services/cartService';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 import AddressForm from '../../components/common/AddressForm';
+import Toast from '../../components/common/Toast';
 
 // Format tiền VND
 const vnd = (n) =>
@@ -39,6 +40,7 @@ export default function Payment() {
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [toast, setToast] = useState(null);
 
   // Load addresses from address book
   const loadAddresses = async () => {
@@ -166,9 +168,16 @@ export default function Payment() {
         }));
       }
       setShowAddressForm(false);
+      setToast({
+        message: 'Thêm địa chỉ thành công!',
+        type: 'success'
+      });
     } catch (error) {
-      console.error(t('payment.loadError'), error);
-      alert(t('payment.error') + " " + (error.response?.data?.message || error.message || t('payment.tryAgain')));
+      console.error("Lỗi khi lưu địa chỉ:", error);
+      setToast({
+        message: "Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."),
+        type: 'error'
+      });
     } finally {
       setLoadingAddresses(false);
     }
@@ -237,6 +246,15 @@ export default function Payment() {
       return;
     }
 
+    // Kiểm tra địa chỉ
+    if (!selectedAddressId || addresses.length === 0) {
+      setToast({
+        message: 'Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng!',
+        type: 'warning'
+      });
+      return;
+    }
+
     try {
       setPlacingOrder(true);
       setError('');
@@ -265,7 +283,15 @@ export default function Payment() {
         setError(response?.message || t('payment.failedToUpdate'));
       }
     } catch (e) {
-      setError(e.message || t('payment.networkError'));
+      // Xử lý lỗi từ API response
+      const errorMessage = e.response?.data?.message || e.message || 'Lỗi khi đặt hàng';
+      setError(errorMessage);
+      
+      // Nếu có danh sách sản phẩm hết hàng, hiển thị chi tiết
+      if (e.response?.data?.outOfStockItems && Array.isArray(e.response.data.outOfStockItems)) {
+        const detailedMessage = e.response.data.outOfStockItems.join('\n');
+        setError(detailedMessage);
+      }
     } finally {
       setPlacingOrder(false);
     }
@@ -535,8 +561,9 @@ export default function Payment() {
                 )}
 
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                    {error}
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    <div className="font-semibold mb-2">⚠️ Không thể đặt hàng:</div>
+                    <div className="whitespace-pre-line">{error}</div>
                   </div>
                 )}
 
@@ -582,6 +609,15 @@ export default function Payment() {
           addressToEdit={null}
           onClose={() => setShowAddressForm(false)}
           onSave={handleSaveAddress}
+        />
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>

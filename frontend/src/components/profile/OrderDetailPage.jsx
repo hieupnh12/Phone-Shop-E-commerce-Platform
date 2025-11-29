@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {useParams, Link, useOutletContext, useLocation} from 'react-router-dom';
-import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart } from 'lucide-react';
+import {useParams, Link, useOutletContext, useLocation, useNavigate} from 'react-router-dom';
+import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart, XCircle } from 'lucide-react';
 import {useAuthFullOptions} from "../../contexts/AuthContext";
-import { profileService } from "../../services/api";
+import { profileService, orderService } from "../../services/api";
+import api from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
+import Toast from "../common/Toast";
 
 
 
@@ -11,9 +13,13 @@ const OrderDetailPage = () => {
     const { t } = useLanguage();
     const { orderId } = useParams();
     const location = useLocation();
+    const navigate = useNavigate();
     const [orderData, setOrderData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const { getCurrentUser } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
 
@@ -24,17 +30,58 @@ const OrderDetailPage = () => {
 
             try {
                 setIsLoading(true);
-                const apiResult = await profileService.getOrderDetail(orderId); // orderId là string hoặc Integer (Backend dùng Integer)
+                // Lấy order details, order info và payment transactions song song
+                const [apiResult, orderInfo, paymentTransactions] = await Promise.all([
+                    profileService.getOrderDetail(orderId),
+                    orderService.getOrder(orderId).catch(() => null),
+                    api.get(`/payment/transaction/order/${orderId}`)
+                        .then(res => res.data?.result || [])
+                        .catch(() => [])
+                ]);
+
+                // Lấy payment method từ transaction đầu tiên (mới nhất)
+                // Kiểm tra transactionCode để xác định chính xác: PAYOS- là PayOS, CODE- là COD
+                let paymentMethod = 'cod'; // Mặc định là COD
+                if (paymentTransactions && paymentTransactions.length > 0) {
+                    const transaction = paymentTransactions[0];
+                    const transactionCode = transaction?.transactionCode || '';
+                    const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+                    
+                    console.log('Payment Transaction Debug:', {
+                        transactionCode,
+                        paymentMethodType,
+                        transaction
+                    });
+                    
+                    // Nếu transactionCode bắt đầu bằng "PAYOS-" thì là PayOS
+                    if (transactionCode.startsWith('PAYOS-')) {
+                        paymentMethod = 'bank'; // PayOS
+                    } else if (transactionCode.startsWith('CODE-')) {
+                        // CODE- là COD
+                        paymentMethod = 'cod';
+                    } else {
+                        // Fallback: kiểm tra paymentMethodType
+                        // Nếu là 'bank' thì là PayOS, còn lại là COD
+                        paymentMethod = (paymentMethodType === 'bank') ? 'bank' : 'cod';
+                    }
+                } else {
+                    // Nếu không có transaction, thử lấy từ location.state
+                    paymentMethod = location.state?.paymentMethod || 'cod';
+                }
+                
+                console.log('Final payment method:', paymentMethod);
 
                 const normalizedData = normalizeOrderDetail(
                     apiResult,
                     orderId,
                     customerInfo,
-                    location.state?.totalAmount,
+                    orderInfo?.result?.totalAmount || location.state?.totalAmount,
                     {
-                        createDatetime: location.state?.createDatetime,
-                        endDateTime: location.state?.endDateTime,
-                        status: location.state?.status
+                        createDatetime: orderInfo?.result?.createDatetime || location.state?.createDatetime,
+                        endDateTime: orderInfo?.result?.endDatetime || location.state?.endDateTime,
+                        status: orderInfo?.result?.status || location.state?.status,
+                        isPaid: orderInfo?.result?.isPaid,
+                        paymentMethod: paymentMethod
                     }
                 );
 
@@ -51,7 +98,157 @@ const OrderDetailPage = () => {
         fetchDetail();
     }, [orderId, customerInfo]);
 
-    const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderDates) => {
+    // Hàm mở dialog xác nhận hủy đơn hàng
+    const handleCancelOrderClick = () => {
+        setShowCancelConfirm(true);
+    };
+
+    // Hàm hủy đơn hàng
+    const handleCancelOrder = async () => {
+        if (!orderId) return;
+        
+        setShowCancelConfirm(false);
+
+        try {
+            setIsCancelling(true);
+            setError(null);
+            
+            // Xác định status dựa trên payment method và isPaid
+            // Lấy payment method và isPaid từ API
+            let paymentMethod = 'cod'; // Mặc định là COD
+            let isPaid = false;
+            
+            try {
+                // Lấy payment transactions và order info song song
+                const [paymentTransactions, orderInfo] = await Promise.all([
+                    api.get(`/payment/transaction/order/${orderId}`)
+                        .then(res => res.data?.result || [])
+                        .catch(() => []),
+                    orderService.getOrder(orderId).catch(() => null)
+                ]);
+                
+                // Xác định payment method từ transaction
+                if (paymentTransactions && paymentTransactions.length > 0) {
+                    const transaction = paymentTransactions[0];
+                    const transactionCode = transaction?.transactionCode || '';
+                    const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+                    
+                    if (transactionCode.startsWith('PAYOS-')) {
+                        paymentMethod = 'bank';
+                    } else if (transactionCode.startsWith('CODE-')) {
+                        paymentMethod = 'cod';
+                    } else {
+                        paymentMethod = (paymentMethodType === 'bank') ? 'bank' : 'cod';
+                    }
+                }
+                
+                // Lấy isPaid từ order info
+                isPaid = orderInfo?.result?.isPaid || false;
+            } catch (err) {
+                console.error("Error fetching payment info:", err);
+            }
+            
+            // Xác định status: COD → CANCELED, PayOS (đã thanh toán) → RETURNED
+            let newStatus = 'CANCELED'; // Mặc định là CANCELED cho COD
+            if (paymentMethod === 'bank' && isPaid) {
+                newStatus = 'RETURNED'; // PayOS đã thanh toán → hoàn trả
+            }
+            
+            // Gọi API để hủy đơn hàng
+            const response = await orderService.updateOrderStatus(orderId, newStatus);
+            
+            if (response?.result) {
+                // Cập nhật lại dữ liệu đơn hàng
+                const fetchDetail = async () => {
+                    try {
+                        const [apiResult, orderInfo, paymentTransactions] = await Promise.all([
+                            profileService.getOrderDetail(orderId),
+                            orderService.getOrder(orderId).catch(() => null),
+                            api.get(`/payment/transaction/order/${orderId}`)
+                                .then(res => res.data?.result || [])
+                                .catch(() => [])
+                        ]);
+
+                        let paymentMethod = 'cod';
+                        if (paymentTransactions && paymentTransactions.length > 0) {
+                            const transaction = paymentTransactions[0];
+                            const transactionCode = transaction?.transactionCode || '';
+                            const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+                            
+                            if (transactionCode.startsWith('PAYOS-')) {
+                                paymentMethod = 'bank';
+                            } else if (transactionCode.startsWith('CODE-')) {
+                                paymentMethod = 'cod';
+                            } else {
+                                paymentMethod = (paymentMethodType === 'bank') ? 'bank' : 'cod';
+                            }
+                        } else {
+                            paymentMethod = location.state?.paymentMethod || 'cod';
+                        }
+
+                        const normalizedData = normalizeOrderDetail(
+                            apiResult,
+                            orderId,
+                            customerInfo,
+                            orderInfo?.result?.totalAmount || location.state?.totalAmount,
+                            {
+                                createDatetime: orderInfo?.result?.createDatetime || location.state?.createDatetime,
+                                endDateTime: orderInfo?.result?.endDatetime || location.state?.endDateTime,
+                                status: orderInfo?.result?.status || location.state?.status,
+                                isPaid: orderInfo?.result?.isPaid,
+                                paymentMethod: paymentMethod
+                            }
+                        );
+
+                        setOrderData(normalizedData);
+                    } catch (err) {
+                        console.error("Lỗi khi tải lại chi tiết đơn hàng:", err);
+                    }
+                };
+                
+                await fetchDetail();
+                const statusMessage = newStatus === 'RETURNED' 
+                    ? 'Đơn hàng đã được hoàn trả thành công!' 
+                    : 'Đơn hàng đã được hủy thành công!';
+                setToast({
+                    type: 'success',
+                    message: statusMessage
+                });
+            } else {
+                setToast({
+                    type: 'error',
+                    message: response?.message || 'Không thể hủy đơn hàng'
+                });
+            }
+        } catch (err) {
+            console.error("Lỗi khi hủy đơn hàng:", err);
+            setToast({
+                type: 'error',
+                message: err.response?.data?.message || err.message || 'Không thể hủy đơn hàng'
+            });
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    // Kiểm tra xem đơn hàng có thể hủy không
+    const canCancelOrder = () => {
+        if (!orderData) return false;
+        // Không thể hủy nếu đã bị hủy, đã giao hàng, hoặc đã nhận hàng
+        const status = orderData.status?.toLowerCase() || '';
+        const nonCancellableStatuses = ['cancelled', 'đã hủy', 'shipped', 'đang vận chuyển', 'delivered', 'đã giao hàng', 'returned', 'đã trả'];
+        
+        // Nếu đã ở trạng thái không thể hủy
+        if (nonCancellableStatuses.some(s => status.includes(s.toLowerCase()))) {
+            return false;
+        }
+        
+        // Có thể hủy nếu đơn hàng ở trạng thái: pending, paid (nhưng chưa shipped)
+        const cancellableStatuses = ['pending', 'đang xử lý', 'paid', 'đã thanh toán'];
+        return cancellableStatuses.some(s => status.includes(s.toLowerCase()));
+    };
+
+    const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderInfo) => {
         const products = apiProducts.map(p => ({
             id: p.productId,
             name: p.productName,
@@ -75,9 +272,11 @@ const OrderDetailPage = () => {
         };
 
         // Tạo timeline dựa trên dữ liệu thực từ API
-        const createDate = orderDates?.createDatetime ? new Date(orderDates.createDatetime) : new Date();
-        const endDate = orderDates?.endDateTime ? new Date(orderDates.endDateTime) : null;
-        const orderStatus = orderDates?.status || 'pending';
+        const createDate = orderInfo?.createDatetime ? new Date(orderInfo.createDatetime) : new Date();
+        const endDate = orderInfo?.endDateTime ? new Date(orderInfo.endDateTime) : null;
+        const orderStatus = orderInfo?.status || 'pending';
+        const isPaid = orderInfo?.isPaid || false;
+        const paymentMethod = orderInfo?.paymentMethod || 'cod'; // 'cod' hoặc 'bank' (PayOS)
 
         // Format ngày giờ
         const formatDateTime = (date) => {
@@ -150,6 +349,9 @@ const OrderDetailPage = () => {
             'returned': t('profile.returned')
         };
 
+        // Tính "Đã thanh toán trước": COD = 0, PayOS = totalAmount nếu đã thanh toán
+        const paidBefore = paymentMethod === 'cod' ? 0 : (isPaid ? totalAmount : 0);
+
         return {
             id: id,
             orderCode: `#${id}`,
@@ -162,9 +364,11 @@ const OrderDetailPage = () => {
                 shippingFee: shippingFee,
                 totalPaid: totalAmount,
                 totalAmountPaid: totalAmount,
+                paidBefore: paidBefore, // Số tiền đã thanh toán trước
                 vatIncluded: true,
             },
             customer: defaultCustomer,
+            paymentMethod: paymentMethod === 'cod' ? 'COD (Thanh toán khi nhận hàng)' : 'PayOS (Chuyển khoản)',
             supportInfo: {
                 storeAddress: '244 Nam Kì khởi Nghĩa , P. Hoà Quí, Q. Ngữ Hành Sơn, Đà Nẵng', storePhone: '0909696999',
             },
@@ -242,7 +446,7 @@ const OrderDetailPage = () => {
                 />
                 <InfoRow
                     label="Đã thanh toán trước"
-                    value={orderData.summary.totalAmountPaid}
+                    value={orderData.summary.paidBefore}
                     currency
                     highlight
                 />
@@ -308,7 +512,28 @@ const OrderDetailPage = () => {
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-gray-800">Tổng quan</h3>
-                    <span className="text-red-500 text-sm hover:underline cursor-pointer">Xem hóa đơn VAT</span>
+                    <div className="flex items-center gap-3">
+                        {canCancelOrder() && (
+                            <button
+                                onClick={handleCancelOrderClick}
+                                disabled={isCancelling}
+                                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+                            >
+                                {isCancelling ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Đang hủy...
+                                    </>
+                                ) : (
+                                    <>
+                                        <XCircle size={16} />
+                                        Hủy đơn hàng
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        <span className="text-red-500 text-sm hover:underline cursor-pointer">Xem hóa đơn VAT</span>
+                    </div>
                 </div>
 
                 {/* Thông tin Mã đơn hàng và Ngày đặt */}
@@ -387,6 +612,42 @@ const OrderDetailPage = () => {
             </div>
 
             {/* Có thể thêm khu vực Đánh giá sản phẩm tại đây nếu đơn hàng đã hoàn tất */}
+
+            {/* Confirmation Dialog */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Xác nhận hủy đơn hàng</h3>
+                        <p className="text-gray-600 mb-6">
+                            Bạn có chắc chắn muốn hủy đơn hàng này? Hành động này không thể hoàn tác.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleCancelOrder}
+                                disabled={isCancelling}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                            >
+                                {isCancelling ? 'Đang xử lý...' : 'Xác nhận hủy'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

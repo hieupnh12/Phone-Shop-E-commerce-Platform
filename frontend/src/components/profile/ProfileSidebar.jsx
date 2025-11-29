@@ -7,10 +7,10 @@ import { useLanguage } from "../../contexts/LanguageContext";
 const ProfileSidebar = () => {
     const { t } = useLanguage();
     const navItems = [
-        { name: t('profile.myOrders'), icon: ShoppingBag, path: '/profile/order' },
-        { name: t('profile.accountInfo'), icon: User, path: '/profile/info' },
-        { name: t('profile.warranty'), icon: Shield, path: '/profile/warranty' },
-        { name: t('profile.support'), icon: MessageSquare, path: '/profile/support' },
+        { name: t('profile.myOrders'), icon: ShoppingBag, path: '/user/profile/order' },
+        { name: t('profile.accountInfo'), icon: User, path: '/user/profile/info' },
+        { name: t('profile.warranty'), icon: Shield, path: '/user/profile/warranty' },
+        { name: t('profile.support'), icon: MessageSquare, path: '/user/profile/support' },
     ];
 
     const { logoutCustomer } = useAuthFullOptions();

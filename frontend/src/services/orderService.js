@@ -20,7 +20,7 @@ const orderService = {
     updateStatus: async (orderId, status) => {
         const res = await axiosClient.put(
             `/orders/${orderId}/status`,
-            JSON.stringify(status), // backend yêu cầu body phải là chuỗi: "SHIPPING"
+            { status }, // backend yêu cầu body phải là object: { status: "COMPLETED" }
             {
                 headers: {
                     "Content-Type": "application/json",
