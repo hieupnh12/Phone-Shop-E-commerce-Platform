@@ -15,7 +15,7 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 @Where(clause = "is_deleted = false")
-public class Role  {
+public class Role extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
     String name;
