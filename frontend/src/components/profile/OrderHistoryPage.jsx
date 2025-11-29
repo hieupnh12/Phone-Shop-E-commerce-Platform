@@ -15,7 +15,6 @@ const OrderHistoryPage = () => {
     const orderTabs = [
         { id: 'all', label: t('common.all') },
         { id: 'pending', label: t('profile.processing') },
-        { id: 'paid', label: t('orders.paid') || 'Đã thanh toán' },
         { id: 'shipping', label: t('profile.shipping') },
         { id: 'delivered', label: t('profile.delivered') },
         { id: 'cancelled', label: t('profile.cancelled') },
@@ -122,9 +121,9 @@ const OrderHistoryPage = () => {
         if (activeTab !== 'all') {
             const orderStatusLower = (order.status || '').toLowerCase();
             // Map tab id với status
+            // Lưu ý: PAID (đã thanh toán) sẽ hiển thị trong tab "pending" (đang xử lý) vì chưa được giao hàng
             const tabStatusMap = {
-                'pending': ['pending'],
-                'paid': ['paid'],
+                'pending': ['pending', 'paid'], // PAID cũng nằm trong "Đang xử lý"
                 'shipping': ['shipped', 'shipping'],
                 'delivered': ['delivered'],
                 'cancelled': ['canceled', 'cancelled'],
@@ -168,13 +167,13 @@ const OrderHistoryPage = () => {
             </div>
 
             {/* Các tab lọc trạng thái (Mẫu 1 & 2) */}
-            <div className="flex items-center space-x-20 overflow-x-auto pb-4 mb-6 border-b border-gray-200 hide-scrollbar">
+            <div className="flex items-center flex-wrap gap-x-6 gap-y-2 pb-4 mb-6 border-b border-gray-200">
                 {orderTabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`
-                            whitespace-nowrap pb-3 text-lg font-medium relative transition-colors duration-200
+                            whitespace-nowrap pb-3 text-base font-medium relative transition-colors duration-200
                             ${activeTab === tab.id
                             ? 'text-red-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-red-600'
                             : 'text-gray-600 hover:text-red-500'

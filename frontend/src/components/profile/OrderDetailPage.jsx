@@ -289,41 +289,47 @@ const OrderDetailPage = () => {
         const createDateTime = formatDateTime(createDate);
         const endDateTime = endDate ? formatDateTime(endDate) : null;
 
-        // Tạo timeline dựa trên status
+        // Tạo timeline dựa trên status (giống code mẫu)
         const timeline = [];
+        
+        // Normalize status: backend trả về uppercase (PENDING, PAID, SHIPPED, DELIVERED, CANCELED, RETURNED, COMPLETED)
+        const statusNormalized = (orderStatus || '').toUpperCase();
+        const statusLower = statusNormalized.toLowerCase();
         
         // Bước 1: Đặt hàng thành công (luôn có)
         timeline.push({
-            status: t('profile.orderSuccess'),
+            status: t('profile.orderSuccess') || 'Đặt hàng thành công',
             date: createDateTime.date,
             time: createDateTime.time,
             completed: true
         });
 
-        // Bước 2: Đang xử lý (nếu status là pending hoặc đã qua pending)
-        if (orderStatus === 'pending' || orderStatus === 'shipping' || orderStatus === 'delivered') {
+        // Bước 2: Đang xử lý (nếu status là PENDING hoặc đã qua PENDING)
+        if (statusNormalized === 'PENDING' || statusNormalized === 'PAID' || statusNormalized === 'SHIPPED' || 
+            statusNormalized === 'DELIVERED' || statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED') {
             timeline.push({
-                status: t('profile.processing'),
+                status: t('profile.processing') || 'Đang xử lý',
                 date: createDateTime.date,
                 time: createDateTime.time,
-                completed: orderStatus !== 'pending'
+                completed: statusNormalized !== 'PENDING'
             });
         }
 
-        // Bước 3: Đang vận chuyển (nếu status là shipping hoặc delivered)
-        if (orderStatus === 'shipping' || orderStatus === 'delivered') {
+        // Bước 3: Đang vận chuyển (nếu status là SHIPPED hoặc DELIVERED)
+        if (statusNormalized === 'SHIPPED' || statusNormalized === 'DELIVERED' || 
+            statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED') {
             timeline.push({
-                status: t('profile.shipping'),
+                status: t('profile.shipping') || 'Đang vận chuyển',
                 date: createDateTime.date,
                 time: createDateTime.time,
-                completed: orderStatus === 'delivered'
+                completed: statusNormalized === 'DELIVERED' || statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED'
             });
         }
 
-        // Bước 4: Đã giao hàng (nếu status là delivered và có endDateTime)
-        if (orderStatus === 'delivered' && endDateTime) {
+        // Bước 4: Đã giao hàng (nếu status là DELIVERED và có endDateTime)
+        if (statusNormalized === 'DELIVERED' && endDateTime) {
             timeline.push({
-                status: t('profile.delivered'),
+                status: t('profile.delivered') || 'Đã giao hàng',
                 date: endDateTime.date,
                 time: endDateTime.time,
                 completed: true
@@ -331,9 +337,29 @@ const OrderDetailPage = () => {
         }
 
         // Nếu bị hủy
-        if (orderStatus === 'cancelled') {
+        if (statusNormalized === 'CANCELED' || statusNormalized === 'CANCELLED') {
             timeline.push({
-                status: t('profile.cancelled'),
+                status: t('profile.cancelled') || 'Đơn hàng đã hủy',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu đã hoàn trả
+        if (statusNormalized === 'RETURNED') {
+            timeline.push({
+                status: t('profile.returned') || 'Hoàn trả',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu đã hoàn thành (COMPLETED)
+        if (statusNormalized === 'COMPLETED') {
+            timeline.push({
+                status: 'Đã hoàn thành',
                 date: endDateTime?.date || createDateTime.date,
                 time: endDateTime?.time || createDateTime.time,
                 completed: true
@@ -342,11 +368,14 @@ const OrderDetailPage = () => {
 
         // Map status để hiển thị
         const statusMap = {
-            'pending': t('profile.processing'),
-            'shipping': t('profile.shipping'),
-            'delivered': t('profile.delivered'),
-            'cancelled': t('profile.cancelled'),
-            'returned': t('profile.returned')
+            'pending': t('profile.processing') || 'Đang xử lý',
+            'paid': t('profile.paid') || 'Đã thanh toán',
+            'shipped': t('profile.shipping') || 'Đang vận chuyển',
+            'delivered': t('profile.delivered') || 'Đã giao hàng',
+            'canceled': t('profile.cancelled') || 'Đã hủy',
+            'cancelled': t('profile.cancelled') || 'Đã hủy',
+            'returned': t('profile.returned') || 'Hoàn trả',
+            'completed': 'Đã hoàn thành'
         };
 
         // Tính "Đã thanh toán trước": COD = 0, PayOS = totalAmount nếu đã thanh toán
@@ -356,7 +385,7 @@ const OrderDetailPage = () => {
             id: id,
             orderCode: `#${id}`,
             date: createDateTime.date,
-            status: statusMap[orderStatus] || 'Đang xử lý',
+            status: statusMap[(orderStatus || '').toLowerCase()] || statusMap['pending'] || 'Đang xử lý',
             products: products,
             summary: {
                 subtotal: subtotal,
