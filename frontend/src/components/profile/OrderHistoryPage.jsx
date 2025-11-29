@@ -3,23 +3,23 @@ import React, { useEffect, useState } from 'react';
 import { Search, Calendar, ChevronRight } from 'lucide-react';
 import {profileService} from "../../services/api"
 import { Link, useOutletContext } from 'react-router-dom';
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const MOCK_CUSTOMER_ID = 11;
 
-const orderTabs = [
-    { id: 'all', label: 'Tất cả' },
-    { id: 'pending', label: 'Đang xử lý' },
-    { id: 'shipping', label: 'Đang vận chuyển' },
-    { id: 'delivered', label: 'Đã giao hàng' },
-    { id: 'cancelled', label: 'Đã hủy' },
-    { id: 'returned', label: 'Trả hàng' }, // Đã đổi 'paid' thành 'returned' cho rõ ràng
-];
-
-
-
 const OrderHistoryPage = () => {
+    const { t } = useLanguage();
     const { customerInfo } = useOutletContext();
     const customerId = customerInfo?.customerId;
+
+    const orderTabs = [
+        { id: 'all', label: t('common.all') },
+        { id: 'pending', label: t('profile.processing') },
+        { id: 'shipping', label: t('profile.shipping') },
+        { id: 'delivered', label: t('profile.delivered') },
+        { id: 'cancelled', label: t('profile.cancelled') },
+        { id: 'returned', label: t('profile.returned') },
+    ];
 
 
     const [activeTab, setActiveTab] = useState('all');

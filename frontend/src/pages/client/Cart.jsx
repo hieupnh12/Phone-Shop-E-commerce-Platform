@@ -11,6 +11,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import cartService from "../../services/cartService";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 // Format tiền VND
 const vnd = (n) =>
@@ -25,6 +26,7 @@ const MAX_QUANTITY = 5;
 
 export default function ShoppingCart() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -51,11 +53,11 @@ export default function ShoppingCart() {
         }));
         setItems(mappedItems);
       } else {
-        setErr(data?.message || "Không lấy được giỏ hàng");
+        setErr(data?.message || t('cart.failedLoad'));
         setItems([]);
       }
     } catch (e) {
-      setErr(e.message || "Lỗi kết nối");
+      setErr(e.message || t('cart.networkError'));
       setItems([]);
     } finally {
       setLoading(false);
@@ -96,24 +98,16 @@ export default function ShoppingCart() {
         newQuantity
       );
       if (!res?.success) {
-        setItems((prev) =>
-          prev.map((x) =>
-            x.productVersionId === productVersionId
-              ? { ...x, quantity: item.quantity }
-              : x
-          )
-        );
-        setErr(res?.message || "Không cập nhật được số lượng");
+        setItems(prev => prev.map(x =>
+          x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
+        ));
+        setErr(res?.message || t('cart.failedUpdate'));
       }
     } catch (e) {
-      setItems((prev) =>
-        prev.map((x) =>
-          x.productVersionId === productVersionId
-            ? { ...x, quantity: item.quantity }
-            : x
-        )
-      );
-      setErr(e.message || "Lỗi mạng");
+      setItems(prev => prev.map(x =>
+        x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
+      ));
+      setErr(e.message || t('cart.networkError2'));
     } finally {
       setUpdatingProductVersionId(null);
     }
@@ -129,10 +123,10 @@ export default function ShoppingCart() {
           prev.filter((x) => x.productVersionId !== productVersionId)
         );
       } else {
-        setErr(res?.message || "Không xóa được sản phẩm");
+        setErr(res?.message || t('cart.failedDelete'));
       }
     } catch (e) {
-      setErr(e.message || "Lỗi mạng");
+      setErr(e.message || t('cart.networkError2'));
     } finally {
       setRemovingProductVersionId(null);
     }
@@ -166,11 +160,11 @@ export default function ShoppingCart() {
           <div className="flex-1">
             <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 flex items-center gap-3">
               <ShoppingBag className="w-7 h-7 lg:w-8 lg:h-8 text-blue-600" />
-              Giỏ hàng của bạn
+              {t('cart.cartOf')}
             </h1>
             {items.length > 0 && (
               <p className="text-sm text-slate-600 mt-1">
-                {items.length} sản phẩm
+                {items.length} {t('cart.products')}
               </p>
             )}
           </div>
@@ -197,27 +191,21 @@ export default function ShoppingCart() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                        Miễn phí vận chuyển
+                        {t('cart.freeShippingLabel')}
                       </p>
                       <p className="text-sm text-slate-700 mt-0.5">
                         {freeShipProgress >= 100
-                          ? "🎉 Bạn được freeship!"
-                          : `Mua thêm ${vnd(
-                              10000000 - subtotal
-                            )} để được freeship`}
+                          ? t('cart.freeshipReached')
+                          : `${t('cart.buyMore').replace('{amount}', vnd(10000000 - subtotal))}`
+                        }
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      freeShipProgress >= 100
-                        ? "bg-green-100 text-green-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {freeShipProgress >= 100
-                      ? "✓ Đạt"
-                      : `${Math.round(freeShipProgress)}%`}
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${freeShipProgress >= 100
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-slate-100 text-slate-600'
+                    }`}>
+                    {freeShipProgress >= 100 ? t('cart.achieved') : `${Math.round(freeShipProgress)}%`}
                   </span>
                 </div>
                 <div className="bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -236,7 +224,7 @@ export default function ShoppingCart() {
               {loading ? (
                 <div className="bg-white rounded-xl p-12 text-center border border-slate-200">
                   <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-slate-600">Đang tải giỏ hàng...</p>
+                  <p className="text-slate-600">{t('cart.loadingCart')}</p>
                 </div>
               ) : items.length === 0 ? (
                 <div className="bg-white rounded-xl p-12 text-center border border-slate-200">
@@ -244,16 +232,16 @@ export default function ShoppingCart() {
                     <Smartphone className="w-10 h-10 text-slate-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                    Giỏ hàng trống
+                    {t('cart.empty')}
                   </h3>
                   <p className="text-slate-600 mb-6">
-                    Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
+                    {t('cart.addProducts')}
                   </p>
                   <button
                     onClick={() => navigate("/products")}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                   >
-                    Khám phá sản phẩm
+                    {t('cart.exploreProducts')}
                   </button>
                 </div>
               ) : (
@@ -285,11 +273,11 @@ export default function ShoppingCart() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-base lg:text-lg text-slate-900 mb-2 line-clamp-2">
-                          {item.productName || "Sản phẩm"}
+                          {item.productName || t('cart.product')}
                         </h3>
                         <div className="flex flex-wrap items-center gap-2 mb-3">
                           <span className="inline-flex items-center text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
-                            Chính hãng
+                            {t('cart.authentic')}
                           </span>
                         </div>
 
@@ -318,7 +306,7 @@ export default function ShoppingCart() {
                                     item.productVersionId
                                 }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                title="Giảm số lượng"
+                                title={t('cart.decreaseQuantity')}
                               >
                                 <Minus className="w-4 h-4" />
                               </button>
@@ -335,11 +323,7 @@ export default function ShoppingCart() {
                                   (item.quantity || 1) >= MAX_QUANTITY
                                 }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                title={
-                                  (item.quantity || 1) >= MAX_QUANTITY
-                                    ? `Số lượng tối đa là ${MAX_QUANTITY}`
-                                    : "Tăng số lượng"
-                                }
+                                title={t('cart.increaseQuantity')}
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -353,7 +337,7 @@ export default function ShoppingCart() {
                                 item.productVersionId
                               }
                               className="flex items-center gap-1 text-slate-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                              title="Xóa khỏi giỏ"
+                              title={t('cart.deleteFromCart')}
                             >
                               {removingProductVersionId ===
                               item.productVersionId ? (
@@ -377,39 +361,29 @@ export default function ShoppingCart() {
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm lg:sticky lg:top-6">
               <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-slate-600" />
-                Tổng đơn hàng
+                {t('cart.orderSummary')}
               </h2>
 
               <div className="space-y-4 border-b border-slate-200 pb-5 mb-5">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Tạm tính</span>
-                  <span className="font-semibold text-slate-900">
-                    {vnd(subtotal)}
-                  </span>
+                  <span className="text-slate-600">{t('cart.subtotal')}</span>
+                  <span className="font-semibold text-slate-900">{vnd(subtotal)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600 flex items-center gap-1">
                     <Truck className="w-4 h-4" />
-                    Phí vận chuyển
+                    {t('cart.shippingFee')}
                   </span>
-                  <span
-                    className={`font-semibold ${
-                      shippingFee === 0 ? "text-green-600" : "text-slate-900"
-                    }`}
-                  >
-                    {shippingFee === 0 ? "Miễn phí" : vnd(shippingFee)}
+                  <span className={`font-semibold ${shippingFee === 0 ? 'text-green-600' : 'text-slate-900'}`}>
+                    {shippingFee === 0 ? t('cart.freeShipping') : vnd(shippingFee)}
                   </span>
                 </div>
               </div>
 
               <div className="flex justify-between items-center mb-6 bg-slate-50 rounded-lg p-4">
-                <span className="text-lg font-bold text-slate-900">
-                  Tổng cộng
-                </span>
-                <span className="text-2xl font-bold text-blue-600">
-                  {vnd(total)}
-                </span>
+                <span className="text-lg font-bold text-slate-900">{t('cart.total')}</span>
+                <span className="text-2xl font-bold text-blue-600">{vnd(total)}</span>
               </div>
 
               <button
@@ -418,11 +392,11 @@ export default function ShoppingCart() {
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >
                 <CreditCard className="w-5 h-5" />
-                Thanh toán ngay
+                {t('cart.paymentNow')}
               </button>
 
               <p className="text-xs text-slate-500 text-center mt-4">
-                Miễn phí đổi trả trong 7 ngày
+                {t('cart.returnPolicy')}
               </p>
             </div>
           </div>
