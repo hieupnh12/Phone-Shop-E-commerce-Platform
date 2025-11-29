@@ -1,5 +1,6 @@
 package com.websales.service;
 
+import com.websales.entity.ProductVersion;
 import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
 import jakarta.mail.MessagingException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -148,4 +150,42 @@ public class EmailService   {
 
         System.out.println(">>> Email đã gửi thành công đến: " + toEmails);
     }
+
+    public void sendLowStockAlert(List<ProductVersion> products, List<String> toEmails) {
+        if (products.isEmpty() || toEmails.isEmpty()) return;
+
+        MimeMessage message = mailSender.createMimeMessage();
+        String subject = "⚠️ Cảnh báo tồn kho: Sản phẩm gần hết hàng";
+
+        // Tạo nội dung HTML
+        String header = "<tr style='background-color: #f2f2f2;'>" +
+                "<th>ID</th><th>Loại</th><th>RAM</th><th>ROM</th><th>Màu</th><th>Tồn kho</th></tr>";
+
+        String rows = products.stream()
+                .map(p -> String.format(
+                        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
+                        p.getIdVersion(), p.getImportPrice(), p.getRam(), p.getRom(), p.getColor(), p.getStockQuantity()
+                ))
+                .collect(Collectors.joining());
+
+        String content = String.format(
+                "<html><body><h3>Các sản phẩm gần hết hàng:</h3>" +
+                        "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse;'>%s%s</table>" +
+                        "<p>Vui lòng kiểm tra và nhập thêm hàng kịp thời để tránh hết tồn kho.</p></body></html>",
+                header, rows
+        );
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            // Gửi cho nhiều người nhận
+            helper.setTo(toEmails.toArray(new String[0]));
+            helper.setSubject(subject);
+            helper.setText(content, true); // true = HTML
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("Lỗi khi gửi email cho {}: {}", toEmails, e.getMessage());
+            throw new AppException(ErrorCode.TOKEN_STILL_VALID);
+        }
+    }
+
 }

@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { Mail, Lock, Eye, EyeOff, Smartphone } from "lucide-react";
 import { AuthContext } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import Toast from "../../components/common/Toast";
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,7 +10,7 @@ const AdminLogin = () => {
     email: "",
     password: "",
   });
-
+  const [toast, setToast] = useState(null);
   const { loading, loginEmployee } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -21,17 +22,48 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Validate email
+    if (!emailRegex.test(formData.email.trim())) {
+      setToast({
+        message: "Email không hợp lệ!",
+        type: "warning",
+      });
+      return;
+    }
+
+    // Validate password
+    if (!formData.password || formData.password.length < 6) {
+      setToast({
+        message: "Mật khẩu phải có ít nhất 6 ký tự!",
+        type: "warning",
+      });
+      return;
+    }
     try {
       const res = await loginEmployee(formData);
       console.log("Admin login success:", res);
       navigate("/admin");
     } catch (err) {
-      console.error("Admin login failed:", err);
+      console.log(err);
+      
+      setToast({
+        message: `Đăng nhập không thành công. ${err?.response?.data.message} ${err?.message}`,
+        type: "error",
+      });
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       {/* Background */}
       <img
         className="absolute inset-0 w-full h-full object-cover"
