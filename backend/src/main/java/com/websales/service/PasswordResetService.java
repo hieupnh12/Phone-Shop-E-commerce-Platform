@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PasswordResetService {
-    private static final long TOKEN_EXPIRY_SECONDS = 86400;
+    private static final long TOKEN_EXPIRY_SECONDS = 120;
     EmailService emailService;
     EmployeeRepo employeeRepo;
     PasswordResetTokenRepo tokenRepository;
