@@ -5,11 +5,13 @@ import AddressBook  from "./AddressBook";
 import {  useOutletContext } from 'react-router-dom';
 import { profileService} from "../../services/api";
 import { useAuthFullOptions } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 
 
 const PersonalInfoForm = () => {
+    const { t } = useLanguage();
     const { getCurrentUser } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
 
@@ -173,7 +175,7 @@ const PersonalInfoForm = () => {
                                 />
                                 {/* 2. Số điện thoại (disabled) */}
                                 <InputField
-                                    label="Số điện thoại"
+                                    label={t('common.phone')}
                                     name="phone"
                                     value={formData.phone}
                                     disabled
@@ -214,7 +216,7 @@ const PersonalInfoForm = () => {
                                 </div>
                                 {/* 6. Địa chỉ (Chiếm 1 cột) */}
                                 <InputField
-                                    label="Địa chỉ mặc định"
+                                    label={t('profile.defaultAddress')}
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
@@ -224,14 +226,14 @@ const PersonalInfoForm = () => {
                         ) : (
                             <>
                                 <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
-                                <InfoDisplayItem label="Số điện thoại" value={formData.phone} />
+                                <InfoDisplayItem label={t('common.phone')} value={formData.phone} />
                                 <InfoDisplayItem label="Email" value={formData.email} />
                                 <InfoDisplayItem
                                     label="Ngày sinh"
                                     value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('vi-VN') : '-'}
                                 />
                                 <InfoDisplayItem label="Giới tính" value={displayGender(formData.gender)} />
-                                <InfoDisplayItem label="Địa chỉ mặc định" value={customerInfo.address || "Chưa có"} />
+                                <InfoDisplayItem label={t('profile.defaultAddress')} value={customerInfo.address || t('profile.noAddress')} />
                             </>
                         )}
                     </div>

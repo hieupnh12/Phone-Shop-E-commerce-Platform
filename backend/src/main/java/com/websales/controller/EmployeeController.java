@@ -15,6 +15,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
@@ -37,6 +38,7 @@ public class EmployeeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_CREATE_ALL')")
     public ApiResponse<String> createEmployee(@RequestBody EmployeeCreateRequest request) {
         employeeService.createEmployee(request);
         return ApiResponse.<String>builder()
@@ -82,6 +84,7 @@ public class EmployeeController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_VIEW_ALL')")
     public ApiResponse<Page<EmployeeResponse>> getAllEmployee(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -100,6 +103,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{employeeId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_UPDATE_BASIC')")
     public ApiResponse<EmployeeResponse> updateEmployee(
             @PathVariable Long employeeId,
             @RequestBody EmployeeUpdateRequest request) {
@@ -109,6 +113,7 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{employeeId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_DELETE_ANY')")
     public ApiResponse<Void> deleteEmployee(@PathVariable Long employeeId) {
         employeeService.deleteEmployee(employeeId);
         return ApiResponse.<Void>builder()

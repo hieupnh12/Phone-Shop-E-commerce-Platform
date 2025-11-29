@@ -5,8 +5,10 @@ import Button from '../common/Button';
 import InputField from '../common/InputField';
 import Modal from '../common/Modal';
 import Toast from '../common/Toast';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = [], colorList = [] }) => {
+  const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [toast, setToast] = useState(null);
@@ -82,7 +84,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
     }
 
     if (!formData.stockQuantity || parseInt(formData.stockQuantity) < 0) {
-      setToast({ type: 'error', message: 'Số lượng phải là số không âm' });
+      setToast({ type: 'error', message: t('common.invalidQuantity') });
       return false;
     }
 
@@ -107,10 +109,10 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       const updatedVersions = [...versions];
       updatedVersions[editingIndex] = newVersion;
       onVersionsChange(updatedVersions);
-      setToast({ type: 'success', message: 'Cập nhật phiên bản thành công' });
+      setToast({ type: 'success', message: t('common.versionUpdateSuccess') });
     } else {
       onVersionsChange([...versions, newVersion]);
-      setToast({ type: 'success', message: 'Thêm phiên bản thành công' });
+      setToast({ type: 'success', message: t('common.versionAddSuccess') });
     }
 
     handleCloseModal();
@@ -118,7 +120,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
   const handleDeleteVersion = (index) => {
     onVersionsChange(versions.filter((_, i) => i !== index));
-    setToast({ type: 'success', message: 'Xóa phiên bản thành công' });
+    setToast({ type: 'success', message: t('common.versionDeleteSuccess') });
   };
 
   const getRamName = (ramId) => {
@@ -282,7 +284,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
             />
 
             <InputField
-              label="Số Lượng"
+              label={t('common.quantity')}
               name="stockQuantity"
               type="number"
               placeholder="0"

@@ -12,8 +12,10 @@ import {
   Zap,
   TrendingUp,
 } from "lucide-react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import Toast from "../../components/common/Toast";
 
 const Login = () => {
@@ -29,6 +31,9 @@ const Login = () => {
   });
   const [otpSent, setOtpSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const { loading, loginEmployee, sendOtp, verifyOtp } = useContext(AuthContext);
+  const { t } = useLanguage();
+
   const { loading, loginEmployee, sendOtp, verifyOtp } =
     useContext(AuthContext);
   const [toast, setToast] = useState(null);
@@ -44,7 +49,6 @@ const Login = () => {
     try {
       const phoneRegex = /^0\d{9}$/;
 
-      // Validate phone
       if (!phoneRegex.test(formData?.phone)) {
         setToast({
           message: `Số điện thoại không hợp lệ. Vui lòng nhập 10 số và bắt đầu bằng 0.`,
@@ -181,13 +185,12 @@ const Login = () => {
             {/* Main Heading */}
             <div className="space-y-4">
               <h1 className="text-5xl font-bold text-white leading-tight">
-                Chào mừng đến với
+                {t('auth.welcome')}
                 <br />
-                <span className="text-indigo-400">Thiên đường công nghệ</span>
+                <span className="text-indigo-400">{t('auth.welcomeDesc')}</span>
               </h1>
               <p className="text-lg text-gray-300 leading-relaxed">
-                Trải nghiệm mua sắm điện thoại cao cấp với giá tốt nhất thị
-                trường
+                {t('auth.startJourney')}
               </p>
             </div>
 
@@ -196,18 +199,18 @@ const Login = () => {
               {[
                 {
                   icon: ShieldCheck,
-                  title: "Bảo hành chính hãng",
-                  desc: "Cam kết 100% hàng chính hãng",
+                  title: t('auth.warrantyTitle'),
+                  desc: t('auth.warrantyDesc'),
                 },
                 {
                   icon: Zap,
-                  title: "Giao hàng siêu tốc",
-                  desc: "Miễn phí giao hàng trong 2 giờ",
+                  title: t('auth.deliveryTitle'),
+                  desc: t('auth.deliveryDesc'),
                 },
                 {
                   icon: TrendingUp,
-                  title: "Giá tốt nhất",
-                  desc: "Hoàn tiền nếu tìm thấy giá rẻ hơn",
+                  title: t('auth.priceTitle'),
+                  desc: t('auth.priceDesc'),
                 },
               ].map((feature, index) => (
                 <div
@@ -225,6 +228,22 @@ const Login = () => {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-indigo-400">10+</div>
+                <div className="text-gray-400 text-sm">{t('auth.customers')}</div>
+              </div>
+              <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-purple-400">9+</div>
+                <div className="text-gray-400 text-sm">{t('auth.products')}</div>
+              </div>
+              <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                <div className="text-3xl font-bold text-pink-400">1.5★</div>
+                <div className="text-gray-400 text-sm">{t('auth.ratings')}</div>
+              </div>
             </div>
           </div>
 
@@ -246,8 +265,13 @@ const Login = () => {
                     <Smartphone className="w-7 h-7 text-white" />
                   </div>
                   <h2 className="text-3xl font-bold text-gray-900">
-                    {isLogin ? "Đăng nhập" : "Đăng ký"}
+                    {isLogin ? t('auth.login') : t('auth.signupNow')}
                   </h2>
+                </div>
+
+                {/* Language Switcher */}
+                <div className="absolute top-6 right-6">
+                  <LanguageSwitcher />
                 </div>
 
                 {/* Login Method Tabs */}
@@ -264,7 +288,7 @@ const Login = () => {
                     }`}
                   >
                     <Phone className="w-5 h-5" />
-                    Số điện thoại
+                    {t('auth.phone')}
                   </button>
                 </div>
 
@@ -343,7 +367,7 @@ const Login = () => {
                       {/* Phone Field */}
                       <div className="space-y-2">
                         <label className="text-gray-700 text-sm font-medium flex items-center gap-1">
-                          Số điện thoại <span className="text-red-500">*</span>
+                          {t('common.phone')} <span className="text-red-500">*</span>
                         </label>
                         <div className="flex gap-2">
                           <div className="relative flex-1">
@@ -369,7 +393,7 @@ const Login = () => {
                               {loading ? (
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                               ) : (
-                                "Gửi OTP"
+                                t('auth.sendOTP')
                               )}
                             </button>
                           )}
@@ -396,7 +420,7 @@ const Login = () => {
                             onClick={handleSendOTP}
                             className="text-indigo-600 text-sm font-medium hover:text-purple-600"
                           >
-                            Gửi lại mã OTP
+                            {t('auth.resendOTP')}
                           </button>
                         </div>
                       )}
@@ -413,10 +437,10 @@ const Login = () => {
                           onChange={(e) => setRememberMe(e.target.checked)}
                           className="mr-2 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                        <span className="font-medium">Ghi nhớ</span>
+                        <span className="font-medium">{t('auth.rememberLogin')}</span>
                       </label>
                       <button className="text-indigo-600 hover:text-purple-600 font-medium">
-                        Quên mật khẩu?
+                        {t('auth.forgotPassword')}
                       </button>
                     </div>
                   )}
@@ -433,7 +457,7 @@ const Login = () => {
                       </div>
                     ) : (
                       <span className="flex items-center justify-center gap-2">
-                        {isLogin ? "Đăng nhập" : "Đăng ký"}
+                        {isLogin ? t('auth.login') : t('auth.signupNow')}
                         <svg
                           className="w-5 h-5"
                           fill="none"
@@ -459,7 +483,7 @@ const Login = () => {
                   </div>
                   <div className="relative flex justify-center text-sm">
                     <span className="px-3 bg-white text-gray-500 font-medium">
-                      Hoặc
+                      {t('auth.orContinueWith')}
                     </span>
                   </div>
                 </div>
@@ -471,7 +495,23 @@ const Login = () => {
                     className="flex items-center justify-center gap-2 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
                   >
                     <Chrome className="w-5 h-5 text-red-500" />
-                    Google
+                    {t('auth.google')}
+                  </button>
+                  <button
+                    onClick={() => handleSocialLogin("Zalo")}
+                    className="flex items-center justify-center gap-2 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none">
+                      <circle cx="24" cy="24" r="20" fill="#0068FF" />
+                      <path
+                        d="M15 19L24 28L33 19"
+                        stroke="white"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {t('auth.zalo')}
                   </button>
                 </div>
               </div>

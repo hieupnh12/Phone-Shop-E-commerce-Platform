@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Package, CheckCircle, Truck, XCircle, Clock, Eye } from 'lucide-react';
 import { orderService } from '../../services/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function OrderHistory() {
+  const { t } = useLanguage();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,12 +14,12 @@ export default function OrderHistory() {
 
   // Status tabs mapping
   const statusTabs = [
-    { value: 'all', label: 'Tất cả' },
-    { value: 'PENDING', label: 'Chờ xác nhận' },
-    { value: 'PAID', label: 'Đã xác nhận' },
-    { value: 'SHIPPED', label: 'Đang vận chuyển' },
-    { value: 'DELIVERED', label: 'Đã giao hàng' },
-    { value: 'CANCELED', label: 'Đã huỷ' },
+    { value: 'all', label: t('orders.title') },
+    { value: 'PENDING', label: t('orders.pending') },
+    { value: 'PAID', label: t('orders.paid') },
+    { value: 'SHIPPED', label: t('orders.shipping') },
+    { value: 'DELIVERED', label: t('orders.delivered') },
+    { value: 'CANCELED', label: t('orders.canceled') },
   ];
 
   // Fetch orders
@@ -105,15 +107,15 @@ export default function OrderHistory() {
     return new Intl.NumberFormat('vi-VN').format(amount);
   };
 
-  // Get status label in Vietnamese
+  // Get status label
   const getStatusLabel = (status) => {
     const statusMap = {
-      'PENDING': 'Chờ xác nhận',
-      'PAID': 'Đã xác nhận',
-      'SHIPPED': 'Đang vận chuyển',
-      'DELIVERED': 'Đã nhận hàng',
-      'CANCELED': 'Đã hủy',
-      'RETURNED': 'Đã trả hàng',
+      'PENDING': t('orders.pending'),
+      'PAID': t('orders.paid'),
+      'SHIPPED': t('orders.processing'),
+      'DELIVERED': t('orders.delivered'),
+      'CANCELED': t('orders.canceled'),
+      'RETURNED': t('orders.returned'),
     };
     return statusMap[status] || status;
   };
@@ -143,7 +145,7 @@ export default function OrderHistory() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -154,7 +156,7 @@ export default function OrderHistory() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Lịch sử mua hàng</h1>
+          <h1 className="text-2xl font-bold text-gray-900">.</h1>
         </div>
 
         {/* Tabs */}
@@ -180,7 +182,7 @@ export default function OrderHistory() {
         <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
           <div className="flex items-center gap-3 mb-3">
             <Calendar className="w-5 h-5 text-rose-600" />
-            <span className="font-medium text-gray-700">Lịch sử mua hàng</span>
+            <span className="font-medium text-gray-700">{t('orders.orderHistory')}</span>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
             <input
@@ -204,7 +206,7 @@ export default function OrderHistory() {
                 }}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                Xóa bộ lọc
+                {t('orders.clearFilters')}
               </button>
             )}
           </div>
@@ -215,7 +217,7 @@ export default function OrderHistory() {
           {filteredOrders.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-12 text-center">
               <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">Không có đơn hàng nào</p>
+              <p className="text-gray-600 text-lg">{t('orders.noOrders')}</p>
             </div>
           ) : (
             filteredOrders.map((order) => (
@@ -224,11 +226,11 @@ export default function OrderHistory() {
                 <div className="flex flex-wrap items-center justify-between mb-4 pb-4 border-b border-gray-200">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="text-sm text-gray-500">Mã đơn hàng</p>
+                      <p className="text-sm text-gray-500">{t('orders.orderCode')}</p>
                       <p className="font-semibold text-gray-900">#{order.orderId}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Ngày đặt</p>
+                      <p className="text-sm text-gray-500">{t('common.orderDateFilter')}</p>
                       <p className="font-medium text-gray-700">{formatDate(order.createDatetime)}</p>
                     </div>
                   </div>
@@ -238,7 +240,7 @@ export default function OrderHistory() {
                     </span>
                     <button className="flex items-center gap-2 text-rose-600 hover:text-rose-700 font-medium text-sm">
                       <Eye className="w-4 h-4" />
-                      Xem chi tiết
+                      {t('orders.viewDetails')}
                     </button>
                   </div>
                 </div>
@@ -252,7 +254,7 @@ export default function OrderHistory() {
                         <div className="flex-shrink-0">
                           <img
                             src={getProductImage(detail)}
-                            alt={detail.productName || 'Sản phẩm'}
+                            alt={detail.productName || t('common.products')}
                             className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                             onError={(e) => {
                               e.target.src = 'https://via.placeholder.com/80';
@@ -263,7 +265,7 @@ export default function OrderHistory() {
                         {/* Product Info */}
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 mb-1">
-                            {detail.productName || 'Sản phẩm không xác định'}
+                            {detail.productName || t('orders.product')}
                           </h3>
                           <p className="text-sm text-gray-500 mb-2">
                             {detail.productVersionId && `Mã: ${detail.productVersionId}`}
@@ -285,7 +287,7 @@ export default function OrderHistory() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-sm text-gray-500 italic">Không có chi tiết sản phẩm</div>
+                    <div className="text-sm text-gray-500 italic">{t('orders.noProductDetails')}</div>
                   )}
 
                   {/* Additional products indicator */}
