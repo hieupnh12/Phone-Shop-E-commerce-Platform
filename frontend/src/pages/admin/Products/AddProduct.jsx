@@ -107,7 +107,20 @@ const AddProduct = () => {
     try {
       setIsLoading(true);
 
-      await productService.createProduct(formData.payload, formData.image);
+      // Cách 2: Request 1 - Tạo product (không ảnh)
+      const createResponse = await productService.createProduct(formData.payload, null);
+      const productId = createResponse.result?.idProduct;
+
+      // Request 2 - Upload ảnh nếu có
+      if (formData.image && formData.image instanceof File && productId) {
+        try {
+          await productService.uploadProductImage(productId, formData.image);
+          console.info("✓ Product created and image uploaded successfully");
+        } catch (imageError) {
+          console.warn("⚠ Product created but image upload failed", imageError);
+          // Vẫn show success vì product đã được tạo
+        }
+      }
 
       setToast({
         type: 'success',

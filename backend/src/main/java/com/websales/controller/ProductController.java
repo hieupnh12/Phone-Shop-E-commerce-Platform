@@ -116,6 +116,14 @@ public class ProductController {
         return api;
     }
 
+    @PostMapping(value = "/{idproduct}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProductResponse> uploadProductImage(
+            @PathVariable("idproduct") Long idproduct,
+            @RequestPart(value = "image") MultipartFile image) throws IOException {
+        ApiResponse<ProductResponse> api = new ApiResponse<>();
+        api.setResult(productService.uploadProductImage(idproduct, image));
+        return api;
+    }
 
     @DeleteMapping("/{idproduct}")
     public ApiResponse<Void> deleteProduct(@PathVariable("idproduct") Long idproduct) {

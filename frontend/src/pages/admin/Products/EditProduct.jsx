@@ -124,7 +124,12 @@ const EditProduct = () => {
     try {
       setIsLoading(true);
 
-      await productService.updateProduct(id, formData.payload.products);
+      // Cách 2: Update product data + upload image riêng
+      await productService.updateProductWithImage(
+        id,
+        formData.payload.products,
+        formData.image
+      );
 
       setToast({
         type: 'success',

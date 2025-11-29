@@ -396,9 +396,26 @@ public class ProductService {
 
     }
 
+    @Transactional
+    public ProductResponse uploadProductImage(Long productId, MultipartFile imageFile) throws IOException {
+        // Tìm sản phẩm
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
 
+        // Upload ảnh
+        if (imageFile != null && !imageFile.isEmpty()) {
+            ImageRequest imageRequest = ImageRequest.builder()
+                    .image(imageFile)
+                    .build();
 
+            Product updatedProduct = productMapper.toImageProduct(imageRequest, cloudinary);
+            product.setImage(updatedProduct.getImage());
+        }
 
+        // Lưu sản phẩm
+        Product savedProduct = productRepository.save(product);
+        return productMapper.toProductResponse(savedProduct);
+    }
 
     @Transactional
     public void deleteProduct(Long productId) {

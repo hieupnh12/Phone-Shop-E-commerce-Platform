@@ -44,9 +44,40 @@ const productService = {
     });
   },
 
+  uploadProductImage: async (productId, imageFile) => {
+    const formData = new FormData();
+    formData.append("image", imageFile);
+
+    return axiosClient[POST](`${PRODUCT_API}/${productId}/image`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
 
   updateProduct: (productId, updateData) => {
     return axiosClient[PATCH](`${PRODUCT_API}/${productId}`, updateData);
+  },
+
+  updateProductWithImage: async (productId, productData, imageFile) => {
+    // Cách 2: Upload ảnh riêng (2 requests)
+    // Request 1: Update product data
+    const updateResult = await axiosClient[PATCH](`${PRODUCT_API}/${productId}`, productData);
+    
+    // Request 2: Upload image (nếu có file mới)
+    if (imageFile && imageFile instanceof File) {
+      try {
+        await productService.uploadProductImage(productId, imageFile);
+        console.info("✓ Product data updated and image uploaded successfully");
+      } catch (imageError) {
+        console.warn("⚠ Product data updated but image upload failed", imageError);
+        // Vẫn trả về success vì product data đã được update
+        throw imageError;
+      }
+    }
+    
+    return updateResult;
   },
 
   deleteProduct: (productId) => {
