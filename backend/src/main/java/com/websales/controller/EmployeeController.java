@@ -82,6 +82,13 @@ public class EmployeeController {
                 .result(employeeAutService.refreshToken(request))
                 .build();
     }
+//    @GetMapping
+//    public ApiResponse<List<EmployeeResponse>> getAllEmployees() {
+//        return ApiResponse.<List<EmployeeResponse>>builder()
+//                .result(employeeService.getAllEmployee())
+//                .build();
+//    }
+
 
     @GetMapping
     public ApiResponse<Page<EmployeeResponse>> getAllEmployee(

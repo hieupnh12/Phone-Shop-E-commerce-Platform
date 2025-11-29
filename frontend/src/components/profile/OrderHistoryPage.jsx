@@ -1,4 +1,3 @@
-// file OrderHistoryPage
 import React, { useEffect, useState } from 'react';
 import { Search, Calendar, ChevronRight } from 'lucide-react';
 import {profileService} from "../../services/api"
@@ -12,7 +11,7 @@ const orderTabs = [
     { id: 'shipping', label: 'Đang vận chuyển' },
     { id: 'delivered', label: 'Đã giao hàng' },
     { id: 'cancelled', label: 'Đã hủy' },
-    { id: 'returned', label: 'Trả hàng' }, // Đã đổi 'paid' thành 'returned' cho rõ ràng
+    { id: 'returned', label: 'Trả hàng' },
 ];
 
 
@@ -31,11 +30,12 @@ const OrderHistoryPage = () => {
 
     useEffect(() => {
         const fetchOrders = async () => {
+            if (!customerId) return; // Không fetch nếu chưa có customerId
             try {
                 setLoading(true);
                 const data = await profileService.getOrdersByCustomer(customerId);
 
-                const groupedOrders = groupAndNormalizeOrders(data);
+                const groupedOrders = groupAndNormalizeOrders(data.result || data); // Giả định API trả về .result
 
                 setOrders(groupedOrders);
                 setError(null);
@@ -53,14 +53,17 @@ const OrderHistoryPage = () => {
     const groupAndNormalizeOrders = (apiData) => {
         const orderMap = {};
 
+        // 1. Nhóm các Order Detail thành Order chính (Order Aggregation)
         apiData.forEach(item => {
+            // Đảm bảo các trường cần thiết tồn tại
             const { orderId, createDatetime, totalAmount, status, endDateTime, orderDetail } = item;
 
+            // Xử lý orderDetail (giả định là chi tiết 1 sản phẩm)
             const product = {
-                image: orderDetail.picture,
-                name: orderDetail.productName,
-                price: orderDetail.unitPriceAfter,
-                quantity: orderDetail.remainingProducts,
+                image: orderDetail?.picture,
+                name: orderDetail?.productName,
+                price: orderDetail?.unitPriceAfter || 0,
+                quantity: orderDetail?.remainingProducts || 0,
             };
 
             if (!orderMap[orderId]) {
@@ -70,8 +73,8 @@ const OrderHistoryPage = () => {
                     date: new Date(createDatetime).toLocaleDateString('vi-VN'),
                     status: status.toLowerCase(),
                     totalAmount: totalAmount,
-                    createDatetime: createDatetime,
-                    endDateTime: endDateTime,
+                    createDatetime: new Date(createDatetime), // Lưu trữ Date object để sắp xếp
+                    endDateTime: endDateTime ? new Date(endDateTime) : null,
                     products: [product],
                 };
             } else {
@@ -79,7 +82,13 @@ const OrderHistoryPage = () => {
             }
         });
 
-        return Object.values(orderMap);
+        // 2. Chuyển đổi thành mảng và SẮP XẾP CUỐI CÙNG
+        const finalOrders = Object.values(orderMap);
+
+        // ✅ FIX: Sắp xếp theo createDatetime (MỚI NHẤT -> CŨ NHẤT)
+        finalOrders.sort((a, b) => b.createDatetime.getTime() - a.createDatetime.getTime());
+
+        return finalOrders;
     };
 
     const formatCurrency = (amount) => {
@@ -156,13 +165,13 @@ const OrderHistoryPage = () => {
 
             {/* Bộ lọc thời gian (Mẫu 1) */}
             {/*<div className="flex items-center space-x-4 mb-6">*/}
-            {/*    <span className="text-gray-700 font-medium">Lịch sử mua hàng</span>*/}
-            {/*    <div className="flex items-center border border-gray-300 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50">*/}
-            {/*        <span className="text-gray-700 text-sm">{startDate}</span>*/}
-            {/*        <ChevronRight size={16} className="text-gray-400 mx-2 rotate-90" />*/}
-            {/*        <span className="text-gray-700 text-sm">{endDate}</span>*/}
-            {/*        <Calendar size={18} className="text-gray-400 ml-3" />*/}
-            {/*    </div>*/}
+            {/* <span className="text-gray-700 font-medium">Lịch sử mua hàng</span>*/}
+            {/* <div className="flex items-center border border-gray-300 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50">*/}
+            {/* <span className="text-gray-700 text-sm">{startDate}</span>*/}
+            {/* <ChevronRight size={16} className="text-gray-400 mx-2 rotate-90" />*/}
+            {/* <span className="text-gray-700 text-sm">{endDate}</span>*/}
+            {/* <Calendar size={18} className="text-gray-400 ml-3" />*/}
+            {/* </div>*/}
             {/*</div>*/}
 
             {/* Hiển thị danh sách đơn hàng hoặc Empty State */}
@@ -182,7 +191,7 @@ const OrderHistoryPage = () => {
                             {order.products.map((product, index) => (
                                 <div key={index} className="flex items-center py-2">
                                     <img src={product.image} alt={product.name}
-                                         className="w-16 h-16 object-cover rounded mr-4"/>
+                                         className="w-20 h-20 object-cover rounded mr-4"/>
                                     <div className="flex-grow">
                                         <p className="font-medium text-gray-800 text-base">{product.name}</p>
                                         <p className="text-gray-600 text-sm">{formatCurrency(product.price)}</p>
@@ -199,7 +208,7 @@ const OrderHistoryPage = () => {
 
                                         <Link
                                             to={`/user/profile/order/order-detail/${order.orderId}`}
-                                            state={{ 
+                                            state={{
                                                 totalAmount: order.totalAmount,
                                                 createDatetime: order.createDatetime,
                                                 endDateTime: order.endDateTime,
@@ -217,14 +226,14 @@ const OrderHistoryPage = () => {
                     ))}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
+                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500 bg-gray-100">
                     <img
-                        src="https://via.placeholder.com/200/F5F5F5/B0B0B0?text=No+Orders"
+                        src="/image/nofound.png"
                         alt="Bạn chưa có đơn hàng nào"
-                        className="w-48 h-48 mb-6 object-contain"
+                        className="w-auto h-auto scale-200 object-contain"
                     />
                     <p className="text-lg mb-3">Bạn chưa có đơn hàng nào</p>
-                    <p className="text-sm mb-6">Cùng khám phá hàng ngàn sản phẩm tại FPT Shop nhé!</p>
+                    <p className="text-sm mb-6">Cùng khám phá hàng ngàn sản phẩm tại FShop nhé!</p>
                     <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors">
                         Khám phá ngay
                     </button>

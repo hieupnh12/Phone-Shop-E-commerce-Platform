@@ -19,7 +19,7 @@ public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-    @Column(name = "employee_id", insertable = false, updatable = false)
+    @Column(name = "employee_id", updatable = false)
     Long employeeId;
     String action;
     String tableName;
@@ -31,7 +31,7 @@ public class AuditLog {
     @CreationTimestamp
     LocalDateTime createdAt;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
     @JsonIgnore
     Employee employee;
 }

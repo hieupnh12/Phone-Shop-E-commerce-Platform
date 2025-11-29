@@ -64,7 +64,6 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}/status")
-    @PreAuthorize("hasAuthority('SCOPE_ORDER_UPDATE_ALL')")
     public ApiResponse<OrderResponse> updateOrderStatus(
             @PathVariable Integer orderId,
             @RequestBody OrderStatus status) {
