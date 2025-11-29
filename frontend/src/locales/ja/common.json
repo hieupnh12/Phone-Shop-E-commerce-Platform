@@ -64,7 +64,22 @@
     "speedTitle": "高速",
     "speedDesc": "即座にアクセス",
     "communityTitle": "コミュニティ10M +",
-    "communityDesc": "何百万人ものユーザーが信頼しています"
+    "communityDesc": "何百万人ものユーザーが信頼しています",
+    "welcomeDesc": "テクノロジーの楽園",
+    "warrantyTitle": "正規品保証",
+    "warrantyDesc": "100%正規品保証",
+    "deliveryTitle": "超高速配送",
+    "deliveryDesc": "2時間以内の送料無料",
+    "priceTitle": "最安値",
+    "priceDesc": "もっと安い価格が見つかれば返金",
+    "or": "または",
+    "customers": "顧客",
+    "products": "製品",
+    "ratings": "評価",
+    "phone": "電話番号",
+    "remember": "ログイン情報を保存する",
+    "google": "Google",
+    "zalo": "Zalo"
   },
   "cart": {
     "viewCart": "カートを表示",

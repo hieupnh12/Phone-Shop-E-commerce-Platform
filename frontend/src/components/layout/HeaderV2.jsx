@@ -49,11 +49,7 @@ const HeaderV2 = ({ onToggleSidebar, isSidebarOpen }) => {
     },
     { id: 2, name: t('navigation.products'), link: '/user/products' },
     { id: 3, name: t('navigation.feedbacks'), link: '/user/feedbacks' },
-<<<<<<< HEAD
     // { id: 4, name: t('navigation.pricing'), link: '/user/pricing' },
-=======
-    { id: 4, name: t('navigation.pricing'), link: '/user/pricing' },
->>>>>>> origin/hieunm
     { id: 5, name: t('navigation.contact'), link: '/user/contact' },
   ], [t]);
 
@@ -81,11 +77,7 @@ const HeaderV2 = ({ onToggleSidebar, isSidebarOpen }) => {
               <img
                 src="/image/flogo.png"
                 alt="FShop Logo"
-<<<<<<< HEAD
                 className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-=======
-className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
->>>>>>> origin/hieunm
               />
 
               <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
@@ -154,11 +146,7 @@ className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform dur
                         );
                         navigate("/user/profile/order");
                       }}
-<<<<<<< HEAD
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
-=======
-className="w-full text-left px-4 py-2 hover:bg-gray-100"
->>>>>>> origin/hieunm
                     >
                       {t('auth.transactions')}
                     </button>
@@ -195,8 +183,4 @@ className="w-full text-left px-4 py-2 hover:bg-gray-100"
   );
 };
 
-<<<<<<< HEAD
 export default HeaderV2;
-=======
-export default HeaderV2;
->>>>>>> origin/hieunm

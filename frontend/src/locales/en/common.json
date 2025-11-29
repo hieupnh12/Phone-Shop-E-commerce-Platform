@@ -64,7 +64,22 @@
     "speedTitle": "Fast",
     "speedDesc": "Instant access",
     "communityTitle": "Community 10M+",
-    "communityDesc": "Millions of users trust us"
+    "communityDesc": "Millions of users trust us",
+    "welcomeDesc": "Technology Paradise",
+    "warrantyTitle": "Genuine Warranty",
+    "warrantyDesc": "100% Authentic Guarantee",
+    "deliveryTitle": "Super Fast Delivery",
+    "deliveryDesc": "Free shipping in 2 hours",
+    "priceTitle": "Best Price",
+    "priceDesc": "Refund if you find cheaper",
+    "or": "Or",
+    "customers": "Customers",
+    "products": "Products",
+    "ratings": "Ratings",
+    "phone": "Phone Number",
+    "remember": "Remember me",
+    "google": "Google",
+    "zalo": "Zalo"
   },
   "cart": {
     "viewCart": "View Cart",

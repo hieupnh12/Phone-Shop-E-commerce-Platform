@@ -3,12 +3,8 @@ import { Mail, Lock, Phone, Chrome, MessageCircle, ArrowRight, Sparkles, Shield,
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const Login = () => {
-<<<<<<< HEAD
   const { t } = useLanguage();
   const [loginMethod, setLoginMethod] = useState('email');
-=======
-  const [loginMethod, setLoginMethod] = useState('phone');
->>>>>>> origin/hieunm
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',

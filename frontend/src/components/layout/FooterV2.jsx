@@ -59,3 +59,4 @@ const FooterV2 = () => {
         </footer>
   )
 }
+export default FooterV2;
