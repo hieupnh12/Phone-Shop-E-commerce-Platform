@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
+import Toast from "../../components/common/Toast";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -28,8 +29,9 @@ const Login = () => {
   });
   const [otpSent, setOtpSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { loading, loginEmployee, sendOtp, verifyOtp } = useContext(AuthContext);
-
+  const { loading, loginEmployee, sendOtp, verifyOtp } =
+    useContext(AuthContext);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
   const handleChange = (e) => {
     setFormData({
@@ -40,9 +42,20 @@ const Login = () => {
 
   const handleSendOTP = async () => {
     try {
+      const phoneRegex = /^0\d{9}$/;
+
+      // Validate phone
+      if (!phoneRegex.test(formData?.phone)) {
+        setToast({
+          message: `Số điện thoại không hợp lệ. Vui lòng nhập 10 số và bắt đầu bằng 0.`,
+          type: "warning",
+        });
+        return;
+      }
+
       const response = await sendOtp(formData?.phone);
       console.log("gọi otp", response);
-      
+
       if (response?.code === 1000) {
         setOtpSent(true);
       }
@@ -50,15 +63,21 @@ const Login = () => {
       console.log("lỗi dn sdt", error);
     }
   };
-  console.log("dđ", loginMethod);
 
   const handleSubmit = async () => {
     try {
       if (loginMethod === "phone") {
+        const otpRegex = /^\d{6}$/;
+
+        // Validate OTP
+        if (!otpRegex.test(formData?.otp)) {
+          setToast({ message: `Mã OTP phải gồm 6 chữ số.`, type: "warning" });
+          return;
+        }
         const account = {
           rawPhone: formData?.phone,
-          otpCode: formData?.otp
-        }
+          otpCode: formData?.otp,
+        };
         const response = await verifyOtp(account);
         console.log("Login success customer", response);
         navigate("/");
@@ -77,11 +96,19 @@ const Login = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    window.location.href = "http://localhost:8080/phoneShop/oauth2/authorization/google";
+    window.location.href =
+      "http://localhost:8080/phoneShop/oauth2/authorization/google";
   };
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+       {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       {/*Video*/}
       <div className="absolute inset-0 z-0">
         {/* <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
@@ -135,6 +162,8 @@ const Login = () => {
         <div className="absolute w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl top-1/4 -left-20 animate-float-slow"></div>
         <div className="absolute w-96 h-96 bg-purple-500/10 rounded-full blur-3xl bottom-1/4 -right-20 animate-float-slow"></div>
       </div>
+
+     
 
       {/* Main Container */}
       <div className="relative z-20 w-full max-w-7xl mx-auto px-4">
@@ -197,22 +226,6 @@ const Login = () => {
                 </div>
               ))}
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                <div className="text-3xl font-bold text-indigo-400">10+</div>
-                <div className="text-gray-400 text-sm">Khách hàng</div>
-              </div>
-              <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                <div className="text-3xl font-bold text-purple-400">9+</div>
-                <div className="text-gray-400 text-sm">Sản phẩm</div>
-              </div>
-              <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                <div className="text-3xl font-bold text-pink-400">1.5★</div>
-                <div className="text-gray-400 text-sm">Đánh giá</div>
-              </div>
-            </div>
           </div>
 
           {/* Right Side - Form */}
@@ -235,33 +248,10 @@ const Login = () => {
                   <h2 className="text-3xl font-bold text-gray-900">
                     {isLogin ? "Đăng nhập" : "Đăng ký"}
                   </h2>
-                  {/* <p className="text-gray-600 text-sm">
-                    {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
-                    <button
-                      onClick={() => {
-                        setIsLogin(!isLogin);
-                        setOtpSent(false);
-                      }}
-                      className="text-indigo-600 font-semibold hover:text-purple-600 transition-colors"
-                    >
-                      {isLogin ? "Đăng ký ngay" : "Đăng nhập"}
-                    </button>
-                  </p> */}
                 </div>
 
                 {/* Login Method Tabs */}
                 <div className="flex gap-2 bg-gray-100 rounded-xl p-1 mb-6">
-                  {/* <button
-                    onClick={() => setLoginMethod("phone")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
-                      loginMethod === "email"
-                        ? "bg-white text-indigo-600 shadow-md"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    <Mail className="w-5 h-5" />
-                    Email
-                  </button> */}
                   <button
                     onClick={() => {
                       setLoginMethod("phone");
@@ -365,6 +355,7 @@ const Login = () => {
                               onChange={handleChange}
                               placeholder="0912345678"
                               disabled={otpSent}
+                              maxLength={10}
                               className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-60"
                             />
                           </div>
@@ -474,29 +465,13 @@ const Login = () => {
                 </div>
 
                 {/* Social Login */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <button
                     onClick={() => handleSocialLogin("Google")}
                     className="flex items-center justify-center gap-2 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
                   >
                     <Chrome className="w-5 h-5 text-red-500" />
                     Google
-                  </button>
-                  <button
-                    onClick={() => handleSocialLogin("Zalo")}
-                    className="flex items-center justify-center gap-2 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none">
-                      <circle cx="24" cy="24" r="20" fill="#0068FF" />
-                      <path
-                        d="M15 19L24 28L33 19"
-                        stroke="white"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    Zalo
                   </button>
                 </div>
               </div>

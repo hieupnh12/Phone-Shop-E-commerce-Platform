@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import com.websales.dto.request.RevenueStatisticRequest;
 import com.websales.dto.response.*;
+import com.websales.entity.ProductVersion;
 import com.websales.repository.SummaryCardRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -296,5 +297,9 @@ public class StatisticService {
                 topProducts,
                 byBrand
         );
+    }
+
+    public List<ProductVersion> getLowStockProducts(int alertThreshold) {
+        return statisticRepository.findLowStockProducts(alertThreshold);
     }
 }

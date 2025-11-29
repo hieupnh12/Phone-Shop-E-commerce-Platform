@@ -116,7 +116,7 @@ const router = createBrowserRouter(
     { path: "/set-password", element: <SetPasswordPage /> },
     { path: "/login", element: <Login /> },
     { path: "/admin-login", element: <AdminLogin /> },
-        { path: "update", element: <UpdateInfor /> },
+    { path: "update", element: <UpdateInfor /> },
 
     {
       path: "/admin",
