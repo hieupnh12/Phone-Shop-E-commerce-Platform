@@ -380,10 +380,7 @@ export default function ShoppingCart() {
                                 }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title={
-                                  item.stockQuantity !== undefined && 
-                                  (item.quantity || 1) >= item.stockQuantity
-                                    ? `Chỉ còn ${item.stockQuantity} sản phẩm trong kho`
-                                    : (item.quantity || 1) >= MAX_QUANTITY
+                                  (item.quantity || 1) >= MAX_QUANTITY
                                     ? `Số lượng tối đa là ${MAX_QUANTITY}`
                                     : "Tăng số lượng"
                                 }

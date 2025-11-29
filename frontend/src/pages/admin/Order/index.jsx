@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import orderService from "../../../services/orderService";
-import { Eye, X, RefreshCw, Search, Calendar } from "lucide-react";
+import { Eye, X, RefreshCw, Search, Calendar, CheckCircle } from "lucide-react";
 import Toast from "../../../components/common/Toast";
 
 const STATUS_CONFIG = {
@@ -22,6 +22,11 @@ const STATUS_CONFIG = {
     badge: "bg-orange-300 text-orange-900",
     order: -1,
   }, // Special: only after SHIPPED/DELIVERED
+  COMPLETED: {
+    label: "COMPLETED",
+    badge: "bg-purple-300 text-purple-900",
+    order: -1,
+  }, // Special: only after RETURNED
 };
 
 const STATUS_OPTIONS = Object.entries(STATUS_CONFIG).map(([value, meta]) => ({
@@ -48,6 +53,7 @@ export default function Orders() {
   const [dateSort, setDateSort] = useState("newest");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [confirmComplete, setConfirmComplete] = useState(null); // { orderId, orderNumber }
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
@@ -306,12 +312,24 @@ export default function Orders() {
                     </td>
 
                     <td className="p-3 border text-center">
-                      <button
-                        onClick={() => setSelectedOrder(o.orderId)}
-                        className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                      >
-                        <Eye size={18} />
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedOrder(o.orderId)}
+                          className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        {o.status === "RETURNED" && (
+                          <button
+                            onClick={() => setConfirmComplete({ orderId: o.orderId, orderNumber: o.orderId })}
+                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                            title="Đánh dấu đã hoàn thành"
+                          >
+                            <CheckCircle size={18} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -336,6 +354,42 @@ export default function Orders() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Confirmation Modal for Complete Order */}
+      {confirmComplete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">Xác nhận đánh dấu đã hoàn thành</h3>
+            <p className="text-gray-700 mb-6">
+              Bạn có chắc muốn đánh dấu đơn hàng #{confirmComplete.orderNumber} là đã hoàn thành?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmComplete(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await orderService.updateStatus(confirmComplete.orderId, "COMPLETED");
+                    showToast("Đã đánh dấu đơn hàng là đã hoàn thành!", "success");
+                    setConfirmComplete(null);
+                    fetchOrders();
+                  } catch (err) {
+                    console.error("Update status failed:", err);
+                    showToast("Cập nhật trạng thái thất bại!", "error");
+                  }
+                }}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -358,9 +412,14 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
 
     if (!currentConfig || !newConfig) return true; // Cho phép nếu không tìm thấy config
 
-    // Nếu đã CANCELED hoặc RETURNED, không thể quay lại trạng thái khác
-    if (currentStatus === "CANCELED" || currentStatus === "RETURNED") {
+    // Nếu đã CANCELED hoặc COMPLETED, không thể quay lại trạng thái khác
+    if (currentStatus === "CANCELED" || currentStatus === "COMPLETED") {
       return false;
+    }
+
+    // Nếu đã RETURNED, chỉ cho phép chuyển sang COMPLETED
+    if (currentStatus === "RETURNED") {
+      return newStatus === "COMPLETED";
     }
 
     // Nếu muốn đặt CANCELED, luôn cho phép (trừ khi đã DELIVERED)
@@ -371,6 +430,11 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
     // Nếu muốn đặt RETURNED, chỉ cho phép khi đã SHIPPED hoặc DELIVERED
     if (newStatus === "RETURNED") {
       return currentStatus === "SHIPPED" || currentStatus === "DELIVERED";
+    }
+
+    // Nếu muốn đặt COMPLETED, chỉ cho phép khi đã RETURNED
+    if (newStatus === "COMPLETED") {
+      return currentStatus === "RETURNED";
     }
 
     // Kiểm tra thứ tự: chỉ cho phép tiến lên, không cho lùi lại
