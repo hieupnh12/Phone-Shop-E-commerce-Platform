@@ -162,7 +162,7 @@ export default function Chatbot() {
       const response = await chatsApi.sendMessage(input);
       console.log("trả về lại",response);
       
-      const { answer, products, orders } = response;
+      const { answer, ySendChatBots, orders } = response;
       const botText = answer || "Cảm ơn bạn! Tôi đã nhận được tin nhắn.";
       streamText(botText, (fullText) => {
         const botMessage = {
@@ -171,7 +171,7 @@ export default function Chatbot() {
           sender: "bot",
           timestamp: new Date(),
           // Nếu muốn hiển thị Product/Order, bạn có thể thêm field riêng
-          extra: { products, orders },
+          extra: { ySendChatBots, orders },
         };
         setMessages((prev) => [...prev, botMessage]);
       });
@@ -346,15 +346,15 @@ console.log("san", messages);
                       {message.text}
                     </div>
          {/* Nếu bot có Product */}
-{message.sender === "bot" && message?.extra?.products && (
+{message.sender === "bot" && message?.extra?.ySendChatBots && (
   <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
     <h4 className="font-semibold text-gray-700 mb-2">Sản phẩm:</h4>
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      {message?.extra?.products.map((p) => (
+      {message?.extra?.ySendChatBots.map((p) => (
         
         <a
           key={p.idProduct}
-          href={`/products/${p.idProduct}`}
+          href={`/user/products/${p.idProduct}`}
           className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition block"
         >
           {/* Ảnh */}

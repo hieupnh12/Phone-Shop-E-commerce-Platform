@@ -1,5 +1,7 @@
 package com.websales.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 public record YSendChatBot(
@@ -11,6 +13,7 @@ public record YSendChatBot(
     public record YProduct(
             String type,
             String message,
+            @JsonProperty("ySendChatBots")
             List<YSendChatBot>productNames
     ) {
     }
