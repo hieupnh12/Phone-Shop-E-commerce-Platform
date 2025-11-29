@@ -101,4 +101,32 @@ public class OrderService {
         }
         return Optional.empty();
     }
+
+    /**
+     * Trừ số lượng sản phẩm trong kho khi thanh toán thành công
+     * @param orderId ID của đơn hàng
+     */
+    @Transactional
+    public void reduceStockFromOrder(Integer orderId) {
+        Order order = orderRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
+        if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
+            return;
+        }
+        
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            ProductVersion productVersion = orderDetail.getProductVersion();
+            if (productVersion != null) {
+                Integer currentStock = productVersion.getStockQuantity();
+                Integer quantityToReduce = orderDetail.getQuantity();
+                
+                if (currentStock != null && quantityToReduce != null) {
+                    int newStock = Math.max(0, currentStock - quantityToReduce);
+                    productVersion.setStockQuantity(newStock);
+                    productVersionRepository.save(productVersion);
+                }
+            }
+        }
+    }
 }

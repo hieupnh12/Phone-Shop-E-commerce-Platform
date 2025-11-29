@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, ArrowLeft, Package, Loader2 } from 'lucide-react';
 import { orderService } from '../../services/api';
+import cartService from '../../services/cartService';
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
@@ -13,16 +14,25 @@ export default function PaymentSuccess() {
   const status = searchParams.get('status');
   const orderCode = searchParams.get('orderCode');
 
-  useEffect(() => {
-    // Load order info if orderId is available
-    if (orderId) {
-      loadOrderInfo();
-    } else {
-      setLoading(false);
+  const refreshCart = useCallback(async () => {
+    try {
+      // Dispatch event to refresh cart in header and other components
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      
+      // Also try to clear cart on frontend side (in case webhook hasn't processed yet)
+      // This is a safety measure - backend webhook should handle it, but we ensure it's cleared
+      await cartService.clearCart();
+      
+      // Dispatch event again after clearing
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+    } catch (error) {
+      console.error('Error refreshing cart:', error);
+      // Still dispatch event even if clearCart fails
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
     }
-  }, [orderId]);
+  }, []);
 
-  const loadOrderInfo = async () => {
+  const loadOrderInfo = useCallback(async () => {
     try {
       const response = await orderService.getOrder(parseInt(orderId));
       if (response?.result) {
@@ -33,7 +43,21 @@ export default function PaymentSuccess() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    // Load order info if orderId is available
+    if (orderId) {
+      loadOrderInfo();
+    } else {
+      setLoading(false);
+    }
+
+    // Refresh cart when entering payment success page
+    // Backend should have cleared the cart via webhook, but we refresh to ensure UI is updated
+    refreshCart();
+  }, [orderId, loadOrderInfo, refreshCart]);
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">

@@ -48,6 +48,7 @@ export default function ShoppingCart() {
           image: item.image,
           price: item.price,
           quantity: item.quantity || 1,
+          stockQuantity: item.stockQuantity || 0, // Số lượng tồn kho
         }));
         setItems(mappedItems);
       } else {
@@ -77,6 +78,12 @@ export default function ShoppingCart() {
     if (newQuantity < 1) return;
     if (newQuantity > MAX_QUANTITY) {
       setErr(`Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`);
+      return;
+    }
+
+    // Kiểm tra số lượng tồn kho
+    if (item.stockQuantity !== undefined && newQuantity > item.stockQuantity) {
+      setErr(`Sản phẩm "${item.productName}" chỉ còn ${item.stockQuantity} sản phẩm trong kho`);
       return;
     }
 
@@ -152,9 +159,31 @@ export default function ShoppingCart() {
   const total = subtotal + shippingFee;
   const freeShipProgress = Math.min((subtotal / FREE_SHIP_LIMIT) * 100, 100);
 
+  // Kiểm tra xem có sản phẩm nào hết hàng không
+  const hasOutOfStockItems = items.some(
+    (item) => item.stockQuantity !== undefined && item.quantity > item.stockQuantity
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-20 sm:pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        {/* Cảnh báo tổng thể nếu có sản phẩm hết hàng */}
+        {hasOutOfStockItems && (
+          <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+            <div className="flex items-start gap-3">
+              <span className="text-red-600 font-bold text-xl">⚠️</span>
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-800 mb-1">
+                  Có sản phẩm không đủ hàng trong giỏ của bạn
+                </h3>
+                <p className="text-sm text-red-700">
+                  Vui lòng điều chỉnh số lượng hoặc xóa sản phẩm hết hàng trước khi thanh toán
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
@@ -176,13 +205,6 @@ export default function ShoppingCart() {
           </div>
         </div>
 
-        {/* Error Message */}
-        {err && (
-          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 flex items-center gap-2">
-            <span className="text-red-600">⚠</span>
-            <span>{err}</span>
-          </div>
-        )}
 
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Left - Items & Shipping Info */}
@@ -250,7 +272,7 @@ export default function ShoppingCart() {
                     Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
                   </p>
                   <button
-                    onClick={() => navigate("/products")}
+                    onClick={() => navigate("/user/products")}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
                   >
                     Khám phá sản phẩm
@@ -291,7 +313,39 @@ export default function ShoppingCart() {
                           <span className="inline-flex items-center text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-medium">
                             Chính hãng
                           </span>
+                          {item.stockQuantity !== undefined && (
+                            <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-lg font-medium ${
+                              item.stockQuantity > 0 
+                                ? item.stockQuantity <= 5
+                                  ? "bg-orange-50 text-orange-700"
+                                  : "bg-green-50 text-green-700"
+                                : "bg-red-50 text-red-700"
+                            }`}>
+                              {item.stockQuantity > 0 
+                                ? `Còn ${item.stockQuantity} sản phẩm`
+                                : "Hết hàng"}
+                            </span>
+                          )}
                         </div>
+
+                        {/* Cảnh báo hết hàng */}
+                        {item.stockQuantity !== undefined && item.quantity > item.stockQuantity && (
+                          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <span className="text-red-600 font-semibold text-sm">⚠️</span>
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-red-700">
+                                  Sản phẩm không đủ hàng
+                                </p>
+                                <p className="text-xs text-red-600 mt-1">
+                                  Số lượng trong giỏ: <span className="font-semibold">{item.quantity}</span>
+                                  {" • "}
+                                  Số lượng tồn kho: <span className="font-semibold">{item.stockQuantity}</span>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-between mt-4">
                           <div>
@@ -332,11 +386,16 @@ export default function ShoppingCart() {
                                 disabled={
                                   updatingProductVersionId ===
                                     item.productVersionId ||
-                                  (item.quantity || 1) >= MAX_QUANTITY
+                                  (item.quantity || 1) >= MAX_QUANTITY ||
+                                  (item.stockQuantity !== undefined && 
+                                   (item.quantity || 1) >= item.stockQuantity)
                                 }
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title={
-                                  (item.quantity || 1) >= MAX_QUANTITY
+                                  item.stockQuantity !== undefined && 
+                                  (item.quantity || 1) >= item.stockQuantity
+                                    ? `Chỉ còn ${item.stockQuantity} sản phẩm trong kho`
+                                    : (item.quantity || 1) >= MAX_QUANTITY
                                     ? `Số lượng tối đa là ${MAX_QUANTITY}`
                                     : "Tăng số lượng"
                                 }
@@ -413,7 +472,7 @@ export default function ShoppingCart() {
               </div>
 
               <button
-                onClick={() => navigate("/payment")}
+                onClick={() => navigate("/user/payment")}
                 disabled={items.length === 0 || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >

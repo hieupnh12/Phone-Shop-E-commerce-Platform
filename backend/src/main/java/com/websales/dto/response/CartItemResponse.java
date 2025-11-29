@@ -12,5 +12,6 @@ public class CartItemResponse {
     private String image;
     private double price;
     private int quantity;
+    private Integer stockQuantity;  // Số lượng tồn kho
 }
 
