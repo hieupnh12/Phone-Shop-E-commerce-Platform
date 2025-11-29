@@ -3,12 +3,14 @@ package com.websales.controller;
 import com.cloudinary.Api;
 import com.websales.dto.request.*;
 import com.websales.dto.response.*;
+import com.websales.entity.Customer;
 import com.websales.service.CustomerAuthenticationService;
 import com.websales.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,6 +54,7 @@ public class CustomerController {
                 .result(customerService.getCustomer())
                 .build();
      }
+
      @PutMapping("/complete-profile")
     public ApiResponse<CompleteProfileResponse> cusAuthUpdate(@RequestBody @Valid CusAuthUpdateRequest request) {
         return ApiResponse.<CompleteProfileResponse>builder()
@@ -79,5 +82,18 @@ public class CustomerController {
                 .build();
      }
 
+    @GetMapping("/search")
+    public ApiResponse<Page<CustomerResponse>> search(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<CustomerResponse> result = customerService.searchCustomers(keyword, page, size);
+
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .message("Search successfully")
+                .result(result)
+                .build();
+    }
 }
 

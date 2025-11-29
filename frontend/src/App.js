@@ -96,7 +96,6 @@ const router = createBrowserRouter(
         { path: "payment/success", element: <PaymentSuccess /> },
         { path: "payment/cancel", element: <PaymentCancel /> },
         { path: "orders", element: <OrderHistory /> },
-        { path: "update", element: <UpdateInfor /> },
 
         {
           path: "profile",
@@ -117,6 +116,7 @@ const router = createBrowserRouter(
     { path: "/set-password", element: <SetPasswordPage /> },
     { path: "/login", element: <Login /> },
     { path: "/admin-login", element: <AdminLogin /> },
+    { path: "update", element: <UpdateInfor /> },
 
     {
       path: "/admin",

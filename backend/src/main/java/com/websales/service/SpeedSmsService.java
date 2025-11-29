@@ -24,7 +24,7 @@ public class SpeedSmsService implements SmsService {
         SpeedSMSAPI api  = new SpeedSMSAPI(accessToken);
         String content = "Ma xua thuc PHONESHOP cua quy khach la " + code;
         try {
-            String result = api.sendSMS(phoneNumber, content, 5, "1c8e6823f6e096f0");
+            String result = api.sendSMS(phoneNumber, content, 5, "b9c5665acad6c8a3");
             System.out.println(result);
         } catch (IOException e) {
             e.printStackTrace();
