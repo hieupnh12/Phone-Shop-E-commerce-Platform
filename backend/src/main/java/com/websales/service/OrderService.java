@@ -2,15 +2,16 @@ package com.websales.service;
 
 import com.websales.dto.request.OrderRequest;
 import com.websales.entity.Customer;
+import com.websales.entity.Employee;
 import com.websales.entity.Order;
 import com.websales.entity.OrderDetail;
-import com.websales.entity.Product;
 import com.websales.entity.ProductVersion;
 import com.websales.enums.OrderStatus;
+import com.websales.handler.ContextUtils;
 import com.websales.repository.CustomerRepo;
+import com.websales.repository.EmployeeRepo;
 import com.websales.repository.OrderDetailRepository;
 import com.websales.repository.OrderRepository;
-import com.websales.repository.ProductRepository;
 import com.websales.repository.ProductVersionRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +31,8 @@ public class OrderService {
     OrderRepository orderRepository;
     OrderDetailRepository orderDetailRepository;
     ProductVersionRepository productVersionRepository;
-    ProductRepository productRepository;
     CustomerRepo customerRepo;
+    EmployeeRepo employeeRepo;
 
 
     public List<Order> getOrdersByCustomer(Long  customerId) {
@@ -60,8 +61,21 @@ public class OrderService {
                     .orElseThrow(() -> new RuntimeException("Customer not found: " + request.getCustomerId()));
         }
         
+        // Lấy employeeId nếu đang đăng nhập bằng tài khoản employee
+        Employee employee = null;
+        try {
+            Long employeeId = ContextUtils.getEmployeeId();
+            if (employeeId != null) {
+                employee = employeeRepo.findById(employeeId).orElse(null);
+            }
+        } catch (Exception e) {
+            // Nếu không phải employee authentication hoặc không tìm thấy employee, bỏ qua
+            // Order có thể được tạo bởi customer (self-order)
+        }
+        
         Order order = Order.builder()
                 .customerId(customer)
+                .employeeId(employee)
                 .note(request.getNote())
                 .totalAmount(request.getTotalAmount())
                 .status(request.getStatus() != null ? request.getStatus() : OrderStatus.PENDING)
@@ -92,6 +106,11 @@ public class OrderService {
 
             orderDetailRepository.saveAll(orderDetails);
             savedOrder.setOrderDetails(orderDetails);
+            
+            // Trừ số lượng sản phẩm trong kho khi tạo order với status PENDING
+            if (savedOrder.getStatus() == OrderStatus.PENDING) {
+                reduceStockFromOrder(savedOrder.getOrderId());
+            }
         }
 
         return savedOrder;
@@ -104,26 +123,22 @@ public class OrderService {
             Order order = orderOpt.get();
             OrderStatus oldStatus = order.getStatus();
             order.setStatus(status);
-            
-            // Cộng lại số lượng sản phẩm vào kho khi hủy đơn hàng (CANCELED hoặc RETURNED)
-            // Chỉ cộng lại nếu chuyển từ trạng thái đã trừ stock (PAID, SHIPPED) sang CANCELED/RETURNED
-            // Lưu ý: Stock chỉ được trừ khi thanh toán thành công (PAID/SHIPPED), không trừ khi tạo đơn (PENDING)
-            if ((status == OrderStatus.CANCELED || status == OrderStatus.RETURNED) 
-                && (oldStatus == OrderStatus.PAID || oldStatus == OrderStatus.SHIPPED)) {
-                restoreStockFromOrder(orderId);
-            }
-            
             if (status == OrderStatus.DELIVERED || status == OrderStatus.CANCELED || status == OrderStatus.RETURNED) {
                 order.setEndDatetime(java.time.LocalDateTime.now());
             }
+            
+            // Nếu chuyển sang CANCELED, cộng lại quantity vào kho
+            if (status == OrderStatus.CANCELED && oldStatus != OrderStatus.CANCELED) {
+                restoreStockFromOrder(orderId);
+            }
+            
             return Optional.of(orderRepository.save(order));
         }
         return Optional.empty();
     }
 
     /**
-     * Trừ số lượng sản phẩm trong kho khi thanh toán thành công
-     * Trừ stock trong cả ProductVersion và Product
+     * Trừ số lượng sản phẩm trong kho khi tạo order hoặc thanh toán thành công
      * @param orderId ID của đơn hàng
      */
     @Transactional
@@ -138,27 +153,22 @@ public class OrderService {
         for (OrderDetail orderDetail : order.getOrderDetails()) {
             ProductVersion productVersion = orderDetail.getProductVersion();
             if (productVersion != null) {
+                Integer currentStock = productVersion.getStockQuantity();
                 Integer quantityToReduce = orderDetail.getQuantity();
                 
-                if (quantityToReduce != null && quantityToReduce > 0) {
-                    // Trừ stock trong ProductVersion
-                    Integer currentStockPV = productVersion.getStockQuantity();
-                    if (currentStockPV != null) {
-                        int newStockPV = Math.max(0, currentStockPV - quantityToReduce);
-                        productVersion.setStockQuantity(newStockPV);
-                        productVersionRepository.save(productVersion);
+                if (currentStock != null && quantityToReduce != null) {
+                    // Kiểm tra số lượng tồn kho có đủ không
+                    if (currentStock < quantityToReduce) {
+                        throw new RuntimeException(
+                            "Không đủ số lượng trong kho cho sản phẩm " + 
+                            productVersion.getIdVersion() + 
+                            ". Tồn kho: " + currentStock + ", Yêu cầu: " + quantityToReduce
+                        );
                     }
                     
-                    // Trừ stock trong Product
-                    Product product = productVersion.getProduct();
-                    if (product != null) {
-                        Integer currentStockP = product.getStockQuantity();
-                        if (currentStockP != null) {
-                            int newStockP = Math.max(0, currentStockP - quantityToReduce);
-                            product.setStockQuantity(newStockP);
-                            productRepository.save(product);
-                        }
-                    }
+                    int newStock = currentStock - quantityToReduce;
+                    productVersion.setStockQuantity(newStock);
+                    productVersionRepository.save(productVersion);
                 }
             }
         }
@@ -166,7 +176,6 @@ public class OrderService {
 
     /**
      * Cộng lại số lượng sản phẩm vào kho khi hủy đơn hàng
-     * Cộng lại stock trong cả ProductVersion và Product
      * @param orderId ID của đơn hàng
      */
     @Transactional
@@ -181,27 +190,13 @@ public class OrderService {
         for (OrderDetail orderDetail : order.getOrderDetails()) {
             ProductVersion productVersion = orderDetail.getProductVersion();
             if (productVersion != null) {
+                Integer currentStock = productVersion.getStockQuantity();
                 Integer quantityToRestore = orderDetail.getQuantity();
                 
-                if (quantityToRestore != null && quantityToRestore > 0) {
-                    // Cộng lại stock trong ProductVersion
-                    Integer currentStockPV = productVersion.getStockQuantity();
-                    if (currentStockPV != null) {
-                        int newStockPV = currentStockPV + quantityToRestore;
-                        productVersion.setStockQuantity(newStockPV);
-                        productVersionRepository.save(productVersion);
-                    }
-                    
-                    // Cộng lại stock trong Product
-                    Product product = productVersion.getProduct();
-                    if (product != null) {
-                        Integer currentStockP = product.getStockQuantity();
-                        if (currentStockP != null) {
-                            int newStockP = currentStockP + quantityToRestore;
-                            product.setStockQuantity(newStockP);
-                            productRepository.save(product);
-                        }
-                    }
+                if (currentStock != null && quantityToRestore != null) {
+                    int newStock = currentStock + quantityToRestore;
+                    productVersion.setStockQuantity(newStock);
+                    productVersionRepository.save(productVersion);
                 }
             }
         }
