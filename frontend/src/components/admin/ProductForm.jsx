@@ -558,6 +558,8 @@ useEffect(() => {
           ramList={ramList}
           romList={romList}
           colorList={colorList}
+          isEditMode={!!product} // true if editing existing product
+          productId={product?.idProduct} // Product ID for edit mode
         />
       </div>
 

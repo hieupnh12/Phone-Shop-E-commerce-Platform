@@ -75,9 +75,15 @@ public class ProductVersionController {
 
     @DeleteMapping("/{idVersion}")
     public ApiResponse<Void> deleteProductVersion(@PathVariable("idVersion") String idVersion) {
+        boolean hadSoldItems = pvs.hasSoldItems(idVersion);
         pvs.deleteProductVersion(idVersion);
+        
+        String message = hadSoldItems
+            ? "Phiên bản đã được chuyển sang trạng thái tắt do có ràng buộc với đơn hàng"
+            : "Xóa phiên bản thành công";
+        
         return ApiResponse.<Void>builder()
-                .message("Product version deleted successfully")
+                .message(message)
                 .build();
     }
 

@@ -327,30 +327,58 @@ public class ProductVersionService {
 
     @Transactional
     public void deleteProductVersion(String versionId) {
-        // Verify version exists
-        ProductVersion productVersion = productVersionRepository.findById(versionId)
-                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_VERSION_NOT_FOUND));
+        try {
+            log.info("🗑 Starting deletion of product version: {}", versionId);
+            
+            // Verify version exists
+            ProductVersion productVersion = productVersionRepository.findById(versionId)
+                    .orElseThrow(() -> {
+                        log.error("❌ Product version not found: {}", versionId);
+                        return new AppException(ErrorCode.PRODUCT_VERSION_NOT_FOUND);
+                    });
+            log.info("✓ Product version found: {}", versionId);
 
-        // Check if version has ProductItems that have been sold (have orderDetail)
-        boolean hasSoldItems = productItemRepository.existsByVersionIdAndOrderDetailIsNotNull(versionId);
-        if (hasSoldItems) {
-            throw new IllegalStateException("Không thể xóa phiên bản vì đã có sản phẩm được bán ra.");
+            // Check if version has ProductItems that have been sold (have orderDetail)
+            boolean hasSoldItems = productItemRepository.existsByVersionIdAndOrderDetailIsNotNull(versionId);
+            log.info("📊 Checking for sold items - hasSoldItems: {}", hasSoldItems);
+            
+            if (hasSoldItems) {
+                // Nếu có ràng buộc, chuyển status = false thay vì xóa
+                log.info("⚠ Version {} has sold items, setting status to false instead of deleting", versionId);
+                productVersion.setStatus(false);
+                productVersionRepository.save(productVersion);
+                log.info("✅ Version {} status set to false", versionId);
+                return;
+            }
+
+            // Delete all ProductItems for this version (similar to deleteSafeProductItems)
+            // Only delete ProductItems that don't have orderDetail (not sold)
+            log.info("🗑 Deleting ProductItems for version: {}", versionId);
+            productItemRepository.deleteByVersionId(versionId);
+            log.info("✓ Deleted ProductItems for version: {}", versionId);
+
+            // Delete all images for this version
+            int imageCount = productVersion.getImages() != null ? productVersion.getImages().size() : 0;
+            log.info("🗑 Deleting {} images for version: {}", imageCount, versionId);
+            imageVersionRepository.deleteAll(productVersion.getImages());
+            log.info("✓ Deleted all images for version: {}", versionId);
+
+            // Delete the version
+            log.info("🗑 Deleting product version: {}", versionId);
+            productVersionRepository.deleteProductVersionById(versionId);
+            log.info("✅ Successfully deleted product version: {}", versionId);
+            
+        } catch (AppException e) {
+            log.error("❌ Application error deleting version {}: {}", versionId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ Unexpected error deleting version {}: {}", versionId, e.getMessage(), e);
+            throw new RuntimeException("Lỗi không mong đợi khi xóa phiên bản: " + e.getMessage(), e);
         }
-
-
-        // Delete all ProductItems for this version
-        productItemRepository.deleteByVersionId(versionId);
-
-        // Delete all images for this version
-        imageVersionRepository.deleteAll(productVersion.getImages());
-
-
-        // Delete the version
-        productVersionRepository.deleteProductVersionById(versionId);
-
-
-        log.info("Deleted product version {}", versionId);
     }
 
+    public boolean hasSoldItems(String versionId) {
+        return productItemRepository.existsByVersionIdAndOrderDetailIsNotNull(versionId);
+    }
 
 }

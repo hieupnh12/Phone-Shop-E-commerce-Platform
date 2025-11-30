@@ -17,7 +17,7 @@ public interface ProductItemRepository extends JpaRepository<ProductItem, String
     
     @Modifying
     @Transactional
-    @Query("DELETE FROM ProductItem pi WHERE pi.versionId.idVersion = :versionId")
+    @Query("DELETE FROM ProductItem pi WHERE pi.versionId.idVersion = :versionId AND pi.orderDetail IS NULL")
     void deleteByVersionId(@Param("versionId") String versionId);
 //    // New query to find all imei by productVersionId
 //    @Query("SELECT p.imei FROM ProductItem p WHERE p.versionId.versionId = :productVersionId")

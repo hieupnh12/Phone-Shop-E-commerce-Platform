@@ -166,30 +166,36 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
     const { index } = deleteModal;
     const version = versions[index];
     
-    // Get version ID (could be idVersion or idProductVersion)
     const versionId = version?.idVersion || version?.idProductVersion;
     
-    // If version has an ID (exists in backend), delete via API
     if (isEditMode && versionId) {
       try {
-        console.log(`🗑 Deleting version ${versionId} via API`);
-        await productService.deleteProductVersion(versionId);
-        console.log(`✓ Version ${versionId} deleted successfully`);
-        setToast({ type: 'success', message: t('common.versionDeleteSuccess') });
+        const response = await productService.deleteProductVersion(versionId);
+        const message = response?.message || response?.data?.message || t('common.versionDeleteSuccess');
+        setToast({ type: 'success', message: message });
+        
+        const updatedVersions = versions.map((v, i) => {
+          if (i === index) {
+            return { ...v, status: false };
+          }
+          return v;
+        });
+        onVersionsChange(updatedVersions);
       } catch (error) {
-        console.error('Error deleting version:', error);
-        const errorMessage = error.response?.data?.message || error.message || 'Lỗi xóa phiên bản';
+        const errorMessage = error.response?.data?.message 
+          || error.response?.data?.error 
+          || error.message 
+          || 'Lỗi xóa phiên bản';
         setToast({ type: 'error', message: errorMessage });
         setDeleteModal({ isOpen: false, index: null, versionInfo: null });
         return;
       }
-    }
-    
-    // Remove from local state
-    onVersionsChange(versions.filter((_, i) => i !== index));
-    if (!isEditMode || !versionId) {
+    } else {
+      const updatedVersions = versions.filter((_, i) => i !== index);
+      onVersionsChange(updatedVersions);
       setToast({ type: 'success', message: t('common.versionDeleteSuccess') });
     }
+    
     setDeleteModal({ isOpen: false, index: null, versionInfo: null });
   };
 

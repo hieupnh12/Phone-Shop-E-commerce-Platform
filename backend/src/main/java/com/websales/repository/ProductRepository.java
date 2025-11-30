@@ -18,20 +18,23 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
 
 
-    @Query(value ="SELECT p FROM Product p " +
+    @Query(value ="SELECT DISTINCT p FROM Product p " +
             "LEFT JOIN FETCH p.origin " +
             "LEFT JOIN FETCH p.brand " +
             "LEFT JOIN FETCH p.operatingSystem " +
             "LEFT JOIN FETCH p.warehouseArea " +
-            "LEFT JOIN FETCH p.productVersion " +
-            "left JOIN FETCH p.category" +
-            " ORDER BY p.idProduct DESC",
-            countQuery = "SELECT count(p) FROM Product p " +  // Tùy chỉnh: loại join productVersion
+            "LEFT JOIN FETCH p.productVersion pv " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.status = true " +  // Chỉ load products có status = true (bật)
+            "AND (pv.status = true OR pv IS NULL) " +  // Chỉ load versions có status = true hoặc không có version
+            "ORDER BY p.idProduct DESC",
+            countQuery = "SELECT count(DISTINCT p) FROM Product p " +  // Tùy chỉnh: loại join productVersion
                     "LEFT JOIN p.origin " +
                     "LEFT JOIN p.brand " +
                     "LEFT JOIN p.operatingSystem " +
                     "LEFT JOIN p.warehouseArea " +
-                    "LEFT JOIN p.category")  // Không có productVersion = đếm sản phẩm duy nhất)
+                    "LEFT JOIN p.category " +
+                    "WHERE p.status = true")  // Không có productVersion = đếm sản phẩm duy nhất)
     Page<Product> findProductsWithRelations(Pageable pageable);
 
 
