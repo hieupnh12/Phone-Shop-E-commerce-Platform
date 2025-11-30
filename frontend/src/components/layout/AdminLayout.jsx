@@ -53,7 +53,10 @@ export default function AdminLayout() {
   }, [windowWidth]);
   const isDesktop = windowWidth >= 1024;
 
+  const { hasAnyPermission } = usePermission();
+
   // Menu items với permission requirements
+  // permission có thể là: null (luôn hiển thị), string (một permission), hoặc array (nhiều permissions - chỉ cần một)
   const allMenuItems = [
     {
       id: "dashboard",
@@ -81,7 +84,8 @@ export default function AdminLayout() {
       icon: ShoppingCart, 
       label: t('admin.orders'), 
       path: "/admin/orders",
-      permission: PERMISSIONS.ORDER_VIEW_ALL,
+      // Hiển thị nếu có bất kỳ một trong các permissions: ORDER_VIEW_ALL, ORDER_VIEW_DETAIL, hoặc ORDER_CREATE_ALL
+      permission: [PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL, PERMISSIONS.ORDER_CREATE_ALL],
     },
     { 
       id: "roles", 
@@ -107,9 +111,18 @@ export default function AdminLayout() {
   ];
 
   // Filter menu items dựa trên permission
-  const menuItems = allMenuItems.filter(item => 
-    !item.permission || hasPermission(item.permission)
-  );
+  const menuItems = allMenuItems.filter(item => {
+    if (!item.permission) {
+      // Không có permission requirement -> luôn hiển thị
+      return true;
+    }
+    if (Array.isArray(item.permission)) {
+      // Nhiều permissions -> chỉ cần có một trong số đó
+      return hasAnyPermission(item.permission);
+    }
+    // Một permission -> check permission đó
+    return hasPermission(item.permission);
+  });
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
