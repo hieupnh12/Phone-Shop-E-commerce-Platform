@@ -274,19 +274,10 @@ export default function CreateInStoreOrder() {
     setPhoneError("");
     setEmailError("");
 
-    // Validation: cần fullName và (phoneNumber HOẶC email)
+    // Validation: chỉ cần fullName, phoneNumber và email đều không bắt buộc
     if (!newCustomer.fullName || newCustomer.fullName.trim() === "") {
       setToast({
         message: "Vui lòng nhập họ và tên!",
-        type: "error",
-      });
-      return;
-    }
-
-    if ((!newCustomer.phoneNumber || newCustomer.phoneNumber.trim() === "") && 
-        (!newCustomer.email || newCustomer.email.trim() === "")) {
-      setToast({
-        message: "Vui lòng nhập số điện thoại hoặc email (ít nhất một trong hai)!",
         type: "error",
       });
       return;
