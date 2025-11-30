@@ -50,6 +50,7 @@ import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
 import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
 import SetPasswordPage from "./pages/auth/SetPasswordPage";
 import Orders from "./pages/admin/Order";
+import CreateInStoreOrder from "./pages/admin/Order/CreateInStoreOrder";
 import MyFeedbacksPage from "./pages/client/MyFeedbacks";
 import UserHomePage from "./pages/client/UserHomePage";
 import Customers from "./pages/admin/Customer";
@@ -142,6 +143,7 @@ const router = createBrowserRouter(
             },
 
             { path: "orders", element: <Orders /> },
+            { path: "orders/create-in-store", element: <CreateInStoreOrder /> },
 
             {
               path: "statistic",

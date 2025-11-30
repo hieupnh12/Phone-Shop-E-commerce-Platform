@@ -1,9 +1,7 @@
 package com.websales.controller;
 
-import com.cloudinary.Api;
 import com.websales.dto.request.*;
 import com.websales.dto.response.*;
-import com.websales.entity.Customer;
 import com.websales.service.CustomerAuthenticationService;
 import com.websales.service.CustomerService;
 import jakarta.validation.Valid;
@@ -93,6 +91,32 @@ public class CustomerController {
         return ApiResponse.<Page<CustomerResponse>>builder()
                 .message("Search successfully")
                 .result(result)
+                .build();
+    }
+
+    // Endpoint mới để tìm kiếm theo số điện thoại hoặc email (KHÔNG ảnh hưởng endpoint cũ)
+    @GetMapping("/search/phone-or-email")
+    public ApiResponse<Page<CustomerResponse>> searchByPhoneOrEmail(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<CustomerResponse> result = customerService.searchCustomersByPhoneOrEmail(keyword, page, size);
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .message("Search successfully")
+                .result(result)
+                .build();
+    }
+
+    // Endpoint để lấy gợi ý khách hàng khi gõ 4 số đầu
+    @GetMapping("/suggestions/phone")
+    public ApiResponse<List<CustomerResponse>> getPhoneSuggestions(
+            @RequestParam String prefix
+    ) {
+        List<CustomerResponse> suggestions = customerService.getCustomerSuggestionsByPhonePrefix(prefix);
+        return ApiResponse.<List<CustomerResponse>>builder()
+                .message("Suggestions retrieved successfully")
+                .result(suggestions)
                 .build();
     }
 }

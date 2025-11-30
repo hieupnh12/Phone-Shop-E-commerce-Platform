@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import orderService from "../../../services/orderService";
-import { Eye, X, RefreshCw, Search, Calendar, CheckCircle } from "lucide-react";
+import { Eye, X, RefreshCw, Search, Calendar, CheckCircle, Store, Plus } from "lucide-react";
 import Toast from "../../../components/common/Toast";
+import useDebounce from "../../../contexts/useDebounce";
 
 const STATUS_CONFIG = {
   PENDING: {
@@ -43,39 +45,105 @@ const DATE_SORT_OPTIONS = [
 ];
 
 export default function Orders() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [toast, setToast] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [phoneQuery, setPhoneQuery] = useState("");
+  const debouncedPhoneQuery = useDebounce(phoneQuery, 300); // Debounce search để tối ưu performance
   // Date filter states
   const [dateSort, setDateSort] = useState("newest");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [confirmComplete, setConfirmComplete] = useState(null); // { orderId, orderNumber }
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize] = useState(20); // 15-20 orders per page
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
   }, []);
 
-  // Load orders
-  const fetchOrders = useCallback(async () => {
-    setLoadingOrders(true);
+  // Load orders với pagination
+  const fetchOrders = useCallback(async (showLoading = true, page = currentPage) => {
+    if (showLoading) {
+      setLoadingOrders(true);
+    }
     try {
-      const data = await orderService.getAll();
-      setOrders(data.result || []);
+      const sortBy = dateSort === "newest" ? "createDatetime,desc" : "createDatetime,asc";
+      const data = await orderService.getAll(page, pageSize, sortBy);
+      
+      // Handle Page response structure
+      const pageData = data?.result || data;
+      if (pageData?.content) {
+        // Paginated response
+        setOrders(Array.isArray(pageData.content) ? pageData.content : []);
+        setTotalPages(pageData.totalPages || 0);
+        setTotalElements(pageData.totalElements || 0);
+      } else {
+        // Fallback: non-paginated response
+        const ordersList = Array.isArray(pageData) ? pageData : [];
+        setOrders(ordersList);
+        setTotalPages(Math.ceil(ordersList.length / pageSize));
+        setTotalElements(ordersList.length);
+      }
     } catch (err) {
       console.error("Fetch orders failed:", err);
       showToast("Không thể tải danh sách đơn hàng!", "error");
     } finally {
-      setLoadingOrders(false);
+      if (showLoading) {
+        setLoadingOrders(false);
+      }
     }
-  }, [showToast]);
+  }, [showToast, currentPage, pageSize, dateSort]);
 
+  // Reset về trang đầu khi filter thay đổi
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (currentPage !== 0) {
+      setCurrentPage(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedPhoneQuery, startDate, endDate]);
+
+  // Load orders khi component mount hoặc khi page/sort thay đổi
+  useEffect(() => {
+    fetchOrders(true, currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, dateSort]); // Reload khi page hoặc sort thay đổi
+
+  // Tự động refresh khi navigate từ trang create order
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setCurrentPage(0); // Reset về trang đầu tiên
+      fetchOrders(true, 0);
+      // Clear state để tránh refresh lại
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.refresh]); // Chỉ phụ thuộc vào refresh flag
+
+  // Listen for order created event
+  useEffect(() => {
+    const handleOrderCreated = (event) => {
+      // Refresh orders khi có order mới được tạo (không hiển thị loading)
+      setLoadingOrders(false);
+      fetchOrders(false, 0); // Reset về trang đầu tiên khi có order mới
+      if (event.detail?.orderId) {
+        showToast(`Đơn hàng #${event.detail.orderId} đã được tạo thành công!`, "success");
+      }
+    };
+
+    window.addEventListener('orderCreated', handleOrderCreated);
+    return () => {
+      window.removeEventListener('orderCreated', handleOrderCreated);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Chỉ setup listener 1 lần
 
   const handleOrderStatusUpdated = useCallback((updatedOrder) => {
     if (!updatedOrder?.orderId) return;
@@ -92,10 +160,10 @@ export default function Orders() {
     let filtered = orders.filter((o) => {
       const matchStatus = filter === "ALL" || o.status === filter;
       const matchPhone =
-        !phoneQuery ||
+        !debouncedPhoneQuery ||
         o.customerPhone
           ?.toLowerCase()
-          .includes(phoneQuery.trim().toLowerCase());
+          .includes(debouncedPhoneQuery.trim().toLowerCase());
 
       // Date range filter
       let matchDate = true;
@@ -126,7 +194,7 @@ export default function Orders() {
     });
 
     return filtered;
-  }, [orders, filter, phoneQuery, dateSort, startDate, endDate]);
+  }, [orders, filter, debouncedPhoneQuery, dateSort, startDate, endDate]);
 
   const clearDateFilter = () => {
     setStartDate("");
@@ -149,8 +217,17 @@ export default function Orders() {
 
   return (
     <div className="p-6">
-      {/* Title */}
-      <h1 className="text-2xl font-bold mb-6">Order Management</h1>
+      {/* Title with Create Button */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Order Management</h1>
+        <button
+          onClick={() => navigate("/admin/orders/create-in-store")}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          <Store size={18} />
+          Tạo đơn tại cửa hàng
+        </button>
+      </div>
 
       {/* Search + Filter */}
       <div className="flex flex-col gap-4 mb-5">
@@ -188,7 +265,10 @@ export default function Orders() {
           </div>
 
           <button
-            onClick={fetchOrders}
+            onClick={() => {
+              setCurrentPage(0);
+              fetchOrders(true, 0);
+            }}
             disabled={loadingOrders}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
@@ -266,7 +346,8 @@ export default function Orders() {
 
         {/* Results Count */}
         <div className="text-sm text-gray-600">
-          Hiển thị <strong>{filteredOrders.length}</strong> đơn hàng
+          Tổng số: <strong>{totalElements}</strong> đơn hàng
+          {totalPages > 1 && ` (Trang ${currentPage + 1}/${totalPages})`}
         </div>
       </div>
       {/* Orders table */}
@@ -336,6 +417,71 @@ export default function Orders() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 px-4 py-3 bg-white rounded-lg border">
+          <div className="text-sm text-gray-600">
+            Hiển thị {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} trong tổng số {totalElements} đơn hàng
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (currentPage > 0) {
+                  setCurrentPage(currentPage - 1);
+                }
+              }}
+              disabled={currentPage === 0 || loadingOrders}
+              className="px-3 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Trước
+            </button>
+            
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i;
+                } else if (currentPage < 3) {
+                  pageNum = i;
+                } else if (currentPage > totalPages - 4) {
+                  pageNum = totalPages - 5 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    disabled={loadingOrders}
+                    className={`px-3 py-2 border rounded-lg text-sm font-medium ${
+                      currentPage === pageNum
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "text-gray-700 hover:bg-gray-50"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNum + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => {
+                if (currentPage < totalPages - 1) {
+                  setCurrentPage(currentPage + 1);
+                }
+              }}
+              disabled={currentPage >= totalPages - 1 || loadingOrders}
+              className="px-3 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Detail Panel */}
       {selectedOrder && (
