@@ -7,11 +7,13 @@ import Modal from '../../../components/common/Modal';
 import Pagination from '../../../components/common/Pagination';
 import Toast from '../../../components/common/Toast';
 import productService from '../../../services/productService';
+import { usePermission, PERMISSIONS } from '../../../hooks/usePermission';
 
 
 const ListProduct = () => {
   const navigate = useNavigate();
   const debounceTimer = useRef(null);
+  const { hasPermission } = usePermission();
 
   const [products, setProducts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -154,13 +156,15 @@ const ListProduct = () => {
       {/* header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Quản Lý Sản Phẩm</h1>
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={handleAddProduct}
-        >
-          Thêm Sản Phẩm
-        </Button>
+        {hasPermission(PERMISSIONS.PRODUCT_CREATE_ALL) && (
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={handleAddProduct}
+          >
+            Thêm Sản Phẩm
+          </Button>
+        )}
       </div>
 
       {/* filter */}
@@ -245,7 +249,9 @@ const ListProduct = () => {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Kho</th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Số Lượng</th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Trạng Thái</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Hành Động</th>
+                  {(hasPermission(PERMISSIONS.PRODUCT_UPDATE_ALL) || hasPermission(PERMISSIONS.PRODUCT_DELETE_ALL)) && (
+                    <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Hành Động</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -288,24 +294,30 @@ const ListProduct = () => {
                         {product.status ? 'Hoạt động' : 'Tắt'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          icon={Edit2}
-                          onClick={() => handleEditProduct(product.idProduct)}
-                        >
-                          Sửa
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          icon={Trash2}
-                          onClick={() => handleDeleteClick(product.idProduct, product.nameProduct)}
-                        />
-                      </div>
-                    </td>
+                    {(hasPermission(PERMISSIONS.PRODUCT_UPDATE_ALL) || hasPermission(PERMISSIONS.PRODUCT_DELETE_ALL)) && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          {hasPermission(PERMISSIONS.PRODUCT_UPDATE_ALL) && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              icon={Edit2}
+                              onClick={() => handleEditProduct(product.idProduct)}
+                            >
+                              Sửa
+                            </Button>
+                          )}
+                          {hasPermission(PERMISSIONS.PRODUCT_DELETE_ALL) && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              icon={Trash2}
+                              onClick={() => handleDeleteClick(product.idProduct, product.nameProduct)}
+                            />
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

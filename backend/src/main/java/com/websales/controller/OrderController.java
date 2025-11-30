@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +34,7 @@ public class OrderController {
     OrderMapper orderMapper;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_ALL')")
     public ApiResponse<Page<OrderResponse>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -57,6 +59,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_DETAIL') or hasAuthority('SCOPE_ORDER_VIEW_ALL')")
     public ApiResponse<OrderResponse> getOrderById(@PathVariable Integer orderId) {
         Optional<Order> orderOpt = orderService.getOrderById(orderId);
         if (orderOpt.isPresent()) {
@@ -82,6 +85,7 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}/status")
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_UPDATE_STATUS')")
     public ApiResponse<OrderResponse> updateOrderStatus(
             @PathVariable Integer orderId,
             @RequestBody Map<String, String> request) {
@@ -116,7 +120,36 @@ public class OrderController {
     }
 
     @GetMapping("/customer/{customerId}")
-    public ApiResponse<List<OrderResponse>> getOrdersByCustomer(@PathVariable Long customerId) {
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_ALL') or hasAuthority('SCOPE_ORDER_VIEW_DETAIL')")
+    public ApiResponse<List<OrderResponse>> getOrdersByCustomer(
+            @PathVariable Long customerId,
+            @AuthenticationPrincipal Jwt jwt) {
+        // Resource-based authorization: Customer chỉ xem được đơn hàng của chính mình
+        // Employee với ORDER_VIEW_ALL có thể xem tất cả
+        boolean isEmployee = jwt.getClaims().containsKey("scopes") && 
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().startsWith("ROLE_"));
+        
+        if (!isEmployee) {
+            // Đây là customer token - chỉ cho phép xem đơn hàng của chính mình
+            try {
+                Long jwtCustomerId = Long.valueOf(jwt.getSubject());
+                if (!jwtCustomerId.equals(customerId)) {
+                    return ApiResponse.<List<OrderResponse>>builder()
+                            .code(403)
+                            .message("Bạn chỉ có thể xem đơn hàng của chính mình")
+                            .build();
+                }
+            } catch (NumberFormatException e) {
+                return ApiResponse.<List<OrderResponse>>builder()
+                        .code(403)
+                        .message("Không thể xác định quyền truy cập")
+                        .build();
+            }
+        }
+        // Employee với ORDER_VIEW_ALL có thể xem tất cả, không cần check
+        
         var orders = orderService.getOrdersByCustomer(customerId).stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();

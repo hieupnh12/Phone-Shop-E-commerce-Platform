@@ -17,11 +17,13 @@ import CustomerTable from "./CustomerTable";
 import CustomerModal from "./CreateUpdate";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
+import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
 // Import your customerService
 // import customerService from './services/customerService';
 
 const Customers = () => {
+  const { hasPermission } = usePermission();
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(8);
@@ -107,13 +109,14 @@ const Customers = () => {
               </label>
             </div>
             <div className="flex gap-3">
-
-              <button
-              onClick={openCreate}
-               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm">
-                <Download size={18} />
-                Tạo khách hàng
-              </button>
+              {hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT) && (
+                <button
+                  onClick={openCreate}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm">
+                  <Download size={18} />
+                  Tạo khách hàng
+                </button>
+              )}
             </div>
           </div>
         </div>

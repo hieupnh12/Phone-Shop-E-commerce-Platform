@@ -4,6 +4,7 @@ import orderService from "../../../services/orderService";
 import { Eye, X, RefreshCw, Search, Calendar, CheckCircle, Store, Plus } from "lucide-react";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
+import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
 const STATUS_CONFIG = {
   PENDING: {
@@ -47,6 +48,7 @@ const DATE_SORT_OPTIONS = [
 export default function Orders() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = usePermission();
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -220,13 +222,15 @@ export default function Orders() {
       {/* Title with Create Button */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        <button
-          onClick={() => navigate("/admin/orders/create-in-store")}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-        >
-          <Store size={18} />
-          Tạo đơn tại cửa hàng
-        </button>
+        {hasPermission(PERMISSIONS.ORDER_VIEW_ALL) && (
+          <button
+            onClick={() => navigate("/admin/orders/create-in-store")}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            <Store size={18} />
+            Tạo đơn tại cửa hàng
+          </button>
+        )}
       </div>
 
       {/* Search + Filter */}
@@ -544,6 +548,7 @@ export default function Orders() {
 // 🔥 SIDEBAR ORDER DETAIL PANEL
 // ===============================
 function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
+  const { hasPermission } = usePermission();
   const [order, setOrder] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -787,13 +792,15 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
           </p>
         )}
 
-      <button
-        onClick={updateStatus}
-        disabled={loading}
-        className="w-full mt-5 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading ? "Đang cập nhật..." : "Cập nhật trạng thái"}
-      </button>
+      {hasPermission(PERMISSIONS.ORDER_UPDATE_STATUS) && (
+        <button
+          onClick={updateStatus}
+          disabled={loading}
+          className="w-full mt-5 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "Đang cập nhật..." : "Cập nhật trạng thái"}
+        </button>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Settings, Users, Key, Save, Loader2, AlertTriangle, Edit, X, Plus, Search, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Lock, CheckCircle, Unlock, Edit3, Filter } from 'lucide-react';
 import api from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
-
+import { usePermission, PERMISSIONS } from '../../../hooks/usePermission';
 import Toast from "../../../components/common/Toast";
 
 
@@ -246,6 +246,8 @@ const EmployeeManagementPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [toast, setToast] = useState({ message: '', type: 'success' }); // State cho Toast
+    
+    const { hasPermission } = usePermission();
 
 
     // --- LOGIC FETCH VÀ REFRESH DỮ LIỆU ---
@@ -389,6 +391,7 @@ const EmployeeManagementPage = () => {
                             />
                             <Search size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         </div>
+                    {hasPermission(PERMISSIONS.STAFF_CREATE_ALL) && (
                         <button
                             onClick={openCreateModal}
                             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors w-full sm:w-auto"
@@ -396,6 +399,7 @@ const EmployeeManagementPage = () => {
                             <Plus className="w-5 h-5 mr-2" />
                             Thêm Nhân viên
                         </button>
+                    )}
                     </div>
                     
                     {/* Filter theo trạng thái */}
@@ -429,19 +433,21 @@ const EmployeeManagementPage = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            {hasPermission(PERMISSIONS.STAFF_UPDATE_BASIC) && (
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            )}
                         </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                         {isLoading ? (
                             <tr>
-                                <td colSpan="6" className="text-center py-10 text-gray-500">
+                                <td colSpan={hasPermission(PERMISSIONS.STAFF_UPDATE_BASIC) ? "6" : "5"} className="text-center py-10 text-gray-500">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" /> Đang tải...
                                 </td>
                             </tr>
                         ) : employees.length === 0 ? (
                             <tr>
-                                <td colSpan="6" className="text-center py-10 text-gray-500">
+                                <td colSpan={hasPermission(PERMISSIONS.STAFF_UPDATE_BASIC) ? "6" : "5"} className="text-center py-10 text-gray-500">
                                     Không tìm thấy nhân viên nào.
                                 </td>
                             </tr>
@@ -470,15 +476,17 @@ const EmployeeManagementPage = () => {
                                                 </span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                        <button
-                                            onClick={() => openEditModal(employee)}
-                                            className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50 transition-colors"
-                                            title="Chỉnh sửa thông tin và trạng thái"
-                                        >
-                                            <Edit3 className='w-5 h-5' />
-                                        </button>
-                                    </td>
+                                    {hasPermission(PERMISSIONS.STAFF_UPDATE_BASIC) && (
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                            <button
+                                                onClick={() => openEditModal(employee)}
+                                                className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50 transition-colors"
+                                                title="Chỉnh sửa thông tin và trạng thái"
+                                            >
+                                                <Edit3 className='w-5 h-5' />
+                                            </button>
+                                        </td>
+                                    )}
                                 </tr>
                             ))
                         )}
