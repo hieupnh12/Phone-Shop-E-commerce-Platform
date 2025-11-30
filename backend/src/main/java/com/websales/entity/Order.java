@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "orders" )
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Order {
+public class Order extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +31,7 @@ public class Order {
     LocalDateTime createDatetime;
 
          @ManyToOne(fetch = FetchType.LAZY)
-         @JoinColumn(name = "employee_id")
+         @JoinColumn(name = "employee_id", nullable = true)
          Employee employeeId;
 
     @Column(name = "end_datetime")

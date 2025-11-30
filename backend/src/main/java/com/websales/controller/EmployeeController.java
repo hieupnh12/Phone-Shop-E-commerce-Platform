@@ -15,6 +15,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
@@ -37,6 +38,7 @@ public class EmployeeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_CREATE_ALL')")
     public ApiResponse<String> createEmployee(@RequestBody EmployeeCreateRequest request) {
         employeeService.createEmployee(request);
         return ApiResponse.<String>builder()
@@ -80,6 +82,13 @@ public class EmployeeController {
                 .result(employeeAutService.refreshToken(request))
                 .build();
     }
+//    @GetMapping
+//    public ApiResponse<List<EmployeeResponse>> getAllEmployees() {
+//        return ApiResponse.<List<EmployeeResponse>>builder()
+//                .result(employeeService.getAllEmployee())
+//                .build();
+//    }
+
 
     @GetMapping
     public ApiResponse<Page<EmployeeResponse>> getAllEmployee(
@@ -100,6 +109,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{employeeId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_UPDATE_BASIC')")
     public ApiResponse<EmployeeResponse> updateEmployee(
             @PathVariable Long employeeId,
             @RequestBody EmployeeUpdateRequest request) {

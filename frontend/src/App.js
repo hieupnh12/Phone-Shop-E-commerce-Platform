@@ -50,11 +50,13 @@ import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
 import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
 import SetPasswordPage from "./pages/auth/SetPasswordPage";
 import Orders from "./pages/admin/Order";
+import CreateInStoreOrder from "./pages/admin/Order/CreateInStoreOrder";
 import MyFeedbacksPage from "./pages/client/MyFeedbacks";
 import UserHomePage from "./pages/client/UserHomePage";
 import Customers from "./pages/admin/Customer";
 import Employee from "./pages/admin/Employee";
 import Role from "./pages/admin/Role";
+import AuditLogPage from "./pages/admin/Employee/AuditLogPage";
 
 const RouterInitializer = () => {
   useUrlTokenHandler();
@@ -95,7 +97,6 @@ const router = createBrowserRouter(
         { path: "payment/success", element: <PaymentSuccess /> },
         { path: "payment/cancel", element: <PaymentCancel /> },
         { path: "orders", element: <OrderHistory /> },
-        { path: "update", element: <UpdateInfor /> },
 
         {
           path: "profile",
@@ -116,6 +117,8 @@ const router = createBrowserRouter(
     { path: "/set-password", element: <SetPasswordPage /> },
     { path: "/login", element: <Login /> },
     { path: "/admin-login", element: <AdminLogin /> },
+    { path: "update", element: <UpdateInfor /> },
+
     {
       path: "/admin",
       element: (
@@ -140,6 +143,7 @@ const router = createBrowserRouter(
             },
 
             { path: "orders", element: <Orders /> },
+            { path: "orders/create-in-store", element: <CreateInStoreOrder /> },
 
             {
               path: "statistic",
@@ -156,6 +160,7 @@ const router = createBrowserRouter(
             { path: "roles", element: <RoleManagementPage /> },
             { path: "customers", element: <Customers /> },
             { path: "employee", element: <EmployeeManagementPage /> },
+            { path: "audit", element: <AuditLogPage /> },
           ],
         },
       ],

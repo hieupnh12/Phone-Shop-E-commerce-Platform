@@ -50,7 +50,7 @@ public class EmployeeService {
             passwordResetService.sendMailResetPassword(request.getEmail());
     }
 
-//    public List<EmployeeResponse> getAllEmployees() {
+//    public List<EmployeeResponse> getAllEmployee() {
 //        return employeeRepo.findAll()
 //                .stream()
 //                .map(employeeMapper::employeeToEmployeeResponse)

@@ -1,15 +1,34 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import orderService from "../../../services/orderService";
-import { Eye, X, RefreshCw, Search, Calendar } from "lucide-react";
+import { Eye, X, RefreshCw, Search, Calendar, CheckCircle, Store, Plus } from "lucide-react";
 import Toast from "../../../components/common/Toast";
+import useDebounce from "../../../contexts/useDebounce";
 
 const STATUS_CONFIG = {
-  PENDING: { label: "PENDING", badge: "bg-yellow-300 text-yellow-900" },
-  PAID: { label: "PAID", badge: "bg-indigo-300 text-indigo-900" },
-  SHIPPED: { label: "SHIPPING", badge: "bg-blue-300 text-blue-900" },
-  DELIVERED: { label: "DELIVERED", badge: "bg-green-300 text-green-900" },
-  CANCELED: { label: "CANCELED", badge: "bg-red-300 text-red-900" },
-  RETURNED: { label: "RETURNED", badge: "bg-orange-300 text-orange-900" },
+  PENDING: {
+    label: "PENDING",
+    badge: "bg-yellow-300 text-yellow-900",
+    order: 0,
+  },
+  PAID: { label: "PAID", badge: "bg-indigo-300 text-indigo-900", order: 1 },
+  SHIPPED: { label: "SHIPPING", badge: "bg-blue-300 text-blue-900", order: 2 },
+  DELIVERED: {
+    label: "DELIVERED",
+    badge: "bg-green-300 text-green-900",
+    order: 3,
+  },
+  CANCELED: { label: "CANCELED", badge: "bg-red-300 text-red-900", order: -1 }, // Special: can be set anytime but can't go back
+  RETURNED: {
+    label: "RETURNED",
+    badge: "bg-orange-300 text-orange-900",
+    order: -1,
+  }, // Special: only after SHIPPED/DELIVERED
+  COMPLETED: {
+    label: "COMPLETED",
+    badge: "bg-purple-300 text-purple-900",
+    order: -1,
+  }, // Special: only after RETURNED
 };
 
 const STATUS_OPTIONS = Object.entries(STATUS_CONFIG).map(([value, meta]) => ({
@@ -26,45 +45,113 @@ const DATE_SORT_OPTIONS = [
 ];
 
 export default function Orders() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [toast, setToast] = useState(null);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [phoneQuery, setPhoneQuery] = useState("");
-  
+  const debouncedPhoneQuery = useDebounce(phoneQuery, 300); // Debounce search để tối ưu performance
   // Date filter states
   const [dateSort, setDateSort] = useState("newest");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [confirmComplete, setConfirmComplete] = useState(null); // { orderId, orderNumber }
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize] = useState(20); // 15-20 orders per page
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
   }, []);
 
-  // Load orders
-  const fetchOrders = useCallback(async () => {
-    setLoadingOrders(true);
+  // Load orders với pagination
+  const fetchOrders = useCallback(async (showLoading = true, page = currentPage) => {
+    if (showLoading) {
+      setLoadingOrders(true);
+    }
     try {
-      const data = await orderService.getAll();
-      setOrders(data.result || []);
+      const sortBy = dateSort === "newest" ? "createDatetime,desc" : "createDatetime,asc";
+      const data = await orderService.getAll(page, pageSize, sortBy);
+      
+      // Handle Page response structure
+      const pageData = data?.result || data;
+      if (pageData?.content) {
+        // Paginated response
+        setOrders(Array.isArray(pageData.content) ? pageData.content : []);
+        setTotalPages(pageData.totalPages || 0);
+        setTotalElements(pageData.totalElements || 0);
+      } else {
+        // Fallback: non-paginated response
+        const ordersList = Array.isArray(pageData) ? pageData : [];
+        setOrders(ordersList);
+        setTotalPages(Math.ceil(ordersList.length / pageSize));
+        setTotalElements(ordersList.length);
+      }
     } catch (err) {
       console.error("Fetch orders failed:", err);
       showToast("Không thể tải danh sách đơn hàng!", "error");
     } finally {
-      setLoadingOrders(false);
+      if (showLoading) {
+        setLoadingOrders(false);
+      }
     }
-  }, [showToast]);
+  }, [showToast, currentPage, pageSize, dateSort]);
 
+  // Reset về trang đầu khi filter thay đổi
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (currentPage !== 0) {
+      setCurrentPage(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedPhoneQuery, startDate, endDate]);
+
+  // Load orders khi component mount hoặc khi page/sort thay đổi
+  useEffect(() => {
+    fetchOrders(true, currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, dateSort]); // Reload khi page hoặc sort thay đổi
+
+  // Tự động refresh khi navigate từ trang create order
+  useEffect(() => {
+    if (location.state?.refresh) {
+      setCurrentPage(0); // Reset về trang đầu tiên
+      fetchOrders(true, 0);
+      // Clear state để tránh refresh lại
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.refresh]); // Chỉ phụ thuộc vào refresh flag
+
+  // Listen for order created event
+  useEffect(() => {
+    const handleOrderCreated = (event) => {
+      // Refresh orders khi có order mới được tạo (không hiển thị loading)
+      setLoadingOrders(false);
+      fetchOrders(false, 0); // Reset về trang đầu tiên khi có order mới
+      if (event.detail?.orderId) {
+        showToast(`Đơn hàng #${event.detail.orderId} đã được tạo thành công!`, "success");
+      }
+    };
+
+    window.addEventListener('orderCreated', handleOrderCreated);
+    return () => {
+      window.removeEventListener('orderCreated', handleOrderCreated);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Chỉ setup listener 1 lần
 
   const handleOrderStatusUpdated = useCallback((updatedOrder) => {
     if (!updatedOrder?.orderId) return;
     setOrders((prev) =>
       prev.map((o) =>
-        o.orderId === updatedOrder.orderId ? { ...o, status: updatedOrder.status } : o
+        o.orderId === updatedOrder.orderId
+          ? { ...o, status: updatedOrder.status }
+          : o
       )
     );
   }, []);
@@ -73,9 +160,11 @@ export default function Orders() {
     let filtered = orders.filter((o) => {
       const matchStatus = filter === "ALL" || o.status === filter;
       const matchPhone =
-        !phoneQuery ||
-        o.customerPhone?.toLowerCase().includes(phoneQuery.trim().toLowerCase());
-      
+        !debouncedPhoneQuery ||
+        o.customerPhone
+          ?.toLowerCase()
+          .includes(debouncedPhoneQuery.trim().toLowerCase());
+
       // Date range filter
       let matchDate = true;
       if (startDate || endDate) {
@@ -93,7 +182,7 @@ export default function Orders() {
           }
         }
       }
-      
+
       return matchStatus && matchPhone && matchDate;
     });
 
@@ -105,7 +194,7 @@ export default function Orders() {
     });
 
     return filtered;
-  }, [orders, filter, phoneQuery, dateSort, startDate, endDate]);
+  }, [orders, filter, debouncedPhoneQuery, dateSort, startDate, endDate]);
 
   const clearDateFilter = () => {
     setStartDate("");
@@ -128,8 +217,17 @@ export default function Orders() {
 
   return (
     <div className="p-6">
-      {/* Title */}
-      <h1 className="text-2xl font-bold mb-6">Order Management</h1>
+      {/* Title with Create Button */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Order Management</h1>
+        <button
+          onClick={() => navigate("/admin/orders/create-in-store")}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          <Store size={18} />
+          Tạo đơn tại cửa hàng
+        </button>
+      </div>
 
       {/* Search + Filter */}
       <div className="flex flex-col gap-4 mb-5">
@@ -167,11 +265,17 @@ export default function Orders() {
           </div>
 
           <button
-            onClick={fetchOrders}
+            onClick={() => {
+              setCurrentPage(0);
+              fetchOrders(true, 0);
+            }}
             disabled={loadingOrders}
             className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
-            <RefreshCw size={16} className={loadingOrders ? "animate-spin" : ""} />
+            <RefreshCw
+              size={16}
+              className={loadingOrders ? "animate-spin" : ""}
+            />
             Làm mới
           </button>
         </div>
@@ -182,7 +286,7 @@ export default function Orders() {
             <Calendar size={18} className="text-gray-600" />
             <h3 className="font-semibold text-gray-700">Lọc theo ngày</h3>
           </div>
-          
+
           <div className="flex flex-wrap items-end gap-3">
             {/* Date Sort */}
             <div className="flex-1 min-w-[150px]">
@@ -242,10 +346,10 @@ export default function Orders() {
 
         {/* Results Count */}
         <div className="text-sm text-gray-600">
-          Hiển thị <strong>{filteredOrders.length}</strong> đơn hàng
+          Tổng số: <strong>{totalElements}</strong> đơn hàng
+          {totalPages > 1 && ` (Trang ${currentPage + 1}/${totalPages})`}
         </div>
       </div>
-
       {/* Orders table */}
       <div className="overflow-x-auto border rounded-lg shadow-sm bg-white">
         <table className="w-full border-collapse">
@@ -264,40 +368,120 @@ export default function Orders() {
             {loadingOrders
               ? skeletonRows
               : filteredOrders.map((o) => (
-              <tr key={o.orderId} className="hover:bg-gray-50">
-                <td className="p-3 border">{o.orderId}</td>
-                <td className="p-3 border">{o.customerPhone || "N/A"}</td>
-                <td className="p-3 border">
-                  {o.createDatetime
-                    ? new Date(o.createDatetime).toLocaleString("vi-VN")
-                    : "—"}
-                </td>
-                <td className="p-3 border">
-                  {o.totalAmount?.toLocaleString("vi-VN")} ₫
-                </td>
-                <td className="p-3 border">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      STATUS_CONFIG[o.status]?.badge || "bg-gray-200 text-gray-700"
-                    }`}
-                  >
-                    {STATUS_CONFIG[o.status]?.label || o.status || "UNKNOWN"}
-                  </span>
-                </td>
+                  <tr key={o.orderId} className="hover:bg-gray-50">
+                    <td className="p-3 border">{o.orderId}</td>
+                    <td className="p-3 border">{o.customerPhone || "N/A"}</td>
+                    <td className="p-3 border">
+                      {o.createDatetime
+                        ? new Date(o.createDatetime).toLocaleString("vi-VN")
+                        : "—"}
+                    </td>
+                    <td className="p-3 border">
+                      {o.totalAmount?.toLocaleString("vi-VN")} ₫
+                    </td>
+                    <td className="p-3 border">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          STATUS_CONFIG[o.status]?.badge ||
+                          "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        {STATUS_CONFIG[o.status]?.label ||
+                          o.status ||
+                          "UNKNOWN"}
+                      </span>
+                    </td>
 
-                <td className="p-3 border text-center">
-                  <button
-                    onClick={() => setSelectedOrder(o.orderId)}
-                    className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
-                  >
-                    <Eye size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    <td className="p-3 border text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedOrder(o.orderId)}
+                          className="p-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        {o.status === "RETURNED" && (
+                          <button
+                            onClick={() => setConfirmComplete({ orderId: o.orderId, orderNumber: o.orderId })}
+                            className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                            title="Đánh dấu đã hoàn thành"
+                          >
+                            <CheckCircle size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center justify-center gap-4 mt-6 px-4 py-3 bg-white rounded-lg border">
+          <div className="text-sm text-gray-600">
+            Hiển thị {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} trong tổng số {totalElements} đơn hàng
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (currentPage > 0) {
+                  setCurrentPage(currentPage - 1);
+                }
+              }}
+              disabled={currentPage === 0 || loadingOrders}
+              className="px-3 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Trước
+            </button>
+            
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i;
+                } else if (currentPage < 3) {
+                  pageNum = i;
+                } else if (currentPage > totalPages - 4) {
+                  pageNum = totalPages - 5 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    disabled={loadingOrders}
+                    className={`px-3 py-2 border rounded-lg text-sm font-medium ${
+                      currentPage === pageNum
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "text-gray-700 hover:bg-gray-50"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNum + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => {
+                if (currentPage < totalPages - 1) {
+                  setCurrentPage(currentPage + 1);
+                }
+              }}
+              disabled={currentPage >= totalPages - 1 || loadingOrders}
+              className="px-3 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Detail Panel */}
       {selectedOrder && (
@@ -316,6 +500,42 @@ export default function Orders() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Confirmation Modal for Complete Order */}
+      {confirmComplete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">Xác nhận đánh dấu đã hoàn thành</h3>
+            <p className="text-gray-700 mb-6">
+              Bạn có chắc muốn đánh dấu đơn hàng #{confirmComplete.orderNumber} là đã hoàn thành?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmComplete(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await orderService.updateStatus(confirmComplete.orderId, "COMPLETED");
+                    showToast("Đã đánh dấu đơn hàng là đã hoàn thành!", "success");
+                    setConfirmComplete(null);
+                    fetchOrders();
+                  } catch (err) {
+                    console.error("Update status failed:", err);
+                    showToast("Cập nhật trạng thái thất bại!", "error");
+                  }
+                }}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -327,6 +547,83 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
   const [order, setOrder] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Hàm kiểm tra xem có thể chuyển từ trạng thái hiện tại sang trạng thái mới không
+  const canChangeStatus = (currentStatus, newStatus) => {
+    if (!currentStatus || !newStatus) return true;
+    if (currentStatus === newStatus) return true; // Giữ nguyên trạng thái
+
+    const currentConfig = STATUS_CONFIG[currentStatus];
+    const newConfig = STATUS_CONFIG[newStatus];
+
+    if (!currentConfig || !newConfig) return true; // Cho phép nếu không tìm thấy config
+
+    // Nếu đã CANCELED hoặc COMPLETED, không thể quay lại trạng thái khác
+    if (currentStatus === "CANCELED" || currentStatus === "COMPLETED") {
+      return false;
+    }
+
+    // Nếu đã RETURNED, chỉ cho phép chuyển sang COMPLETED
+    if (currentStatus === "RETURNED") {
+      return newStatus === "COMPLETED";
+    }
+
+    // Nếu muốn đặt CANCELED, luôn cho phép (trừ khi đã DELIVERED)
+    if (newStatus === "CANCELED") {
+      return currentStatus !== "DELIVERED";
+    }
+
+    // Nếu muốn đặt RETURNED, chỉ cho phép khi đã SHIPPED hoặc DELIVERED
+    if (newStatus === "RETURNED") {
+      return currentStatus === "SHIPPED" || currentStatus === "DELIVERED";
+    }
+
+    // Nếu muốn đặt COMPLETED, chỉ cho phép khi đã RETURNED
+    if (newStatus === "COMPLETED") {
+      return currentStatus === "RETURNED";
+    }
+
+    // Kiểm tra thứ tự: chỉ cho phép tiến lên, không cho lùi lại
+    if (currentConfig.order !== -1 && newConfig.order !== -1) {
+      return newConfig.order > currentConfig.order;
+    }
+
+    return true;
+  };
+
+  // Lấy danh sách các trạng thái hợp lệ có thể chuyển đến từ trạng thái hiện tại
+  const getValidStatusOptions = (currentStatus) => {
+    if (!currentStatus) return STATUS_OPTIONS;
+
+    const validOptions = STATUS_OPTIONS.filter((option) =>
+      canChangeStatus(currentStatus, option.value)
+    );
+
+    // Đảm bảo trạng thái hiện tại luôn có trong danh sách (để hiển thị)
+    const currentOption = STATUS_OPTIONS.find(
+      (opt) => opt.value === currentStatus
+    );
+    if (currentOption) {
+      const alreadyIncluded = validOptions.find(
+        (opt) => opt.value === currentStatus
+      );
+      if (!alreadyIncluded) {
+        // Thêm trạng thái hiện tại vào đầu danh sách
+        validOptions.unshift(currentOption);
+      }
+    } else {
+      // Nếu trạng thái hiện tại không có trong STATUS_OPTIONS, tạo một option tạm
+      const tempOption = {
+        value: currentStatus,
+        label: STATUS_CONFIG[currentStatus]?.label || currentStatus,
+        badge:
+          STATUS_CONFIG[currentStatus]?.badge || "bg-gray-200 text-gray-700",
+      };
+      validOptions.unshift(tempOption);
+    }
+
+    return validOptions;
+  };
 
   const fetchOrder = async () => {
     try {
@@ -352,7 +649,29 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
     }
   }, [id]);
 
+  // Đồng bộ status với order.status khi order thay đổi
+  useEffect(() => {
+    if (order?.status) {
+      setStatus(order.status);
+    }
+  }, [order?.status]);
+
   const updateStatus = async () => {
+    // Kiểm tra xem có thể cập nhật trạng thái không
+    if (!canChangeStatus(order?.status, status)) {
+      notify?.(
+        "Không thể cập nhật trạng thái ngược lại! Chỉ có thể cập nhật trạng thái tiến lên.",
+        "error"
+      );
+      return;
+    }
+
+    // Kiểm tra trạng thái có thay đổi không
+    if (order?.status === status) {
+      notify?.("Trạng thái không thay đổi!", "info");
+      return;
+    }
+
     try {
       setLoading(true);
       const updated = await orderService.updateStatus(id, status);
@@ -391,10 +710,19 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
       <h2 className="text-xl font-bold mb-3">Order #{order.orderId}</h2>
 
       <div className="text-sm text-gray-700 space-y-2">
-        <p><strong>Khách hàng:</strong> {order.customerName || order.customerId || "N/A"}</p>
-        <p><strong>Số điện thoại:</strong> {order.customerPhone || "N/A"}</p>
-        <p><strong>Địa chỉ:</strong> {order.customerAddress || "N/A"}</p>
-        <p><strong>Ghi chú:</strong> {order.note || "Không có"}</p>
+        <p>
+          <strong>Khách hàng:</strong>{" "}
+          {order.customerName || order.customerId || "N/A"}
+        </p>
+        <p>
+          <strong>Số điện thoại:</strong> {order.customerPhone || "N/A"}
+        </p>
+        <p>
+          <strong>Địa chỉ:</strong> {order.customerAddress || "N/A"}
+        </p>
+        <p>
+          <strong>Ghi chú:</strong> {order.note || "Không có"}
+        </p>
       </div>
 
       <h3 className="font-semibold mt-4 mb-2">Danh sách sản phẩm</h3>
@@ -444,12 +772,20 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
         onChange={(e) => setStatus(e.target.value)}
         className="border p-2 rounded-lg w-full"
       >
-        {STATUS_OPTIONS.map(({ value, label }) => (
+        {getValidStatusOptions(order?.status).map(({ value, label }) => (
           <option key={value} value={value}>
             {label}
           </option>
         ))}
       </select>
+
+      {order?.status &&
+        status !== order.status &&
+        !canChangeStatus(order.status, status) && (
+          <p className="text-red-500 text-sm mt-1">
+            ⚠️ Không thể cập nhật trạng thái ngược lại!
+          </p>
+        )}
 
       <button
         onClick={updateStatus}
@@ -465,11 +801,11 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
 // Animation
 const styles = `
 @keyframes slideLeft {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+ from { transform: translateX(100%); }
+ to { transform: translateX(0); }
 }
 .animate-slideLeft {
-  animation: slideLeft 0.25s ease-out;
+ animation: slideLeft 0.25s ease-out;
 }
 `;
 document.head.insertAdjacentHTML("beforeend", `<style>${styles}</style>`);

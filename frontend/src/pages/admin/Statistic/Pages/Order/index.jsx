@@ -244,34 +244,37 @@ export default function OrderStatistic() {
               </div>
 
               {/* Date Range */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-gray-600 font-medium mb-1 block">
-                    Từ ngày
-                  </label>
-                  <input
-                    type="date"
-                    onClick={() => setDateFilter("")}
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600 font-medium mb-1 block">
-                    Đến ngày
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => {
-                      setEndDate(e.target.value);
-                      setDateFilter("");
-                    }}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
+             {/* Date Range */}
+<div className="grid grid-cols-2 gap-3">
+  <div>
+    <label className="text-xs text-gray-600 font-medium mb-1 block">
+      Từ ngày
+    </label>
+    <input
+      type="date"
+      onClick={() => setDateFilter("")}
+      value={startDate}
+      max={endDate || undefined} // Không cho chọn sau endDate
+      onChange={(e) => setStartDate(e.target.value)}
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+    />
+  </div>
+  <div>
+    <label className="text-xs text-gray-600 font-medium mb-1 block">
+      Đến ngày
+    </label>
+    <input
+      type="date"
+      value={endDate}
+      min={startDate || undefined} // Không cho chọn trước startDate
+      onChange={(e) => {
+        setEndDate(e.target.value);
+        setDateFilter("");
+      }}
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+    />
+  </div>
+</div>
             </div>
 
             {/* Right Column - Status & Search */}

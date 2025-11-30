@@ -7,6 +7,7 @@ import com.websales.enums.PaymentStatus;
 import com.websales.repository.CartRepository;
 import com.websales.repository.OrderRepository;
 import com.websales.repository.PaymentTransactionRepository;
+import com.websales.service.OrderService;
 import com.websales.service.PayOSService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class PayOSWebhookController {
     OrderRepository orderRepository;
     PaymentTransactionRepository paymentTransactionRepository;
     CartRepository cartRepository;
+    OrderService orderService;
 
     /**
      * Webhook handler từ PayOS
@@ -97,6 +99,14 @@ public class PayOSWebhookController {
                 order.setIsPaid(true);
                 transaction.setPaymentStatus(PaymentStatus.SUCCESS);
                 transaction.setResponseMessage("Thanh toán thành công qua PayOS. Order Code: " + orderCode);
+                
+                // Trừ số lượng sản phẩm trong kho khi thanh toán PayOS thành công
+                try {
+                    orderService.reduceStockFromOrder(orderId);
+                    log.info("Stock reduced for order {} after successful PayOS payment", orderId);
+                } catch (Exception e) {
+                    log.error("Error reducing stock for order {}: {}", orderId, e.getMessage(), e);
+                }
                 
                 // Xóa cart items sau khi thanh toán thành công
                 if (order.getCustomerId() != null && order.getCustomerId().getCustomerId() != null) {

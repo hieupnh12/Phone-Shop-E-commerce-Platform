@@ -68,25 +68,46 @@ public class ChatService {
         Document document = new Document(listPhones.toString());
         String answer = chatClient.prompt()
                         .system("""
-                                Bạn là trợ lý bán điện thoại WarePhone.
+                                Bạn là trợ lý bán điện thoại WarePhone. Khi trả lời, luôn xuất ra JSON hợp lệ với cấu trúc:
                                 
-                                          - Khi khách hàng chưa cung cấp đủ thông tin, trả về:
-                                          {
-                                            "type": "clarify",
-                                            "message": "string",    // ví dụ: "Bạn muốn iPhone hay Samsung?"
-                                            "productNames": []
-                                          }
+                                        - Khi khách hàng chưa cung cấp đủ thông tin về điện thoại:
+                                        {
+                                          "type": "clarify",
+                                          "message": "string",    // câu hỏi tư vấn tự nhiên, gợi ý chọn lựa
+                                          "productNames": []
+                                        }
                                 
-                                          - Khi khách hàng đã xác định được sản phẩm trong cửa hàng, trả về:
-                                          {
-                                            "type": "result",
-                                            "message": "string",
-                                            "productNames": [productNames1, productNames2, ...]   // các sản phẩm thật trong DB
-                                          }
+                                        - Khi khách hàng đã xác định được sản phẩm:
+                                        {
+                                          "type": "result",
+                                          "message": "string",    // trả lời tư vấn, dài hơn, giải thích, gợi ý, so sánh
+                                          "productNames": [productName1, productName2, ...] // danh sách sản phẩm từ DB
+                                        }
                                 
-                                          - Luôn trả JSON hợp lệ, không thêm text ngoài JSON.
+                                        Luôn đảm bảo:
+                                        - JSON hợp lệ, không thêm text ngoài JSON.
+                                        - `message` nên đa dạng, tự nhiên, tư vấn khách hàng, có thể hỏi tiếp.
+                                        - Không viết “chúng tôi có các sản phẩm” ngắn cộc.
+                                        - Nếu không chắc chắn sản phẩm, trả `type` là "clarify" với gợi ý.
+                                        - Nếu đã xác định, trả `type` là "result" với gợi ý chi tiết và sản phẩm thật.
                                 
+                                        Ví dụ:
                                 
+                                        Input: "Mình muốn điện thoại màn hình lớn, pin khỏe"
+                                        Output:
+                                        {
+                                          "type": "clarify",
+                                          "message": "Bạn đang tìm iPhone hay Samsung? Mình có thể gợi ý vài mẫu pin trâu và màn hình lớn cho bạn.",
+                                          "productNames": []
+                                        }
+                                
+                                        Input: "Mình muốn iPhone 14 hoặc iPhone 14 Pro"
+                                        Output:
+                                        {
+                                          "type": "result",
+                                          "message": "Dựa trên yêu cầu của bạn, mình tìm thấy iPhone 14 và iPhone 14 Pro với pin khỏe, RAM và camera phù hợp. Bạn có muốn mình so sánh chi tiết giữa hai mẫu không?",
+                                          "productNames": ["iPhone 14", "iPhone 14 Pro"]
+                                        }
                         """)
                         .user("Câu hỏi: " + q + "\nDanh sách sản phẩm:\n" + document)
                         .call()
@@ -96,9 +117,9 @@ public class ChatService {
 
         if ("result".equals(aiResponse.getType())) {
             List<ProductFULLResponse> matched = matchProductsByNames(aiResponse.getProductNames(), listPhones.toList());
-            return new RagResponse(aiResponse.getMessage(), matched, null);
+            return new RagResponse(aiResponse.getMessage(), matched, null, null);
         } else {
-            return new RagResponse(aiResponse.getMessage(), null, null);
+            return new RagResponse(aiResponse.getMessage(), null, null, null);
         }
     }
 
@@ -130,7 +151,7 @@ public class ChatService {
 
     private RagResponse chatSale(String q) {
 
-        return new RagResponse("sale", null, null);
+        return new RagResponse("sale", null, null, null);
     }
 
 
@@ -159,7 +180,7 @@ public class ChatService {
                 .call()
                 .content();
 
-                return new RagResponse(answer, null, null);
+                return new RagResponse(answer, null, null, null);
     }
 
 

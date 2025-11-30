@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProductAll, fetchSearchAll } from '../../../services/productWorker';
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProducts thay fetch thủ công
+  const { t } = useLanguage();
   const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ const loadAllProducts = async () => {
     props.onProductsCountChange?.(count);
   } catch (error) {
     console.error('Lỗi tải danh sách sản phẩm:', error);
-    setError('Không thể tải sản phẩm. Vui lòng thử lại sau.');
+    setError(t('common.loadingProductsError'));
     setAllProducts([]);
     setFilteredProducts([]);
     setTotalCount(0);

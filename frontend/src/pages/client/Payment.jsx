@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2, Plus } from 'lucide-react';
 import { customerService } from '../../services/api';
 import cartService from '../../services/cartService';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 import AddressForm from '../../components/common/AddressForm';
+import Toast from '../../components/common/Toast';
 
 // Format tiền VND
 const vnd = (n) =>
@@ -16,6 +18,11 @@ const vnd = (n) =>
 
 export default function Payment() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useLanguage();
+  
+  // Lấy danh sách sản phẩm được chọn từ state navigation (nếu có)
+  const selectedProductVersionIds = location.state?.selectedProductVersionIds || null;
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
@@ -37,6 +44,7 @@ export default function Payment() {
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [toast, setToast] = useState(null);
 
   // Load addresses from address book
   const loadAddresses = async () => {
@@ -56,7 +64,7 @@ export default function Payment() {
         }));
       }
     } catch (error) {
-      console.error("Lỗi khi tải địa chỉ:", error);
+      console.error(t('payment.loadError'), error);
     } finally {
       setLoadingAddresses(false);
     }
@@ -71,9 +79,18 @@ export default function Payment() {
         // Load cart
         const cartData = await cartService.getCart();
         if (cartData?.success && cartData.cartItems) {
-          setCartItems(cartData.cartItems);
+          // Nếu có danh sách sản phẩm được chọn, chỉ lấy các sản phẩm đó
+          if (selectedProductVersionIds && selectedProductVersionIds.length > 0) {
+            const filteredItems = cartData.cartItems.filter((item) =>
+              selectedProductVersionIds.includes(item.productVersionId)
+            );
+            setCartItems(filteredItems);
+          } else {
+            // Nếu không có danh sách chọn, lấy tất cả (backward compatibility)
+            setCartItems(cartData.cartItems);
+          }
         } else {
-          setError('Không thể tải giỏ hàng');
+          setError(t('payment.failedToUpdate'));
         }
 
         // Load customer info from API
@@ -120,14 +137,14 @@ export default function Payment() {
         // Load addresses from address book
         await loadAddresses();
       } catch (e) {
-        setError(e.message || 'Lỗi kết nối');
+        setError(e.message || t('payment.networkError'));
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, []);
+  }, [selectedProductVersionIds]); // Re-load khi danh sách sản phẩm được chọn thay đổi
 
   // Handle address selection
   const handleAddressChange = (addressBookId) => {
@@ -164,9 +181,16 @@ export default function Payment() {
         }));
       }
       setShowAddressForm(false);
+      setToast({
+        message: 'Thêm địa chỉ thành công!',
+        type: 'success'
+      });
     } catch (error) {
       console.error("Lỗi khi lưu địa chỉ:", error);
-      alert("Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."));
+      setToast({
+        message: "Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."),
+        type: 'error'
+      });
     } finally {
       setLoadingAddresses(false);
     }
@@ -231,7 +255,16 @@ export default function Payment() {
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
-      setError('Giỏ hàng trống');
+      setError(t('payment.emptyCart'));
+      return;
+    }
+
+    // Kiểm tra địa chỉ
+    if (!selectedAddressId || addresses.length === 0) {
+      setToast({
+        message: 'Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng!',
+        type: 'warning'
+      });
       return;
     }
 
@@ -245,8 +278,10 @@ export default function Payment() {
         subtotal: subtotal,
         shippingFee: shippingFee,
         paymentMethod: paymentMethod,
-        note: note || 'Giao hàng trong giờ hành chính. Gọi trước khi giao.',
-        address: customerInfo.address || ''
+        note: note || t('payment.defaultDelivery'),
+        address: customerInfo.address || '',
+        // Truyền danh sách productVersionId được chọn (nếu có)
+        selectedProductVersionIds: selectedProductVersionIds || cartItems.map(item => item.productVersionId)
       };
 
       const response = await cartService.createOrder(orderData);
@@ -260,10 +295,18 @@ export default function Payment() {
           navigate('/user/profile/order');
         }
       } else {
-        setError(response?.message || 'Không thể đặt hàng');
+        setError(response?.message || t('payment.failedToUpdate'));
       }
     } catch (e) {
-      setError(e.message || 'Lỗi khi đặt hàng');
+      // Xử lý lỗi từ API response
+      const errorMessage = e.response?.data?.message || e.message || 'Lỗi khi đặt hàng';
+      setError(errorMessage);
+      
+      // Nếu có danh sách sản phẩm hết hàng, hiển thị chi tiết
+      if (e.response?.data?.outOfStockItems && Array.isArray(e.response.data.outOfStockItems)) {
+        const detailedMessage = e.response.data.outOfStockItems.join('\n');
+        setError(detailedMessage);
+      }
     } finally {
       setPlacingOrder(false);
     }
@@ -297,7 +340,7 @@ export default function Payment() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1">Họ và tên</span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.name || 'Chưa cập nhật'}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.name || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -305,7 +348,7 @@ export default function Payment() {
                     <Phone className="w-4 h-4" />
                     Số điện thoại
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || 'Chưa cập nhật'}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-2.5 text-sm">
@@ -313,7 +356,7 @@ export default function Payment() {
                     <Mail className="w-4 h-4" />
                     Email
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.email || 'Chưa cập nhật'}</span>
+                  <span className="text-right font-medium text-gray-900">{customerInfo.email || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="py-2.5 text-sm">
@@ -363,12 +406,12 @@ export default function Payment() {
             <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
                 <StickyNote className="w-5 h-5" />
-                Ghi chú đơn hàng
+                {t('payment.orderNote')}
               </h3>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Giao hàng trong giờ hành chính. Gọi trước khi giao."
+                placeholder={t('payment.defaultDelivery')}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
                 rows="3"
               />
@@ -456,7 +499,7 @@ export default function Payment() {
                     </>
                   ) : (
                     <div className="py-4">
-                      <p className="text-xs text-gray-500">Nhấn "Đặt hàng" để tạo mã QR thanh toán</p>
+                      <p className="text-xs text-gray-500">{t('payment.orderNote')}</p>
                     </div>
                   )}
                 </div>
@@ -469,19 +512,19 @@ export default function Payment() {
             {loading ? (
               <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
                 <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-4" />
-                <p className="text-gray-600">Đang tải thông tin đơn hàng...</p>
+                <p className="text-gray-600">{t('payment.loadingOrderInfo')}</p>
               </div>
             ) : (
               <>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   {cartItems.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
-                      <p>Giỏ hàng trống</p>
+                      <p>{t('payment.emptyCart')}</p>
                       <button
                         onClick={() => navigate('/user/cart')}
                         className="mt-4 text-rose-600 hover:text-rose-700 font-medium"
                       >
-                        Quay lại giỏ hàng
+                        {t('payment.backToCart')}
                       </button>
                     </div>
                   ) : (
@@ -490,7 +533,7 @@ export default function Payment() {
                         <div key={item.productVersionId || index} className="p-5 border-b border-gray-200 last:border-b-0">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">{item.productName || 'Sản phẩm'}</div>
+                              <div className="font-medium text-gray-900">{item.productName || t('common.products')}</div>
                               <div className="text-sm text-gray-500 mt-1">
                                 Số lượng: {item.quantity || 1}
                               </div>
@@ -533,8 +576,9 @@ export default function Payment() {
                 )}
 
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                    {error}
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    <div className="font-semibold mb-2">⚠️ Không thể đặt hàng:</div>
+                    <div className="whitespace-pre-line">{error}</div>
                   </div>
                 )}
 
@@ -580,6 +624,15 @@ export default function Payment() {
           addressToEdit={null}
           onClose={() => setShowAddressForm(false)}
           onSave={handleSaveAddress}
+        />
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>

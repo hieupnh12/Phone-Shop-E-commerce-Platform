@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ChevronDown, Filter, Search } from "lucide-react";
+import { useLanguage } from "../../../contexts/LanguageContext";
 
 const Section = ({ title, children, defaultOpen = true }) => {
   const [open, setOpen] = useState(defaultOpen);
@@ -49,14 +50,6 @@ const Checkbox = ({ label, checked, onChange }) => (
   </label>
 );
 
-const ratingOptions = [
-  { label: "Tất cả", value: 0 },
-  { label: "Từ 3 sao", value: 3 },
-  { label: "Từ 4 sao", value: 4 },
-  { label: "Từ 4.5 sao", value: 4.5 },
-  { label: "Từ 5 sao", value: 5 },
-];
-
 const ProductFilter = ({
   searchQuery = "",
   onSearchChange = () => {},
@@ -87,6 +80,16 @@ const ProductFilter = ({
   onMinRatingChange = () => {},
   onResetFilters = () => {},
 }) => {
+  const { t } = useLanguage();
+  
+  const ratingOptions = [
+    { label: t('common.all'), value: 0 },
+    { label: `${t('common.from')} 3 ${t('common.stars')}`, value: 3 },
+    { label: `${t('common.from')} 4 ${t('common.stars')}`, value: 4 },
+    { label: `${t('common.from')} 4.5 ${t('common.stars')}`, value: 4.5 },
+    { label: `${t('common.from')} 5 ${t('common.stars')}`, value: 5 },
+  ];
+  
   const isPriceRangeSelected = (range) => priceRange === range;
   const isBatterySelected = (range) => battery === range;
   const isScreenSizeSelected = (range) => screenSize === range;
@@ -192,7 +195,7 @@ const ProductFilter = ({
           />
           <input
             type="number"
-            placeholder="Đến"
+            placeholder={t('profile.toPrice')}
             value={customMaxPrice}
             onChange={(e) => onCustomMaxPriceChange(e.target.value)}
             className="w-1/2 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -200,7 +203,7 @@ const ProductFilter = ({
         </div>
       </Section>
 
-      <Section title="Đánh giá tối thiểu">
+      <Section title={t('profile.minRating')}>
         <div className="flex flex-wrap">
           {ratingOptions.map((option) => (
             <Pill

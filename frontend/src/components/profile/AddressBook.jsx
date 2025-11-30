@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MapPin, Edit, Trash2, Home, Loader2 } from 'lucide-react';
+import { Plus, MapPin, Edit, Trash2, Home, Loader2, AlertTriangle } from 'lucide-react';
 import AddressForm from "../common/AddressForm";
+import Modal from "../common/Modal";
+import Button from "../common/Button";
+import Toast from "../common/Toast";
 import { customerService } from '../../services/api';
 
 const AddressBook = () => {
@@ -13,6 +16,12 @@ const AddressBook = () => {
         fullName: '',
         phoneNumber: ''
     });
+    const [deleteConfirm, setDeleteConfirm] = useState({
+        isOpen: false,
+        addressId: null,
+        address: null
+    });
+    const [toast, setToast] = useState(null);
 
     // Load dữ liệu từ API
     useEffect(() => {
@@ -72,23 +81,44 @@ const AddressBook = () => {
             await loadAddresses();
             setShowForm(false);
             setAddressToEdit(null);
+            setToast({
+                message: isEditMode ? "Cập nhật địa chỉ thành công!" : "Thêm địa chỉ thành công!",
+                type: "success"
+            });
         } catch (error) {
             console.error("Lỗi khi lưu địa chỉ:", error);
             console.error("Error details:", error.response?.data || error.message);
-            alert("Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."));
+            setToast({
+                message: "Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."),
+                type: "error"
+            });
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) return;
+    const handleDeleteClick = (id) => {
+        const addressToDelete = addresses.find(a => a.addressBookId === id);
+        setDeleteConfirm({
+            isOpen: true,
+            addressId: id,
+            address: addressToDelete
+        });
+    };
+
+    const handleDeleteConfirm = async () => {
+        const id = deleteConfirm.addressId;
+        if (!id) return;
 
         const addressToDelete = addresses.find(a => a.addressBookId === id);
         
         // Không cho xóa địa chỉ mặc định nếu còn nhiều địa chỉ
         if (addressToDelete && defaultAddressId === id && addresses.length > 1) {
-            alert("Lỗi: Vui lòng đặt một địa chỉ khác làm mặc định trước khi xóa địa chỉ mặc định hiện tại.");
+            setToast({
+                message: "Vui lòng đặt một địa chỉ khác làm mặc định trước khi xóa địa chỉ mặc định hiện tại.",
+                type: "warning"
+            });
+            setDeleteConfirm({ isOpen: false, addressId: null, address: null });
             return;
         }
 
@@ -103,9 +133,17 @@ const AddressBook = () => {
                     setDefaultAddressId(remaining[0].addressBookId);
                 }
             }
+            setDeleteConfirm({ isOpen: false, addressId: null, address: null });
+            setToast({
+                message: "Xóa địa chỉ thành công!",
+                type: "success"
+            });
         } catch (error) {
             console.error("Lỗi khi xóa địa chỉ:", error);
-            alert("Lỗi: Không thể xóa địa chỉ. Vui lòng thử lại.");
+            setToast({
+                message: "Lỗi: Không thể xóa địa chỉ. Vui lòng thử lại.",
+                type: "error"
+            });
         } finally {
             setIsLoading(false);
         }
@@ -217,7 +255,7 @@ const AddressBook = () => {
                                 {!(isDefault && addresses.length === 1) && (
                                     <button
                                         type="button"
-                                        onClick={() => handleDelete(addr.addressBookId)}
+                                        onClick={() => handleDeleteClick(addr.addressBookId)}
                                         className="text-xs text-red-500 hover:text-red-600 font-medium"
                                     >
                                         Xóa
@@ -256,6 +294,59 @@ const AddressBook = () => {
                         setAddressToEdit(null);
                     }}
                     onSave={handleSaveAddress}
+                />
+            )}
+
+            {/* Modal Xác nhận xóa */}
+            <Modal
+                isOpen={deleteConfirm.isOpen}
+                onClose={() => setDeleteConfirm({ isOpen: false, addressId: null, address: null })}
+                title=""
+                size="md"
+                showCloseButton={false}
+            >
+                <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                        <div className="bg-red-100 rounded-full p-3">
+                            <AlertTriangle className="w-8 h-8 text-red-600" />
+                        </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận xóa địa chỉ</h3>
+                    <p className="text-gray-600 mb-6">
+                        Bạn có chắc chắn muốn xóa địa chỉ này?
+                    </p>
+                    {deleteConfirm.address && (
+                        <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                            <p className="text-sm text-gray-700">
+                                <span className="font-medium">Địa chỉ:</span> {deleteConfirm.address.address || 'Chưa có'}
+                            </p>
+                        </div>
+                    )}
+                    <div className="flex justify-center gap-3">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setDeleteConfirm({ isOpen: false, addressId: null, address: null })}
+                            disabled={isLoading}
+                        >
+                            Hủy
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={handleDeleteConfirm}
+                            loading={isLoading}
+                        >
+                            Xóa
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>

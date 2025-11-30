@@ -66,7 +66,7 @@ export default function RegistrationForm() {
             setUser("dđ");
 
             const finalJwt = response.result.token;
-
+            
            // localStorage.setItem('jwtToken', finalJwt)
 
             //  Cookies.set(constants.ACCESS_TOKEN_KEY, finalJwt);
@@ -85,7 +85,7 @@ export default function RegistrationForm() {
             }
 
             console.error('Lỗi cập nhật hồ sơ:', error);
-            alert('Cập nhật thất bại: ' + errorMessage);
+            alert('Cập nhật thất bại: Số điện thoại đã tồn tại');
         }
     };
 

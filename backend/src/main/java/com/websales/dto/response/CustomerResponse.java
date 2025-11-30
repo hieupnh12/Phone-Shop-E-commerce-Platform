@@ -19,4 +19,6 @@ public class CustomerResponse {
     Boolean gender;
     LocalDate birthDate;
     String address;
+    LocalDateTime createAt;
+    LocalDateTime updateAt;
 }

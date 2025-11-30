@@ -34,7 +34,7 @@ const loginApi = {
 
   // Customer login với SDT
   postLoginWithSDT: (sdt) => {
-    return axiosClient[POST](`customer/auth`, sdt);
+    return axiosClient[POST](`customer/auth`, { phoneNumber: sdt });
   },
 
   verifySDT: (otp) => {

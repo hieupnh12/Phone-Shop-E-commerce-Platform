@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
 public
-class Customer {
+class Customer extends AuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long customerId;
@@ -27,6 +27,7 @@ class Customer {
     Boolean gender;
     LocalDate birthDate;
     String address;
+    
     @CreationTimestamp
     LocalDateTime createAt;
     @UpdateTimestamp

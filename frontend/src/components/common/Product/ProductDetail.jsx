@@ -14,10 +14,12 @@ import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { useParams } from "react-router-dom"; // Import useParams
 import cartService from "../../../services/cartService";
 import Toast from "../../../components/common/Toast";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { X, Smartphone, Camera, Cpu, Battery, Monitor, Zap, Shield, HardDrive, Palette } from 'lucide-react';
 import ProductFeedback from "../../../components/common/Product/feedBackProduct";
 
 const ProductDetailPage = () => {
+  const { t } = useLanguage();
   const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
@@ -35,6 +37,8 @@ const ProductDetailPage = () => {
   // Lấy productId từ URL params
   const { id } = useParams(); // Lấy :id từ route /products/:id
   const productId = parseInt(id, 10); // Chuyển sang number nếu cần
+
+
 
   const fetchProductDetail = async (id) => {
     if (!id) {
@@ -72,6 +76,16 @@ const ProductDetailPage = () => {
       setLoading(false);
     }
   };
+
+
+
+
+
+
+
+
+
+
 
   useEffect(() => {
     if (productId) {
@@ -246,14 +260,14 @@ const ProductDetailPage = () => {
       const res = await cartService.addToCart(selectedVersion.id, 1);
 
       setToast({
-        type: "success",
-        message: "Đã thêm vào giỏ hàng!",
+        type: 'success',
+        message: t('common.addedToCart'),
       });
     } catch (err) {
       console.log("Add to cart error:", err);
       setToast({
-        type: "error",
-        message: "Không thể thêm vào giỏ hàng ",
+        type: 'error',
+        message: t('common.cannotAddToCart'),
       });
     }
   };
@@ -261,7 +275,7 @@ const ProductDetailPage = () => {
   // FIXED: Enhanced handleSelect - on conflict, reset other options and auto-set to available match
   const handleSelect = (type, value) => {
     // Determine if toggling (unselect if already selected)
-    const isUnselecting = 
+    const isUnselecting =
       (type === "ram" && selectedRam === value) ||
       (type === "rom" && selectedRom === value) ||
       (type === "color" && selectedColor === value);
@@ -406,8 +420,8 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
         {/* Product Info */}
         <div className="px-6 py-4 bg-gray-50 border-b">
           <div className="flex items-center gap-4">
-            <img 
-              src={product.image} 
+            <img
+              src={product.image}
               alt={product.name}
               className="w-16 h-16 object-cover rounded-lg"
             />
@@ -447,7 +461,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
             {specsByTab[activeTab]?.map((spec, index) => (
-              <div 
+              <div
                 key={index}
                 className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
               >
@@ -515,7 +529,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <div 
+                      <div
                         className="w-4 h-4 rounded-full border-2 border-gray-300"
                         style={{ backgroundColor: version.color?.toLowerCase() }}
                         title={version.color}
@@ -629,7 +643,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
             </button>
 
 
-           
+
             {/* SỬA: Button để mở popup, sử dụng state mới */}
             <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
               onClick={() => setIsOpen(true)}
@@ -647,11 +661,11 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-             
+
               <span>Thông số</span>
             </button>
-           
-            
+
+
 
 
             <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
@@ -901,7 +915,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                                   key={r}
                                   onClick={() => handleSelect('ram', r)}
                                   className={`px-3 py-2 rounded-lg border-2 transition ${
-                                    isSelected 
+                                    isSelected
                                       ? "border-cyan-500 bg-cyan-50 text-cyan-700 shadow-lg font-semibold"
                                       : "border-gray-300 bg-white text-gray-700 hover:border-cyan-400 hover:bg-cyan-50/50"
                                   }`}
@@ -1052,7 +1066,12 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                     }
 
                     await cartService.addToCart(selectedVersion.id, 1);
-                    navigate("/payment");
+                    // Chuyển đến cart và tự động chọn sản phẩm vừa thêm
+                    navigate('/user/cart', {
+                      state: {
+                        autoSelectProductVersionId: selectedVersion.id
+                      }
+                    });
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
                 >
@@ -1067,6 +1086,9 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                   <ShoppingCart className="w-6 h-6" />
                   THÊM VÀO GIỎ
                 </button>
+
+
+
               </div>
 
               {/* <div className="grid grid-cols-2 gap-4 mt-3">
@@ -1093,7 +1115,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
       {toast && (
         <Toast
           message={toast.message}
-          type={toast.type} 
+          type={toast.type}
           onClose={() => setToast(null)}
         />
       )}

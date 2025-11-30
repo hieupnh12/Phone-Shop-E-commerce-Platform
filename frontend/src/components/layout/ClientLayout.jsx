@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ShoppingCart, Outlet } from "lucide-react";
 import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { getUserRole } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import Header from "./Header";
 import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
@@ -10,6 +11,7 @@ import { fetchTop5Products } from "../../services/productWorker";
 import { Flame, TrendingUp, Star } from "lucide-react";
 
 const ClientLayout = ({ children, showHero = true }) => {
+  const { t } = useLanguage();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
@@ -22,29 +24,29 @@ const ClientLayout = ({ children, showHero = true }) => {
 
   const slogans = [
     {
-      title: "Công Nghệ Đỉnh Cao",
-      subtitle: "Trải nghiệm iPhone mới nhất 2025",
-      description: "Chip A18 Pro - Hiệu năng vượt trội",
+      title: t('home.slogan1Title'),
+      subtitle: t('home.slogan1Subtitle'),
+      description: t('home.slogan1Description'),
     },
     {
-      title: "Giá Tốt Nhất Thị Trường",
-      subtitle: "Cam kết giá rẻ hơn hoàn tiền",
-      description: "Trả góp 0% - Không lãi suất",
+      title: t('home.slogan2Title'),
+      subtitle: t('home.slogan2Subtitle'),
+      description: t('home.slogan2Description'),
     },
     {
-      title: "Bảo Hành Chính Hãng",
-      subtitle: "Apple Authorized Reseller",
-      description: "12 tháng bảo hành toàn cầu",
+      title: t('home.slogan3Title'),
+      subtitle: t('home.slogan3Subtitle'),
+      description: t('home.slogan3Description'),
     },
     {
-      title: "Giao Hàng Siêu Tốc",
-      subtitle: "Nhận hàng trong 2 giờ tại Hà Nội",
-      description: "Miễn phí vận chuyển toàn quốc",
+      title: t('home.slogan4Title'),
+      subtitle: t('home.slogan4Subtitle'),
+      description: t('home.slogan4Description'),
     },
     {
-      title: "Trade-In Máy Cũ",
-      subtitle: "Thu cũ đổi mới giá cao",
-      description: "Lên đời iPhone dễ dàng hơn",
+      title: t('home.slogan5Title'),
+      subtitle: t('home.slogan5Subtitle'),
+      description: t('home.slogan5Description'),
     },
   ];
 
@@ -92,7 +94,7 @@ const ClientLayout = ({ children, showHero = true }) => {
     // TODO: Thêm logic thêm vào giỏ hàng ở đây
   };
 
-  // THÊM MỚI: Handler cho button "Xem Tất Cả Sản Phẩm" - navigate đến trang Products (/products)
+// THÊM MỚI: Handler cho button "Xem Tất Cả Sản Phẩm" - navigate đến trang Products (/products)
   const handleViewAllProducts = () => {
     navigate("/user/products"); // Route đến Products/index.jsx (cấu hình trong router)
   };
@@ -139,36 +141,38 @@ const ClientLayout = ({ children, showHero = true }) => {
                 <div className="absolute inset-0 bg-black/40 z-0" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-0" />
 
-                {/* slogan slide */}
-                <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[19%]">
-                  {slogans.map((slogan, index) => (
-                    <div
-                      key={index}
-                      className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ${
-                        index === currentSlide
-                          ? "opacity-100 translate-y-0"
-                          : "opacity-0 translate-y-10 pointer-events-none"
-                      }`}
-                    >
-                      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
-                        {" "}
-                        {slogan.title}{" "}
-                      </h1>{" "}
-                      <p className="text-xl sm:text-2xl lg:text-3xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                        {" "}
-                        {slogan.subtitle}{" "}
-                      </p>{" "}
-                      <p className="text-base sm:text-lg text-gray-200 mb-8 drop-shadow-lg">
-                        {" "}
-                        {slogan.description}{" "}
-                      </p>{" "}
-                      <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2 rounded-full text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50">
-                        {" "}
-                        Buy Now{" "}
-                      </button>
-                    </div>
-                  ))}
+            {/* slogan slide */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[19%]">
+              {slogans.map((slogan, index) => (
+                <div
+                  key={index}
+                  className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ${
+                    index === currentSlide
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-10 pointer-events-none"
+                  }`}
+                >
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
+                    {" "}
+                    {slogan.title}{" "}
+                  </h1>{" "}
+                  <p className="text-xl sm:text-2xl lg:text-3xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    {" "}
+                    {slogan.subtitle}{" "}
+                  </p>{" "}
+                  <p className="text-base sm:text-lg text-gray-200 mb-8 drop-shadow-lg">
+                    {" "}
+                    {slogan.description}{" "}
+                  </p>{" "}
+                  <button 
+                  onClick={handleBuyNow}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2 rounded-full text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50">
+                    {" "}
+                    {t('home.buyNow')}{" "}
+                  </button>
                 </div>
+              ))}
+            </div>
 
                 <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
                   {slogans.map((_, index) => (
@@ -186,6 +190,7 @@ const ClientLayout = ({ children, showHero = true }) => {
               </div>
             </>
           )}
+
           {/* Hot product */}
           return (
           <div className="relative py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-950 via-blue-950/30 to-gray-900 overflow-hidden">

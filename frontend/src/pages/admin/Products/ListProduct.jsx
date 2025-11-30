@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import Button from '../../../components/common/Button';
@@ -11,13 +11,12 @@ import productService from '../../../services/productService';
 
 const ListProduct = () => {
   const navigate = useNavigate();
-
+  const debounceTimer = useRef(null);
 
   const [products, setProducts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
-
 
   const [searchFilters, setSearchFilters] = useState({
     productName: '',
@@ -37,7 +36,6 @@ const ListProduct = () => {
     try {
       setIsLoading(true);
 
-
       const hasFilters = Object.values(filters).some(v => v && v.trim());
 
       let response;
@@ -47,16 +45,24 @@ const ListProduct = () => {
         response = await productService.getProducts(page, pageSize);
       }
 
-      if (response.result) {
-        setProducts(response.result.content || []);
-        setTotalPages(response.result.totalPages || 1);
+      // Handle both response.result and direct response
+      const data = response.result || response;
+      
+      if (data && data.content) {
+        setProducts(data.content);
+        setTotalPages(data.totalPages || 1);
         setCurrentPage(page + 1);
+      } else if (data && Array.isArray(data)) {
+        setProducts(data);
+        setTotalPages(1);
+        setCurrentPage(1);
       }
     } catch (error) {
       setToast({
         type: 'error',
         message: 'Lỗi tải danh sách sản phẩm: ' + (error.response?.data?.message || error.message),
       });
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
@@ -67,18 +73,27 @@ const ListProduct = () => {
     fetchProducts(0);
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    fetchProducts(0, searchFilters);
-  };
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setSearchFilters(prev => ({
       ...prev,
       [name]: value,
     }));
+    setCurrentPage(1);
+
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timer for debounced search
+    debounceTimer.current = setTimeout(() => {
+      const updatedFilters = {
+        ...searchFilters,
+        [name]: value,
+      };
+      fetchProducts(0, updatedFilters);
+    }, 300); // 300ms debounce
   };
 
   const handleResetFilter = () => {
@@ -150,9 +165,9 @@ const ListProduct = () => {
 
       {/* filter */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Tìm Kiếm & Lọc</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Tìm Kiếm Sản Phẩm</h3>
 
-        <form onSubmit={handleSearch} className="space-y-4">
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <InputField
               placeholder="Tên sản phẩm"
@@ -162,7 +177,7 @@ const ListProduct = () => {
               icon={Search}
             />
 
-            <InputField
+            {/* <InputField
               placeholder="Nhãn hiệu"
               name="brandName"
               value={searchFilters.brandName}
@@ -188,25 +203,21 @@ const ListProduct = () => {
               name="warehouseAreaName"
               value={searchFilters.warehouseAreaName}
               onChange={handleFilterChange}
-            />
+            /> */}
           </div>
 
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={handleResetFilter}
-            >
-              Xóa Lọc
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-            >
-              Tìm Kiếm
-            </Button>
-          </div>
-        </form>
+          {searchFilters.productName && (
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={handleResetFilter}
+              >
+                Xóa Lọc
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* produc lít */}

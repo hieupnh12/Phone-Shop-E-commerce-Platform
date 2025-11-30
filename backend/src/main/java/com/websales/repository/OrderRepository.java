@@ -4,6 +4,7 @@ import com.websales.dto.response.ListOrderResponse;
 import com.websales.entity.Customer;
 import com.websales.entity.Order;
 import com.websales.enums.OrderStatus;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -21,4 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     select * from orders where customer_id = ?
 """, nativeQuery = true)
     List<ListOrderResponse> findAllOrderByCustomerId(Long customerId);
+
+    List<Order> findByCustomerId(Customer customer, Sort sort);
 }

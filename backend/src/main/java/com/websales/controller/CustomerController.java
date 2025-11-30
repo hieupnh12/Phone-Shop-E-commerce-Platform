@@ -1,6 +1,5 @@
 package com.websales.controller;
 
-import com.cloudinary.Api;
 import com.websales.dto.request.*;
 import com.websales.dto.response.*;
 import com.websales.service.CustomerAuthenticationService;
@@ -9,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,6 +52,7 @@ public class CustomerController {
                 .result(customerService.getCustomer())
                 .build();
      }
+
      @PutMapping("/complete-profile")
     public ApiResponse<CompleteProfileResponse> cusAuthUpdate(@RequestBody @Valid CusAuthUpdateRequest request) {
         return ApiResponse.<CompleteProfileResponse>builder()
@@ -79,5 +80,44 @@ public class CustomerController {
                 .build();
      }
 
+    @GetMapping("/search")
+    public ApiResponse<Page<CustomerResponse>> search(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<CustomerResponse> result = customerService.searchCustomers(keyword, page, size);
+
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .message("Search successfully")
+                .result(result)
+                .build();
+    }
+
+    // Endpoint mới để tìm kiếm theo số điện thoại hoặc email (KHÔNG ảnh hưởng endpoint cũ)
+    @GetMapping("/search/phone-or-email")
+    public ApiResponse<Page<CustomerResponse>> searchByPhoneOrEmail(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<CustomerResponse> result = customerService.searchCustomersByPhoneOrEmail(keyword, page, size);
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .message("Search successfully")
+                .result(result)
+                .build();
+    }
+
+    // Endpoint để lấy gợi ý khách hàng khi gõ 4 số đầu
+    @GetMapping("/suggestions/phone")
+    public ApiResponse<List<CustomerResponse>> getPhoneSuggestions(
+            @RequestParam String prefix
+    ) {
+        List<CustomerResponse> suggestions = customerService.getCustomerSuggestionsByPhonePrefix(prefix);
+        return ApiResponse.<List<CustomerResponse>>builder()
+                .message("Suggestions retrieved successfully")
+                .result(suggestions)
+                .build();
+    }
 }
 

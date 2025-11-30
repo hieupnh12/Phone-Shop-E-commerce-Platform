@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Phone, Chrome, MessageCircle, ArrowRight, Sparkles, Shield, Zap, Users } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Login = () => {
+  const { t } = useLanguage();
   const [loginMethod, setLoginMethod] = useState('email');
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -36,18 +38,18 @@ const Login = () => {
     setError('');
     setTimeout(() => {
       setLoading(false);
-      alert(isLogin ? 'Đăng nhập thành công!' : 'Đăng ký thành công!');
+      alert(isLogin ? t('auth.successLogin') : t('auth.successSignup'));
     }, 1500);
   };
 
   const handleSocialLogin = (provider) => {
-    alert(`Đăng nhập bằng ${provider}`);
+    alert(`${t('auth.login')} ${t('auth.via')} ${provider}`);
   };
 
   const features = [
-    { icon: Shield, title: 'Bảo mật tuyệt đối', desc: 'Dữ liệu được mã hóa end-to-end' },
-    { icon: Zap, title: 'Nhanh chóng', desc: 'Truy cập ngay lập tức' },
-    { icon: Users, title: 'Cộng đồng 10M+', desc: 'Hàng triệu người dùng tin tưởng' }
+    { icon: Shield, title: t('auth.secureTitle'), desc: t('auth.secureDesc') },
+    { icon: Zap, title: t('auth.speedTitle'), desc: t('auth.speedDesc') },
+    { icon: Users, title: t('auth.communityTitle'), desc: t('auth.communityDesc') }
   ];
 
   return (
@@ -85,12 +87,12 @@ const Login = () => {
                 {/* Main Content - Changes based on Login/Signup */}
                 <div className="space-y-6 animate-fade-in" key={isLogin ? 'login' : 'signup'}>
                   <h1 className="text-5xl font-bold text-white leading-tight">
-                    {isLogin ? 'Chào mừng trở lại!' : 'Bắt đầu hành trình'}
+                    {isLogin ? t('auth.welcome') : t('auth.startJourney')}
                   </h1>
                   <p className="text-xl text-white/90 leading-relaxed">
                     {isLogin 
-                      ? 'Đăng nhập để khám phá thế giới công nghệ với trải nghiệm tuyệt vời nhất'
-                      : 'Tham gia cộng đồng hơn 10 triệu người dùng đang tin tưởng sử dụng'}
+                      ? t('auth.loginDescription')
+                      : t('auth.signupDescription')}
                   </p>
                 </div>
 
@@ -117,15 +119,15 @@ const Login = () => {
                 <div className="grid grid-cols-3 gap-4 pt-6">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-white">10M+</div>
-                    <div className="text-white/80 text-sm">Người dùng</div>
+                    <div className="text-white/80 text-sm">{t('stats.users')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-white">99.9%</div>
-                    <div className="text-white/80 text-sm">Uptime</div>
+                    <div className="text-white/80 text-sm">{t('stats.uptime')}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-white">24/7</div>
-                    <div className="text-white/80 text-sm">Hỗ trợ</div>
+                    <div className="text-white/80 text-sm">{t('stats.support24')}</div>
                   </div>
                 </div>
               </div>
@@ -141,10 +143,10 @@ const Login = () => {
                 {/* Header */}
                 <div className="text-center space-y-2">
                   <h2 className="text-3xl font-bold text-gray-900">
-                    {isLogin ? 'Đăng nhập' : 'Đăng ký'}
+                    {isLogin ? t('auth.login') : t('auth.signup')}
                   </h2>
                   {/* <p className="text-gray-600">
-                    {isLogin ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}{' '}
+                    {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
                     <button
                       onClick={() => {
                         setIsLogin(!isLogin);
@@ -153,7 +155,7 @@ const Login = () => {
                       }}
                       className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
                     >
-                      {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
+                      {isLogin ? t('auth.signupNow') : t('auth.loginNow')}
                     </button>
                   </p>                       */}
                 </div>
@@ -183,7 +185,7 @@ const Login = () => {
                     }`}
                   >
                     <Phone className="w-4 h-4" />
-                    SĐT
+                    {t('stats.phone')}
                   </button>
                 </div>
 
@@ -195,17 +197,17 @@ const Login = () => {
 
                 {/* Form */}
                 <div className="space-y-4">
-                  {loginMethod === 'email' ? (
+                  {/* {loginMethod === 'email' ? (
                     <>
                       {!isLogin && (
                         <div className="space-y-2">
-                          <label className="text-gray-700 text-sm font-medium">Họ tên</label>
+                          <label className="text-gray-700 text-sm font-medium">{t('auth.fullName')}</label>
                           <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            placeholder="Nguyễn Văn A"
+                            placeholder={t('auth.fullName')}
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                             required={!isLogin}
                           />
@@ -229,7 +231,7 @@ const Login = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-gray-700 text-sm font-medium">Mật khẩu</label>
+                        <label className="text-gray-700 text-sm font-medium">{t('auth.password')}</label>
                         <div className="relative">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                           <input
@@ -244,10 +246,11 @@ const Login = () => {
                         </div>
                       </div>
                     </>
-                  ) : (
+                  ) :  */}
+                  (
                     <>
                       <div className="space-y-2">
-                        <label className="text-gray-700 text-sm font-medium">Số điện thoại</label>
+                        <label className="text-gray-700 text-sm font-medium">{t('auth.phone')}</label>
                         <div className="flex gap-2">
                           <div className="relative flex-1">
                             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -269,7 +272,7 @@ const Login = () => {
                               disabled={loading}
                               className="px-6 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-200 transition-all whitespace-nowrap"
                             >
-                              Gửi OTP
+                              {t('auth.sendOTP')}
                             </button>
                           )}
                         </div>
@@ -277,7 +280,7 @@ const Login = () => {
 
                       {otpSent && (
                         <div className="space-y-2 animate-fade-in">
-                          <label className="text-gray-700 text-sm font-medium">Mã OTP</label>
+                          <label className="text-gray-700 text-sm font-medium">{t('auth.otp')}</label>
                           <input
                             type="text"
                             name="otp"
@@ -293,24 +296,25 @@ const Login = () => {
                             onClick={handleSendOTP}
                             className="text-indigo-600 text-sm hover:text-indigo-700 transition-all"
                           >
-                            Gửi lại mã OTP
+                            {t('auth.resendOTP')}
                           </button>
                         </div>
                       )}
                     </>
-                  )}
+                  )
+                  {/* } */}
 
-                  {isLogin && loginMethod === 'email' && (
+                  {/* {isLogin && loginMethod === 'email' && (
                     <div className="flex items-center justify-between text-sm">
                       <label className="flex items-center text-gray-600 cursor-pointer hover:text-gray-900 transition-all">
                         <input type="checkbox" className="mr-2 rounded" />
-                        Ghi nhớ đăng nhập
+                        {t('auth.rememberLogin')}
                       </label>
                       <a href="#" className="text-indigo-600 hover:text-indigo-700 transition-all">
-                        Quên mật khẩu?
+                        {t('auth.forgotPassword')}
                       </a>
                     </div>
-                  )}
+                  )} */}
 
                   <button
                     onClick={handleSubmit}
@@ -321,7 +325,7 @@ const Login = () => {
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                       <>
-                        {isLogin ? 'Đăng nhập' : 'Đăng ký'}
+                        {isLogin ? t('auth.login') : t('auth.signup')}
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
@@ -334,7 +338,7 @@ const Login = () => {
                     <div className="w-full border-t border-gray-200"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-gray-500">Hoặc tiếp tục với</span>
+                    <span className="px-4 bg-white text-gray-500">{t('auth.orContinueWith')}</span>
                   </div>
                 </div>
 
