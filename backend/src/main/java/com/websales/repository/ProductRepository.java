@@ -17,21 +17,24 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     //JPA tự động general code cho các interface trong này , trừ các yêu cầu đặt biệt ra thì các tạo mới , thêm , xóa, .... có code sẵn hết
 
 
-    @Query(value = "SELECT p FROM Product p " +
+
+    @Query(value ="SELECT p FROM Product p " +
             "LEFT JOIN FETCH p.origin " +
             "LEFT JOIN FETCH p.brand " +
             "LEFT JOIN FETCH p.operatingSystem " +
             "LEFT JOIN FETCH p.warehouseArea " +
-            "LEFT JOIN FETCH p.productVersion " +
-            "left JOIN FETCH p.category" +
-            " ORDER BY p.idProduct DESC",
-            countQuery = "SELECT count(p) FROM Product p " +  // Tùy chỉnh: loại join productVersion
+            "LEFT JOIN FETCH p.productVersion pv " +
+            "LEFT JOIN FETCH p.category " +
+            "WHERE p.status = true " +  // Chỉ load products có status = true (bật)
+            "AND (pv.status = true OR pv IS NULL) " +  // Chỉ load versions có status = true hoặc không có version
+            "ORDER BY p.idProduct DESC",
+            countQuery = "SELECT count(DISTINCT p) FROM Product p " +  // Tùy chỉnh: loại join productVersion
                     "LEFT JOIN p.origin " +
                     "LEFT JOIN p.brand " +
                     "LEFT JOIN p.operatingSystem " +
                     "LEFT JOIN p.warehouseArea " +
-                    "LEFT JOIN p.category")
-        // Không có productVersion = đếm sản phẩm duy nhất)
+                    "LEFT JOIN p.category " +
+                    "WHERE p.status = true")  // Không có productVersion = đếm sản phẩm duy nhất)
     Page<Product> findProductsWithRelations(Pageable pageable);
 
 
@@ -44,6 +47,22 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "LEFT JOIN FETCH p.category " +
             "WHERE p.idProduct = :id")
     Product findByIdProduct(@Param("id") Long id);
+
+    @Query(value = "SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.origin " +
+            "LEFT JOIN FETCH p.brand " +
+            "LEFT JOIN FETCH p.operatingSystem " +
+            "LEFT JOIN FETCH p.warehouseArea " +
+            "LEFT JOIN FETCH p.productVersion pv " +
+            "LEFT JOIN FETCH p.category " +
+            "ORDER BY p.idProduct DESC",
+            countQuery = "SELECT count(DISTINCT p) FROM Product p " +
+                    "LEFT JOIN p.origin " +
+                    "LEFT JOIN p.brand " +
+                    "LEFT JOIN p.operatingSystem " +
+                    "LEFT JOIN p.warehouseArea " +
+                    "LEFT JOIN p.category ")
+    Page<Product> findAllProductsForAdmin(Pageable pageable);
 
 
     @Query("SELECT COALESCE(SUM(pv.stockQuantity), 0) FROM ProductVersion pv WHERE pv.product = :product")
@@ -66,9 +85,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Modifying
     @Transactional
     @Query(value = """
-                DELETE FROM ProductVersion pv
-                WHERE pv.product.idProduct = :productId
-            """)
+            DELETE FROM ProductVersion pv
+            WHERE pv.product.idProduct = :productId
+        """)
     void deleteSafeProductVersions(Long productId);
 
 
@@ -78,14 +97,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     void deleteProductById(Long productId);
 
     @Query("""
-                SELECT COUNT(pi) > 0
-                FROM ProductItem pi
-                WHERE pi.orderDetail IS NOT NULL AND pi.versionId.idVersion IN (
-                    SELECT pv.idVersion FROM ProductVersion pv
-                    WHERE pv.product.idProduct = :productId
-                )
-            """)
+            SELECT COUNT(pi) > 0
+            FROM ProductItem pi
+            WHERE pi.orderDetail IS NOT NULL AND pi.versionId.idVersion IN (
+                SELECT pv.idVersion FROM ProductVersion pv
+                WHERE pv.product.idProduct = :productId
+            )
+        """)
     boolean hasOrderDetails(Long productId);
+
 
 
 
@@ -103,7 +123,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "AND (:warehouseAreaName IS NULL OR LOWER(w.nameWarehouseArea) LIKE LOWER(CONCAT('%', :warehouseAreaName, '%'))) " +
             "AND (:originName IS NULL OR LOWER(o.nameOrigin) LIKE LOWER(CONCAT('%', :originName, '%')))" +
             "AND (:operatingSystemName IS NULL OR LOWER(os.nameOS) LIKE LOWER(CONCAT('%', :operatingSystemName, '%'))) " +
-            "AND (:productName IS NULL OR LOWER(p.nameProduct) LIKE LOWER(CONCAT('%', :productName, '%')))" +
+            "AND (:productName IS NULL OR LOWER(p.nameProduct) LIKE LOWER(CONCAT('%', :productName, '%')))"  +
 //            "AND (:categoryName IS NULL OR LOWER(c.nameCategory) LIKE LOWER(CONCAT('%', :categoryName, '%')))" +
             "AND (:battery IS NULL OR LOWER(p.battery) LIKE LOWER(CONCAT('%', :battery, '%')))" +
             "AND (:scanFrequency IS NULL OR LOWER(p.scanFrequency) LIKE LOWER(CONCAT('%', :scanFrequency, '%')))" +
@@ -119,10 +139,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "AND (:status IS NULL OR p.status = :status)" +
             "ORDER BY p.idProduct DESC ")
     Page<Product> findProductsWithFilters(
-            @Param("brandName") String brandName,
-            @Param("warehouseAreaName") String warehouseAreaName,
-            @Param("originName") String originName,
-            @Param("operatingSystemName") String operatingSystemName,
+            @Param("brandName")String brandName ,
+            @Param("warehouseAreaName") String warehouseAreaName ,
+            @Param("originName") String originName ,
+            @Param("operatingSystemName") String operatingSystemName ,
             @Param("productName") String productName,
 //            @Param("categoryName") String categoryName,
             @Param("battery") String battery,
@@ -150,6 +170,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 //            "WHERE EXISTS (SELECT pi FROM ProductItem pi " +
 //            "WHERE pi.versionId = pv AND pi.imei = :imei AND pi.export_id IS NULL)")
 //    Optional<Product> findByImei(String imei);
+
 
 
 }

@@ -103,11 +103,86 @@ const AddProduct = () => {
     }
   };
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (formDataWithImage) => {
     try {
       setIsLoading(true);
 
-      await productService.createProduct(formData.payload, formData.image);
+      console.log("📝 AddProduct Submit - Payload:", formDataWithImage.payload);
+      console.log("📝 AddProduct Submit - Versions:", formDataWithImage.payload?.versions);
+      console.log("📝 AddProduct Submit - Product Image:", formDataWithImage.image);
+
+      // ProductForm đã gọi initProduct() rồi, nên payload đã có idProduct
+      const productId = formDataWithImage.payload?.idProduct;
+      
+      if (!productId) {
+        throw new Error('Không thể lấy ID sản phẩm. Vui lòng thử lại.');
+      }
+
+      console.log("✅ Using product ID from form:", productId);
+
+      // Step 1 - Create product + versions with the initialized ID
+      console.log("📝 Step 1: Creating product with details and versions...");
+      const payload = {
+        idProduct: productId,
+        ...formDataWithImage.payload,
+        products: {
+          ...formDataWithImage.payload.products,
+          status: false, // Ensure status is false for new product
+        },
+      };
+      
+      const createResponse = await productService.createProduct(payload, null);
+      console.log("✅ Product Created:", productId);
+      console.log("✅ Create Response:", createResponse);
+
+      if (!productId) {
+        throw new Error('Không thể tạo sản phẩm');
+      }
+
+      // Step 2 - Upload product image nếu có
+      if (formDataWithImage.image && formDataWithImage.image instanceof File) {
+        try {
+          await productService.uploadProductImage(productId, formDataWithImage.image);
+          console.info("✓ Product image uploaded successfully");
+        } catch (imageError) {
+          console.warn("⚠ Product created but image upload failed", imageError);
+        }
+      }
+
+      // Step 3 - Upload version images nếu có
+      const versionsWithImages = formDataWithImage.versionsWithImages || formDataWithImage.payload?.versions || [];
+      console.log("📝 Versions with images:", versionsWithImages);
+      
+      for (let i = 0; i < versionsWithImages.length; i++) {
+        const version = versionsWithImages[i];
+        console.log(`📝 Version ${i + 1}:`, version);
+        
+        if (version.images && version.images.length > 0) {
+          try {
+            // Get product details with created versions
+            const productDetail = await axiosClient.get(`/product/${productId}`);
+            const productVersions = productDetail.result?.productVersionResponses || [];
+            console.log(`📝 Product Versions from API:`, productVersions);
+            
+            if (productVersions.length > i) {
+              // Backend returns idVersion, not idProductVersion
+              const versionId = productVersions[i].idVersion || productVersions[i].idProductVersion;
+              console.log(`📝 Version ${i + 1} ID: ${versionId}`);
+              
+              // Filter only File objects (new images)
+              const imageFilesToUpload = version.images.filter(img => img instanceof File);
+              console.log(`📝 Image Files to upload for Version ${i + 1}:`, imageFilesToUpload.length);
+              
+              if (imageFilesToUpload.length > 0) {
+                await productService.uploadVersionImages(versionId, imageFilesToUpload);
+                console.info(`✓ Version ${i + 1} images uploaded successfully (${imageFilesToUpload.length} images)`);
+              }
+            }
+          } catch (versionImageError) {
+            console.warn(`⚠ Version ${i + 1} images upload failed`, versionImageError);
+          }
+        }
+      }
 
       setToast({
         type: 'success',
@@ -119,6 +194,7 @@ const AddProduct = () => {
       }, 1500);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
+      console.error("❌ Error:", error);
       setToast({
         type: 'error',
         message: `Lỗi: ${errorMessage}`,

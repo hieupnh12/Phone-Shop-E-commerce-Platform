@@ -12,6 +12,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
+import Contact from "./pages/client/Contact";
 import AdminRoute from "./routes/AdminRoute";
 import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
@@ -97,6 +98,7 @@ const router = createBrowserRouter(
         { path: "payment/success", element: <PaymentSuccess /> },
         { path: "payment/cancel", element: <PaymentCancel /> },
         { path: "orders", element: <OrderHistory /> },
+        { path: "contact", element: <Contact /> },
 
         {
           path: "profile",

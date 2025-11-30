@@ -228,10 +228,16 @@ public class ProductService {
 //        // Cập nhật số lượng tồn kho
 //        updateProductStockQuantity(savedProduct.getProductId());
 
+        // Set status = true cho product sau khi tạo versions thành công
+        if (!savedVersions.isEmpty()) {
+            savedProduct.setStatus(true);
+            savedProduct = productRepository.save(savedProduct);
+        }
+
         // Tạo và trả về response
         ProductFULLResponse response = productMapper.toProductFULLResponse(savedProduct);
         response.setProductVersionResponses(savedVersions);
-        response.setStatus(true);
+        response.setStatus(savedProduct.getStatus());
 
         return response;
     }
@@ -332,7 +338,21 @@ public class ProductService {
                 .map(productMapper::toProductFULLResponse);
     }
 
-
+    public Page<ProductFULLResponse> listAllProductsForAdmin(Pageable pageable) {
+        Page<Product> products = productRepository.findAllProductsForAdmin(pageable);
+        products.forEach(product -> {
+            product.getProductVersion().forEach(version -> {
+                // Lọc ProductItem với export_id IS NULL
+                version.setProductItems(
+                        version.getProductItems().stream()
+                                .filter(pi -> pi.getOrderDetail() == null)
+                                .collect(Collectors.toList())
+                );
+            });
+        });
+        return products
+                .map(productMapper::toProductFULLResponse);
+    }
 
     public Product getProductById(Long id) {
         long start = System.nanoTime();
@@ -396,15 +416,38 @@ public class ProductService {
 
     }
 
+    @Transactional
+    public ProductResponse uploadProductImage(Long productId, MultipartFile imageFile) throws IOException {
+        // Tìm sản phẩm
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
 
+        // Upload ảnh
+        if (imageFile != null && !imageFile.isEmpty()) {
+            ImageRequest imageRequest = ImageRequest.builder()
+                    .image(imageFile)
+                    .build();
 
+            Product updatedProduct = productMapper.toImageProduct(imageRequest, cloudinary);
+            product.setImage(updatedProduct.getImage());
+        }
 
+        // Lưu sản phẩm
+        Product savedProduct = productRepository.save(product);
+        return productMapper.toProductResponse(savedProduct);
+    }
 
     @Transactional
     public void deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_EXIST));
+        
         // Kiểm tra xem sản phẩm có ProductItem liên quan không
         if (productRepository.hasOrderDetails(productId)) {
-            throw new IllegalStateException("Không thể xóa sản phẩm vì  ProductItem liên quan đã được bán ra.");
+            // Nếu có ràng buộc, chuyển status = false thay vì xóa
+            product.setStatus(false);
+            productRepository.save(product);
+            return;
         }
         //xóa các productItem
         productRepository.deleteSafeProductItems(productId);

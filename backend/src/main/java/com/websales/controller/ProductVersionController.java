@@ -42,6 +42,15 @@ public class ProductVersionController {
 
 
 
+    @PostMapping
+    ApiResponse<ProductVersionResponse> create(@RequestBody @Valid ProductVersionRequest request) {
+        ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
+        resp.setCode(1010);
+        resp.setMessage("Product version created successful");
+        resp.setResult(pvs.createProductVersion(request));
+        return resp;
+    }
+
     @PutMapping("/{id}")
       ApiResponse<ProductVersionResponse> update(@PathVariable String id, @RequestBody @Valid ProductVersionUpdateRequest request) {
           ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
@@ -61,6 +70,30 @@ public class ProductVersionController {
 
         return ApiResponse.<ProductVersionResponse>builder()
                 .result(response)
+                .build();
+    }
+
+    @DeleteMapping("/{idVersion}/image/{imageId}")
+    public ApiResponse<Void> deleteVersionImage(
+            @PathVariable("idVersion") String idVersion,
+            @PathVariable("imageId") Integer imageId) {
+        pvs.deleteVersionImage(idVersion, imageId);
+        return ApiResponse.<Void>builder()
+                .message("Image deleted successfully")
+                .build();
+    }
+
+    @DeleteMapping("/{idVersion}")
+    public ApiResponse<Void> deleteProductVersion(@PathVariable("idVersion") String idVersion) {
+        boolean hadSoldItems = pvs.hasSoldItems(idVersion);
+        pvs.deleteProductVersion(idVersion);
+        
+        String message = hadSoldItems
+            ? "Phiên bản đã được chuyển sang trạng thái tắt do có ràng buộc với đơn hàng"
+            : "Xóa phiên bản thành công";
+        
+        return ApiResponse.<Void>builder()
+                .message(message)
                 .build();
     }
 

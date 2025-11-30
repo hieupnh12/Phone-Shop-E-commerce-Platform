@@ -42,7 +42,7 @@ const ListProduct = () => {
       if (hasFilters) {
         response = await productService.searchProducts(filters, page, pageSize);
       } else {
-        response = await productService.getProducts(page, pageSize);
+        response = await productService.getProducts(page, pageSize, true);
       }
 
       // Handle both response.result and direct response
@@ -131,10 +131,12 @@ const ListProduct = () => {
   const handleConfirmDelete = async () => {
     try {
       setIsLoading(true);
-      await productService.deleteProduct(deleteModal.productId);
+      const response = await productService.deleteProduct(deleteModal.productId);
+      const message = response?.message || response?.data?.message || `Xóa sản phẩm "${deleteModal.productName}" thành công`;
+      
       setToast({
         type: 'success',
-        message: `Xóa sản phẩm "${deleteModal.productName}" thành công`,
+        message: message,
       });
       setDeleteModal({ isOpen: false, productId: null, productName: '' });
       fetchProducts(currentPage - 1, searchFilters);

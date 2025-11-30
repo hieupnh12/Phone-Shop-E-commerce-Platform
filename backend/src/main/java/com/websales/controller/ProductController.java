@@ -7,6 +7,8 @@ import com.websales.dto.request.ProductUpdateRequest;
 import com.websales.dto.response.ApiResponse;
 import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductResponse;
+import com.websales.entity.Product;
+import com.websales.repository.ProductRepository;
 import com.websales.service.CountQuantityOfAll;
 import com.websales.service.ProductService;
 import jakarta.validation.Valid;
@@ -33,6 +35,8 @@ import java.util.Map;
 public class ProductController {
     @Autowired
     private ProductService productService;
+    @Autowired
+    private ProductRepository productRepository;
     CountQuantityOfAll countQuantityOfAll;
 
         @PostMapping("/init")
@@ -73,10 +77,17 @@ public class ProductController {
 
 
     @GetMapping()
-     ApiResponse<Page<ProductFULLResponse>> getAllProduct(@RequestParam(defaultValue = "0") int page,
-                                                   @RequestParam(defaultValue = "0") int size) {
+     ApiResponse<Page<ProductFULLResponse>> getAllProduct(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "0") int size,
+            @RequestParam(required = false) Boolean forAdmin) {
 
         Pageable pageable = PageRequest.of(page, size);
+        if (Boolean.TRUE.equals(forAdmin)) {
+            return ApiResponse.<Page<ProductFULLResponse>>builder()
+                    .result(productService.listAllProductsForAdmin(pageable))
+                    .build();
+        }
         return ApiResponse.<Page<ProductFULLResponse>>builder()
                 .result(productService.listAllProducts(pageable))
                 .build();
@@ -99,12 +110,26 @@ public class ProductController {
         return api;
     }
 
+    @PostMapping(value = "/{idproduct}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProductResponse> uploadProductImage(
+            @PathVariable("idproduct") Long idproduct,
+            @RequestPart(value = "image") MultipartFile image) throws IOException {
+        ApiResponse<ProductResponse> api = new ApiResponse<>();
+        api.setResult(productService.uploadProductImage(idproduct, image));
+        return api;
+    }
 
     @DeleteMapping("/{idproduct}")
     public ApiResponse<Void> deleteProduct(@PathVariable("idproduct") Long idproduct) {
+        boolean hadOrderDetails = productRepository.hasOrderDetails(idproduct);
         productService.deleteProduct(idproduct);
-        return  ApiResponse.<Void>builder()
-                .message("DELETE PRODUCT SUCCESSFULLY")
+        
+        String message = hadOrderDetails 
+            ? "Sản phẩm đã được chuyển sang trạng thái tắt do có ràng buộc với đơn hàng"
+            : "Xóa sản phẩm thành công";
+        
+        return ApiResponse.<Void>builder()
+                .message(message)
                 .build();
     }
 
