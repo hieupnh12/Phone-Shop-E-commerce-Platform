@@ -85,10 +85,11 @@ public class OrderController {
     }
 
     @PutMapping("/{orderId}/status")
-    @PreAuthorize("hasAuthority('SCOPE_ORDER_UPDATE_STATUS')")
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_UPDATE_STATUS') or isAuthenticated()")
     public ApiResponse<OrderResponse> updateOrderStatus(
             @PathVariable Integer orderId,
-            @RequestBody Map<String, String> request) {
+            @RequestBody Map<String, String> request,
+            @AuthenticationPrincipal Jwt jwt) {
         String statusStr = request.get("status");
         if (statusStr == null) {
             return ApiResponse.<OrderResponse>builder()
@@ -105,10 +106,73 @@ public class OrderController {
                     .message("Invalid status: " + statusStr)
                     .build();
         }
-        Optional<Order> orderOpt = orderService.updateOrderStatus(orderId, status);
-        if (orderOpt.isPresent()) {
+
+        // Resource-based authorization: Kiểm tra quyền truy cập
+        Optional<Order> orderOpt = orderService.getOrderById(orderId);
+        if (orderOpt.isEmpty()) {
             return ApiResponse.<OrderResponse>builder()
-                    .result(orderMapper.toOrderResponse(orderOpt.get()))
+                    .code(404)
+                    .message("Order not found")
+                    .build();
+        }
+
+        Order order = orderOpt.get();
+
+        // Kiểm tra xem user có phải là employee không
+        boolean isEmployee = jwt.getClaims().containsKey("scopes") &&
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().startsWith("ROLE_"));
+
+        boolean hasUpdateStatusPermission = jwt.getClaims().containsKey("scopes") &&
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().equals("SCOPE_ORDER_UPDATE_STATUS"));
+
+        // Nếu không phải employee hoặc không có ORDER_UPDATE_STATUS permission
+        if (!isEmployee || !hasUpdateStatusPermission) {
+            // Đây là customer - chỉ cho phép hủy đơn hàng của chính mình
+            try {
+                Long jwtCustomerId = Long.valueOf(jwt.getSubject());
+
+                // Kiểm tra order thuộc về customer này
+                if (order.getCustomerId() == null || !jwtCustomerId.equals(order.getCustomerId().getCustomerId())) {
+                    return ApiResponse.<OrderResponse>builder()
+                            .code(403)
+                            .message("Bạn chỉ có thể hủy đơn hàng của chính mình")
+                            .build();
+                }
+
+                // Customer chỉ có thể hủy (CANCELED) hoặc hoàn trả (RETURNED)
+                // Không cho phép cập nhật sang status khác
+                if (status != OrderStatus.CANCELED && status != OrderStatus.RETURNED) {
+                    return ApiResponse.<OrderResponse>builder()
+                            .code(403)
+                            .message("Bạn chỉ có thể hủy hoặc hoàn trả đơn hàng, không thể cập nhật sang trạng thái khác")
+                            .build();
+                }
+
+                // Kiểm tra đơn hàng có thể hủy không (chỉ PENDING hoặc PAID mới hủy được)
+                OrderStatus currentStatus = order.getStatus();
+                if (currentStatus != OrderStatus.PENDING && currentStatus != OrderStatus.PAID) {
+                    return ApiResponse.<OrderResponse>builder()
+                            .code(400)
+                            .message("Chỉ có thể hủy đơn hàng ở trạng thái 'Đang xử lý' hoặc 'Đã thanh toán'")
+                            .build();
+                }
+            } catch (NumberFormatException e) {
+                return ApiResponse.<OrderResponse>builder()
+                        .code(403)
+                        .message("Không thể xác định quyền truy cập")
+                        .build();
+            }
+        }
+        // Employee với ORDER_UPDATE_STATUS có thể cập nhật bất kỳ status nào, không cần check
+
+        Optional<Order> updatedOrderOpt = orderService.updateOrderStatus(orderId, status);
+        if (updatedOrderOpt.isPresent()) {
+            return ApiResponse.<OrderResponse>builder()
+                    .result(orderMapper.toOrderResponse(updatedOrderOpt.get()))
                     .message("Order status updated successfully")
                     .build();
         } else {
@@ -124,7 +188,6 @@ public class OrderController {
     public ApiResponse<List<OrderResponse>> getOrdersByCustomer(
             @PathVariable Long customerId,
             @AuthenticationPrincipal Jwt jwt) {
-        // Resource-based authorization: Customer chỉ xem được đơn hàng của chính mình
         // Employee với ORDER_VIEW_ALL có thể xem tất cả
         boolean isEmployee = jwt.getClaims().containsKey("scopes") && 
             jwt.getClaims().get("scopes") != null &&
@@ -132,7 +195,6 @@ public class OrderController {
                 .anyMatch(s -> s.toString().startsWith("ROLE_"));
         
         if (!isEmployee) {
-            // Đây là customer token - chỉ cho phép xem đơn hàng của chính mình
             try {
                 Long jwtCustomerId = Long.valueOf(jwt.getSubject());
                 if (!jwtCustomerId.equals(customerId)) {
@@ -148,8 +210,7 @@ public class OrderController {
                         .build();
             }
         }
-        // Employee với ORDER_VIEW_ALL có thể xem tất cả, không cần check
-        
+
         var orders = orderService.getOrdersByCustomer(customerId).stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();
