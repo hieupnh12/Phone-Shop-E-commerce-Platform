@@ -155,6 +155,7 @@ const OrderDetailPage = () => {
             }
             
             // Gọi API để hủy đơn hàng
+            // Lưu ý: Backend cần tự động cộng lại số lượng sản phẩm vào kho khi status được cập nhật sang CANCELED hoặc RETURNED
             const response = await orderService.updateOrderStatus(orderId, newStatus);
             
             if (response?.result) {
@@ -234,18 +235,39 @@ const OrderDetailPage = () => {
     // Kiểm tra xem đơn hàng có thể hủy không
     const canCancelOrder = () => {
         if (!orderData) return false;
-        // Không thể hủy nếu đã bị hủy, đã giao hàng, hoặc đã nhận hàng
-        const status = orderData.status?.toLowerCase() || '';
-        const nonCancellableStatuses = ['cancelled', 'đã hủy', 'shipped', 'đang vận chuyển', 'delivered', 'đã giao hàng', 'returned', 'đã trả'];
         
-        // Nếu đã ở trạng thái không thể hủy
-        if (nonCancellableStatuses.some(s => status.includes(s.toLowerCase()))) {
+        // Lấy status từ nhiều nguồn để đảm bảo chính xác
+        // Ưu tiên: location.state > orderData (nếu có raw status) > orderData.status (text tiếng Việt)
+        const statusFromState = location.state?.status;
+        const statusFromData = orderData.status;
+        
+        // Normalize status về uppercase để so sánh chính xác
+        let statusNormalized = '';
+        if (statusFromState) {
+            // Status từ state thường là uppercase từ API (PENDING, PAID, SHIPPED, DELIVERED, etc.)
+            statusNormalized = (statusFromState || '').toUpperCase();
+        } else if (statusFromData) {
+            // Nếu status là text tiếng Việt, cần map lại
+            const statusText = (statusFromData || '').toLowerCase();
+            const statusMap = {
+                'đang xử lý': 'PENDING',
+                'đã thanh toán': 'PAID',
+                'đang vận chuyển': 'SHIPPED',
+                'đã giao hàng': 'DELIVERED',
+                'đã hủy': 'CANCELED',
+                'hoàn trả': 'RETURNED'
+            };
+            statusNormalized = statusMap[statusText] || statusText.toUpperCase();
+        }
+        
+        // Không thể hủy nếu status là SHIPPED, DELIVERED, CANCELED, CANCELLED, hoặc RETURNED
+        const nonCancellableStatuses = ['SHIPPED', 'DELIVERED', 'CANCELED', 'CANCELLED', 'RETURNED'];
+        if (statusNormalized && nonCancellableStatuses.includes(statusNormalized)) {
             return false;
         }
         
-        // Có thể hủy nếu đơn hàng ở trạng thái: pending, paid (nhưng chưa shipped)
-        const cancellableStatuses = ['pending', 'đang xử lý', 'paid', 'đã thanh toán'];
-        return cancellableStatuses.some(s => status.includes(s.toLowerCase()));
+        // Có thể hủy nếu đơn hàng ở trạng thái: PENDING, PAID (nhưng chưa SHIPPED)
+        return statusNormalized === 'PENDING' || statusNormalized === 'PAID';
     };
 
     const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderInfo) => {
