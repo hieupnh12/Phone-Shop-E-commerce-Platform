@@ -4,6 +4,7 @@ import orderService from "../../../services/orderService";
 import { Eye, X, RefreshCw, Search, Calendar, CheckCircle, Store, Plus } from "lucide-react";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
+import api from "../../../services/api";
 import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
 const STATUS_CONFIG = {
@@ -96,7 +97,16 @@ export default function Orders() {
       }
     } catch (err) {
       console.error("Fetch orders failed:", err);
-      showToast("Không thể tải danh sách đơn hàng!", "error");
+      // Hiển thị message từ backend nếu có, nếu không thì dùng message mặc định
+      const errorMessage = err?.message || err?.response?.data?.message || "Không thể tải danh sách đơn hàng!";
+      showToast(errorMessage, "error");
+      
+      // Nếu là lỗi 403, set orders về empty array
+      if (err?.response?.status === 403) {
+        setOrders([]);
+        setTotalPages(0);
+        setTotalElements(0);
+      }
     } finally {
       if (showLoading) {
         setLoadingOrders(false);
@@ -552,6 +562,8 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
   const [order, setOrder] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [isCOD, setIsCOD] = useState(true); // Flag để biết có phải COD không
 
   // Hàm kiểm tra xem có thể chuyển từ trạng thái hiện tại sang trạng thái mới không
   const canChangeStatus = (currentStatus, newStatus) => {
@@ -598,12 +610,49 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
 
   // Lấy danh sách các trạng thái hợp lệ có thể chuyển đến từ trạng thái hiện tại
   const getValidStatusOptions = (currentStatus) => {
-    if (!currentStatus) return STATUS_OPTIONS;
+    if (!currentStatus) {
+      // Nếu là COD, filter bỏ PAID
+      if (isCOD) {
+        return STATUS_OPTIONS.filter(option => option.value !== "PAID");
+      }
+      return STATUS_OPTIONS;
+    }
 
     const validOptions = STATUS_OPTIONS.filter((option) =>
       canChangeStatus(currentStatus, option.value)
     );
 
+    // Nếu là COD, filter bỏ PAID khỏi danh sách options
+    if (isCOD) {
+      const filteredOptions = validOptions.filter(option => option.value !== "PAID");
+      
+      // Đảm bảo trạng thái hiện tại luôn có trong danh sách (để hiển thị)
+      const currentOption = STATUS_OPTIONS.find(
+        (opt) => opt.value === currentStatus
+      );
+      if (currentOption) {
+        const alreadyIncluded = filteredOptions.find(
+          (opt) => opt.value === currentStatus
+        );
+        if (!alreadyIncluded) {
+          // Thêm trạng thái hiện tại vào đầu danh sách
+          filteredOptions.unshift(currentOption);
+        }
+      } else {
+        // Nếu trạng thái hiện tại không có trong STATUS_OPTIONS, tạo một option tạm
+        const tempOption = {
+          value: currentStatus,
+          label: STATUS_CONFIG[currentStatus]?.label || currentStatus,
+          badge:
+            STATUS_CONFIG[currentStatus]?.badge || "bg-gray-200 text-gray-700",
+        };
+        filteredOptions.unshift(tempOption);
+      }
+
+      return filteredOptions;
+    }
+
+    // Nếu không phải COD, giữ nguyên logic cũ
     // Đảm bảo trạng thái hiện tại luôn có trong danh sách (để hiển thị)
     const currentOption = STATUS_OPTIONS.find(
       (opt) => opt.value === currentStatus
@@ -633,10 +682,50 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
   const fetchOrder = async () => {
     try {
       setLoading(true);
-      const data = await orderService.getById(id);
-      if (data) {
-        setOrder(data);
-        setStatus(data.status || "PENDING");
+      // Fetch order và payment transactions song song
+      const [orderData, paymentTransactionsResponse] = await Promise.all([
+        orderService.getById(id),
+        api.get(`/payment/transaction/order/${id}`)
+          .then(res => res.data?.result || res.data || [])
+          .catch(() => [])
+      ]);
+
+      const paymentTransactions = Array.isArray(paymentTransactionsResponse) 
+        ? paymentTransactionsResponse 
+        : [];
+
+      if (orderData) {
+        setOrder(orderData);
+        setStatus(orderData.status || "PENDING");
+
+        // Lấy payment method từ transaction
+        let paymentMethodValue = "COD"; // Mặc định là COD
+        let isCODOrder = true; // Mặc định là COD
+        if (paymentTransactions && paymentTransactions.length > 0) {
+          const transaction = paymentTransactions[0];
+          const transactionCode = transaction?.transactionCode || '';
+          const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+          
+          // Kiểm tra transactionCode để xác định chính xác
+          if (transactionCode.startsWith('PAYOS-')) {
+            paymentMethodValue = "Payment (PayOS)";
+            isCODOrder = false;
+          } else if (transactionCode.startsWith('CODE-')) {
+            paymentMethodValue = "COD";
+            isCODOrder = true;
+          } else {
+            // Fallback: kiểm tra paymentMethodType
+            if (paymentMethodType === 'bank') {
+              paymentMethodValue = "Payment (PayOS)";
+              isCODOrder = false;
+            } else {
+              paymentMethodValue = "COD";
+              isCODOrder = true;
+            }
+          }
+        }
+        setPaymentMethod(paymentMethodValue);
+        setIsCOD(isCODOrder);
       } else {
         notify?.("Không thể tải thông tin đơn hàng!", "error");
       }
@@ -768,6 +857,17 @@ function OrderDetailPanel({ id, onClose, onUpdated, notify }) {
       <h3 className="font-semibold mt-4 mb-1">Tổng tiền</h3>
       <p className="text-lg font-bold text-blue-600">
         {order.totalAmount.toLocaleString("vi-VN")} ₫
+      </p>
+
+      <h3 className="font-semibold mt-4 mb-2">Phương thức thanh toán</h3>
+      <p className="text-sm text-gray-700 mb-4">
+        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+          paymentMethod === "COD" 
+            ? "bg-green-100 text-green-800" 
+            : "bg-blue-100 text-blue-800"
+        }`}>
+          {paymentMethod}
+        </span>
       </p>
 
       <h3 className="font-semibold mt-4 mb-2">Trạng thái đơn hàng</h3>

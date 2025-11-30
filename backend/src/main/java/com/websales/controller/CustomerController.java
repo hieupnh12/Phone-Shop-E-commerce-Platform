@@ -52,10 +52,11 @@ public class CustomerController {
         try {
             Long jwtCustomerId = Long.valueOf(jwt.getSubject());
             // Kiểm tra nếu là customer token và không có quyền MANAGE_ACCOUNT
+            // Lưu ý: Trong JWT, scope được lưu KHÔNG có prefix "SCOPE_"
             boolean hasManageAccount = jwt.getClaims().containsKey("scopes") && 
                 jwt.getClaims().get("scopes") != null &&
                 ((List<?>) jwt.getClaims().get("scopes")).stream()
-                    .anyMatch(s -> s.toString().equals("SCOPE_CUSTOMER_MANAGE_ACCOUNT"));
+                    .anyMatch(s -> s.toString().equals("CUSTOMER_MANAGE_ACCOUNT"));
             
             if (!hasManageAccount && !jwtCustomerId.equals(id)) {
                 return ApiResponse.<CustomerResponse>builder()

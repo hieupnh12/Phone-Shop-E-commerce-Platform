@@ -18,6 +18,7 @@ import orderService from "../../../services/orderService";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
 import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
+import api from "../../../services/api";
 
 const vnd = (n) =>
   new Intl.NumberFormat("vi-VN", {
@@ -290,12 +291,25 @@ export default function CreateInStoreOrder() {
     setPhoneError("");
     setEmailError("");
 
-    // Validation: chỉ cần fullName, phoneNumber và email đều không bắt buộc
+    // Validation: fullName và phoneNumber là bắt buộc
     if (!newCustomer.fullName || newCustomer.fullName.trim() === "") {
       setToast({
         message: "Vui lòng nhập họ và tên!",
         type: "error",
       });
+      return;
+    }
+
+    // Số điện thoại là bắt buộc
+    if (!newCustomer.phoneNumber || newCustomer.phoneNumber.trim() === "") {
+      setPhoneError("Số điện thoại là bắt buộc!");
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(newCustomer.phoneNumber.trim())) {
+      setPhoneError("Số điện thoại không hợp lệ! Phải bắt đầu bằng 0 và có 10 chữ số.");
       return;
     }
 
@@ -308,7 +322,7 @@ export default function CreateInStoreOrder() {
     try {
       const customerData = {
         fullName: newCustomer.fullName.trim(),
-        phoneNumber: newCustomer.phoneNumber.trim() || null,
+        phoneNumber: newCustomer.phoneNumber.trim(), // Bắt buộc, không null
         email: newCustomer.email.trim() || null,
         address: newCustomer.address.trim() || null,
       };
@@ -491,6 +505,7 @@ export default function CreateInStoreOrder() {
         totalAmount: Number(subtotal),
         status: "PENDING",
         isPaid: false,
+        paymentMethod: "cod", // Mặc định là COD cho đơn hàng tại cửa hàng
         orderDetails: cartItems.map((item) => ({
           productVersionId: String(item.productVersionId),
           unitPriceBefore: Number(item.unitPriceBefore || item.price),
@@ -499,7 +514,49 @@ export default function CreateInStoreOrder() {
         })),
       };
 
-      await orderService.createInStoreOrder(orderData);
+      const createdOrder = await orderService.createInStoreOrder(orderData);
+
+      // Tạo payment transaction với COD sau khi tạo order thành công
+      if (createdOrder?.orderId) {
+        try {
+          // Lấy payment methods để tìm COD
+          const paymentMethodsResponse = await api.get("/payment/method");
+          const paymentMethods = paymentMethodsResponse?.data?.result || paymentMethodsResponse?.data || paymentMethodsResponse?.result || [];
+          
+          // Tìm payment method COD
+          let codPaymentMethod = paymentMethods.find(
+            (pm) => pm.paymentMethodType === "cod" || pm.paymentMethodType === "COD"
+          );
+
+          // Nếu không tìm thấy, tạo mới
+          if (!codPaymentMethod) {
+            const createMethodResponse = await api.post("/payment/method", {
+              paymentMethodType: "cod",
+              provider: "COD",
+              status: true,
+            });
+            codPaymentMethod = createMethodResponse?.data?.result || createMethodResponse?.data || createMethodResponse?.result;
+          }
+
+          // Tạo payment transaction
+          const transactionCode = `CODE-${Date.now()}-${createdOrder.orderId}`;
+          const transactionData = {
+            idOrder: createdOrder.orderId,
+            idPaymentMethod: codPaymentMethod.paymentMethodId || codPaymentMethod.id,
+            amountUsed: Number(subtotal),
+            paymentStatus: "PENDING",
+            transactionType: "PAYMENT",
+            transactionCode: transactionCode,
+            responseMessage: "Chờ thanh toán khi nhận hàng",
+          };
+
+          await api.post("/payment/transaction", transactionData);
+        } catch (error) {
+          console.error("Error creating payment transaction:", error);
+          // Không throw error để không ảnh hưởng đến việc tạo order
+          // Payment transaction có thể được tạo sau
+        }
+      }
 
       setToast({
         message: "Tạo đơn hàng thành công!",
@@ -1135,7 +1192,7 @@ export default function CreateInStoreOrder() {
               </div>
               <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Số điện thoại {!newCustomer.email || newCustomer.email.trim() === "" ? "*" : ""} (Bắt đầu bằng 0, 10 chữ số)
+                    Số điện thoại * (Bắt đầu bằng 0, 10 chữ số)
                 </label>
                 <input
                   type="text"
@@ -1146,6 +1203,7 @@ export default function CreateInStoreOrder() {
                   }}
                     placeholder="0123456789"
                     maxLength={10}
+                    required
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all shadow-sm hover:shadow-md ${
                       phoneError 
                         ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
@@ -1161,7 +1219,7 @@ export default function CreateInStoreOrder() {
               </div>
               <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email {!newCustomer.phoneNumber || newCustomer.phoneNumber.trim() === "" ? "*" : ""}
+                  Email (Tùy chọn)
                 </label>
                 <input
                   type="email"
