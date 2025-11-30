@@ -184,8 +184,13 @@ useEffect(() => {
   };
 
   const validateForm = () => {
-    if (!formData.nameProduct) {
+    if (!formData.nameProduct || formData.nameProduct.trim() === "") {
       setToast({ type: "error", message: "Tên sản phẩm không được để trống" });
+      return false;
+    }
+
+    if (formData.nameProduct.length > 255) {
+      setToast({ type: "error", message: "Tên sản phẩm không được vượt quá 255 ký tự" });
       return false;
     }
 
@@ -209,8 +214,83 @@ useEffect(() => {
       return false;
     }
 
+    if (formData.battery !== null && formData.battery !== undefined && formData.battery !== "") {
+      const batteryStr = String(formData.battery).trim();
+      if (batteryStr !== "") {
+        const batteryNum = parseInt(batteryStr);
+        if (isNaN(batteryNum) || batteryNum <= 0) {
+          setToast({ type: "error", message: "Dung lượng pin phải là số nguyên dương" });
+          return false;
+        }
+      }
+    }
+
+    if (formData.scanFrequency !== null && formData.scanFrequency !== undefined && formData.scanFrequency !== "") {
+      const scanFreqStr = String(formData.scanFrequency).trim();
+      if (scanFreqStr !== "") {
+        const scanFreq = parseInt(scanFreqStr);
+        if (isNaN(scanFreq) || scanFreq <= 0) {
+          setToast({ type: "error", message: "Tần số quét phải là số nguyên dương" });
+          return false;
+        }
+      }
+    }
+
+    if (formData.screenSize !== null && formData.screenSize !== undefined && formData.screenSize !== "") {
+      const screenSizeStr = String(formData.screenSize).trim();
+      if (screenSizeStr !== "") {
+        const screenSizeNum = parseFloat(screenSizeStr);
+        if (isNaN(screenSizeNum) || screenSizeNum <= 0) {
+          setToast({ type: "error", message: "Kích thước màn hình phải là số dương" });
+          return false;
+        }
+      }
+    }
+
+    if (formData.screenResolution && formData.screenResolution.length > 100) {
+      setToast({ type: "error", message: "Độ phân giải màn hình không được vượt quá 100 ký tự" });
+      return false;
+    }
+
+    if (formData.screenTech && formData.screenTech.length > 100) {
+      setToast({ type: "error", message: "Công nghệ màn hình không được vượt quá 100 ký tự" });
+      return false;
+    }
+
+    if (formData.chipset && formData.chipset.length > 255) {
+      setToast({ type: "error", message: "Chipset không được vượt quá 255 ký tự" });
+      return false;
+    }
+
+    if (formData.rearCamera && formData.rearCamera.length > 255) {
+      setToast({ type: "error", message: "Thông tin camera sau không được vượt quá 255 ký tự" });
+      return false;
+    }
+
+    if (formData.frontCamera && formData.frontCamera.length > 255) {
+      setToast({ type: "error", message: "Thông tin camera trước không được vượt quá 255 ký tự" });
+      return false;
+    }
+
+    if (formData.warrantyPeriod !== null && formData.warrantyPeriod !== undefined && formData.warrantyPeriod !== "") {
+      const warrantyStr = String(formData.warrantyPeriod).trim();
+      if (warrantyStr !== "") {
+        const warrantyNum = parseInt(warrantyStr);
+        if (isNaN(warrantyNum) || warrantyNum < 0) {
+          setToast({ type: "error", message: "Thời hạn bảo hành phải là số nguyên không âm" });
+          return false;
+        }
+      }
+    }
+
     if (versions.length === 0) {
       setToast({ type: "error", message: "Vui lòng thêm ít nhất 1 phiên bản" });
+      return false;
+    }
+
+    const hasActiveVersion = versions.some(v => v.status === true);
+    if (!hasActiveVersion) {
+      setToast({ type: "error", message: "Phải có ít nhất 1 phiên bản đang hoạt động" });
       return false;
     }
 

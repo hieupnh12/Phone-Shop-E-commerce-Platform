@@ -88,24 +88,72 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
   };
 
   const validateForm = () => {
-    if (!formData.idRam || !formData.idRom || !formData.idColor) {
-      setToast({ type: 'error', message: 'Vui lòng chọn RAM, ROM, Màu sắc' });
+    if (!formData.idRam) {
+      setToast({ type: 'error', message: 'Vui lòng chọn RAM' });
       return false;
     }
 
-    if (!formData.importPrice || parseFloat(formData.importPrice) < 0) {
-      setToast({ type: 'error', message: 'Giá nhập phải là số dương' });
+    const ramId = parseInt(formData.idRam);
+    if (isNaN(ramId) || ramId <= 0) {
+      setToast({ type: 'error', message: 'RAM không hợp lệ' });
       return false;
     }
 
-    if (!formData.exportPrice || parseFloat(formData.exportPrice) < 0) {
-      setToast({ type: 'error', message: 'Giá bán phải là số dương' });
+    if (!formData.idRom) {
+      setToast({ type: 'error', message: 'Vui lòng chọn ROM' });
       return false;
     }
 
-    if (!formData.stockQuantity || parseInt(formData.stockQuantity) < 0) {
-      setToast({ type: 'error', message: t('common.invalidQuantity') });
+    const romId = parseInt(formData.idRom);
+    if (isNaN(romId) || romId <= 0) {
+      setToast({ type: 'error', message: 'ROM không hợp lệ' });
       return false;
+    }
+
+    if (!formData.idColor) {
+      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc' });
+      return false;
+    }
+
+    const colorId = parseInt(formData.idColor);
+    if (isNaN(colorId) || colorId <= 0) {
+      setToast({ type: 'error', message: 'Màu sắc không hợp lệ' });
+      return false;
+    }
+
+    if (!formData.importPrice || formData.importPrice.toString().trim() === '') {
+      setToast({ type: 'error', message: 'Giá nhập không được để trống' });
+      return false;
+    }
+
+    const importPriceNum = parseFloat(formData.importPrice);
+    if (isNaN(importPriceNum) || importPriceNum < 0) {
+      setToast({ type: 'error', message: 'Giá nhập phải là số không âm' });
+      return false;
+    }
+
+    if (!formData.exportPrice || formData.exportPrice.toString().trim() === '') {
+      setToast({ type: 'error', message: 'Giá bán không được để trống' });
+      return false;
+    }
+
+    const exportPriceNum = parseFloat(formData.exportPrice);
+    if (isNaN(exportPriceNum) || exportPriceNum < 0) {
+      setToast({ type: 'error', message: 'Giá bán phải là số không âm' });
+      return false;
+    }
+
+    if (exportPriceNum < importPriceNum) {
+      setToast({ type: 'error', message: 'Giá bán phải lớn hơn hoặc bằng giá nhập' });
+      return false;
+    }
+
+    if (formData.stockQuantity && formData.stockQuantity.toString().trim() !== '') {
+      const stockQty = parseInt(formData.stockQuantity);
+      if (isNaN(stockQty) || stockQty < 0) {
+        setToast({ type: 'error', message: 'Số lượng tồn kho phải là số nguyên không âm' });
+        return false;
+      }
     }
 
     return true;
@@ -114,29 +162,56 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
   const handleAddOrUpdate = async () => {
     if (!validateForm()) return;
 
+    const ramId = parseInt(formData.idRam);
+    const romId = parseInt(formData.idRom);
+    const colorId = parseInt(formData.idColor);
+
+    if (editingIndex === null) {
+      const isDuplicate = versions.some((v) => 
+        parseInt(v.idRam) === ramId && 
+        parseInt(v.idRom) === romId && 
+        parseInt(v.idColor) === colorId
+      );
+
+      if (isDuplicate) {
+        setToast({ type: 'error', message: 'Phiên bản với RAM, ROM, Màu sắc này đã tồn tại' });
+        return;
+      }
+    } else {
+      const isDuplicate = versions.some((v, index) => 
+        index !== editingIndex &&
+        parseInt(v.idRam) === ramId && 
+        parseInt(v.idRom) === romId && 
+        parseInt(v.idColor) === colorId
+      );
+
+      if (isDuplicate) {
+        setToast({ type: 'error', message: 'Phiên bản với RAM, ROM, Màu sắc này đã tồn tại' });
+        return;
+      }
+    }
+
     const newVersion = {
-      idRam: parseInt(formData.idRam),
-      idRom: parseInt(formData.idRom),
-      idColor: parseInt(formData.idColor),
+      idRam: ramId,
+      idRom: romId,
+      idColor: colorId,
       importPrice: parseFloat(formData.importPrice),
       exportPrice: parseFloat(formData.exportPrice),
-      stockQuantity: parseInt(formData.stockQuantity),
+      stockQuantity: formData.stockQuantity ? parseInt(formData.stockQuantity) : 0,
       status: formData.status,
       images: formData.images || [],
-      deletedImageIds: formData.deletedImageIds || [], // Pass deleted image IDs
+      deletedImageIds: formData.deletedImageIds || [],
       Items: [],
     };
 
-    // Keep idVersion/idProductVersion when editing
     if (editingIndex !== null && currentVersionId) {
       newVersion.idProductVersion = currentVersionId;
-      newVersion.idVersion = currentVersionId; // Also set idVersion for consistency
+      newVersion.idVersion = currentVersionId;
     }
 
     try {
       if (editingIndex !== null) {
         const updatedVersions = [...versions];
-        // Preserve existing idVersion/idProductVersion if not in newVersion
         const existingVersion = updatedVersions[editingIndex];
         if (existingVersion.idProductVersion && !newVersion.idProductVersion) {
           newVersion.idProductVersion = existingVersion.idProductVersion;

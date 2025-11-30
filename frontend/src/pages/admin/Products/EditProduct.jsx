@@ -168,11 +168,14 @@ const EditProduct = () => {
               idColor: version.idColor,
               importPrice: version.importPrice,
               exportPrice: version.exportPrice,
+              stockQuantity: version.stockQuantity !== undefined ? version.stockQuantity : null,
+              status: version.status !== undefined ? version.status : null,
             };
             await productService.updateProductVersion(versionId, versionUpdateData);
             console.log(`✓ Updated version ${versionId}`);
           } catch (error) {
             console.warn(`⚠ Failed to update version ${versionId}:`, error);
+            throw error;
           }
         } else {
           // Create new version
