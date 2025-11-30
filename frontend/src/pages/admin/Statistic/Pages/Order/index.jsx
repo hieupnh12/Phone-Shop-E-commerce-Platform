@@ -244,7 +244,6 @@ export default function OrderStatistic() {
               </div>
 
               {/* Date Range */}
-             {/* Date Range */}
 <div className="grid grid-cols-2 gap-3">
   <div>
     <label className="text-xs text-gray-600 font-medium mb-1 block">
@@ -254,7 +253,7 @@ export default function OrderStatistic() {
       type="date"
       onClick={() => setDateFilter("")}
       value={startDate}
-      max={endDate || undefined} // Không cho chọn sau endDate
+      max={endDate || new Date().toISOString().split("T")[0]} // Không cho chọn sau endDate
       onChange={(e) => setStartDate(e.target.value)}
       className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
     />
@@ -267,6 +266,7 @@ export default function OrderStatistic() {
       type="date"
       value={endDate}
       min={startDate || undefined} // Không cho chọn trước startDate
+       max={new Date().toISOString().split("T")[0]}
       onChange={(e) => {
         setEndDate(e.target.value);
         setDateFilter("");
@@ -300,7 +300,7 @@ export default function OrderStatistic() {
               </select>
 
               {/* Search Filters */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="relative">
                   <Search
                     className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -327,7 +327,7 @@ export default function OrderStatistic() {
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

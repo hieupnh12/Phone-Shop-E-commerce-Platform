@@ -27,11 +27,12 @@ import { useQuery } from "@tanstack/react-query";
 import statisticApi from "../../../../../services/statisticService";
 import { useAuth } from "../../../../../reducers";
 import useDebounce from "../../../../../contexts/useDebounce";
+import RangeTypeSelect from "../../../../../components/common/RangeTypeSelect";
 
 export default function RevenueStatistic() {
   const [startDate, setStartDate] = useState("2024-10-01");
   const [endDate, setEndDate] = useState("2024-10-31");
-  const [timeRange, setTimeRange] = useState("month");
+  const [timeRange, setTimeRange] = useState("");
 
   const [filters, setFilters] = useState({
     startDate: "",
@@ -43,6 +44,7 @@ export default function RevenueStatistic() {
     size: 2,
     search: "",
     sort: "create_datetime,desc",
+    rangeType: "none",
   });
   const debouncedSearch = useDebounce(filters.search, 500); // 500ms
 
@@ -78,40 +80,38 @@ export default function RevenueStatistic() {
   const goToPage = (newPage) => {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
-  console.log("có", data);
 
   if (isLoading || authLoading) return <Loading type="spinner" />;
   if (isError) return <Loading message={isError.message} type="dots" />;
 
   // Dữ liệu biểu đồ doanh thu theo thời gian
   const revenueTimeData = data?.result?.chartData ?? [];
+  
 
-  const handleExport = (type) => {
-    alert(`Xuất dữ liệu dưới dạng ${type}`);
-  };
-
-  const handleTimeRangeChange = (range) => {
+ const handleTimeRangeChange = (range) => {
   const today = new Date();
   let start, end;
 
   if (range === "day") {
-    // Ngày hôm nay
-    start = end = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+
+    start = `${yyyy}-${mm}-${dd}T00:00:00`;
+    end   = `${yyyy}-${mm}-${dd}T23:59:59`;
+
   } else if (range === "month") {
-    // Tháng này: từ ngày 1 đến ngày cuối tháng
     const year = today.getFullYear();
     const month = today.getMonth(); // 0-11
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0); // ngày cuối tháng
-    start = firstDay.toISOString().split("T")[0];
-    end = lastDay.toISOString().split("T")[0];
+    const lastDay = new Date(year, month + 1, 0).getDate();
+
+    start = `${year}-${String(month + 1).padStart(2, "0")}-01T00:00:00`;
+    end   = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}T23:59:59`;
+
   } else if (range === "year") {
-    // Năm này: từ ngày 01/01 đến 31/12
     const year = today.getFullYear();
-    const firstDay = new Date(year, 0, 1);
-    const lastDay = new Date(year, 11, 31);
-    start = firstDay.toISOString().split("T")[0];
-    end = lastDay.toISOString().split("T")[0];
+    start = `${year}-01-01T00:00:00`;
+    end   = `${year}-12-31T23:59:59`;
   }
 
   setTimeRange(range);
@@ -123,48 +123,46 @@ export default function RevenueStatistic() {
   }));
 };
 
+  const handleExportExcel = async () => {
+    try {
+      // Clone filters và set page = 0, size = max
+      const exportFilters = { ...filters, page: 0, size: 10000 }; // 10000 tuỳ số lượng max
+      const res = await statisticApi.getRevenue(exportFilters);
+      
+      const exportData = res?.result.orders.content || [];
+      if (exportData.length === 0) {
+        alert("Không có dữ liệu để xuất Excel!");
+        return;
+      }
 
-const handleExportExcel = async () => {
-  try {
-    // Clone filters và set page = 0, size = max
-    const exportFilters = { ...filters, page: 0, size: 10000 }; // 10000 tuỳ số lượng max
-    const res = await statisticApi.getRevenue(exportFilters);
+      // Tạo workbook
+      const wb = XLSX.utils.book_new();
 
-    const exportData = res?.result.orders.content || [];
-    if (exportData.length === 0) {
-      alert("Không có dữ liệu để xuất Excel!");
-      return;
+      // Chuyển dữ liệu thành sheet
+      const wsData = exportData.map((item) => ({
+        "Mã đơn hàng": item.orderId,
+        "Ngày hoàn thành": item.date,
+        "Khách hàng": item.paymentMethod,
+        Giá: item.price,
+        "Sản phẩm": item.product,
+        "Lợi nhuận": item.profit,
+        "Số lượng": item.quantity,
+        "Doanh thu": item.revenue,
+        "Trạng thái": item.status,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, "DoanhThu");
+
+      // Tải file
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbout], { type: "application/octet-stream" });
+      saveAs(blob, "BaoCaoDoanhThu.xlsx");
+    } catch (err) {
+      console.error(err);
+      alert("Xuất báo cáo thất bại!");
     }
-
-    // Tạo workbook
-    const wb = XLSX.utils.book_new();
-
-    // Chuyển dữ liệu thành sheet
-    const wsData = exportData.map((item) => ({
-      "Mã đơn hàng": item.orderId,
-      "Ngày hoàn thành": item.date,
-      "Khách hàng": item.paymentMethod,
-      "Giá": item.price,
-      "Sản phẩm": item.product,
-      "Lợi nhuận": item.profit,
-      "Số lượng": item.quantity,
-      "Doanh thu": item.revenue,
-      "Trạng thái": item.status,
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, "DoanhThu");
-
-    // Tải file
-    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([wbout], { type: "application/octet-stream" });
-    saveAs(blob, "BaoCaoDoanhThu.xlsx");
-  } catch (err) {
-    console.error(err);
-    alert("Xuất báo cáo thất bại!");
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
@@ -244,45 +242,64 @@ const handleExportExcel = async () => {
               </div>
             </div>
 
-          {/* Từ ngày */}
-<div>
-  <label className="text-xs text-gray-600 font-medium mb-2 block">
-    Từ ngày
-  </label>
-  <input
-    type="date"
-    value={filters.startDate}
-    max={filters.endDate || undefined} // không cho chọn sau endDate
-    onChange={(e) =>
-      setFilters((prev) => ({
-        ...prev,
-        startDate: e.target.value,
-        page: 0,
-      }))
-    }
-    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-  />
-</div>
+            {/* Dropdown kiểu lọc */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Kiểu lọc thời gian
+              </label>
+              <RangeTypeSelect
+                value={filters.rangeType ?? "none"}
+                onChange={(newValue) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    rangeType: newValue,
+                  }))
+                }
+              />
+            </div>
 
-{/* Đến ngày */}
-<div>
-  <label className="text-xs text-gray-600 font-medium mb-2 block">
-    Đến ngày
-  </label>
-  <input
-    type="date"
-    value={filters.endDate}
-    min={filters.startDate || undefined} // không cho chọn trước startDate
-    onChange={(e) =>
-      setFilters((prev) => ({
-        ...prev,
-        endDate: e.target.value,
-        page: 0,
-      }))
-    }
-    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-  />
-</div>
+            {/* Từ ngày */}
+            <div>
+              <label className="text-xs text-gray-600 font-medium mb-2 block">
+                Từ ngày
+              </label>
+              <input
+                type="date"
+                onClick={() => setTimeRange("")}
+                value={filters.startDate}
+                max={filters.endDate || new Date().toISOString().split("T")[0]}  // không cho chọn sau endDate
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    startDate: e.target.value,
+                    page: 0,
+                  }))
+                }
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
+
+            {/* Đến ngày */}
+            <div>
+              <label className="text-xs text-gray-600 font-medium mb-2 block">
+                Đến ngày
+              </label>
+              <input
+                type="date"
+                onClick={() => setTimeRange("")}
+                value={filters.endDate}
+                min={filters.startDate || undefined} // không cho chọn trước startDate
+                max={new Date().toISOString().split("T")[0]}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    endDate: e.target.value,
+                    page: 0,
+                  }))
+                }
+                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
 
             {/* Search */}
             <div className="lg:col-span-2">
@@ -298,6 +315,7 @@ const handleExportExcel = async () => {
                   type="text"
                   placeholder="Mã đơn, tên sản phẩm, khách hàng..."
                   value={filters?.search}
+                  maxLength={50}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,

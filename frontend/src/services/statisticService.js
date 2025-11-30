@@ -33,6 +33,7 @@ const statisticApi = {
       size,
       search,
       sort,
+      rangeType
     } = options;
 
     const params = new URLSearchParams();
@@ -52,7 +53,8 @@ const statisticApi = {
       params.append("orderStatus", orderStatus);
     if (paymentMethodId && paymentMethodId !== "all")
       params.append("paymentMethodId", paymentMethodId);
-
+    if (rangeType && rangeType !== "none")
+      params.append("rangeType", rangeType);
     // page và size luôn gửi
 
     params.append("page", page ?? 0);

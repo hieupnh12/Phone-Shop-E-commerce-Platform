@@ -47,7 +47,7 @@ const Customers = () => {
     },
     staleTime: 0,
   });
-  console.log("query", keyword);
+  console.log("query", mockResponse);
 
   const goToPage = (page) => {
     setCurrentPage(page);
