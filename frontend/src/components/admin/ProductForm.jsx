@@ -77,12 +77,11 @@ useEffect(() => {
         rearCamera: product.rearCamera || "",
         frontCamera: product.frontCamera || "",
         warrantyPeriod: product.warrantyPeriod || "",
-        brandId: product.brandId || "",
-        originId: product.originId || "",
-        operatingSystemId: product.operatingSystemId || "",
-        
-        warehouseAreaId: product.warehouseAreaId || "",
-        categoryId: product.categoryId || "",
+        brandId: String(product.brandId || ""),
+        originId: String(product.originId || ""),
+        operatingSystemId: String(product.operatingSystemId || ""),
+        warehouseAreaId: String(product.warehouseAreaId || ""),
+        categoryId: String(product.categoryId || ""),
         status: product.status !== undefined ? product.status : true,
       });
 
@@ -98,6 +97,7 @@ useEffect(() => {
       ) {
         setVersions(
           product.productVersionResponses.map((v) => ({
+            idProductVersion: v.idVersion || v.idProductVersion, // Backend returns idVersion
             idRam: v.ramName
               ? ramList.find((r) => r.nameRam === v.ramName)?.idRam
               : "",
@@ -111,6 +111,7 @@ useEffect(() => {
             exportPrice: v.exportPrice,
             stockQuantity: v.stockQuantity,
             status: v.status,
+            images: v.images || [],
           }))
         );
       }
@@ -221,6 +222,29 @@ useEffect(() => {
 
     if (!validateForm()) return;
 
+    // Filter out images from versions before sending to backend
+    // For new versions, don't include idProductVersion; for editing, include it
+    const versionsForBackend = versions.map(v => {
+      const versionData = {
+        idProduct: formData.idProduct || null, // Include product ID for version creation
+        idRam: v.idRam,
+        idRom: v.idRom,
+        idColor: v.idColor,
+        importPrice: v.importPrice,
+        exportPrice: v.exportPrice,
+        stockQuantity: v.stockQuantity,
+        status: v.status,
+        Items: v.Items || [],
+      };
+      
+      // Only include idProductVersion if it's an existing version (editing)
+      if (v.idProductVersion) {
+        versionData.idProductVersion = v.idProductVersion;
+      }
+      
+      return versionData;
+    });
+
     const productPayload = {
       idProduct: formData.idProduct,
       products: {
@@ -244,12 +268,18 @@ useEffect(() => {
         stockQuantity: 0,
         status: false,
       },
-      versions: versions,
+      versions: versionsForBackend,
     };
+
+    console.log("📝 ProductForm - versionsForBackend:", versionsForBackend);
+    console.log("📝 ProductForm - productPayload:", productPayload);
+    console.log("📝 ProductForm - versionsWithImages:", versions);
 
     onSubmit({
       payload: productPayload,
       image: imageFile,
+      versionsWithImages: versions, // Pass original versions with images for client-side upload
+      // Each version may have deletedImageIds property
     });
   };
 

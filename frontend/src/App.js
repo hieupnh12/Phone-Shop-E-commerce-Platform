@@ -12,6 +12,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
+import Contact from "./pages/client/Contact";
 import AdminRoute from "./routes/AdminRoute";
 import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
@@ -50,6 +51,7 @@ import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
 import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
 import SetPasswordPage from "./pages/auth/SetPasswordPage";
 import Orders from "./pages/admin/Order";
+import CreateInStoreOrder from "./pages/admin/Order/CreateInStoreOrder";
 import MyFeedbacksPage from "./pages/client/MyFeedbacks";
 import UserHomePage from "./pages/client/UserHomePage";
 import Customers from "./pages/admin/Customer";
@@ -96,6 +98,7 @@ const router = createBrowserRouter(
         { path: "payment/success", element: <PaymentSuccess /> },
         { path: "payment/cancel", element: <PaymentCancel /> },
         { path: "orders", element: <OrderHistory /> },
+        { path: "contact", element: <Contact /> },
 
         {
           path: "profile",
@@ -142,6 +145,7 @@ const router = createBrowserRouter(
             },
 
             { path: "orders", element: <Orders /> },
+            { path: "orders/create-in-store", element: <CreateInStoreOrder /> },
 
             {
               path: "statistic",

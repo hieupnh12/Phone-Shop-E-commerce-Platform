@@ -228,10 +228,16 @@ public class ProductService {
 //        // Cập nhật số lượng tồn kho
 //        updateProductStockQuantity(savedProduct.getProductId());
 
+        // Set status = true cho product sau khi tạo versions thành công
+        if (!savedVersions.isEmpty()) {
+            savedProduct.setStatus(true);
+            savedProduct = productRepository.save(savedProduct);
+        }
+
         // Tạo và trả về response
         ProductFULLResponse response = productMapper.toProductFULLResponse(savedProduct);
         response.setProductVersionResponses(savedVersions);
-        response.setStatus(true);
+        response.setStatus(savedProduct.getStatus());
 
         return response;
     }

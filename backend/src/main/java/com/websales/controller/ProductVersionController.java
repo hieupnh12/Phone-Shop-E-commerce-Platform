@@ -32,6 +32,15 @@ public class ProductVersionController {
     private ProductService productService;
 
 
+    @PostMapping
+    ApiResponse<ProductVersionResponse> create(@RequestBody @Valid ProductVersionRequest request) {
+        ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
+        resp.setCode(1010);
+        resp.setMessage("Product version created successful");
+        resp.setResult(pvs.createProductVersion(request));
+        return resp;
+    }
+
     @PutMapping("/{id}")
       ApiResponse<ProductVersionResponse> update(@PathVariable String id, @RequestBody @Valid ProductVersionUpdateRequest request) {
           ApiResponse<ProductVersionResponse> resp = new ApiResponse<>();
@@ -51,6 +60,24 @@ public class ProductVersionController {
 
         return ApiResponse.<ProductVersionResponse>builder()
                 .result(response)
+                .build();
+    }
+
+    @DeleteMapping("/{idVersion}/image/{imageId}")
+    public ApiResponse<Void> deleteVersionImage(
+            @PathVariable("idVersion") String idVersion,
+            @PathVariable("imageId") Integer imageId) {
+        pvs.deleteVersionImage(idVersion, imageId);
+        return ApiResponse.<Void>builder()
+                .message("Image deleted successfully")
+                .build();
+    }
+
+    @DeleteMapping("/{idVersion}")
+    public ApiResponse<Void> deleteProductVersion(@PathVariable("idVersion") String idVersion) {
+        pvs.deleteProductVersion(idVersion);
+        return ApiResponse.<Void>builder()
+                .message("Product version deleted successfully")
                 .build();
     }
 

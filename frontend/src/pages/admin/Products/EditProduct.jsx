@@ -29,6 +29,7 @@ const EditProduct = () => {
 
   useEffect(() => {
     fetchAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchAllData = async () => {
@@ -44,6 +45,7 @@ const EditProduct = () => {
         romsRes,
         colorsRes,
         categoriesRes,
+        productRes,
       ] = await Promise.all([
         axiosClient.get('/brand'),
         axiosClient.get('/origin'),
@@ -53,6 +55,7 @@ const EditProduct = () => {
         axiosClient.get('/rom'),
         axiosClient.get('/color'),
         axiosClient.get('/category'),
+        axiosClient.get(`/product/${id}`),
       ]);
 
       const normalizeCategories = (res) => {
@@ -101,11 +104,29 @@ const EditProduct = () => {
         colors: mapColors(colorsRes),
       });
 
-      const listRes = await axiosClient.get('/product', { params: { page: 0, size: 1000 } });
-      const list = listRes.result?.content || listRes.content || [];
-      const found = list.find(p => String(p.idProduct) === String(id));
-      if (found) {
-        setProduct(found);
+      // Fetch product directly by ID
+      const product = productRes?.result || productRes;
+      if (product && product.idProduct) {
+        // Map brandId, originId, etc. from names
+        const mappedProduct = {
+          ...product,
+          brandId: product.brandName 
+            ? mapBrands(brandsRes).find(b => b.nameBrand === product.brandName)?.idBrand 
+            : null,
+          originId: product.originName 
+            ? mapOrigins(originsRes).find(o => o.nameOrigin === product.originName)?.idOrigin 
+            : null,
+          operatingSystemId: product.operatingSystemName 
+            ? mapOperatingSystems(osRes).find(o => o.nameOS === product.operatingSystemName)?.idOS 
+            : null,
+          warehouseAreaId: product.warehouseAreaName 
+            ? mapWarehouses(warehousesRes).find(w => w.nameWarehouse === product.warehouseAreaName)?.idWarehouse 
+            : null,
+          categoryId: product.categoryName 
+            ? normalizeCategories(categoriesRes).find(c => c.nameCategory === product.categoryName)?.idCategory 
+            : null,
+        };
+        setProduct(mappedProduct);
       } else {
         setToast({ type: 'error', message: 'Không tìm thấy sản phẩm' });
       }
@@ -120,16 +141,124 @@ const EditProduct = () => {
     }
   };
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (formDataWithImage) => {
     try {
       setIsLoading(true);
 
-      // Cách 2: Update product data + upload image riêng
+      // Step 1 - Update product data + product image
       await productService.updateProductWithImage(
         id,
-        formData.payload.products,
-        formData.image
+        formDataWithImage.payload.products,
+        formDataWithImage.image
       );
+
+      // Step 2 - Update/Create versions if needed
+      const versionsWithImages = formDataWithImage.versionsWithImages || formDataWithImage.payload?.versions || [];
+      
+      // Process each version: update existing or create new
+      for (const version of versionsWithImages) {
+        const versionId = version.idVersion || version.idProductVersion;
+        
+        if (versionId) {
+          // Update existing version
+          try {
+            const versionUpdateData = {
+              idRam: version.idRam,
+              idRom: version.idRom,
+              idColor: version.idColor,
+              importPrice: version.importPrice,
+              exportPrice: version.exportPrice,
+            };
+            await productService.updateProductVersion(versionId, versionUpdateData);
+            console.log(`✓ Updated version ${versionId}`);
+          } catch (error) {
+            console.warn(`⚠ Failed to update version ${versionId}:`, error);
+          }
+        } else {
+          // Create new version
+          try {
+            const versionCreateData = {
+              idProduct: parseInt(id),
+              idRam: version.idRam,
+              idRom: version.idRom,
+              idColor: version.idColor,
+              importPrice: version.importPrice,
+              exportPrice: version.exportPrice,
+              stockQuantity: version.stockQuantity || 0,
+              status: version.status !== undefined ? version.status : true,
+              Items: version.Items || [],
+            };
+            const createdVersion = await productService.createProductVersion(versionCreateData);
+            // Update version object with new ID
+            version.idVersion = createdVersion.result?.idVersion || createdVersion.result?.idProductVersion;
+            version.idProductVersion = version.idVersion;
+            console.log(`✓ Created new version: ${version.idVersion}`);
+          } catch (error) {
+            console.error(`❌ Failed to create version:`, error);
+            console.error(`   Error details:`, error.response?.data || error.message);
+          }
+        }
+      }
+
+      // Step 3 - Delete images that were marked for deletion
+      for (let i = 0; i < versionsWithImages.length; i++) {
+        const versionFromForm = versionsWithImages[i];
+        const versionId = versionFromForm.idVersion || versionFromForm.idProductVersion;
+        const deletedImageIds = versionFromForm.deletedImageIds || [];
+        
+        if (versionId && deletedImageIds.length > 0) {
+          console.log(`🗑 Deleting ${deletedImageIds.length} images for version ${versionId}`);
+          for (const imageId of deletedImageIds) {
+            try {
+              
+              const imageIdInt = typeof imageId === 'string' ? parseInt(imageId, 10) : imageId;
+              if (isNaN(imageIdInt)) {
+                console.warn(`⚠ Invalid imageId: ${imageId}, skipping`);
+                continue;
+              }
+              await productService.deleteVersionImage(versionId, imageIdInt);
+              console.log(`✓ Deleted image ${imageIdInt} for version ${versionId}`);
+            } catch (deleteError) {
+              console.error(`❌ Failed to delete image ${imageId} for version ${versionId}:`, deleteError);
+              // Continue with other deletions
+            }
+          }
+        }
+      }
+
+      // Step 4 - Upload images for all versions (existing and newly created)
+      // After Step 2, all versions should have IDs (either from existing or newly created)
+      for (let i = 0; i < versionsWithImages.length; i++) {
+        const versionFromForm = versionsWithImages[i];
+        console.log(`📝 Processing version ${i + 1} from form:`, versionFromForm);
+        
+        // Filter only File objects (new images), not existing string URLs
+        const newImageFiles = versionFromForm.images?.filter(img => img instanceof File) || [];
+        
+        if (newImageFiles.length === 0) {
+          console.log(`ℹ Version ${i + 1} has no new images to upload`);
+          continue; // Skip if no new images
+        }
+
+        // Get version ID (should be available after Step 2)
+        const versionId = versionFromForm.idVersion || versionFromForm.idProductVersion;
+        
+        if (!versionId) {
+          console.warn(`⚠ Version ${i + 1} still has no ID after create/update, skipping image upload`);
+          console.warn(`   Version data:`, versionFromForm);
+          continue;
+        }
+
+        try {
+          console.log(`📤 Uploading ${newImageFiles.length} images for version ${versionId}`);
+          await productService.uploadVersionImages(versionId, newImageFiles);
+          console.info(`✓ Uploaded ${newImageFiles.length} images for version ${versionId}`);
+        } catch (versionImageError) {
+          console.error(`❌ Failed to upload images for version ${versionId}:`, versionImageError);
+          console.error(`   Error details:`, versionImageError.response?.data || versionImageError.message);
+          // Don't throw, continue with other versions
+        }
+      }
 
       setToast({
         type: 'success',

@@ -6,13 +6,19 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface ProductItemRepository extends JpaRepository<ProductItem, String> {
     boolean existsByImei(String imei);  // Nếu cần query riêng, nhưng existsById sẽ dùng được vì ID=imei
+    
+    @Query("SELECT COUNT(pi) > 0 FROM ProductItem pi WHERE pi.versionId.idVersion = :versionId AND pi.orderDetail IS NOT NULL")
+    boolean existsByVersionIdAndOrderDetailIsNotNull(@Param("versionId") String versionId);
+    
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ProductItem pi WHERE pi.versionId.idVersion = :versionId")
+    void deleteByVersionId(@Param("versionId") String versionId);
 //    // New query to find all imei by productVersionId
 //    @Query("SELECT p.imei FROM ProductItem p WHERE p.versionId.versionId = :productVersionId")
 //    List<String> findImeiByProductVersionId(@Param("productVersionId") String productVersionId);
