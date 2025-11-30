@@ -11,12 +11,17 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -28,12 +33,26 @@ public class OrderController {
     OrderMapper orderMapper;
 
     @GetMapping
-    public ApiResponse<List<OrderResponse>> getAllOrders() {
-        var orders = orderService.getAllOrders().stream()
-                .map(orderMapper::toOrderResponse)
-                .toList();
-        return ApiResponse.<List<OrderResponse>>builder()
-                .result(orders)
+    public ApiResponse<Page<OrderResponse>> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createDatetime,desc") String sort
+    ) {
+        // Parse sort parameter (format: "field,direction")
+        String[] sortParts = sort.split(",");
+        String sortField = sortParts[0].trim();
+        Sort.Direction direction = sortParts.length > 1 && sortParts[1].trim().equalsIgnoreCase("asc")
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+        
+        Sort sortObj = Sort.by(direction, sortField);
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+        
+        Page<Order> ordersPage = orderService.getAllOrders(pageable);
+        Page<OrderResponse> responsePage = ordersPage.map(orderMapper::toOrderResponse);
+        
+        return ApiResponse.<Page<OrderResponse>>builder()
+                .result(responsePage)
                 .build();
     }
 
@@ -65,7 +84,23 @@ public class OrderController {
     @PutMapping("/{orderId}/status")
     public ApiResponse<OrderResponse> updateOrderStatus(
             @PathVariable Integer orderId,
-            @RequestBody OrderStatus status) {
+            @RequestBody Map<String, String> request) {
+        String statusStr = request.get("status");
+        if (statusStr == null) {
+            return ApiResponse.<OrderResponse>builder()
+                    .code(400)
+                    .message("Status is required")
+                    .build();
+        }
+        OrderStatus status;
+        try {
+            status = OrderStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.<OrderResponse>builder()
+                    .code(400)
+                    .message("Invalid status: " + statusStr)
+                    .build();
+        }
         Optional<Order> orderOpt = orderService.updateOrderStatus(orderId, status);
         if (orderOpt.isPresent()) {
             return ApiResponse.<OrderResponse>builder()

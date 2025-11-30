@@ -16,6 +16,7 @@ import com.websales.repository.ProductVersionRepository;
 import com.websales.service.OrderService;
 import com.websales.service.PayOSService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/cart")
 public class CartController {
@@ -105,13 +107,17 @@ public class CartController {
                             ? pv.getImage()
                             : (product.getImage() != null ? product.getImage() : "");
 
+                    // Lấy số lượng tồn kho
+                    Integer stockQuantity = pv.getStockQuantity() != null ? pv.getStockQuantity() : 0;
+
                     CartItemResponse resp = new CartItemResponse(
                             pv.getIdVersion(), // product_version_id
                             product.getIdProduct(),
                             product.getNameProduct(),
                             image,
                             price,
-                            qty);
+                            qty,
+                            stockQuantity);
                     cartItemsResp.add(resp);
                     grandTotal += price * qty;
                 }
@@ -386,6 +392,80 @@ public class CartController {
                     "message", "Cart is empty"));
         }
 
+        // Lấy danh sách sản phẩm được chọn từ orderData (nếu có)
+        final List<String> selectedProductVersionIds;
+        if (orderData.get("selectedProductVersionIds") != null) {
+            Object selectedIdsObj = orderData.get("selectedProductVersionIds");
+            if (selectedIdsObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Object> selectedIdsList = (List<Object>) selectedIdsObj;
+                selectedProductVersionIds = selectedIdsList.stream()
+                        .map(Object::toString)
+                        .collect(java.util.stream.Collectors.toList());
+            } else {
+                selectedProductVersionIds = null;
+            }
+        } else {
+            selectedProductVersionIds = null;
+        }
+
+        // Lọc cart items: chỉ lấy các items được chọn (nếu có danh sách chọn)
+        final List<String> finalSelectedIds = selectedProductVersionIds; // Tạo biến final để dùng trong lambda
+        List<CartItem> itemsToCheckout = cart.getCartItems().stream()
+                .filter(item -> item.getStatus() != null && item.getStatus()) // Chỉ lấy items active
+                .filter(item -> {
+                    if (finalSelectedIds == null || finalSelectedIds.isEmpty()) {
+                        // Nếu không có danh sách chọn, lấy tất cả (backward compatibility)
+                        return true;
+                    }
+                    // Nếu có danh sách chọn, chỉ lấy các items có productVersionId trong danh sách
+                    ProductVersion pv = item.getProductVersion();
+                    return pv != null && finalSelectedIds.contains(pv.getIdVersion());
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        if (itemsToCheckout.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Không có sản phẩm nào được chọn để thanh toán"));
+        }
+
+        // Kiểm tra số lượng tồn kho trước khi thanh toán (chỉ cho các items được chọn)
+        List<String> outOfStockMessages = new ArrayList<>();
+        for (CartItem item : itemsToCheckout) {
+            ProductVersion pv = item.getProductVersion();
+            if (pv == null) {
+                continue;
+            }
+            
+            Integer cartQuantity = item.getQuantity() != null ? item.getQuantity() : 1;
+            Integer stockQuantity = pv.getStockQuantity() != null ? pv.getStockQuantity() : 0;
+            
+            // Kiểm tra nếu số lượng trong giỏ hàng lớn hơn số lượng tồn kho
+            if (cartQuantity > stockQuantity) {
+                // Lấy tên sản phẩm
+                String productName = "Sản phẩm";
+                if (pv.getProduct() != null && pv.getProduct().getNameProduct() != null) {
+                    productName = pv.getProduct().getNameProduct();
+                }
+                
+                String message = String.format(
+                    "Sản phẩm '%s' không đủ hàng. Số lượng trong giỏ: %d, Số lượng tồn kho: %d",
+                    productName, cartQuantity, stockQuantity
+                );
+                outOfStockMessages.add(message);
+            }
+        }
+        
+        // Nếu có sản phẩm hết hàng, trả về lỗi với thông báo chi tiết
+        if (!outOfStockMessages.isEmpty()) {
+            String errorMessage = "Không thể đặt hàng. " + String.join("; ", outOfStockMessages);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", errorMessage,
+                    "outOfStockItems", outOfStockMessages));
+        }
+
         // Lấy total amount từ orderData hoặc tính từ cart
         BigDecimal totalAmount;
         if (orderData.get("total") != null) {
@@ -396,10 +476,10 @@ public class CartController {
                 totalAmount = new BigDecimal(totalObj.toString());
             }
         } else {
-            // Tính từ cart items
+            // Tính từ các items được chọn
             totalAmount = BigDecimal.ZERO;
-            for (CartItem item : cart.getCartItems()) {
-                if (item.getStatus() != null && item.getStatus() && item.getProductVersion() != null) {
+            for (CartItem item : itemsToCheckout) {
+                if (item.getProductVersion() != null) {
                     BigDecimal price = item.getProductVersion().getExportPrice();
                     if (price != null) {
                         int qty = item.getQuantity() != null ? item.getQuantity() : 1;
@@ -488,9 +568,8 @@ public class CartController {
             }
         }
 
-        // Tạo OrderRequest từ cart items
-        List<OrderRequest.OrderDetailRequest> orderDetails = cart.getCartItems().stream()
-                .filter(item -> item.getStatus() != null && item.getStatus()) // Chỉ lấy items active
+        // Tạo OrderRequest từ các items được chọn
+        List<OrderRequest.OrderDetailRequest> orderDetails = itemsToCheckout.stream()
                 .map(item -> {
                     ProductVersion pv = item.getProductVersion();
                     BigDecimal exportPrice = pv != null ? pv.getExportPrice() : BigDecimal.ZERO;
@@ -519,6 +598,19 @@ public class CartController {
 
         // Lưu Order và OrderDetails
         Order order = orderService.createOrder(orderRequest);
+
+        // Nếu là COD, giảm stock quantity ngay lập tức khi tạo order PENDING
+        if ("cod".equals(finalPaymentMethodStr)) {
+            try {
+                orderService.reduceStockFromOrder(order.getOrderId());
+                log.info("Stock reduced for COD order {} immediately after creation", order.getOrderId());
+            } catch (Exception e) {
+                log.error("Error reducing stock for COD order {}: {}", order.getOrderId(), e.getMessage(), e);
+                // Nếu giảm stock thất bại, có thể rollback order hoặc báo lỗi
+                // Ở đây ta log lỗi nhưng vẫn tiếp tục để không ảnh hưởng đến flow
+            }
+        }
+        // PayOS: stock sẽ được giảm khi webhook xác nhận thanh toán thành công
 
         // Nếu là PayOS, cập nhật lại payment link với order ID thật
         if ("bank".equals(finalPaymentMethodStr) && payOSOrderCode != null) {
@@ -577,13 +669,24 @@ public class CartController {
 
         paymentTransactionRepository.save(paymentTransaction);
 
-        // Chỉ xóa cart items khi thanh toán thành công
-        // - COD: xóa ngay vì không cần thanh toán online
+        // Chỉ xóa các cart items đã thanh toán (không xóa tất cả)
+        // - COD: xóa ngay các items đã thanh toán vì không cần thanh toán online
         // - PayOS: KHÔNG xóa, sẽ xóa khi webhook xác nhận thanh toán thành công
         // Nếu hủy thanh toán, cart sẽ được giữ nguyên để user có thể thanh toán lại
         if ("cod".equals(finalPaymentMethodStr)) {
-            // COD: xóa cart ngay vì đã xác nhận đặt hàng
-            cart.getCartItems().clear();
+            // COD: xóa các items đã thanh toán khỏi cart
+            // Tạo Set để dễ dàng kiểm tra
+            java.util.Set<String> checkedOutProductVersionIds = itemsToCheckout.stream()
+                    .map(item -> item.getProductVersion() != null ? item.getProductVersion().getIdVersion() : null)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+            
+            // Xóa các items đã thanh toán
+            cart.getCartItems().removeIf(item -> {
+                if (item.getProductVersion() == null) return false;
+                return checkedOutProductVersionIds.contains(item.getProductVersion().getIdVersion());
+            });
+            
             cart.setUpdateDate(LocalDateTime.now());
             cartRepository.save(cart);
         }

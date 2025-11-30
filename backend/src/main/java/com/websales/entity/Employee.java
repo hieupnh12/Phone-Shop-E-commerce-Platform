@@ -1,5 +1,6 @@
 package com.websales.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -17,7 +18,7 @@ import java.util.Set;
 @Table(name = "employees")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-public class Employee {
+public class Employee extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     String email;
@@ -35,5 +36,6 @@ public class Employee {
             inverseJoinColumns = @JoinColumn(name = "role_id") )
     Set<Role> employeeRoles;
     @OneToMany(mappedBy = "employee")
+    @JsonIgnore
     Set<AuditLog> auditLogs;
 }

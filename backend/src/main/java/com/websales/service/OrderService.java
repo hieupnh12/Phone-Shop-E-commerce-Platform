@@ -13,6 +13,8 @@ import com.websales.repository.ProductVersionRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,10 @@ public class OrderService {
 
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
+    }
+
+    public Page<Order> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable);
     }
 
     public Optional<Order> getOrderById(Integer orderId) {
@@ -100,5 +106,33 @@ public class OrderService {
             return Optional.of(orderRepository.save(order));
         }
         return Optional.empty();
+    }
+
+    /**
+     * Trừ số lượng sản phẩm trong kho khi thanh toán thành công
+     * @param orderId ID của đơn hàng
+     */
+    @Transactional
+    public void reduceStockFromOrder(Integer orderId) {
+        Order order = orderRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
+        if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
+            return;
+        }
+        
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            ProductVersion productVersion = orderDetail.getProductVersion();
+            if (productVersion != null) {
+                Integer currentStock = productVersion.getStockQuantity();
+                Integer quantityToReduce = orderDetail.getQuantity();
+                
+                if (currentStock != null && quantityToReduce != null) {
+                    int newStock = Math.max(0, currentStock - quantityToReduce);
+                    productVersion.setStockQuantity(newStock);
+                    productVersionRepository.save(productVersion);
+                }
+            }
+        }
     }
 }

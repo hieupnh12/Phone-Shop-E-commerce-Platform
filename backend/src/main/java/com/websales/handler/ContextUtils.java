@@ -1,10 +1,15 @@
 package com.websales.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.websales.entity.Employee;
+import com.websales.exception.AppException;
+import com.websales.exception.ErrorCode;
 import com.websales.repository.AuditLogRepo;
 import com.websales.repository.EmployeeRepo;
+import com.websales.service.AuditLogService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.core.Authentication;
@@ -19,7 +24,14 @@ import java.util.Optional;
 @Component
 public class ContextUtils implements ApplicationContextAware {
 
+    private static EmployeeRepo staticEmployeeRepo;
+
     private static ApplicationContext applicationContext;
+
+    @Autowired
+    public void setEmployeeRepo(EmployeeRepo employeeRepo) {
+        ContextUtils.staticEmployeeRepo = employeeRepo;
+    }
 
     @Override
     public void setApplicationContext(ApplicationContext context) {
@@ -40,17 +52,19 @@ public class ContextUtils implements ApplicationContextAware {
     }
 
     public static Long getEmployeeId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication instanceof JwtAuthenticationToken jwtToken) {
-            try {
-                String subject = jwtToken.getToken().getSubject();
-                return Long.parseLong(subject);
-            } catch (NumberFormatException | NullPointerException e) {
-                return null;
-            }
+        EmployeeRepo employeeRepo = getBean(EmployeeRepo.class);
+        if (employeeRepo == null) {
+            return null;
         }
-        return null;
+        var context = SecurityContextHolder.getContext();
+        if (context.getAuthentication() == null) {
+            return null;
+        }
+        String name = context.getAuthentication().getName();
+        Employee employee = employeeRepo.findByFullName(name).orElseThrow(
+                () -> new AppException(ErrorCode.ACCOUNT_EXITED)
+        );
+        return employee.getId();
     }
 
     private static Optional<HttpServletRequest> getCurrentHttpRequest() {
@@ -72,5 +86,9 @@ public class ContextUtils implements ApplicationContextAware {
         return getCurrentHttpRequest()
                 .map(request -> request.getHeader("User-Agent"))
                 .orElse("N/A");
+    }
+
+    public static AuditLogService getAuditLogService() {
+        return getBean(AuditLogService.class);
     }
 }

@@ -15,6 +15,7 @@ const OrderHistoryPage = () => {
     const orderTabs = [
         { id: 'all', label: t('common.all') },
         { id: 'pending', label: t('profile.processing') },
+        { id: 'paid', label: t('orders.paid') || 'Đã thanh toán' },
         { id: 'shipping', label: t('profile.shipping') },
         { id: 'delivered', label: t('profile.delivered') },
         { id: 'cancelled', label: t('profile.cancelled') },
@@ -31,11 +32,12 @@ const OrderHistoryPage = () => {
 
     useEffect(() => {
         const fetchOrders = async () => {
+            if (!customerId) return; // Không fetch nếu chưa có customerId
             try {
                 setLoading(true);
                 const data = await profileService.getOrdersByCustomer(customerId);
 
-                const groupedOrders = groupAndNormalizeOrders(data);
+                const groupedOrders = groupAndNormalizeOrders(data.result || data); // Giả định API trả về .result
 
                 setOrders(groupedOrders);
                 setError(null);
@@ -57,10 +59,10 @@ const OrderHistoryPage = () => {
             const { orderId, createDatetime, totalAmount, status, endDateTime, orderDetail } = item;
 
             const product = {
-                image: orderDetail.picture,
-                name: orderDetail.productName,
-                price: orderDetail.unitPriceAfter,
-                quantity: orderDetail.remainingProducts,
+                image: orderDetail?.picture,
+                name: orderDetail?.productName,
+                price: orderDetail?.unitPriceAfter || 0,
+                quantity: orderDetail?.remainingProducts || 0,
             };
 
             if (!orderMap[orderId]) {
@@ -68,10 +70,10 @@ const OrderHistoryPage = () => {
                     id: `#${orderId}`,
                     orderId: orderId,
                     date: new Date(createDatetime).toLocaleDateString('vi-VN'),
-                    status: status.toLowerCase(),
+                    status: status || 'PENDING', // Giữ nguyên status từ API (uppercase)
                     totalAmount: totalAmount,
-                    createDatetime: createDatetime,
-                    endDateTime: endDateTime,
+                    createDatetime: new Date(createDatetime), // Lưu trữ Date object để sắp xếp
+                    endDateTime: endDateTime ? new Date(endDateTime) : null,
                     products: [product],
                 };
             } else {
@@ -79,7 +81,11 @@ const OrderHistoryPage = () => {
             }
         });
 
-        return Object.values(orderMap);
+        const finalOrders = Object.values(orderMap);
+
+        finalOrders.sort((a, b) => b.createDatetime.getTime() - a.createDatetime.getTime());
+
+        return finalOrders;
     };
 
     const formatCurrency = (amount) => {
@@ -87,23 +93,49 @@ const OrderHistoryPage = () => {
     };
 
     const getStatusDisplay = (status) => {
-        switch (status) {
-            case 'delivered':
-                return <span className="text-green-600 bg-green-100 px-3 py-1 rounded-full text-xs font-medium">Đã giao hàng</span>;
-            case 'cancelled':
-                return <span className="text-red-600 bg-red-100 px-3 py-1 rounded-full text-xs font-medium">Đã hủy</span>;
-            case 'shipping':
-                return <span className="text-blue-600 bg-blue-100 px-3 py-1 rounded-full text-xs font-medium">Đang vận chuyển</span>;
-            case 'pending':
-                return <span className="text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full text-xs font-medium">Đang xử lý</span>;
-            default:
-                return <span className="text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">Trả hàng</span>;
-        }
+        // Normalize status to uppercase để so sánh với enum OrderStatus
+        const normalizedStatus = (status || '').toUpperCase();
+        
+        // Map các giá trị có thể có
+        const statusMap = {
+            'PENDING': { label: 'Đang xử lý', className: 'text-yellow-600 bg-yellow-100' },
+            'PAID': { label: 'Đã thanh toán', className: 'text-blue-600 bg-blue-100' },
+            'SHIPPED': { label: 'Đang vận chuyển', className: 'text-blue-600 bg-blue-100' },
+            'SHIPPING': { label: 'Đang vận chuyển', className: 'text-blue-600 bg-blue-100' },
+            'DELIVERED': { label: 'Đã giao hàng', className: 'text-green-600 bg-green-100' },
+            'CANCELED': { label: 'Đã hủy', className: 'text-red-600 bg-red-100' },
+            'CANCELLED': { label: 'Đã hủy', className: 'text-red-600 bg-red-100' },
+            'RETURNED': { label: 'Hoàn trả', className: 'text-gray-600 bg-gray-100' },
+        };
+        
+        const statusInfo = statusMap[normalizedStatus] || { label: 'Đang xử lý', className: 'text-yellow-600 bg-yellow-100' };
+        
+        return (
+            <span className={`${statusInfo.className} px-3 py-1 rounded-full text-xs font-medium`}>
+                {statusInfo.label}
+            </span>
+        );
     };
 
     const filteredOrders = orders.filter(order => {
-        // 2. Lọc theo Tab (Sử dụng order.status từ API)
-        if (activeTab !== 'all' && order.status !== activeTab) return false;
+        // 2. Lọc theo Tab (So sánh với status lowercase)
+        if (activeTab !== 'all') {
+            const orderStatusLower = (order.status || '').toLowerCase();
+            // Map tab id với status
+            const tabStatusMap = {
+                'pending': ['pending'],
+                'paid': ['paid'],
+                'shipping': ['shipped', 'shipping'],
+                'delivered': ['delivered'],
+                'cancelled': ['canceled', 'cancelled'],
+                'returned': ['returned']
+            };
+            
+            const allowedStatuses = tabStatusMap[activeTab] || [];
+            if (!allowedStatuses.some(s => orderStatusLower === s)) {
+                return false;
+            }
+        }
 
         // 3. Lọc theo SearchTerm
         if (searchTerm === '') return true;
@@ -156,13 +188,13 @@ const OrderHistoryPage = () => {
 
             {/* Bộ lọc thời gian (Mẫu 1) */}
             {/*<div className="flex items-center space-x-4 mb-6">*/}
-            {/*    <span className="text-gray-700 font-medium">Lịch sử mua hàng</span>*/}
-            {/*    <div className="flex items-center border border-gray-300 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50">*/}
-            {/*        <span className="text-gray-700 text-sm">{startDate}</span>*/}
-            {/*        <ChevronRight size={16} className="text-gray-400 mx-2 rotate-90" />*/}
-            {/*        <span className="text-gray-700 text-sm">{endDate}</span>*/}
-            {/*        <Calendar size={18} className="text-gray-400 ml-3" />*/}
-            {/*    </div>*/}
+            {/* <span className="text-gray-700 font-medium">Lịch sử mua hàng</span>*/}
+            {/* <div className="flex items-center border border-gray-300 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-gray-50">*/}
+            {/* <span className="text-gray-700 text-sm">{startDate}</span>*/}
+            {/* <ChevronRight size={16} className="text-gray-400 mx-2 rotate-90" />*/}
+            {/* <span className="text-gray-700 text-sm">{endDate}</span>*/}
+            {/* <Calendar size={18} className="text-gray-400 ml-3" />*/}
+            {/* </div>*/}
             {/*</div>*/}
 
             {/* Hiển thị danh sách đơn hàng hoặc Empty State */}
@@ -182,7 +214,7 @@ const OrderHistoryPage = () => {
                             {order.products.map((product, index) => (
                                 <div key={index} className="flex items-center py-2">
                                     <img src={product.image} alt={product.name}
-                                         className="w-16 h-16 object-cover rounded mr-4"/>
+                                         className="w-20 h-20 object-cover rounded mr-4"/>
                                     <div className="flex-grow">
                                         <p className="font-medium text-gray-800 text-base">{product.name}</p>
                                         <p className="text-gray-600 text-sm">{formatCurrency(product.price)}</p>
@@ -199,7 +231,7 @@ const OrderHistoryPage = () => {
 
                                         <Link
                                             to={`/user/profile/order/order-detail/${order.orderId}`}
-                                            state={{ 
+                                            state={{
                                                 totalAmount: order.totalAmount,
                                                 createDatetime: order.createDatetime,
                                                 endDateTime: order.endDateTime,
@@ -217,14 +249,14 @@ const OrderHistoryPage = () => {
                     ))}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500">
+                <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500 bg-gray-100">
                     <img
-                        src="https://via.placeholder.com/200/F5F5F5/B0B0B0?text=No+Orders"
+                        src="/image/nofound.png"
                         alt="Bạn chưa có đơn hàng nào"
-                        className="w-48 h-48 mb-6 object-contain"
+                        className="w-auto h-auto scale-200 object-contain"
                     />
                     <p className="text-lg mb-3">Bạn chưa có đơn hàng nào</p>
-                    <p className="text-sm mb-6">Cùng khám phá hàng ngàn sản phẩm tại FPT Shop nhé!</p>
+                    <p className="text-sm mb-6">Cùng khám phá hàng ngàn sản phẩm tại FShop nhé!</p>
                     <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors">
                         Khám phá ngay
                     </button>

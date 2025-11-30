@@ -29,5 +29,25 @@ const customerService = {
 
     return axiosClient.get(`/customer/search?${urlParams.toString()}`);
   },
+
+  // Method mới để tìm kiếm theo số điện thoại hoặc email
+  searchByPhoneOrEmail: (keyword, page, size) => {
+    const safePage = Number(page) || 0;
+    const safeSize = Number(size) || 10;
+    const params = new URLSearchParams({
+      keyword: keyword || "",
+      page: safePage,
+      size: safeSize,
+    });
+    return axiosClient.get(`/customer/search/phone-or-email?${params.toString()}`);
+  },
+
+  // Method để lấy gợi ý khi gõ 4 số đầu
+  getPhoneSuggestions: (prefix) => {
+    if (!prefix || prefix.length < 4) {
+      return Promise.resolve({ result: [] });
+    }
+    return axiosClient.get(`/customer/suggestions/phone?prefix=${encodeURIComponent(prefix)}`);
+  },
 };
 export default customerService;

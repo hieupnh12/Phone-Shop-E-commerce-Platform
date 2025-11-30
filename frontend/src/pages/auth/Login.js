@@ -495,22 +495,6 @@ const Login = () => {
                     <Chrome className="w-5 h-5 text-red-500" />
                     {t('auth.google')}
                   </button>
-                  <button
-                    onClick={() => handleSocialLogin("Zalo")}
-                    className="flex items-center justify-center gap-2 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-400 transition-all"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none">
-                      <circle cx="24" cy="24" r="20" fill="#0068FF" />
-                      <path
-                        d="M15 19L24 28L33 19"
-                        stroke="white"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {t('auth.zalo')}
-                  </button>
                 </div>
               </div>
             </div>
