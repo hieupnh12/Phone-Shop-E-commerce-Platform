@@ -124,12 +124,36 @@ public class PayOSWebhookController {
                 
                 log.info("Order {} payment successful via PayOS", orderId);
             } else if ("CANCELLED".equals(payOSStatus)) {
-                // Thanh toán bị hủy
-                order.setStatus(OrderStatus.CANCELED);
-                transaction.setPaymentStatus(PaymentStatus.FAILED);
-                transaction.setResponseMessage("Thanh toán bị hủy. Order Code: " + orderCode);
-                
-                log.info("Order {} payment cancelled via PayOS", orderId);
+                // Thanh toán bị hủy - xóa order nếu chưa thanh toán
+                if (!Boolean.TRUE.equals(order.getIsPaid()) && order.getStatus() == OrderStatus.PENDING) {
+                    log.info("Deleting unpaid PayOS order {} due to payment cancellation via webhook", orderId);
+                    
+                    // Xóa payment transactions trước
+                    paymentTransactionRepository.delete(transaction);
+                    log.info("Deleted payment transaction {} for order {}", transaction.getTransactionId(), orderId);
+                    
+                    // Xóa order (sẽ cascade xóa order details)
+                    orderRepository.delete(order);
+                    log.info("Deleted order {} due to payment cancellation via webhook", orderId);
+                    
+                    // Trả về response cho PayOS (không cần lưu gì nữa vì đã xóa)
+                    return ResponseEntity.ok(Map.of(
+                            "error", 0,
+                            "message", "success",
+                            "data", Map.of("orderCode", orderCode)
+                    ));
+                } else {
+                    // Nếu đã thanh toán hoặc status khác PENDING, chỉ cập nhật status
+                    order.setStatus(OrderStatus.CANCELED);
+                    transaction.setPaymentStatus(PaymentStatus.FAILED);
+                    transaction.setResponseMessage("Thanh toán bị hủy. Order Code: " + orderCode);
+                    
+                    log.info("Order {} payment cancelled via PayOS (order already paid or not PENDING)", orderId);
+                    
+                    // Lưu thay đổi
+                    orderRepository.save(order);
+                    paymentTransactionRepository.save(transaction);
+                }
             } else {
                 // Các trạng thái khác (PENDING, etc.)
                 transaction.setResponseMessage("Trạng thái: " + payOSStatus + ". Order Code: " + orderCode);

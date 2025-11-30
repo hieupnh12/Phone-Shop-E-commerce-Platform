@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Controller
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -179,7 +180,7 @@ public class PaymentRedirectController {
 
     /**
      * Handle redirect từ PayOS khi hủy thanh toán
-     * Redirect về frontend với các query params
+     * Xóa order và payment transaction nếu chưa thanh toán
      */
     @GetMapping("/payment/cancel")
     public RedirectView paymentCancel(
@@ -191,6 +192,50 @@ public class PaymentRedirectController {
             @RequestParam(required = false) Long orderCode) {
         
         log.info("Payment cancel redirect - orderId: {}, orderCode: {}", orderId, orderCode);
+        
+        // Xử lý xóa order nếu user hủy thanh toán PayOS
+        try {
+            Order orderToDelete = null;
+            
+            // Tìm order qua orderCode (PayOS)
+            if (orderCode != null) {
+                PaymentTransaction transaction = paymentTransactionRepository
+                        .findByTransactionCode("PAYOS-" + orderCode)
+                        .orElse(null);
+                
+                if (transaction != null) {
+                    orderToDelete = orderRepository.findById(transaction.getOrderId()).orElse(null);
+                }
+            } 
+            // Hoặc tìm qua orderId
+            else if (orderId != null) {
+                orderToDelete = orderRepository.findById(orderId).orElse(null);
+            }
+            
+            // Xóa order nếu chưa thanh toán (isPaid = false) và là đơn PayOS
+            if (orderToDelete != null && !Boolean.TRUE.equals(orderToDelete.getIsPaid())) {
+                // Kiểm tra xem có phải đơn PayOS không
+                boolean isPayOSOrder = paymentTransactionRepository.findByOrderId(orderToDelete.getOrderId()).stream()
+                        .anyMatch(t -> t.getTransactionCode() != null && 
+                                t.getTransactionCode().startsWith("PAYOS-"));
+                
+                if (isPayOSOrder) {
+                    log.info("Deleting unpaid PayOS order {} due to payment cancellation", orderToDelete.getOrderId());
+                    
+                    // Xóa payment transactions trước
+                    List<PaymentTransaction> transactions = paymentTransactionRepository.findByOrderId(orderToDelete.getOrderId());
+                    paymentTransactionRepository.deleteAll(transactions);
+                    log.info("Deleted {} payment transactions for order {}", transactions.size(), orderToDelete.getOrderId());
+                    
+                    // Xóa order (sẽ cascade xóa order details)
+                    orderRepository.delete(orderToDelete);
+                    log.info("Deleted order {} due to payment cancellation", orderToDelete.getOrderId());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error deleting order on payment cancel: {}", e.getMessage(), e);
+            // Vẫn redirect về frontend dù có lỗi
+        }
         
         // Build redirect URL với query params
         StringBuilder redirectUrl = new StringBuilder(frontendUrl.split(",")[0].trim()); // Lấy URL đầu tiên

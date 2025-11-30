@@ -5,13 +5,18 @@ import Button from '../common/Button';
 import InputField from '../common/InputField';
 import Modal from '../common/Modal';
 import Toast from '../common/Toast';
+import VersionImageUpload from './VersionImageUpload';
+import productService from '../../services/productService';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = [], colorList = [] }) => {
+const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = [], colorList = [], isEditMode = false, productId = null }) => {
   const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
+  const [currentVersionId, setCurrentVersionId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, index: null, versionInfo: null });
   const [formData, setFormData] = useState({
     idRam: '',
     idRom: '',
@@ -20,6 +25,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
     exportPrice: '',
     stockQuantity: '',
     status: true,
+    images: [],
   });
 
   const resetForm = () => {
@@ -31,8 +37,10 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       exportPrice: '',
       stockQuantity: '',
       status: true,
+      images: [],
     });
     setEditingIndex(null);
+    setCurrentVersionId(null);
   };
 
   const handleOpenModal = (index = null) => {
@@ -46,8 +54,12 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
         exportPrice: version.exportPrice,
         stockQuantity: version.stockQuantity,
         status: version.status,
+        images: version.images || [],
+        deletedImageIds: [], // Reset deleted image IDs when opening modal
       });
       setEditingIndex(index);
+      // Get idVersion from either idVersion or idProductVersion field
+      setCurrentVersionId(version.idVersion || version.idProductVersion || null);
     } else {
       resetForm();
     }
@@ -67,60 +79,199 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
     }));
   };
 
+  const handleImagesChange = (images, deletedImageIds = []) => {
+    setFormData(prev => ({
+      ...prev,
+      images: images,
+      deletedImageIds: deletedImageIds, // Track images to be deleted
+    }));
+  };
+
   const validateForm = () => {
-    if (!formData.idRam || !formData.idRom || !formData.idColor) {
-      setToast({ type: 'error', message: 'Vui lòng chọn RAM, ROM, Màu sắc' });
+    if (!formData.idRam) {
+      setToast({ type: 'error', message: 'Vui lòng chọn RAM' });
       return false;
     }
 
-    if (!formData.importPrice || parseFloat(formData.importPrice) < 0) {
-      setToast({ type: 'error', message: 'Giá nhập phải là số dương' });
+    const ramId = parseInt(formData.idRam);
+    if (isNaN(ramId) || ramId <= 0) {
+      setToast({ type: 'error', message: 'RAM không hợp lệ' });
       return false;
     }
 
-    if (!formData.exportPrice || parseFloat(formData.exportPrice) < 0) {
-      setToast({ type: 'error', message: 'Giá bán phải là số dương' });
+    if (!formData.idRom) {
+      setToast({ type: 'error', message: 'Vui lòng chọn ROM' });
       return false;
     }
 
-    if (!formData.stockQuantity || parseInt(formData.stockQuantity) < 0) {
-      setToast({ type: 'error', message: t('common.invalidQuantity') });
+    const romId = parseInt(formData.idRom);
+    if (isNaN(romId) || romId <= 0) {
+      setToast({ type: 'error', message: 'ROM không hợp lệ' });
       return false;
+    }
+
+    if (!formData.idColor) {
+      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc' });
+      return false;
+    }
+
+    const colorId = parseInt(formData.idColor);
+    if (isNaN(colorId) || colorId <= 0) {
+      setToast({ type: 'error', message: 'Màu sắc không hợp lệ' });
+      return false;
+    }
+
+    if (!formData.importPrice || formData.importPrice.toString().trim() === '') {
+      setToast({ type: 'error', message: 'Giá nhập không được để trống' });
+      return false;
+    }
+
+    const importPriceNum = parseFloat(formData.importPrice);
+    if (isNaN(importPriceNum) || importPriceNum < 0) {
+      setToast({ type: 'error', message: 'Giá nhập phải là số không âm' });
+      return false;
+    }
+
+    if (!formData.exportPrice || formData.exportPrice.toString().trim() === '') {
+      setToast({ type: 'error', message: 'Giá bán không được để trống' });
+      return false;
+    }
+
+    const exportPriceNum = parseFloat(formData.exportPrice);
+    if (isNaN(exportPriceNum) || exportPriceNum < 0) {
+      setToast({ type: 'error', message: 'Giá bán phải là số không âm' });
+      return false;
+    }
+
+    if (exportPriceNum < importPriceNum) {
+      setToast({ type: 'error', message: 'Giá bán phải lớn hơn hoặc bằng giá nhập' });
+      return false;
+    }
+
+    if (formData.stockQuantity && formData.stockQuantity.toString().trim() !== '') {
+      const stockQty = parseInt(formData.stockQuantity);
+      if (isNaN(stockQty) || stockQty < 0) {
+        setToast({ type: 'error', message: 'Số lượng tồn kho phải là số nguyên không âm' });
+        return false;
+      }
     }
 
     return true;
   };
 
-  const handleAddOrUpdate = () => {
+  const handleAddOrUpdate = async () => {
     if (!validateForm()) return;
 
+    const ramId = parseInt(formData.idRam);
+    const romId = parseInt(formData.idRom);
+    const colorId = parseInt(formData.idColor);
+
+    if (editingIndex === null) {
+      const isDuplicate = versions.some((v) => 
+        parseInt(v.idRam) === ramId && 
+        parseInt(v.idRom) === romId && 
+        parseInt(v.idColor) === colorId
+      );
+
+      if (isDuplicate) {
+        setToast({ type: 'error', message: 'Phiên bản với RAM, ROM, Màu sắc này đã tồn tại' });
+        return;
+      }
+    } else {
+      const isDuplicate = versions.some((v, index) => 
+        index !== editingIndex &&
+        parseInt(v.idRam) === ramId && 
+        parseInt(v.idRom) === romId && 
+        parseInt(v.idColor) === colorId
+      );
+
+      if (isDuplicate) {
+        setToast({ type: 'error', message: 'Phiên bản với RAM, ROM, Màu sắc này đã tồn tại' });
+        return;
+      }
+    }
+
     const newVersion = {
-      idRam: parseInt(formData.idRam),
-      idRom: parseInt(formData.idRom),
-      idColor: parseInt(formData.idColor),
+      idRam: ramId,
+      idRom: romId,
+      idColor: colorId,
       importPrice: parseFloat(formData.importPrice),
       exportPrice: parseFloat(formData.exportPrice),
-      stockQuantity: parseInt(formData.stockQuantity),
+      stockQuantity: formData.stockQuantity ? parseInt(formData.stockQuantity) : 0,
       status: formData.status,
+      images: formData.images || [],
+      deletedImageIds: formData.deletedImageIds || [],
       Items: [],
     };
 
-    if (editingIndex !== null) {
-      const updatedVersions = [...versions];
-      updatedVersions[editingIndex] = newVersion;
-      onVersionsChange(updatedVersions);
-      setToast({ type: 'success', message: t('common.versionUpdateSuccess') });
-    } else {
-      onVersionsChange([...versions, newVersion]);
-      setToast({ type: 'success', message: t('common.versionAddSuccess') });
+    if (editingIndex !== null && currentVersionId) {
+      newVersion.idProductVersion = currentVersionId;
+      newVersion.idVersion = currentVersionId;
     }
 
-    handleCloseModal();
+    try {
+      if (editingIndex !== null) {
+        const updatedVersions = [...versions];
+        const existingVersion = updatedVersions[editingIndex];
+        if (existingVersion.idProductVersion && !newVersion.idProductVersion) {
+          newVersion.idProductVersion = existingVersion.idProductVersion;
+          newVersion.idVersion = existingVersion.idVersion || existingVersion.idProductVersion;
+        }
+        updatedVersions[editingIndex] = newVersion;
+        onVersionsChange(updatedVersions);
+        setToast({ type: 'success', message: t('common.versionUpdateSuccess') });
+      } else {
+        onVersionsChange([...versions, newVersion]);
+        setToast({ type: 'success', message: t('common.versionAddSuccess') });
+      }
+
+      handleCloseModal();
+    } catch (error) {
+      setToast({ type: 'error', message: 'Lỗi cập nhật phiên bản' });
+    }
   };
 
   const handleDeleteVersion = (index) => {
-    onVersionsChange(versions.filter((_, i) => i !== index));
-    setToast({ type: 'success', message: t('common.versionDeleteSuccess') });
+    const version = versions[index];
+    const versionInfo = `${getRamName(version.idRam)} - ${getRomName(version.idRom)} - ${getColorName(version.idColor)}`;
+    setDeleteModal({ isOpen: true, index, versionInfo });
+  };
+
+  const handleConfirmDeleteVersion = async () => {
+    const { index } = deleteModal;
+    const version = versions[index];
+    
+    const versionId = version?.idVersion || version?.idProductVersion;
+    
+    if (isEditMode && versionId) {
+      try {
+        const response = await productService.deleteProductVersion(versionId);
+        const message = response?.message || response?.data?.message || t('common.versionDeleteSuccess');
+        setToast({ type: 'success', message: message });
+        
+        const updatedVersions = versions.map((v, i) => {
+          if (i === index) {
+            return { ...v, status: false };
+          }
+          return v;
+        });
+        onVersionsChange(updatedVersions);
+      } catch (error) {
+        const errorMessage = error.response?.data?.message 
+          || error.response?.data?.error 
+          || error.message 
+          || 'Lỗi xóa phiên bản';
+        setToast({ type: 'error', message: errorMessage });
+        setDeleteModal({ isOpen: false, index: null, versionInfo: null });
+        return;
+      }
+    } else {
+      const updatedVersions = versions.filter((_, i) => i !== index);
+      onVersionsChange(updatedVersions);
+      setToast({ type: 'success', message: t('common.versionDeleteSuccess') });
+    }
+    
+    setDeleteModal({ isOpen: false, index: null, versionInfo: null });
   };
 
   const getRamName = (ramId) => {
@@ -170,6 +321,11 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                 <p className="text-sm text-gray-600">
                   Giá nhập: {version.importPrice.toLocaleString()} VND | Giá bán: {version.exportPrice.toLocaleString()} VND | Số lượng: {version.stockQuantity}
                 </p>
+                {version.images && version.images.length > 0 && (
+                  <p className="text-xs text-blue-600">
+                    📷 {version.images.length} ảnh
+                  </p>
+                )}
                 <p className="text-xs text-gray-500">
                   Trạng thái: {version.status ? '✅ Hoạt động' : '❌ Tắt'}
                 </p>
@@ -202,119 +358,172 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
         title={editingIndex !== null ? 'Sửa Phiên Bản' : 'Thêm Phiên Bản'}
         size="lg"
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                RAM <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="idRam"
-                value={formData.idRam}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn RAM</option>
-                {ramList.map(ram => (
-                  <option key={ram.idRam} value={ram.idRam}>
-                    {ram.nameRam}
-                  </option>
-                ))}
-              </select>
+        <div className="space-y-6">
+          {/* Basic Info */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-900">Thông Tin Cơ Bản</h4>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  RAM <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="idRam"
+                  value={formData.idRam}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Chọn RAM</option>
+                  {ramList.map(ram => (
+                    <option key={ram.idRam} value={ram.idRam}>
+                      {ram.nameRam}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  ROM <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="idRom"
+                  value={formData.idRom}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Chọn ROM</option>
+                  {romList.map(rom => (
+                    <option key={rom.idRom} value={rom.idRom}>
+                      {rom.nameRom}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Màu Sắc <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="idColor"
+                  value={formData.idColor}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Chọn Màu</option>
+                  {colorList.map(color => (
+                    <option key={color.idColor} value={color.idColor}>
+                      {color.nameColor}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                ROM <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="idRom"
-                value={formData.idRom}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn ROM</option>
-                {romList.map(rom => (
-                  <option key={rom.idRom} value={rom.idRom}>
-                    {rom.nameRom}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-3 gap-4">
+              <InputField
+                label="Giá Nhập (VND)"
+                name="importPrice"
+                type="number"
+                placeholder="0"
+                value={formData.importPrice}
+                onChange={(e) => setFormData(prev => ({ ...prev, importPrice: e.target.value }))}
+                required
+              />
+
+              <InputField
+                label="Giá Bán (VND)"
+                name="exportPrice"
+                type="number"
+                placeholder="0"
+                value={formData.exportPrice}
+                onChange={(e) => setFormData(prev => ({ ...prev, exportPrice: e.target.value }))}
+                required
+              />
+
+              <InputField
+                label={t('common.quantity')}
+                name="stockQuantity"
+                type="number"
+                placeholder="0"
+                value={formData.stockQuantity}
+                onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: e.target.value }))}
+                required
+              />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Màu Sắc <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="idColor"
-                value={formData.idColor}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="status"
+                checked={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Chọn Màu</option>
-                {colorList.map(color => (
-                  <option key={color.idColor} value={color.idColor}>
-                    {color.nameColor}
-                  </option>
-                ))}
-              </select>
+                id="versionStatus"
+                className="w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="versionStatus" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Phiên bản này hoạt động
+              </label>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <InputField
-              label="Giá Nhập (VND)"
-              name="importPrice"
-              type="number"
-              placeholder="0"
-              value={formData.importPrice}
-              onChange={(e) => setFormData(prev => ({ ...prev, importPrice: e.target.value }))}
-              required
+          {/* Image Upload */}
+          <div className="border-t pt-4 space-y-4">
+            <h4 className="font-medium text-gray-900">Hình Ảnh Phiên Bản (Tối đa 5 ảnh)</h4>
+            <VersionImageUpload
+              images={formData.images}
+              onImagesChange={handleImagesChange}
+              maxImages={5}
+              versionId={currentVersionId}
+              isEditMode={isEditMode && currentVersionId !== null}
             />
-
-            <InputField
-              label="Giá Bán (VND)"
-              name="exportPrice"
-              type="number"
-              placeholder="0"
-              value={formData.exportPrice}
-              onChange={(e) => setFormData(prev => ({ ...prev, exportPrice: e.target.value }))}
-              required
-            />
-
-            <InputField
-              label={t('common.quantity')}
-              name="stockQuantity"
-              type="number"
-              placeholder="0"
-              value={formData.stockQuantity}
-              onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="status"
-              checked={formData.status}
-              onChange={handleInputChange}
-              id="versionStatus"
-              className="w-4 h-4 cursor-pointer"
-            />
-            <label htmlFor="versionStatus" className="text-sm font-medium text-gray-700 cursor-pointer">
-              Phiên bản này hoạt động
-            </label>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex justify-end gap-3 mt-6 border-t pt-4">
           <Button variant="secondary" onClick={handleCloseModal}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={handleAddOrUpdate}>
-            {editingIndex !== null ? 'Cập Nhật' : 'Thêm'}
+          <Button variant="primary" onClick={handleAddOrUpdate} disabled={isUploadingImages}>
+            {isUploadingImages ? 'Đang xử lý...' : (editingIndex !== null ? 'Cập Nhật' : 'Thêm')}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, index: null, versionInfo: null })}
+        title="Xóa Phiên Bản"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-sm text-red-800">
+              <strong>Cảnh báo:</strong> Bạn sắp xóa phiên bản "<strong>{deleteModal.versionInfo}</strong>". 
+              {' '}Hành động này không thể hoàn tác. Nếu phiên bản đã được bán, bạn sẽ không thể xóa nó.
+            </p>
+          </div>
+
+          <p className="text-gray-700">
+            Bạn có chắc chắn muốn xóa phiên bản này không?
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <Button
+            variant="secondary"
+            onClick={() => setDeleteModal({ isOpen: false, index: null, versionInfo: null })}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleConfirmDeleteVersion}
+          >
+            Xóa
           </Button>
         </div>
       </Modal>
@@ -339,11 +548,14 @@ VersionForm.propTypes = {
     exportPrice: PropTypes.number,
     stockQuantity: PropTypes.number,
     status: PropTypes.bool,
+    images: PropTypes.array,
   })),
   onVersionsChange: PropTypes.func.isRequired,
   ramList: PropTypes.array,
   romList: PropTypes.array,
   colorList: PropTypes.array,
+  isEditMode: PropTypes.bool,
+  productId: PropTypes.number,
 };
 
 export default VersionForm;
