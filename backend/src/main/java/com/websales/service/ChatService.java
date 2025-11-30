@@ -1,33 +1,36 @@
 package com.websales.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.websales.dto.response.*;
+import com.websales.entity.Product;
+import com.websales.mapper.ProductMapper;
 import com.websales.service.chatbot.RecommendService;
 import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.NumberFormat;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.document.Document;
+import org.springframework.ai.content.Media;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import com.websales.dto.request.ChatRequest;
-import com.websales.entity.Product;
 import com.websales.enums.Intent;
 import com.websales.repository.ProductRepository;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -38,13 +41,15 @@ public class ChatService {
     IntentClassifier intentClassifier;
     RecommendService recommendService;
     ProductService productService;
+    private final ProductMapper productMapper;
 
-    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier, RecommendService recommendService, ProductService productService) {
+    public ChatService(ChatClient.Builder builder, ProductRepository productRepository, IntentClassifier intentClassifier, RecommendService recommendService, ProductService productService, ProductMapper productMapper) {
         this.chatClient = builder.build();
         this.productRepository = productRepository;
         this.intentClassifier = intentClassifier;
         this.recommendService = recommendService;
         this.productService = productService;
+        this.productMapper = productMapper;
     }
 
     public RagResponse ask(ChatRequest chatRequest) {
@@ -241,6 +246,106 @@ public class ChatService {
                 .content();
 
         return new RagResponse(answer, null, null, null);
+    }
+
+
+    public RagResponse chatImage(MultipartFile file, String imageUrl, String message) {
+        Media media;
+
+        try {
+            if (file != null && !file.isEmpty()) {
+                // Khi người dùng gửi file
+                media = Media.builder()
+                        .mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
+                        .data(file.getResource())
+                        .build();
+
+            } else if (imageUrl != null && !imageUrl.isBlank()) {
+                // Khi người dùng gửi URL ảnh
+                URI uri = new URI(imageUrl);
+
+                UrlResource resource = new UrlResource(uri.toURL());
+
+                // Tự đoán MIME theo phần mở rộng
+                String mimeType = Files.probeContentType(Path.of(uri.getPath()));
+                if (mimeType == null) {
+                    mimeType = "image/jpeg"; // fallback
+                }
+
+                media = Media.builder()
+                        .mimeType(MimeTypeUtils.parseMimeType(mimeType))
+                        .data(resource)
+                        .build();
+
+            } else {
+                throw new IllegalArgumentException("Phải gửi file hoặc imageUrl");
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể tạo media để xử lý ảnh", e);
+        }
+
+
+        ChatOptions chatOptions = ChatOptions.builder()
+                .temperature(0D)
+                .build();
+
+        String answer = chatClient.prompt()
+                .options(chatOptions)
+                .system("""
+                        Bạn là FShop AI, chuyên gia nhận diện và tư vấn điện thoại dựa trên hình ảnh khách hàng gửi.
+                        
+                                             QUY TẮC BẮT BUỘC:
+                                             1. Chỉ phân tích điện thoại trong ảnh.
+                                             2. Chỉ nói về điện thoại, không nói các chủ đề khác.
+                                             3. Không giải thích bạn là AI, không mô tả quy trình phân tích.
+                                             4. Không thêm bình luận ngoài yêu cầu.
+                                             5. Không đưa ra thông tin không có trong ảnh.
+                                             6. Chỉ được trả về JSON, không được trả về nội dung khác.
+                        
+                                             YÊU CẦU OUTPUT (BẮT BUỘC):
+                                             Trả về duy nhất JSON theo đúng format:
+                        
+                                             {
+                                               "message": "tư vấn ngắn gọn về điện thoại trong ảnh (không quá 2 câu)",
+                                               "nameProduct": "tên hãng điện thoại nhận diện được từ ảnh (Samsung, iPhone, Xiaomi, Oppo, Vivo, Realme, Nokia...)"
+                                             }
+                        
+                                             LƯU Ý:
+                                             - Nếu không chắc chắn 100%, hãy chọn hãng gần đúng nhất.
+                                             - Không được trả về các từ sai chính tả như 'Samsum', 'Ipone'.
+                                             - nameProduct chỉ được chứa tên hãng, không bao gồm model.
+                                             - KHÔNG được thêm bất cứ text nào ngoài JSON.
+                        
+                        """)
+                .user(promptUserSpec -> promptUserSpec.media(media).text(message))
+                .call()
+                .content();
+
+        YSendChatBot.AiImageResponse aiResponse = parseAiResponse(answer);
+
+        List<YSendChatBot> products = productRepository.findProductAsChatBot(aiResponse.nameProduct());
+
+        return new RagResponse(aiResponse.message(), null, null, products);
+    }
+
+    private YSendChatBot.AiImageResponse parseAiResponse(String answer) {
+        try {
+            // loại bỏ ``` nếu có
+            answer = answer.strip();
+            if (answer.startsWith("```")) {
+                answer = answer.substring(answer.indexOf('\n') + 1, answer.lastIndexOf("```"));
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(answer, YSendChatBot.AiImageResponse.class);
+        } catch (Exception e) {
+            e.printStackTrace(); // xem lỗi thực tế
+            return new YSendChatBot.AiImageResponse(
+                    "Xin lỗi, tôi chưa thể nhận diện sản phẩm bạn có thể cung cấp thông tin về điện thoại không.",
+                    null
+            );
+        }
     }
 
 

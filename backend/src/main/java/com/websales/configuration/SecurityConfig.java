@@ -39,7 +39,8 @@ public class SecurityConfig {
                     "/customer/order/{id}",
                     "/customer/order_detail/{id}",
                     "/index.html", "/*.js", "/*.css", "/*.ico", "/*.json", "/image/**", "/video/**",
-                    "/api/chats"
+                    "/api/chats",
+                    "/api/chats/chat-image"
             };
 //, "/customer/update/{id}"
     @Lazy

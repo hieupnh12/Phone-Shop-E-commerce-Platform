@@ -15,14 +15,22 @@ public record YSendChatBot(
             String message,
             @JsonProperty("ySendChatBots")
             List<YSendChatBot>productNames
+    ) {}
+    public record AiImageResponse(
+            String message,
+            String nameProduct
+    ) {}
+    public record YProductResponse(
+            Long idProduct,
+            String nameProduct,
+            String image
     ) {
     }
 }
 
 
 
-record YProductResponse() {
-}
+
 
 record YSearchProduct() {
 }

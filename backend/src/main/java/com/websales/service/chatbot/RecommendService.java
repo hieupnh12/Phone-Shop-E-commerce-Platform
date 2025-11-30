@@ -90,7 +90,8 @@ public class RecommendService {
 
                     // Chuỗi main product
                     return String.format(
-                            "%s - Brand: %s, Pin: %s, Camera: %s/%s, Màn hình: %s (%s), Chipset: %s, OS: %s, Origin: %s, Versions: %s",
+                            "idProduct %s, %s - Brand: %s, Pin: %s, Camera: %s/%s, Màn hình: %s (%s), Chipset: %s, OS: %s, Origin: %s, Versions: %s",
+                            p.getIdProduct(),
                             p.getNameProduct(),
                             p.getBrandName(),
                             p.getBattery(),
