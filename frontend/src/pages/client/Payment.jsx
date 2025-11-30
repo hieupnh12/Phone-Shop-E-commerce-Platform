@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CreditCard, User, MapPin, Phone, Mail, StickyNote, Truck, QrCode, CheckCircle, Edit, Loader2, Plus } from 'lucide-react';
 import { customerService } from '../../services/api';
 import cartService from '../../services/cartService';
@@ -18,7 +18,11 @@ const vnd = (n) =>
 
 export default function Payment() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
+  
+  // Lấy danh sách sản phẩm được chọn từ state navigation (nếu có)
+  const selectedProductVersionIds = location.state?.selectedProductVersionIds || null;
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
@@ -75,7 +79,16 @@ export default function Payment() {
         // Load cart
         const cartData = await cartService.getCart();
         if (cartData?.success && cartData.cartItems) {
-          setCartItems(cartData.cartItems);
+          // Nếu có danh sách sản phẩm được chọn, chỉ lấy các sản phẩm đó
+          if (selectedProductVersionIds && selectedProductVersionIds.length > 0) {
+            const filteredItems = cartData.cartItems.filter((item) =>
+              selectedProductVersionIds.includes(item.productVersionId)
+            );
+            setCartItems(filteredItems);
+          } else {
+            // Nếu không có danh sách chọn, lấy tất cả (backward compatibility)
+            setCartItems(cartData.cartItems);
+          }
         } else {
           setError(t('payment.failedToUpdate'));
         }
@@ -131,7 +144,7 @@ export default function Payment() {
     };
 
     loadData();
-  }, []);
+  }, [selectedProductVersionIds]); // Re-load khi danh sách sản phẩm được chọn thay đổi
 
   // Handle address selection
   const handleAddressChange = (addressBookId) => {
@@ -266,7 +279,9 @@ export default function Payment() {
         shippingFee: shippingFee,
         paymentMethod: paymentMethod,
         note: note || t('payment.defaultDelivery'),
-        address: customerInfo.address || ''
+        address: customerInfo.address || '',
+        // Truyền danh sách productVersionId được chọn (nếu có)
+        selectedProductVersionIds: selectedProductVersionIds || cartItems.map(item => item.productVersionId)
       };
 
       const response = await cartService.createOrder(orderData);

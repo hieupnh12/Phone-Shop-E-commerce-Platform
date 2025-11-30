@@ -783,7 +783,12 @@ const ProductDetailPage = () => {
                     }
 
                     await cartService.addToCart(selectedVersion.id, 1);
-                    navigate('/user/payment');
+                    // Chuyển đến cart và tự động chọn sản phẩm vừa thêm
+                    navigate('/user/cart', {
+                      state: {
+                        autoSelectProductVersionId: selectedVersion.id
+                      }
+                    });
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
                 >
