@@ -274,12 +274,25 @@ export default function CreateInStoreOrder() {
     setPhoneError("");
     setEmailError("");
 
-    // Validation: chỉ cần fullName, phoneNumber và email đều không bắt buộc
+    // Validation: fullName và phoneNumber là bắt buộc
     if (!newCustomer.fullName || newCustomer.fullName.trim() === "") {
       setToast({
         message: "Vui lòng nhập họ và tên!",
         type: "error",
       });
+      return;
+    }
+
+    // Số điện thoại là bắt buộc
+    if (!newCustomer.phoneNumber || newCustomer.phoneNumber.trim() === "") {
+      setPhoneError("Số điện thoại là bắt buộc!");
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(newCustomer.phoneNumber.trim())) {
+      setPhoneError("Số điện thoại không hợp lệ! Phải bắt đầu bằng 0 và có 10 chữ số.");
       return;
     }
 
@@ -292,7 +305,7 @@ export default function CreateInStoreOrder() {
     try {
       const customerData = {
         fullName: newCustomer.fullName.trim(),
-        phoneNumber: newCustomer.phoneNumber.trim() || null,
+        phoneNumber: newCustomer.phoneNumber.trim(), // Bắt buộc, không null
         email: newCustomer.email.trim() || null,
         address: newCustomer.address.trim() || null,
       };
@@ -1119,7 +1132,7 @@ export default function CreateInStoreOrder() {
               </div>
               <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Số điện thoại {!newCustomer.email || newCustomer.email.trim() === "" ? "*" : ""} (Bắt đầu bằng 0, 10 chữ số)
+                    Số điện thoại * (Bắt đầu bằng 0, 10 chữ số)
                 </label>
                 <input
                   type="text"
@@ -1130,6 +1143,7 @@ export default function CreateInStoreOrder() {
                   }}
                     placeholder="0123456789"
                     maxLength={10}
+                    required
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all shadow-sm hover:shadow-md ${
                       phoneError 
                         ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
@@ -1145,7 +1159,7 @@ export default function CreateInStoreOrder() {
               </div>
               <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email {!newCustomer.phoneNumber || newCustomer.phoneNumber.trim() === "" ? "*" : ""}
+                  Email (Tùy chọn)
                 </label>
                 <input
                   type="email"
