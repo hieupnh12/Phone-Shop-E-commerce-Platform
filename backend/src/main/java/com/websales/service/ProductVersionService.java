@@ -58,7 +58,6 @@ public class ProductVersionService {
     private final ProductItemMapper productItemMapper;
     private final ProductVersionMapper productVersionMapper;
     private final ImageVersionRepository imageVersionRepository;
-    private final ProductItemRepository productItemRepository;
     private final ProductRepository productRepository;
 //   ProductService productService;
 
