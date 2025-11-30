@@ -15,7 +15,10 @@ import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
 import com.websales.mapper.ProductMapper;
 import com.websales.mapper.ProductVersionMapper;
+import com.websales.repository.ProductRepository;
 import com.websales.repository.ProductVersionRepository;
+import com.websales.repository.ImageVersionRepository;
+import com.websales.repository.ProductItemRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -51,6 +54,9 @@ public class ProductVersionService {
     private final ProductService productService;
     private final Cloudinary cloudinary;
     private final ProductVersionRepository productVersionRepository;
+    private final ImageVersionRepository imageVersionRepository;
+    private final ProductItemRepository productItemRepository;
+    private final ProductRepository productRepository;
 //   ProductService productService;
 
 
@@ -67,6 +73,34 @@ public class ProductVersionService {
 
            pvr.save(productVersion);
            return pvm.ToProductVersionResponse(productVersion);
+       }
+
+       @Transactional
+       public ProductVersionResponse createProductVersion(ProductVersionRequest request) {
+           // Validate request
+           if (request.getIdRam() == null || request.getIdRom() == null || request.getIdColor() == null || request.getIdProduct() == null) {
+               throw new AppException(ErrorCode.INVALID_REQUEST);
+           }
+
+           // Get related entities
+           Ram ram = ramservice.getRamById(request.getIdRam());
+           Rom rom = romservice.getRomById(request.getIdRom());
+           Color color = colorservice.getColorById(request.getIdColor());
+           Product product = productService.getProductById(request.getIdProduct());
+
+           // Create version using mapper
+           ProductVersion productVersion = pvm.ToProducVersionMakeName(request, ram, rom, color, product);
+
+           // Save version
+           ProductVersion savedVersion;
+           try {
+               savedVersion = productVersionRepository.save(productVersion);
+           } catch (Exception e) {
+               log.error("Error creating product version: {}", e.getMessage());
+               throw new AppException(ErrorCode.INVALID_REQUEST);
+           }
+
+           return pvm.ToProductVersionResponse(savedVersion);
        }
 
 //       // cac method khong phai la CRUD
@@ -110,7 +144,7 @@ public class ProductVersionService {
         }
         try {
             System.out.println("Uploading file: " + file.getOriginalFilename() + " with Cloudinary: " + cloudinary);
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of());
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of());
             String url = uploadResult.get("url").toString();
             System.out.println("Upload successful, URL: " + url);
             return url;
@@ -267,5 +301,84 @@ public class ProductVersionService {
                 .map(pvm::ToNewVersionResponse); // Giả sử pvm là mapper instance
     }
 
+    @Transactional
+    public void deleteVersionImage(String versionId, Integer imageId) {
+        // Verify version exists
+        ProductVersion productVersion = productVersionRepository.findById(versionId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_VERSION_NOT_FOUND));
+        
+        // Find and delete the image
+        ProductVersionImage imageToDelete = imageVersionRepository.findById(imageId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_REQUEST));
+        
+        // Verify the image belongs to this version
+        if (!imageToDelete.getProductVersionId().getIdVersion().equals(versionId)) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+        
+        // Remove from version's image list
+        productVersion.getImages().removeIf(img -> img.getImageId() == imageId);
+        
+        // Delete the image entity
+        imageVersionRepository.deleteById(imageId);
+        
+        log.info("Deleted version image {} for version {}", imageId, versionId);
+    }
+
+    @Transactional
+    public void deleteProductVersion(String versionId) {
+        try {
+            log.info("🗑 Starting deletion of product version: {}", versionId);
+            
+            // Verify version exists
+            ProductVersion productVersion = productVersionRepository.findById(versionId)
+                    .orElseThrow(() -> {
+                        log.error("❌ Product version not found: {}", versionId);
+                        return new AppException(ErrorCode.PRODUCT_VERSION_NOT_FOUND);
+                    });
+            log.info("✓ Product version found: {}", versionId);
+
+            // Check if version has ProductItems that have been sold (have orderDetail)
+            boolean hasSoldItems = productItemRepository.existsByVersionIdAndOrderDetailIsNotNull(versionId);
+            log.info("📊 Checking for sold items - hasSoldItems: {}", hasSoldItems);
+            
+            if (hasSoldItems) {
+                // Nếu có ràng buộc, chuyển status = false thay vì xóa
+                log.info("⚠ Version {} has sold items, setting status to false instead of deleting", versionId);
+                productVersion.setStatus(false);
+                productVersionRepository.save(productVersion);
+                log.info("✅ Version {} status set to false", versionId);
+                return;
+            }
+
+            // Delete all ProductItems for this version (similar to deleteSafeProductItems)
+            // Only delete ProductItems that don't have orderDetail (not sold)
+            log.info("🗑 Deleting ProductItems for version: {}", versionId);
+            productItemRepository.deleteByVersionId(versionId);
+            log.info("✓ Deleted ProductItems for version: {}", versionId);
+
+            // Delete all images for this version
+            int imageCount = productVersion.getImages() != null ? productVersion.getImages().size() : 0;
+            log.info("🗑 Deleting {} images for version: {}", imageCount, versionId);
+            imageVersionRepository.deleteAll(productVersion.getImages());
+            log.info("✓ Deleted all images for version: {}", versionId);
+
+            // Delete the version
+            log.info("🗑 Deleting product version: {}", versionId);
+            productVersionRepository.deleteProductVersionById(versionId);
+            log.info("✅ Successfully deleted product version: {}", versionId);
+            
+        } catch (AppException e) {
+            log.error("❌ Application error deleting version {}: {}", versionId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("❌ Unexpected error deleting version {}: {}", versionId, e.getMessage(), e);
+            throw new RuntimeException("Lỗi không mong đợi khi xóa phiên bản: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean hasSoldItems(String versionId) {
+        return productItemRepository.existsByVersionIdAndOrderDetailIsNotNull(versionId);
+    }
 
 }

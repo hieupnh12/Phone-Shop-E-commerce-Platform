@@ -106,6 +106,14 @@ public interface ProductVersionMapper {
         version.setRam(ram);
         version.setRom(rom);
         version.setColor(color);
+        version.setImportPrice(request.getImportPrice());
+        version.setExportPrice(request.getExportPrice());
+        if (request.getStockQuantity() != null) {
+            version.setStockQuantity(request.getStockQuantity());
+        }
+        if (request.getStatus() != null) {
+            version.setStatus(request.getStatus());
+        }
         return version;
     }
 

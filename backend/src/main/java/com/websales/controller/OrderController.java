@@ -172,6 +172,18 @@ public class OrderController {
         }
         
         Order order = orderService.createOrder(request);
+        
+        // Nếu là đơn hàng tại cửa hàng (được tạo bởi employee), giảm stock ngay
+        // Vì đơn hàng tại cửa hàng luôn là COD và cần giảm stock khi tạo order
+        if (isEmployee && hasCreatePermission && order.getStatus() == OrderStatus.PENDING) {
+            try {
+                orderService.reduceStockFromOrder(order.getOrderId());
+            } catch (Exception e) {
+                // Log lỗi nhưng vẫn trả về order đã tạo
+                System.err.println("Error reducing stock for in-store order " + order.getOrderId() + ": " + e.getMessage());
+            }
+        }
+        
         return ApiResponse.<OrderResponse>builder()
                 .result(orderMapper.toOrderResponse(order))
                 .message("Order created successfully")

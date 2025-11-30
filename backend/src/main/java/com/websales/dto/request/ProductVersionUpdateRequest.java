@@ -39,5 +39,8 @@ public class ProductVersionUpdateRequest {
     @DecimalMin("0.0")
     BigDecimal exportPrice;
 
+    Integer stockQuantity;
+
+    Boolean status;
 
 }
