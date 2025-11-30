@@ -89,6 +89,11 @@ public class OrderService {
 
             orderDetailRepository.saveAll(orderDetails);
             savedOrder.setOrderDetails(orderDetails);
+            
+            // Trừ số lượng sản phẩm trong kho khi tạo order với status PENDING
+            if (savedOrder.getStatus() == OrderStatus.PENDING) {
+                reduceStockFromOrder(savedOrder.getOrderId());
+            }
         }
 
         return savedOrder;
@@ -99,17 +104,24 @@ public class OrderService {
         Optional<Order> orderOpt = orderRepository.findByOrderId(orderId);
         if (orderOpt.isPresent()) {
             Order order = orderOpt.get();
+            OrderStatus oldStatus = order.getStatus();
             order.setStatus(status);
             if (status == OrderStatus.DELIVERED || status == OrderStatus.CANCELED || status == OrderStatus.RETURNED) {
                 order.setEndDatetime(java.time.LocalDateTime.now());
             }
+            
+            // Nếu chuyển sang CANCELED, cộng lại quantity vào kho
+            if (status == OrderStatus.CANCELED && oldStatus != OrderStatus.CANCELED) {
+                restoreStockFromOrder(orderId);
+            }
+            
             return Optional.of(orderRepository.save(order));
         }
         return Optional.empty();
     }
 
     /**
-     * Trừ số lượng sản phẩm trong kho khi thanh toán thành công
+     * Trừ số lượng sản phẩm trong kho khi tạo order hoặc thanh toán thành công
      * @param orderId ID của đơn hàng
      */
     @Transactional
@@ -128,7 +140,44 @@ public class OrderService {
                 Integer quantityToReduce = orderDetail.getQuantity();
                 
                 if (currentStock != null && quantityToReduce != null) {
-                    int newStock = Math.max(0, currentStock - quantityToReduce);
+                    // Kiểm tra số lượng tồn kho có đủ không
+                    if (currentStock < quantityToReduce) {
+                        throw new RuntimeException(
+                            "Không đủ số lượng trong kho cho sản phẩm " + 
+                            productVersion.getIdVersion() + 
+                            ". Tồn kho: " + currentStock + ", Yêu cầu: " + quantityToReduce
+                        );
+                    }
+                    
+                    int newStock = currentStock - quantityToReduce;
+                    productVersion.setStockQuantity(newStock);
+                    productVersionRepository.save(productVersion);
+                }
+            }
+        }
+    }
+
+    /**
+     * Cộng lại số lượng sản phẩm vào kho khi hủy đơn hàng
+     * @param orderId ID của đơn hàng
+     */
+    @Transactional
+    public void restoreStockFromOrder(Integer orderId) {
+        Order order = orderRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+        
+        if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
+            return;
+        }
+        
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            ProductVersion productVersion = orderDetail.getProductVersion();
+            if (productVersion != null) {
+                Integer currentStock = productVersion.getStockQuantity();
+                Integer quantityToRestore = orderDetail.getQuantity();
+                
+                if (currentStock != null && quantityToRestore != null) {
+                    int newStock = currentStock + quantityToRestore;
                     productVersion.setStockQuantity(newStock);
                     productVersionRepository.save(productVersion);
                 }
