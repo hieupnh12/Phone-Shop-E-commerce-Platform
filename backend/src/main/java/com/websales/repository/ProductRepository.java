@@ -48,6 +48,22 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "WHERE p.idProduct = :id")
     Product findByIdProduct(@Param("id") Long id);
 
+    @Query(value = "SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.origin " +
+            "LEFT JOIN FETCH p.brand " +
+            "LEFT JOIN FETCH p.operatingSystem " +
+            "LEFT JOIN FETCH p.warehouseArea " +
+            "LEFT JOIN FETCH p.productVersion pv " +
+            "LEFT JOIN FETCH p.category " +
+            "ORDER BY p.idProduct DESC",
+            countQuery = "SELECT count(DISTINCT p) FROM Product p " +
+                    "LEFT JOIN p.origin " +
+                    "LEFT JOIN p.brand " +
+                    "LEFT JOIN p.operatingSystem " +
+                    "LEFT JOIN p.warehouseArea " +
+                    "LEFT JOIN p.category ")
+    Page<Product> findAllProductsForAdmin(Pageable pageable);
+
 
 
 

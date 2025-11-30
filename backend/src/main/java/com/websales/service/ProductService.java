@@ -338,7 +338,21 @@ public class ProductService {
                 .map(productMapper::toProductFULLResponse);
     }
 
-
+    public Page<ProductFULLResponse> listAllProductsForAdmin(Pageable pageable) {
+        Page<Product> products = productRepository.findAllProductsForAdmin(pageable);
+        products.forEach(product -> {
+            product.getProductVersion().forEach(version -> {
+                // Lọc ProductItem với export_id IS NULL
+                version.setProductItems(
+                        version.getProductItems().stream()
+                                .filter(pi -> pi.getOrderDetail() == null)
+                                .collect(Collectors.toList())
+                );
+            });
+        });
+        return products
+                .map(productMapper::toProductFULLResponse);
+    }
 
     public Product getProductById(Long id) {
         long start = System.nanoTime();
