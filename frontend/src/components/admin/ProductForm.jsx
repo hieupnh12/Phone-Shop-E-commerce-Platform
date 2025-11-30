@@ -77,12 +77,11 @@ useEffect(() => {
         rearCamera: product.rearCamera || "",
         frontCamera: product.frontCamera || "",
         warrantyPeriod: product.warrantyPeriod || "",
-        brandId: product.brandId || "",
-        originId: product.originId || "",
-        operatingSystemId: product.operatingSystemId || "",
-        
-        warehouseAreaId: product.warehouseAreaId || "",
-        categoryId: product.categoryId || "",
+        brandId: String(product.brandId || ""),
+        originId: String(product.originId || ""),
+        operatingSystemId: String(product.operatingSystemId || ""),
+        warehouseAreaId: String(product.warehouseAreaId || ""),
+        categoryId: String(product.categoryId || ""),
         status: product.status !== undefined ? product.status : true,
       });
 
@@ -98,6 +97,7 @@ useEffect(() => {
       ) {
         setVersions(
           product.productVersionResponses.map((v) => ({
+            idProductVersion: v.idVersion || v.idProductVersion, // Backend returns idVersion
             idRam: v.ramName
               ? ramList.find((r) => r.nameRam === v.ramName)?.idRam
               : "",
@@ -111,6 +111,7 @@ useEffect(() => {
             exportPrice: v.exportPrice,
             stockQuantity: v.stockQuantity,
             status: v.status,
+            images: v.images || [],
           }))
         );
       }
@@ -183,8 +184,13 @@ useEffect(() => {
   };
 
   const validateForm = () => {
-    if (!formData.nameProduct) {
+    if (!formData.nameProduct || formData.nameProduct.trim() === "") {
       setToast({ type: "error", message: "Tên sản phẩm không được để trống" });
+      return false;
+    }
+
+    if (formData.nameProduct.length > 255) {
+      setToast({ type: "error", message: "Tên sản phẩm không được vượt quá 255 ký tự" });
       return false;
     }
 
@@ -208,8 +214,83 @@ useEffect(() => {
       return false;
     }
 
+    if (formData.battery !== null && formData.battery !== undefined && formData.battery !== "") {
+      const batteryStr = String(formData.battery).trim();
+      if (batteryStr !== "") {
+        const batteryNum = parseInt(batteryStr);
+        if (isNaN(batteryNum) || batteryNum <= 0) {
+          setToast({ type: "error", message: "Dung lượng pin phải là số nguyên dương" });
+          return false;
+        }
+      }
+    }
+
+    if (formData.scanFrequency !== null && formData.scanFrequency !== undefined && formData.scanFrequency !== "") {
+      const scanFreqStr = String(formData.scanFrequency).trim();
+      if (scanFreqStr !== "") {
+        const scanFreq = parseInt(scanFreqStr);
+        if (isNaN(scanFreq) || scanFreq <= 0) {
+          setToast({ type: "error", message: "Tần số quét phải là số nguyên dương" });
+          return false;
+        }
+      }
+    }
+
+    if (formData.screenSize !== null && formData.screenSize !== undefined && formData.screenSize !== "") {
+      const screenSizeStr = String(formData.screenSize).trim();
+      if (screenSizeStr !== "") {
+        const screenSizeNum = parseFloat(screenSizeStr);
+        if (isNaN(screenSizeNum) || screenSizeNum <= 0) {
+          setToast({ type: "error", message: "Kích thước màn hình phải là số dương" });
+          return false;
+        }
+      }
+    }
+
+    if (formData.screenResolution && formData.screenResolution.length > 100) {
+      setToast({ type: "error", message: "Độ phân giải màn hình không được vượt quá 100 ký tự" });
+      return false;
+    }
+
+    if (formData.screenTech && formData.screenTech.length > 100) {
+      setToast({ type: "error", message: "Công nghệ màn hình không được vượt quá 100 ký tự" });
+      return false;
+    }
+
+    if (formData.chipset && formData.chipset.length > 255) {
+      setToast({ type: "error", message: "Chipset không được vượt quá 255 ký tự" });
+      return false;
+    }
+
+    if (formData.rearCamera && formData.rearCamera.length > 255) {
+      setToast({ type: "error", message: "Thông tin camera sau không được vượt quá 255 ký tự" });
+      return false;
+    }
+
+    if (formData.frontCamera && formData.frontCamera.length > 255) {
+      setToast({ type: "error", message: "Thông tin camera trước không được vượt quá 255 ký tự" });
+      return false;
+    }
+
+    if (formData.warrantyPeriod !== null && formData.warrantyPeriod !== undefined && formData.warrantyPeriod !== "") {
+      const warrantyStr = String(formData.warrantyPeriod).trim();
+      if (warrantyStr !== "") {
+        const warrantyNum = parseInt(warrantyStr);
+        if (isNaN(warrantyNum) || warrantyNum < 0) {
+          setToast({ type: "error", message: "Thời hạn bảo hành phải là số nguyên không âm" });
+          return false;
+        }
+      }
+    }
+
     if (versions.length === 0) {
       setToast({ type: "error", message: "Vui lòng thêm ít nhất 1 phiên bản" });
+      return false;
+    }
+
+    const hasActiveVersion = versions.some(v => v.status === true);
+    if (!hasActiveVersion) {
+      setToast({ type: "error", message: "Phải có ít nhất 1 phiên bản đang hoạt động" });
       return false;
     }
 
@@ -220,6 +301,29 @@ useEffect(() => {
     e.preventDefault();
 
     if (!validateForm()) return;
+
+    // Filter out images from versions before sending to backend
+    // For new versions, don't include idProductVersion; for editing, include it
+    const versionsForBackend = versions.map(v => {
+      const versionData = {
+        idProduct: formData.idProduct || null, // Include product ID for version creation
+        idRam: v.idRam,
+        idRom: v.idRom,
+        idColor: v.idColor,
+        importPrice: v.importPrice,
+        exportPrice: v.exportPrice,
+        stockQuantity: v.stockQuantity,
+        status: v.status,
+        Items: v.Items || [],
+      };
+      
+      // Only include idProductVersion if it's an existing version (editing)
+      if (v.idProductVersion) {
+        versionData.idProductVersion = v.idProductVersion;
+      }
+      
+      return versionData;
+    });
 
     const productPayload = {
       idProduct: formData.idProduct,
@@ -244,12 +348,18 @@ useEffect(() => {
         stockQuantity: 0,
         status: false,
       },
-      versions: versions,
+      versions: versionsForBackend,
     };
+
+    console.log("📝 ProductForm - versionsForBackend:", versionsForBackend);
+    console.log("📝 ProductForm - productPayload:", productPayload);
+    console.log("📝 ProductForm - versionsWithImages:", versions);
 
     onSubmit({
       payload: productPayload,
       image: imageFile,
+      versionsWithImages: versions, // Pass original versions with images for client-side upload
+      // Each version may have deletedImageIds property
     });
   };
 
@@ -528,6 +638,8 @@ useEffect(() => {
           ramList={ramList}
           romList={romList}
           colorList={colorList}
+          isEditMode={!!product} // true if editing existing product
+          productId={product?.idProduct} // Product ID for edit mode
         />
       </div>
 
