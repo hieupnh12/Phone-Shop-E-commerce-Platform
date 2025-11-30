@@ -1,49 +1,19 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Star,
-  Camera,
-  Upload,
-  Trash2,
-  Zap,
-  Clock,
-  User,
 } from "lucide-react";
+import feedbackService from "../../../services/feedbackService";
+import orderService from "../../../services/orderService";
+import { useAuthFullOptions } from "../../../contexts/AuthContext";
+import FeedbackList from "../../feedback/FeedbackList";
 
-// Dữ liệu giả định cho phần hiển thị (theo hình ảnh)
-const mockDisplayData = {
-  productNameDisplay: "iPhone 16 Plus 128GB | Chính hãng VN/A",
-  overallRating: 4.8,
-  totalReviews: 31,
-  ratingDistribution: [
-    { stars: 5, count: 26, percentage: 26 / 31 },
-    { stars: 4, count: 5, percentage: 5 / 31 },
-    { stars: 3, count: 0, percentage: 0 / 31 },
-    { stars: 2, count: 0, percentage: 0 / 31 },
-    { stars: 1, count: 0, percentage: 0 / 31 },
-  ],
-  experienceRatingsDisplay: [
-    { label: "Hiệu năng", rating: 5, count: 11 },
-    { label: "Thời lượng pin", rating: 5, count: 11 },
-    { label: "Chất lượng camera", rating: 5, count: 11 },
-  ],
-  filters: [
-    "Tất cả",
-    "Có hình ảnh",
-    "Đã mua hàng",
-    "5 sao",
-    "4 sao",
-    "3 sao",
-    "2 sao",
-    "1 sao",
-  ],
-  sampleReview: {
-    user: "A Tuấn",
-    rating: 5,
-    text: "Tuyệt vời với 16pl 128gb màu trắng cửa hàng tại Thơm ĐNai có hàng k ạ.",
-    date: "Đánh giá đã đăng vào 3 tháng trước",
-  },
-};
+// Dữ liệu giả định cho phần đánh giá theo trải nghiệm (KHÔNG ĐỤNG VÀO)
+const experienceRatingsDisplay = [
+  { label: "Hiệu năng", rating: 5, count: 11 },
+  { label: "Thời lượng pin", rating: 5, count: 11 },
+  { label: "Chất lượng camera", rating: 5, count: 11 },
+];
 
 // Component StarRating cho CẢ HIỂN THỊ (Display) và TƯƠNG TÁC (Interactive)
 const StarRating = ({
@@ -84,92 +54,154 @@ const StarRating = ({
   );
 };
 
-const ProductFeedback = () => {
-  // --- STATE CỦA POPUP (Giữ nguyên từ code gốc của bạn) ---
-  const [showReviewPopup, setShowReviewPopup] = React.useState(false);
-  const [overallRating, setOverallRating] = React.useState(0);
-  const [experienceRatings, setExperienceRatings] = React.useState({
-    performance: 0,
-    battery: 0,
-    camera: 0,
-  });
-  const [reviewText, setReviewText] = React.useState("");
-  const [uploadedImages, setUploadedImages] = React.useState([]);
+const ProductFeedback = ({ productId, productName, productImage }) => {
+  const authContext = useAuthFullOptions();
+  const user = authContext?.user;
 
-  const product = {
-    name: "Điện thoại iPhone 16 Pro Max 256GB",
-    image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=200",
-  };
+  // State cho rating stats
+  const [ratingStats, setRatingStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  
+  // State cho popup
+  const [showReviewPopup, setShowReviewPopup] = useState(false);
+  const [overallRating, setOverallRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  
+  // State cho kiểm tra quyền đánh giá
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [checkingPermission, setCheckingPermission] = useState(true);
+  
+  // State cho filter và refresh
+  const [selectedRatingFilter, setSelectedRatingFilter] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const overallRatingLabels = [
-    { value: 1, label: "Rất Tệ" },
-    { value: 2, label: "Tệ" },
-    { value: 3, label: "Bình thường" },
-    { value: 4, label: "Tốt" },
-    { value: 5, label: "Tuyệt vời" },
-  ];
-
-  const experienceCategories = [
-    { key: "performance", label: "Hiệu năng", description: "Siêu mạnh mẽ" },
-    { key: "battery", label: "Thời lượng pin", description: "Cực khủng" },
-    {
-      key: "camera",
-      label: "Chất lượng camera",
-      description: "Chụp đẹp, chuyên nghiệp",
-    },
-  ];
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newImages = files.map((file) => ({
-      id: Date.now() + Math.random(),
-      url: URL.createObjectURL(file),
-      file: file,
-    }));
-    setUploadedImages([...uploadedImages, ...newImages].slice(0, 8)); // Giới hạn 8 ảnh
-  };
-
-  const removeImage = (id) => {
-    setUploadedImages(uploadedImages.filter((img) => img.id !== id));
-  };
-
-  const handleSubmit = () => {
-    if (!overallRating || reviewText.length < 15) return;
-    const reviewData = {
-      overallRating,
-      experienceRatings,
-      reviewText,
-      images: uploadedImages,
+  // Fetch rating stats
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!productId) return;
+      setLoadingStats(true);
+      try {
+        const stats = await feedbackService.getRatingStats(productId);
+        setRatingStats(stats);
+      } catch (error) {
+        console.error("Error loading rating stats:", error);
+        setRatingStats(null);
+      } finally {
+        setLoadingStats(false);
+      }
     };
-    console.log("Submitting review:", reviewData);
-    // Reset form
-    setShowReviewPopup(false);
-    setOverallRating(0);
-    setExperienceRatings({ performance: 0, battery: 0, camera: 0 });
-    setReviewText("");
-    setUploadedImages([]);
+    loadStats();
+  }, [productId, refreshTrigger]);
+
+  // Kiểm tra user đã mua sản phẩm và đã đánh giá chưa
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (!user || !productId) {
+        setCheckingPermission(false);
+        return;
+      }
+
+      setCheckingPermission(true);
+      try {
+        // Kiểm tra đã mua sản phẩm chưa
+        const completedOrders = await orderService.getCompletedOrders();
+        const hasBought = completedOrders.some(order => 
+          order.orderDetails?.some(detail => detail.productId === productId)
+        );
+        setHasPurchased(hasBought);
+
+        // Kiểm tra đã đánh giá chưa
+        const myFeedbacks = await feedbackService.getMyFeedbacks(0, 1000);
+        const hasReviewedProduct = (myFeedbacks.content || []).some(
+          fb => fb.product_id === productId
+        );
+        setHasReviewed(hasReviewedProduct);
+      } catch (error) {
+        console.error("Error checking permission:", error);
+        setHasPurchased(false);
+        setHasReviewed(false);
+      } finally {
+        setCheckingPermission(false);
+      }
+    };
+    checkPermission();
+  }, [user, productId]);
+
+  // Tính toán rating distribution từ stats
+  const ratingDistribution = ratingStats ? [
+    { stars: 5, count: ratingStats.five_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.five_star_count || 0) / ratingStats.total_reviews : 0 },
+    { stars: 4, count: ratingStats.four_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.four_star_count || 0) / ratingStats.total_reviews : 0 },
+    { stars: 3, count: ratingStats.three_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.three_star_count || 0) / ratingStats.total_reviews : 0 },
+    { stars: 2, count: ratingStats.two_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.two_star_count || 0) / ratingStats.total_reviews : 0 },
+    { stars: 1, count: ratingStats.one_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.one_star_count || 0) / ratingStats.total_reviews : 0 },
+  ] : [];
+
+  const averageRating = ratingStats?.average_rating || 0;
+  const totalReviews = ratingStats?.total_reviews || 0;
+
+  // Handle submit feedback
+  const handleSubmit = async () => {
+    if (!overallRating || reviewText.length < 15) {
+      setError("Vui lòng chọn đánh giá và nhập ít nhất 15 ký tự");
+      return;
+    }
+
+    if (!hasPurchased) {
+      setError("Bạn chỉ có thể đánh giá sản phẩm đã mua");
+      return;
+    }
+
+    if (hasReviewed) {
+      setError("Bạn đã đánh giá sản phẩm này rồi");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+    try {
+      await feedbackService.createFeedback({
+        product_id: productId,
+        rate: overallRating,
+        content: reviewText.trim()
+      });
+      
+      // Reset form và refresh
+      setShowReviewPopup(false);
+      setOverallRating(0);
+      setReviewText("");
+      setHasReviewed(true);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      setError(err.response?.data?.message || "Lỗi khi gửi đánh giá");
+    } finally {
+      setSubmitting(false);
+    }
   };
-  // --- Hết STATE CỦA POPUP ---
 
-  // --- LOGIC CỦA DISPLAY (Theo hình ảnh) ---
-  const {
-    productNameDisplay,
-    overallRating: avgRatingDisplay,
-    totalReviews,
-    ratingDistribution,
-    experienceRatingsDisplay,
-    filters,
-    sampleReview,
-  } = mockDisplayData;
+  // Handle filter change
+  const handleFilterChange = (rating) => {
+    setSelectedRatingFilter(rating === "all" ? null : rating);
+  };
 
-  const averageRating = avgRatingDisplay.toFixed(1);
+  if (loadingStats) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 bg-gray-50 font-sans">
+        <div className="bg-white shadow-xl rounded-xl p-6">
+          <div className="text-center py-8">Đang tải đánh giá...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 bg-gray-50 font-sans">
       <div className="bg-white shadow-xl rounded-xl p-6 md:items-center">
-        {/* Phần 1: Giao diện hiển thị đánh giá (giống hình ảnh) */}
+        {/* Phần 1: Giao diện hiển thị đánh giá */}
         <h1 className="text-xl font-bold text-gray-800 mb-6 pb-2">
-          Đánh giá {productNameDisplay}
+          Đánh giá {productName || "Sản phẩm"}
         </h1>
 
         <div className="flex flex-wrap md:flex-nowrap justify-between items-start mb-8 gap-6">
@@ -179,14 +211,14 @@ const ProductFeedback = () => {
             <div className="w-full md:w-1/3 bg-white text-center">
               <div className="flex items-center mb-3 justify-center">
                 <span className="text-5xl font-bold text-gray-900 mr-2">
-                  {averageRating}
+                  {averageRating.toFixed(1)}
                 </span>
                 <span className="text-xl text-gray-600">/5</span>
               </div>
 
               <div className="flex flex-col mb-4">
                 <StarRating
-                  rating={Math.floor(avgRatingDisplay)}
+                  rating={Math.round(averageRating)}
                   size="medium"
                   interactive={false}
                 />
@@ -196,12 +228,29 @@ const ProductFeedback = () => {
                 </span>
               </div>
 
-              <button
-                onClick={() => setShowReviewPopup(true)}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-md"
-              >
-                Viết đánh giá
-              </button>
+              {user && hasPurchased && !hasReviewed && !checkingPermission && (
+                <button
+                  onClick={() => setShowReviewPopup(true)}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-md"
+                >
+                  Viết đánh giá
+                </button>
+              )}
+              {user && !hasPurchased && !checkingPermission && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Mua sản phẩm để đánh giá
+                </p>
+              )}
+              {user && hasReviewed && !checkingPermission && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Bạn đã đánh giá sản phẩm này
+                </p>
+              )}
+              {!user && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Đăng nhập để đánh giá
+                </p>
+              )}
             </div>
 
             {/* Rating distribution (aligned top, same width as summary) */}
@@ -260,7 +309,7 @@ const ProductFeedback = () => {
           </div>
         </div>
 
-        {/* --- Phần Lọc đánh giá và Review đơn lẻ --- */}
+        {/* --- Phần Lọc đánh giá và Danh sách đánh giá --- */}
         <div className="border-t border-gray-200 pt-6 mt-6">
           <h2 className="text-lg font-bold text-gray-800 mb-4">
             Lọc đánh giá theo
@@ -268,44 +317,38 @@ const ProductFeedback = () => {
 
           {/* Các nút lọc */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {filters.map((filter, index) => (
+            <button
+              onClick={() => handleFilterChange("all")}
+              className={`py-2 px-4 rounded-full text-sm font-medium transition-colors ${
+                selectedRatingFilter === null
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Tất cả
+            </button>
+            {[5, 4, 3, 2, 1].map((rating) => (
               <button
-                key={filter}
+                key={rating}
+                onClick={() => handleFilterChange(rating)}
                 className={`py-2 px-4 rounded-full text-sm font-medium transition-colors ${
-                  index === 0 // Giả định "Tất cả" là nút đang được chọn
+                  selectedRatingFilter === rating
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {filter}
+                {rating} sao
               </button>
             ))}
           </div>
 
-          {/* Review đơn lẻ */}
+          {/* Danh sách đánh giá */}
           <div className="mt-6">
-            <div className="flex items-start mb-3">
-              <span className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full font-bold text-gray-700 mr-3 mt-1">
-                {sampleReview.user[0]}
-              </span>
-              <div>
-                <span className="font-semibold text-gray-800 block">
-                  {sampleReview.user}
-                </span>
-                <div className="flex items-center mt-1">
-                  <StarRating
-                    rating={sampleReview.rating}
-                    size="small"
-                    interactive={false}
-                  />
-                  <span className="text-base font-semibold text-gray-800 ml-2">
-                    Tuyệt vời
-                  </span>
-                </div>
-                <p className="text-gray-700 my-2">{sampleReview.text}</p>
-                <p className="text-xs text-gray-500">{sampleReview.date}</p>
-              </div>
-            </div>
+            <FeedbackList 
+              productId={productId} 
+              selectedRating={selectedRatingFilter}
+              refreshTrigger={refreshTrigger}
+            />
           </div>
         </div>
       </div>
@@ -333,14 +376,16 @@ const ProductFeedback = () => {
             {/* Product Info */}
             <div className="px-6 py-4 bg-gray-50 border-b">
               <div className="flex items-center gap-4">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
+                {productImage && (
+                  <img
+                    src={productImage}
+                    alt={productName || "Sản phẩm"}
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
+                )}
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {product.name}
+                    {productName || "Sản phẩm"}
                   </h3>
                   <p className="text-sm text-gray-600">
                     Chia sẻ trải nghiệm của bạn
@@ -351,75 +396,35 @@ const ProductFeedback = () => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
+              {/* Error message */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                  {error}
+                </div>
+              )}
+
               {/* Overall Rating */}
               <div className="mb-8">
                 <h3 className="font-semibold text-gray-900 mb-4 text-lg">
                   Đánh giá chung
                 </h3>
-                <div className="flex justify-between items-center mb-4">
-                  {overallRatingLabels.map((item) => (
-                    <button
-                      key={item.value}
-                      onClick={() => setOverallRating(item.value)}
-                      className="flex flex-col items-center gap-2 transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`w-10 h-10 transition-colors ${
-                          overallRating >= item.value
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-300"
-                        }`}
-                      />
-                      <span
-                        className={`text-xs font-medium ${
-                          overallRating >= item.value
-                            ? "text-gray-900"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    </button>
-                  ))}
+                <div className="flex justify-center">
+                  <StarRating
+                    rating={overallRating}
+                    onRate={setOverallRating}
+                    size="large"
+                    interactive={true}
+                  />
                 </div>
-              </div>
-
-              {/* Experience Ratings */}
-              <div className="mb-8">
-                <h3 className="font-semibold text-gray-900 mb-4 text-lg">
-                  Theo trải nghiệm
-                </h3>
-                <div className="space-y-4">
-                  {experienceCategories.map((category) => (
-                    <div
-                      key={category.key}
-                      className="bg-gray-50 rounded-lg p-4"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {category.label}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex justify-center mt-3">
-                        <StarRating
-                          rating={experienceRatings[category.key]}
-                          onRate={(rating) =>
-                            setExperienceRatings({
-                              ...experienceRatings,
-                              [category.key]: rating,
-                            })
-                          }
-                          size="medium"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {overallRating > 0 && (
+                  <p className="text-center text-sm text-gray-600 mt-2">
+                    {overallRating === 5 && "Tuyệt vời"}
+                    {overallRating === 4 && "Tốt"}
+                    {overallRating === 3 && "Bình thường"}
+                    {overallRating === 2 && "Tệ"}
+                    {overallRating === 1 && "Rất Tệ"}
+                  </p>
+                )}
               </div>
 
               {/* Review Text */}
@@ -429,60 +434,17 @@ const ProductFeedback = () => {
                 </label>
                 <textarea
                   value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
+                  onChange={(e) => {
+                    setReviewText(e.target.value);
+                    setError("");
+                  }}
                   placeholder="Xin mời chia sẻ một số cảm nhận về sản phẩm (nhập tối thiểu 15 kí tự)"
                   className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-400"
                   maxLength={500}
+                  disabled={submitting}
                 />
                 <p className="text-sm text-gray-500 mt-1 text-right">
                   {reviewText.length}/500 ký tự
-                </p>
-              </div>
-
-              {/* Image Upload */}
-              <div className="mb-6">
-                <label className="block font-semibold text-gray-900 mb-3">
-                  Thêm hình ảnh (tùy chọn)
-                </label>
-
-                <div className="grid grid-cols-4 gap-3">
-                  {/* Uploaded Images */}
-                  {uploadedImages.map((image) => (
-                    <div key={image.id} className="relative group">
-                      <img
-                        src={image.url}
-                        alt="Review"
-                        className="w-full aspect-square object-cover rounded-lg border-2 border-gray-200"
-                      />
-                      <button
-                        onClick={() => removeImage(image.id)}
-                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Upload Button */}
-                  {uploadedImages.length < 8 && (
-                    <label className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                      <Camera className="w-8 h-8 text-gray-400 mb-1" />
-                      <span className="text-xs text-gray-500 text-center px-2">
-                        Thêm ảnh
-                      </span>
-                    </label>
-                  )}
-                </div>
-
-                <p className="text-xs text-gray-500 mt-2">
-                  📷 Tối đa 8 ảnh, mỗi ảnh không quá 5MB
                 </p>
               </div>
             </div>
@@ -497,14 +459,14 @@ const ProductFeedback = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={!overallRating || reviewText.length < 15}
+                disabled={!overallRating || reviewText.length < 15 || submitting || !hasPurchased || hasReviewed}
                 className={`px-8 py-3 rounded-lg font-semibold transition-all ${
-                  overallRating && reviewText.length >= 15
+                  overallRating && reviewText.length >= 15 && !submitting && hasPurchased && !hasReviewed
                     ? "bg-red-600 hover:bg-red-700 text-white cursor-pointer"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                GỬI ĐÁNH GIÁ
+                {submitting ? "Đang gửi..." : "GỬI ĐÁNH GIÁ"}
               </button>
             </div>
           </div>

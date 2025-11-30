@@ -3,6 +3,7 @@ import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProductAll, fetchSearchAll } from '../../../services/productWorker';
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from '../../../contexts/LanguageContext';
+import feedbackService from '../../../services/feedbackService';
 
 const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProducts thay fetch thủ công
   const { t } = useLanguage();
@@ -13,6 +14,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [totalCount, setTotalCount] = useState(0);
   const [favorites, setFavorites] = useState(new Set());
   const [noResults, setNoResults] = useState(false); // Không tìm thấy sản phẩm
+  const [productRatings, setProductRatings] = useState({}); // Map productId -> rating
 
   const navigate = useNavigate();
   const PAGE_SIZE = 8;
@@ -53,6 +55,21 @@ const loadAllProducts = async () => {
     const count = data.total || list.length;
     setTotalCount(count);
     props.onProductsCountChange?.(count);
+
+    // Fetch ratings cho tất cả products
+    const ratingsMap = {};
+    const ratingPromises = list.map(async (product) => {
+      try {
+        const ratingData = await feedbackService.getAverageRating(product.id);
+        const rating = typeof ratingData === 'number' ? ratingData : (ratingData?.average_rating || ratingData?.rating || 0);
+        ratingsMap[product.id] = rating;
+      } catch (err) {
+        console.warn(`Không thể tải rating cho product ${product.id}:`, err);
+        ratingsMap[product.id] = 0;
+      }
+    });
+    await Promise.all(ratingPromises);
+    setProductRatings(ratingsMap);
   } catch (error) {
     console.error('Lỗi tải danh sách sản phẩm:', error);
     setError(t('common.loadingProductsError'));
@@ -105,6 +122,21 @@ if (!hasFilters) {
     const count = matches.length;
     setTotalCount(count);
     props.onProductsCountChange?.(count);
+
+    // Fetch ratings cho các products tìm được
+    const ratingsMap = {};
+    const ratingPromises = matches.map(async (product) => {
+      try {
+        const ratingData = await feedbackService.getAverageRating(product.id);
+        const rating = typeof ratingData === 'number' ? ratingData : (ratingData?.average_rating || ratingData?.rating || 0);
+        ratingsMap[product.id] = rating;
+      } catch (err) {
+        console.warn(`Không thể tải rating cho product ${product.id}:`, err);
+        ratingsMap[product.id] = 0;
+      }
+    });
+    await Promise.all(ratingPromises);
+    setProductRatings(prev => ({ ...prev, ...ratingsMap }));
 
     if (!count) {
       setNoResults(true); // set trạng thái không tìm thấy
@@ -360,7 +392,11 @@ if (!error && noResults && hasFilters) {
                     <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-semibold text-gray-800 text-sm">{product.rating || 5}</span>
+                        <span className="font-semibold text-gray-800 text-sm">
+                          {productRatings[product.id] !== undefined 
+                            ? productRatings[product.id].toFixed(1) 
+                            : (product.rating || '0.0')}
+                        </span>
                       </div>
                       <button 
                         onClick={() => toggleFavorite(product.id)}

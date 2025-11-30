@@ -17,6 +17,7 @@ import Toast from "../../../components/common/Toast";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { X, Smartphone, Camera, Cpu, Battery, Monitor, Zap, Shield, HardDrive, Palette } from 'lucide-react';
 import ProductFeedback from "../../../components/common/Product/feedBackProduct";
+import feedbackService from "../../../services/feedbackService";
 
 const ProductDetailPage = () => {
   const { t } = useLanguage();
@@ -32,6 +33,9 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   // THÊM MỚI: State cho popup specs
   const [isOpen, setIsOpen] = useState(false);
+  // State cho rating từ API
+  const [productRating, setProductRating] = useState(null);
+  const [reviewCount, setReviewCount] = useState(0);
   const navigate = useNavigate();
 
   // Lấy productId từ URL params
@@ -64,6 +68,26 @@ const ProductDetailPage = () => {
         setSelectedColor(defaultVersion.color || null);
       }
       console.log("✓ Selected version set:", data.versions);
+
+      // Fetch rating từ API
+      try {
+        const [ratingData, statsData] = await Promise.all([
+          feedbackService.getAverageRating(id),
+          feedbackService.getRatingStats(id)
+        ]);
+        
+        // Lấy rating từ response (có thể là số hoặc object)
+        const rating = typeof ratingData === 'number' ? ratingData : (ratingData?.average_rating || ratingData?.rating || 0);
+        const count = statsData?.total_reviews || 0;
+        
+        setProductRating(rating);
+        setReviewCount(count);
+      } catch (ratingError) {
+        console.warn("Không thể tải rating:", ratingError);
+        // Nếu không fetch được rating, dùng giá trị mặc định
+        setProductRating(0);
+        setReviewCount(0);
+      }
     } catch (error) {
       console.error("Lỗi fetch sản phẩm:", error);
       const message =
@@ -395,7 +419,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
     memory: [
       { label: 'Dung lượng RAM', value: product.versions?.[0]?.ram || '8 GB' },
       { label: 'Bộ nhớ trong', value: product.versions?.[0]?.rom || '256 GB' },
-      { label: 'Bộ nhớ còn lại', value: 'Khoảng 245 GB' },
+      { label: 'Dung lượng pin', value: product.specifications?.['Battery'] || 'null' },
       { label: 'Danh bạ', value: 'Không giới hạn' },
     ],
   };
@@ -608,10 +632,10 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
             <div className="flex items-center gap-1">
               <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               <span className="font-semibold text-cyan-100">
-                {product.rating}
+                {productRating !== null ? productRating.toFixed(1) : (product.rating || '0.0')}
               </span>
               <span className="text-cyan-200/70">
-                ({product.reviewCount} đánh giá)
+                ({reviewCount > 0 ? reviewCount : (product.reviewCount || 0)} đánh giá)
               </span>
             </div>
             <button
@@ -625,7 +649,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
               />
               <span>Yêu thích</span>
             </button>
-            <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+            {/* <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -640,7 +664,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 />
               </svg>
               <span>Hỏi đáp</span>
-            </button>
+            </button> */}
 
 
 
@@ -668,7 +692,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
 
 
 
-            <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
+            {/* <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -683,7 +707,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 />
               </svg>
               <span>So sánh</span>
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -1119,7 +1143,11 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
           onClose={() => setToast(null)}
         />
       )}
-            <ProductFeedback productId={productId} />
+            <ProductFeedback 
+              productId={productId} 
+              productName={product?.nameProduct}
+              productImage={product?.image}
+            />
 
     </div>
 

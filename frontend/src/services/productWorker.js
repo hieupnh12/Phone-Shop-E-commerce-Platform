@@ -72,6 +72,8 @@ export const transformProductResponse = (backendProduct) => {
     reviewCount: firstVersion?.reviewCount || 0,
     inStock: (backendProduct.stockQuantity || 0) > 0,
     stockQuantity: backendProduct.stockQuantity || 0,
+    soldQuantity: backendProduct.soldQuantity || 0,
+    soldCount: backendProduct.soldQuantity || 0, // Alias for soldQuantity
     status: backendProduct.status,
 
     // Full details

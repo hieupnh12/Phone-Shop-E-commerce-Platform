@@ -124,18 +124,20 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
 
 
     /**
-     * Lấy top 5 sản phẩm có số lượng OrderDetail liên quan nhiều nhất
-     * (Đếm số lượng OrderDetail unique qua ProductVersion và ProductItem)
+     * Lấy top 5 sản phẩm có số lượng đã bán nhiều nhất
+     * Tính tổng số lượng từ order_details (SUM quantity)
      *
-     * @return List<Object[]> với [0]: Product, [1]: Long (số lượng OrderDetail)
+     * @return List<Object[]> với [0]: Product, [1]: Long (tổng số lượng đã bán)
      */
-    @Query("SELECT p FROM Product p " +
+    @Query("SELECT p, COALESCE(SUM(od.quantity), 0) as soldQuantity " +
+            "FROM Product p " +
             "JOIN p.productVersion pv " +
-            "JOIN pv.productItems pi " +
-            "JOIN pi.orderDetail od " +
-            "GROUP BY p " +
-            "ORDER BY COUNT(DISTINCT pi.orderDetail) DESC")
-    List<Product> findTop5ProductsByOrderDetailCount();
+            "JOIN OrderDetail od ON od.productVersion = pv " +
+            "JOIN od.order o " +
+            "WHERE o.status = :status " +
+            "GROUP BY p.idProduct " +
+            "ORDER BY soldQuantity DESC")
+    List<Object[]> findTop5ProductsByOrderDetailCount(@Param("status") com.websales.enums.OrderStatus status);
 
 
 

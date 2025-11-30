@@ -400,10 +400,19 @@ public class ProductVersionService {
 
 
     public List<ProductFULLResponse> Top5Product(){
-         List<Product> results = pvr.findTop5ProductsByOrderDetailCount();
-         return  results.stream()
-                 .map(pm::toProductFULLResponse)
+         List<Object[]> results = pvr.findTop5ProductsByOrderDetailCount(com.websales.enums.OrderStatus.DELIVERED);
+         return results.stream()
+                 .map(result -> {
+                     Product product = (Product) result[0];
+                     Long soldQuantity = ((Number) result[1]).longValue();
+                     
+                     ProductFULLResponse response = pm.toProductFULLResponse(product);
+                     response.setSoldQuantity(soldQuantity);
+                     return response;
+                 })
+                 .limit(5) // Giới hạn top 5
                  .collect(Collectors.toList());
     }
+
 
 }

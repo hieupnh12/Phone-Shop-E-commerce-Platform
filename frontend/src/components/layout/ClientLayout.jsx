@@ -8,7 +8,7 @@ import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
 import { useAuth } from "../../reducers";
 import { fetchTop5Products } from "../../services/productWorker";
-import { Flame, TrendingUp, Star } from "lucide-react";
+import { Flame, TrendingUp, Star, Zap } from "lucide-react";
 
 const ClientLayout = ({ children, showHero = true }) => {
   const { t } = useLanguage();
@@ -24,29 +24,29 @@ const ClientLayout = ({ children, showHero = true }) => {
 
   const slogans = [
     {
-      title: t('home.slogan1Title'),
-      subtitle: t('home.slogan1Subtitle'),
-      description: t('home.slogan1Description'),
+      title: t("home.slogan1Title"),
+      subtitle: t("home.slogan1Subtitle"),
+      description: t("home.slogan1Description"),
     },
     {
-      title: t('home.slogan2Title'),
-      subtitle: t('home.slogan2Subtitle'),
-      description: t('home.slogan2Description'),
+      title: t("home.slogan2Title"),
+      subtitle: t("home.slogan2Subtitle"),
+      description: t("home.slogan2Description"),
     },
     {
-      title: t('home.slogan3Title'),
-      subtitle: t('home.slogan3Subtitle'),
-      description: t('home.slogan3Description'),
+      title: t("home.slogan3Title"),
+      subtitle: t("home.slogan3Subtitle"),
+      description: t("home.slogan3Description"),
     },
     {
-      title: t('home.slogan4Title'),
-      subtitle: t('home.slogan4Subtitle'),
-      description: t('home.slogan4Description'),
+      title: t("home.slogan4Title"),
+      subtitle: t("home.slogan4Subtitle"),
+      description: t("home.slogan4Description"),
     },
     {
-      title: t('home.slogan5Title'),
-      subtitle: t('home.slogan5Subtitle'),
-      description: t('home.slogan5Description'),
+      title: t("home.slogan5Title"),
+      subtitle: t("home.slogan5Subtitle"),
+      description: t("home.slogan5Description"),
     },
   ];
 
@@ -87,14 +87,18 @@ const ClientLayout = ({ children, showHero = true }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  const handleAddToCart = () => {
-    if (!user) {
-      navigate("/login");
-    }
-    // TODO: Thêm logic thêm vào giỏ hàng ở đây
+  // const handleAddToCart = () => {
+  //   if (!user) {
+  //     navigate("/login");
+  //   }
+  //   // TODO: Thêm logic thêm vào giỏ hàng ở đây
+  // };
+
+  const handleBuyNow = () => {
+    navigate("/user/products");
   };
 
-// THÊM MỚI: Handler cho button "Xem Tất Cả Sản Phẩm" - navigate đến trang Products (/products)
+  // THÊM MỚI: Handler cho button "Xem Tất Cả Sản Phẩm" - navigate đến trang Products (/products)
   const handleViewAllProducts = () => {
     navigate("/user/products"); // Route đến Products/index.jsx (cấu hình trong router)
   };
@@ -141,38 +145,39 @@ const ClientLayout = ({ children, showHero = true }) => {
                 <div className="absolute inset-0 bg-black/40 z-0" />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 z-0" />
 
-            {/* slogan slide */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[19%]">
-              {slogans.map((slogan, index) => (
-                <div
-                  key={index}
-                  className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ${
-                    index === currentSlide
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 translate-y-10 pointer-events-none"
-                  }`}
-                >
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
-                    {" "}
-                    {slogan.title}{" "}
-                  </h1>{" "}
-                  <p className="text-xl sm:text-2xl lg:text-3xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                    {" "}
-                    {slogan.subtitle}{" "}
-                  </p>{" "}
-                  <p className="text-base sm:text-lg text-gray-200 mb-8 drop-shadow-lg">
-                    {" "}
-                    {slogan.description}{" "}
-                  </p>{" "}
-                  <button 
-                  onClick={handleBuyNow}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2 rounded-full text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50">
-                    {" "}
-                    {t('home.buyNow')}{" "}
-                  </button>
+                {/* slogan slide */}
+                <div className="relative z-10 w-full max-w-4xl mx-auto px-4 text-center flex flex-col items-center justify-center h-full transform translate-y-[19%]">
+                  {slogans.map((slogan, index) => (
+                    <div
+                      key={index}
+                      className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ${
+                        index === currentSlide
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-10 pointer-events-none"
+                      }`}
+                    >
+                      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 drop-shadow-2xl">
+                        {" "}
+                        {slogan.title}{" "}
+                      </h1>{" "}
+                      <p className="text-xl sm:text-2xl lg:text-3xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                        {" "}
+                        {slogan.subtitle}{" "}
+                      </p>{" "}
+                      <p className="text-base sm:text-lg text-gray-200 mb-8 drop-shadow-lg">
+                        {" "}
+                        {slogan.description}{" "}
+                      </p>{" "}
+                      <button
+                        onClick={handleBuyNow}
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-5 py-2 rounded-full text-lg font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/50"
+                      >
+                        {" "}
+                        {t("home.buyNow")}{" "}
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
                 <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
                   {slogans.map((_, index) => (
@@ -190,36 +195,36 @@ const ClientLayout = ({ children, showHero = true }) => {
               </div>
             </>
           )}
-
           {/* Hot product */}
-          return (
-          <div className="relative py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-950 via-blue-950/30 to-gray-900 overflow-hidden">
-            {/* Decorative elements */}
-            <div className="absolute top-0 left-0 w-full h-full">
-              <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-              <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="relative py-16 px-4">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             </div>
 
-            <div className="max-w-7xl mx-auto relative z-10">
-              {/* Header Section */}
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 bg-red-500/20 border border-red-500/30 rounded-full px-6 py-2 mb-4">
-                  <Flame className="w-5 h-5 text-red-500 animate-pulse" />
-                  <span className="text-red-400 font-semibold text-sm uppercase tracking-wider">
-                    Đang Bán Chạy
-                  </span>
-                  <TrendingUp className="w-5 h-5 text-red-500" />
+            {/* Container wrapper */}
+            <div className="relative max-w-7xl mx-auto">
+              {/* Section Header */}
+              <div className="relative mb-12">
+                {/* Glowing line */}
+                <div className="absolute top-0 left-0 w-24 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-transparent rounded-full"></div>
+                
+                <div className="flex items-center gap-4 mb-4 mt-6">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Flame className="w-8 h-8 text-orange-500 animate-pulse" />
+                      <div className="absolute inset-0 blur-lg bg-orange-500/50"></div>
+                    </div>
+                    <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
+                      Sản Phẩm Hot
+                    </h2>
+                  </div>
+                  <Zap className="w-6 h-6 text-yellow-400 animate-bounce" />
                 </div>
-
-                <h2 className="text-4xl sm:text-5xl font-bold text-white mb-3 drop-shadow-2xl">
-                  Sản Phẩm{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-                    Hot Nhất
-                  </span>
-                </h2>
-                <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                  Top 5 điện thoại được khách hàng tin tùng và lựa chọn nhiều
-                  nhất
+                
+                <p className="text-gray-400 text-lg ml-12">
+                  Top sản phẩm bán chạy nhất được yêu thích nhất hiện nay
                 </p>
               </div>
 
@@ -227,8 +232,8 @@ const ClientLayout = ({ children, showHero = true }) => {
               {loading && (
                 <div className="flex flex-col justify-center items-center py-16">
                   <div className="relative w-16 h-16 mb-4">
-                    <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 border-4 border-cyan-500/30 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-transparent border-t-cyan-500 rounded-full animate-spin"></div>
                   </div>
                   <div className="text-white text-lg font-medium">
                     Đang tải sản phẩm hot...
@@ -252,145 +257,150 @@ const ClientLayout = ({ children, showHero = true }) => {
                 </div>
               )}
 
-              {/* Products Grid */}
+              {/* Main container box */}
               {!loading && !error && hotProduct.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-                  {hotProduct.map((product, index) => {
-                    const version = product.versions?.[0];
-                    const formatPrice = (price) => {
-                      return new Intl.NumberFormat("vi-VN").format(price) + "đ";
-                    };
-                    return (
-                      <div
-                        key={product.id}
-                        onClick={() => handleViewProductId(product.id)}
-                        className="group relative bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:bg-white/10 hover:border-white/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer"
-                        style={{
-                          animationDelay: `${index * 100}ms`,
-                        }}
-                      >
-                        {/* Ranking Badge */}
-                        <div className="absolute -top-3 -left-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-lg z-10">
-                          #{index + 1}
-                        </div>
+                <div className="relative">
+                  {/* Border glow effect */}
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-3xl opacity-20 blur-xl"></div>
+                  
+                  {/* Inner container */}
+                  <div className="relative bg-gradient-to-br from-slate-900/90 via-blue-900/30 to-slate-900/90 backdrop-blur-xl rounded-3xl border border-cyan-500/30 shadow-2xl overflow-hidden">
+                    {/* Top accent line */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                    
+                    {/* Corner decorations */}
+                    <div className="absolute top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-cyan-400/50 rounded-tl-3xl"></div>
+                    <div className="absolute bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-purple-400/50 rounded-br-3xl"></div>
 
-                        {/* Status Badge */}
-                        <div className="absolute top-3 right-3 z-10">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                              (product.badge || "HOT") === "HOT"
-                                ? "bg-gradient-to-r from-red-500 to-pink-500 text-white"
-                                : (product.badge || "MỚI") === "MỚI"
-                                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
-                                : "bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                            }`}
-                          >
-                            {product.badge || "HOT"}
-                          </span>
-                        </div>
-
-                        {/* Product Image */}
-                        <div className="relative mb-4 mt-4">
-                          <div className="aspect-square bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center overflow-hidden group-hover:from-blue-500/30 group-hover:via-purple-500/30 group-hover:to-pink-500/30 transition-all duration-500">
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                          </div>
-
-                          {/* Trending indicator */}
-                          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                            <TrendingUp className="w-3 h-3" />
-                            <span className="font-semibold">
-                              {/* {product.soldCount} */}
-                              1000 đã bán
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="mt-6">
-                          <h3 className="text-white font-semibold text-sm mb-3 line-clamp-2 min-h-[2.5rem] group-hover:text-blue-300 transition-colors">
-                            {product.name}
-                          </h3>
-
-                          {/* Rating */}
-                          <div className="flex items-center gap-1 mb-3">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className="w-3 h-3 fill-yellow-400 text-yellow-400"
-                              />
-                            ))}
-                            <span className="text-gray-400 text-xs ml-1">
-                              (4.8)
-                            </span>
-                          </div>
-
-                          {/* Price */}
-                          <div className="mb-4">
-                            <p className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-bold text-lg">
-                              {formatPrice(version?.price || 0)}
-                            </p>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="space-y-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewProductId(product.id);
+                    {/* Content padding */}
+                    <div className="p-8">
+                      {/* Products Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                        {hotProduct.map((product, index) => {
+                          const version = product.versions?.[0];
+                          const formatPrice = (price) => {
+                            return new Intl.NumberFormat("vi-VN").format(price) + "đ";
+                          };
+                          return (
+                            <div
+                              key={product.id}
+                              onClick={() => handleViewProductId(product.id)}
+                              className="group relative bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:bg-white/10 hover:border-cyan-400/50 transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/30 cursor-pointer"
+                              style={{
+                                animationDelay: `${index * 100}ms`,
                               }}
-                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/50"
                             >
-                              Xem chi tiết
-                            </button>
-                            {/* <button
-                              onClick={(e) => handleAddToCart(e, product)}
-                              className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 border border-white/20 hover:border-white/40"
-                            >
-                              <ShoppingCart className="w-4 h-4" />
-                              Thêm vào giỏ
-                            </button> */}
-                          </div>
-                        </div>
+                              {/* Ranking Badge */}
+                              <div className="absolute -top-3 -left-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center font-bold text-white text-sm shadow-lg z-10">
+                                #{index + 1}
+                              </div>
 
-                        {/* Hover effect overlay */}
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition-all duration-500 pointer-events-none"></div>
+                              {/* Status Badge */}
+                              <div className="absolute top-3 right-3 z-10">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
+                                    (product.badge || "HOT") === "HOT"
+                                      ? "bg-gradient-to-r from-red-500 to-pink-500 text-white"
+                                      : (product.badge || "MỚI") === "MỚI"
+                                      ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                                      : "bg-gradient-to-r from-orange-500 to-red-500 text-white"
+                                  }`}
+                                >
+                                  {product.badge || "HOT"}
+                                </span>
+                              </div>
+
+                              {/* Product Image */}
+                              <div className="relative mb-4 mt-4">
+                                <div className="aspect-square bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center overflow-hidden group-hover:from-cyan-500/30 group-hover:via-blue-500/30 group-hover:to-purple-500/30 transition-all duration-500 border border-cyan-500/20">
+                                  <img
+                                    src={product.image}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                  />
+                                </div>
+
+                                {/* Trending indicator */}
+                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                                  <TrendingUp className="w-3 h-3" />
+                                  <span className="font-semibold">
+                                    {product.soldQuantity || product.soldCount || 0}{" "}
+                                    đã bán
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Product Info */}
+                              <div className="mt-6">
+                                <h3 className="text-white font-semibold text-sm mb-3 line-clamp-2 min-h-[2.5rem] group-hover:text-cyan-300 transition-colors">
+                                  {product.name}
+                                </h3>
+
+                                {/* Rating */}
+                                <div className="flex items-center gap-1 mb-3">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                                    />
+                                  ))}
+                                  <span className="text-gray-400 text-xs ml-1">
+                                    (4.8)
+                                  </span>
+                                </div>
+
+                                {/* Price */}
+                                <div className="mb-4">
+                                  <p className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 font-bold text-lg">
+                                    {formatPrice(version?.price || 0)}
+                                  </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="space-y-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewProductId(product.id);
+                                    }}
+                                    className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/50"
+                                  >
+                                    Xem chi tiết
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Hover effect overlay */}
+                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-500/0 to-blue-500/0 group-hover:from-cyan-500/10 group-hover:to-blue-500/10 transition-all duration-500 pointer-events-none"></div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+
+                      {/* Bottom accent line */}
+                      <div className="mt-8 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* View All Button */}
+              {/* View all button */}
               {!loading && !error && hotProduct.length > 0 && (
-                <div className="text-center">
+                <div className="flex justify-center mt-8">
                   <button
                     onClick={handleViewAllProducts}
-                    className="group inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-10 py-4 rounded-full font-semibold text-lg shadow-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
+                    className="group relative px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/50 overflow-hidden"
                   >
-                    <span>Xem Tất Cả Sản Phẩm</span>
-                    <svg
-                      className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
+                    <span className="relative z-10 flex items-center gap-2">
+                      Xem tất cả sản phẩm
+                      <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </button>
                 </div>
               )}
             </div>
           </div>
-          );
           {/* Route Content via Outlet */}
           {children}
           <RouterOutlet />
