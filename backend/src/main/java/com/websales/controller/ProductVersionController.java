@@ -7,6 +7,7 @@ import com.websales.dto.response.ApiResponse;
 import com.websales.dto.response.NewVersionResponse;
 import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductVersionResponse;
+import com.websales.entity.Product;
 import com.websales.service.ProductService;
 import com.websales.service.ProductVersionService;
 import jakarta.validation.Valid;
@@ -30,6 +31,15 @@ public class ProductVersionController {
     ProductVersionService pvs;
     @Autowired
     private ProductService productService;
+
+    @PostMapping("/{id}")
+    ApiResponse<ProductVersionResponse> createVersion(@PathVariable Long id, @RequestBody @Valid ProductVersionSingleRequest request) {
+        return ApiResponse.<ProductVersionResponse>builder()
+                .result(pvs.CreateProductVersion(id, request))
+                .build();
+    }
+
+
 
 
     @PostMapping
@@ -144,6 +154,15 @@ public class ProductVersionController {
                 romName, ramName, colorName, importPrice, exportPrice,
                 priceRange, customMinPrice, customMaxPrice, batteryRange, screenSizeRange,
                 pageable);
+    }
+
+
+
+    @GetMapping("/top5")
+    public ApiResponse<List<ProductFULLResponse>> getTop5Products() {
+         return ApiResponse.<List<ProductFULLResponse>>builder()
+                 .result(pvs.Top5Product())
+                 .build();
     }
 
 

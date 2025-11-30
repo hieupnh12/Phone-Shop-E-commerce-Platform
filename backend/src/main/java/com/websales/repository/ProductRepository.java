@@ -20,7 +20,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
 
 
-    @Query(value ="SELECT DISTINCT p FROM Product p " +
+    @Query(value ="SELECT p FROM Product p " +
             "LEFT JOIN FETCH p.origin " +
             "LEFT JOIN FETCH p.brand " +
             "LEFT JOIN FETCH p.operatingSystem " +
@@ -50,25 +50,38 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "WHERE p.idProduct = :id")
     Product findByIdProduct(@Param("id") Long id);
 
-
-
+    @Query(value = "SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.origin " +
+            "LEFT JOIN FETCH p.brand " +
+            "LEFT JOIN FETCH p.operatingSystem " +
+            "LEFT JOIN FETCH p.warehouseArea " +
+            "LEFT JOIN FETCH p.productVersion pv " +
+            "LEFT JOIN FETCH p.category " +
+            "ORDER BY p.idProduct DESC",
+            countQuery = "SELECT count(DISTINCT p) FROM Product p " +
+                    "LEFT JOIN p.origin " +
+                    "LEFT JOIN p.brand " +
+                    "LEFT JOIN p.operatingSystem " +
+                    "LEFT JOIN p.warehouseArea " +
+                    "LEFT JOIN p.category ")
+    Page<Product> findAllProductsForAdmin(Pageable pageable);
 
 
     @Query("SELECT COALESCE(SUM(pv.stockQuantity), 0) FROM ProductVersion pv WHERE pv.product = :product")
     int calculateStockQuantity(@Param("product") Product product);
 
 
-@Modifying
-@Transactional
-@Query(value = """
-            DELETE FROM ProductItem pi
-            WHERE pi.versionId.idVersion IN (
-                SELECT pv.idVersion
-                FROM ProductVersion pv
-                WHERE pv.product.idProduct = :productId
-            )
-        """)
-void deleteSafeProductItems(Long productId);
+    @Modifying
+    @Transactional
+    @Query(value = """
+                DELETE FROM ProductItem pi
+                WHERE pi.versionId.idVersion IN (
+                    SELECT pv.idVersion
+                    FROM ProductVersion pv
+                    WHERE pv.product.idProduct = :productId
+                )
+            """)
+    void deleteSafeProductItems(Long productId);
 
     // Query 2: Xóa PV không có orderDetail (sau khi xóa PI)
     @Modifying

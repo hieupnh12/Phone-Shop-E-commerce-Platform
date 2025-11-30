@@ -52,4 +52,7 @@ public class ProductFULLResponse {
     Boolean status;
 
     List<ProductVersionResponse> productVersionResponses;
+    
+    // Số lượng đã bán (từ order_details)
+    Long soldQuantity;
 }

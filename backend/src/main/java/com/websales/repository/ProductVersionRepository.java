@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ProductVersionRepository extends JpaRepository<ProductVersion, String> {
@@ -124,6 +125,24 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
     @Transactional
     @Query("DELETE FROM ProductVersion pv WHERE pv.idVersion = :idVersion")
     void deleteProductVersionById(String idVersion);
+
+
+
+    /**
+     * Lấy top 5 sản phẩm có số lượng đã bán nhiều nhất
+     * Tính tổng số lượng từ order_details (SUM quantity)
+     *
+     * @return List<Object[]> với [0]: Product, [1]: Long (tổng số lượng đã bán)
+     */
+    @Query("SELECT p, COALESCE(SUM(od.quantity), 0) as soldQuantity " +
+            "FROM Product p " +
+            "JOIN p.productVersion pv " +
+            "JOIN OrderDetail od ON od.productVersion = pv " +
+            "JOIN od.order o " +
+            "WHERE o.status = :status " +
+            "GROUP BY p.idProduct " +
+            "ORDER BY soldQuantity DESC")
+    List<Object[]> findTop5ProductsByOrderDetailCount(@Param("status") com.websales.enums.OrderStatus status);
 
 
 

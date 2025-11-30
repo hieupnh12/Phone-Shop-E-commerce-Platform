@@ -3,7 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Star, Trash2, Edit2, ChevronDown } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 
-const FeedbackList = ({ productId, onEdit, refreshTrigger }) => {
+const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: externalSelectedRating }) => {
   const { t } = useLanguage();
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +12,9 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger }) => {
   const [deleting, setDeleting] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null);
   const [showRatingFilter, setShowRatingFilter] = useState(false);
+  
+  // Sử dụng externalSelectedRating nếu có, nếu không thì dùng internal state
+  const activeRating = externalSelectedRating !== undefined ? externalSelectedRating : selectedRating;
 
   useEffect(() => {
     const load = async () => {
@@ -44,7 +47,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger }) => {
           productId,
           page,
           10,
-          selectedRating
+          activeRating
         );
         setFeedbacks(response.content || []);
         setTotalPages(response.totalPages || 1);
@@ -56,7 +59,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger }) => {
     };
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRating, page]);
+  }, [activeRating, page]);
 
   const handleDelete = async (feedbackId) => {
     if (!window.confirm('Bạn chắc chắn muốn xóa đánh giá này?')) {
@@ -93,8 +96,8 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger }) => {
   };
 
   const getRatingLabel = () => {
-    if (!selectedRating) return 'Tất cả đánh giá';
-    return `${selectedRating} sao`;
+    if (!activeRating) return 'Tất cả đánh giá';
+    return `${activeRating} sao`;
   };
 
   if (loading && feedbacks.length === 0) {
@@ -111,59 +114,61 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger }) => {
 
   return (
     <div className="space-y-4">
-      {/* Rating Filter */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold">Đánh giá của khách hàng</h3>
-        <div className="relative">
-          <button
-            onClick={() => setShowRatingFilter(!showRatingFilter)}
-            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
-          >
-            {getRatingLabel()}
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          
-          {showRatingFilter && (
-            <div className="absolute right-0 top-full mt-1 border border-gray-300 rounded-lg bg-white shadow-lg z-10 min-w-40">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedRating(null);
-                  setShowRatingFilter(false);
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b"
-              >
-                Tất cả đánh giá
-              </button>
-              {[5, 4, 3, 2, 1].map(rating => (
+      {/* Rating Filter - chỉ hiển thị khi không có externalSelectedRating */}
+      {externalSelectedRating === undefined && (
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold">Đánh giá của khách hàng</h3>
+          <div className="relative">
+            <button
+              onClick={() => setShowRatingFilter(!showRatingFilter)}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+            >
+              {getRatingLabel()}
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            
+            {showRatingFilter && (
+              <div className="absolute right-0 top-full mt-1 border border-gray-300 rounded-lg bg-white shadow-lg z-10 min-w-40">
                 <button
-                  key={rating}
                   type="button"
                   onClick={() => {
-                    setSelectedRating(rating);
+                    setSelectedRating(null);
                     setShowRatingFilter(false);
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b last:border-b-0 flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b"
                 >
-                  <span>{rating} sao</span>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star
-                        key={star}
-                        className={`w-3 h-3 ${
-                          star <= rating
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
+                  Tất cả đánh giá
                 </button>
-              ))}
-            </div>
-          )}
+                {[5, 4, 3, 2, 1].map(rating => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => {
+                      setSelectedRating(rating);
+                      setShowRatingFilter(false);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b last:border-b-0 flex items-center gap-2"
+                  >
+                    <span>{rating} sao</span>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star
+                          key={star}
+                          className={`w-3 h-3 ${
+                            star <= rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Feedbacks List */}
       {feedbacks.map((feedback) => (

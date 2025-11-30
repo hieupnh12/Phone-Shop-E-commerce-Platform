@@ -338,7 +338,21 @@ public class ProductService {
                 .map(productMapper::toProductFULLResponse);
     }
 
-
+    public Page<ProductFULLResponse> listAllProductsForAdmin(Pageable pageable) {
+        Page<Product> products = productRepository.findAllProductsForAdmin(pageable);
+        products.forEach(product -> {
+            product.getProductVersion().forEach(version -> {
+                // Lọc ProductItem với export_id IS NULL
+                version.setProductItems(
+                        version.getProductItems().stream()
+                                .filter(pi -> pi.getOrderDetail() == null)
+                                .collect(Collectors.toList())
+                );
+            });
+        });
+        return products
+                .map(productMapper::toProductFULLResponse);
+    }
 
     public Product getProductById(Long id) {
         long start = System.nanoTime();
@@ -437,7 +451,8 @@ public class ProductService {
         }
         //xóa các productItem
         productRepository.deleteSafeProductItems(productId);
-        // Xóa các ProductVersion
+        // Xóa các ProductVersion+
+
         productRepository.deleteSafeProductVersions(productId);
         // Xóa sản phẩm
         productRepository.deleteProductById(productId);

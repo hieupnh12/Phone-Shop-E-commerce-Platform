@@ -64,10 +64,10 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
       brandName: brand || undefined,
       operatingSystemName: os || undefined,
       chipset: cpu || undefined,
-      batteryRange: battery !== 'all' ? battery : undefined,
+      batteryRange: battery != 'all' ? battery : undefined,
       ramName: ram || undefined,
       romName: rom || undefined,
-      screenSizeRange: screenSize !== 'all' ? screenSize : undefined,
+      screenSizeRange: screenSize != 'all' ? screenSize : undefined,
       scanFrequency: refreshRate || undefined,
     };
   }, [
@@ -89,11 +89,11 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
 
   const brandOptions = useMemo(
     () =>[
-  { label: 'Apple', value: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
-  { label: 'Samsung', value: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg' },
+  // { label: 'Apple', value: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
+  { label: 'Samsung', value: 'Samsung', logo: '../image/samsung-swoop-svgrepo-com.svg' },
   { label: 'Xiaomi', value: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
-  { label: 'OPPO', value: 'OPPO', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/98/OPPO_LOGO_2019.svg' },
-  { label: 'Realme', value: 'Realme', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/APPLE_IPHONE_LOGO.svg' },
+  { label: 'OPPO', value: 'OPPO', logo: '../image/oppo-seeklogo.svg' },
+  { label: 'iPhone', value: 'iPhone', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/APPLE_IPHONE_LOGO.svg' },
   { label: 'Sony', value: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
   { label: 'Google', value: 'Google', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' }
 ],
@@ -183,6 +183,22 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
 useEffect(() => {
   loadTotalCount();
 }, []); // Empty for mount-only; or add filter deps for re-fetch on changes
+
+ 
+
+// Fetch product specifications for popup
+// const specificationsPopup = async (productId) => {
+// try{
+//     const data = 
+//     return data;
+// }catch(error){
+//   console.error('Error loading product specifications:', error);
+//   }};
+
+
+
+
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
