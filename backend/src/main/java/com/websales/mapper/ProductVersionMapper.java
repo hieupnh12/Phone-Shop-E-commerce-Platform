@@ -33,7 +33,7 @@ public interface ProductVersionMapper {
     @Mapping(source ="rom.nameRom", target = "romName")
     @Mapping(source = "color.nameColor" , target="colorName")
     @Mapping(source = "product.nameProduct", target ="productName")
-    @Mapping(source = "images", target = "images") // Map List<ProductVersionImage> → List<ImageVersionResponse>
+    @Mapping(source = "images", target = "images", qualifiedByName = "mapImagesList") // Map List<ProductVersionImage> → List<ImageVersionResponse>
     @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
     ProductVersionResponse ToProductVersionResponse (ProductVersion productVersion);
 
@@ -42,7 +42,8 @@ public interface ProductVersionMapper {
     @Mapping(source ="rom.nameRom", target = "romName")
     @Mapping(source = "color.nameColor" , target="colorName")
     @Mapping(source = "product.idProduct", target ="idProduct")
-    @Mapping(source = "images", target = "images") // Map List<ProductVersionImage> → List<ImageVersionResponse>
+    @Mapping(source = "product.nameProduct", target ="productName")
+    @Mapping(source = "images", target = "images", qualifiedByName = "mapImagesList") // Map List<ProductVersionImage> → List<ImageVersionResponse>
     @Mapping(target = "imei", source = "productItems", qualifiedByName = "mapProductItemsToImei") // Ánh xạ trực tiếp từ productItems
     NewVersionResponse ToNewVersionResponse (ProductVersion productVersion);
 
@@ -56,6 +57,17 @@ public interface ProductVersionMapper {
                 .imageId(image.getImageId())
                 .image(image.getImages())
                 .build();
+    }
+
+    // Mapping list images
+    default List<ImageVersionResponse> mapImages(List<ProductVersionImage> images) {
+        if (images == null || images.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return images.stream()
+                .map(this::toImageVersionResponse)
+                .filter(image -> image != null)
+                .collect(Collectors.toList());
     }
 
 //    @Mapping(source= "ram.nameRam", target="ramName")
@@ -108,6 +120,11 @@ public interface ProductVersionMapper {
                                                      .imei(item.getImei())
                                                       .build())
                 .collect(Collectors.toList());
+    }
+
+    @Named("mapImagesList")
+    default List<ImageVersionResponse> mapImagesList(List<ProductVersionImage> images) {
+        return mapImages(images);
     }
 
 //    @Named("mapProductItemsToImeiFiltered")
