@@ -3,10 +3,7 @@ package com.websales.mapper;
 
 
 import com.cloudinary.Cloudinary;
-import com.websales.dto.request.ImageRequest;
-import com.websales.dto.request.ImageVersionRequest;
-import com.websales.dto.request.ProductVersionRequest;
-import com.websales.dto.request.ProductVersionUpdateRequest;
+import com.websales.dto.request.*;
 import com.websales.dto.response.ImageVersionResponse;
 import com.websales.dto.response.ImeiResponse;
 import com.websales.dto.response.NewVersionResponse;
@@ -26,6 +23,8 @@ import java.util.stream.Collectors;
 public interface ProductVersionMapper {
 
     ProductVersion ToProductVersion (ProductVersionRequest request);
+
+    ProductVersion toProductVCreate  (ProductVersionSingleRequest request);
 
     List<ProductVersion> ToProductVersions (List<ProductVersionRequest> requests);
 
@@ -74,6 +73,16 @@ public interface ProductVersionMapper {
 //    @Mapping(source = "product.productName", target ="productName")
 //    @Mapping(source = "product", target ="product")
 //    VersionResponse ToVersionResponse (ProductVersion productVersion);
+
+    @Mapping(target = "image", ignore = true)
+    default ProductVersion ToProducVersionCreate (ProductVersionSingleRequest request, Ram ram , Rom rom , Color color, Product product) {
+        ProductVersion productVersion = toProductVCreate(request);
+        productVersion.setRam(ram);
+        productVersion.setRom(rom);
+        productVersion.setColor(color);
+        productVersion.setProduct(product);
+        return productVersion;
+    }
 
 
     @Mapping(target = "image", ignore = true)

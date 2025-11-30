@@ -70,23 +70,6 @@ public class ProductController {
 //            return api;
 //        }
 //    }
-////    @PostMapping
-////    public ApiResponse<ProductResponse> createProductWithVersions(@RequestBody CreateProductWithVersionsRequest request) {
-////        ApiResponse<ProductResponse> resp = new ApiResponse<>();
-////        resp.setResult(productService.createProductWithVersions(request));
-////        return resp;
-////    }
-//
-//
-//    @GetMapping
-//    ApiResponse<Page<ProductFULLResponse>> getAll( @RequestParam(defaultValue = "0") int page,
-//                                                   @RequestParam(defaultValue = "10") int size) { //Thêm @PageableDefault để mặc định trả về 10 bản ghi mỗi trang. Người dùng có thể truyền
-//        ApiResponse<Page<ProductFULLResponse>> resp = new ApiResponse<>();
-//        Pageable pageable = PageRequest.of(page, size);
-//        resp.setCode(1010);
-//        resp.setResult(productService.getAllProducts(pageable));
-//        return resp;
-//    }
 
 
     @GetMapping()

@@ -10,6 +10,8 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [favorites, setFavorites] = useState(new Set());
+  const [noResults, setNoResults] = useState(false); // Không tìm thấy sản phẩm
+
   const navigate = useNavigate();
   const PAGE_SIZE = 8;
 
@@ -89,38 +91,39 @@ if (!hasFilters) {
     return;
   }
 
-  const runSearch = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const searchData = await fetchSearchAll(normalizedFilters, 0, 200);
-      // 👇 FIX: Sử dụng searchData.products thay vì .versions (vì fetchSearchAll giờ return products enriched)
-      // Không cần matchedNames nữa, vì search đã filter và enrich sẵn
-      const matches = searchData.products || [];
+ const runSearch = async () => {
+  setLoading(true);
+  setError(null);
+  setNoResults(false); // reset trạng thái
+  try {
+    const searchData = await fetchSearchAll(normalizedFilters, 0, 200);
+    const matches = searchData.products || [];
 
-      setFilteredProducts(matches);
-      const count = matches.length;
-      setTotalCount(count);  // Hoặc searchData.total * searchData.size nếu cần total pages, nhưng với size=200 lớn, length ≈ total
-      props.onProductsCountChange?.(count);
-      if (!count) {
-        setError('Không tìm thấy sản phẩm phù hợp.');
-      } else {
-        setError(null);
-      }
-    } catch (error) {
-      console.error('Lỗi tìm kiếm sản phẩm:', error);
-      setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
-      setFilteredProducts([]);
-      setTotalCount(0);
-      props.onProductsCountChange?.(0);
-    } finally {
-      setLoading(false);
+    setFilteredProducts(matches);
+    const count = matches.length;
+    setTotalCount(count);
+    props.onProductsCountChange?.(count);
+
+    if (!count) {
+      setNoResults(true); // set trạng thái không tìm thấy
     }
-  };
+  } catch (err) {
+    console.error('Lỗi tìm kiếm sản phẩm:', err);
+    setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
+    setFilteredProducts([]);
+    setTotalCount(0);
+    props.onProductsCountChange?.(0);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   runSearch();
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [filtersKey, allProducts]);
+
+
 // useEffect(() => {
 //   // Fetch the total count asynchronously on mount (or when dependencies change, if any)
 //   const loadTotalCount = async () => {
@@ -208,27 +211,37 @@ if (!hasFilters) {
     );
   }
 
-  if (error && !filteredProducts.length) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 text-lg mb-4">{error}</p>
-          <button 
-            onClick={() => {
-              if (Object.keys(normalizedFilters).length > 0) {
-                setFilteredProducts([]);
-                setCurrentPage(0);
-              }
-              loadAllProducts();
-            }}
-            className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
-          >
-            Thử lại
-          </button>
-        </div>
+ // 1️⃣ Lỗi thật
+if (error) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+      <div className="text-center">
+        <p className="text-red-400 text-lg mb-4">{error}</p>
+        <button
+          onClick={loadAllProducts}
+          className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
+        >
+          Thử lại
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+// ← FIX: Thêm điều kiện hasFilters để chỉ show noResults khi đang filter (tránh dính khi reset)
+if (!error && noResults && hasFilters) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+      <div className="text-center">
+        <p className="text-yellow-400 text-lg mb-4">
+          Không tìm thấy sản phẩm phù hợp với bộ lọc
+        </p>
+        {/* Không có nút Thử lại */}
+      </div>
+    </div>
+  );
+}
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">

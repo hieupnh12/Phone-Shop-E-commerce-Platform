@@ -408,7 +408,8 @@ public class ProductService {
         }
         //xóa các productItem
         productRepository.deleteSafeProductItems(productId);
-        // Xóa các ProductVersion
+        // Xóa các ProductVersion+
+
         productRepository.deleteSafeProductVersions(productId);
         // Xóa sản phẩm
         productRepository.deleteProductById(productId);

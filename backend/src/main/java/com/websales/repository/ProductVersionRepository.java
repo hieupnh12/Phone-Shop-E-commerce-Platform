@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ProductVersionRepository extends JpaRepository<ProductVersion, String> {
@@ -119,6 +120,22 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
 
 
 
+
+
+
+    /**
+     * Lấy top 5 sản phẩm có số lượng OrderDetail liên quan nhiều nhất
+     * (Đếm số lượng OrderDetail unique qua ProductVersion và ProductItem)
+     *
+     * @return List<Object[]> với [0]: Product, [1]: Long (số lượng OrderDetail)
+     */
+    @Query("SELECT p FROM Product p " +
+            "JOIN p.productVersion pv " +
+            "JOIN pv.productItems pi " +
+            "JOIN pi.orderDetail od " +
+            "GROUP BY p " +
+            "ORDER BY COUNT(DISTINCT pi.orderDetail) DESC")
+    List<Product> findTop5ProductsByOrderDetailCount();
 
 
 

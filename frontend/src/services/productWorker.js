@@ -565,6 +565,28 @@ export const fetchSearchAll = async (filters = {}, page = 0, size = 0) => {
 
 
 
+export const fetchTop5Products = async () => {
+  try {
+    const response = await axiosClient[GET](`productVersion/top5`);
+    const result = response?.result;
+    console.log("top 5 products : ", result);
+    const transformedData = {
+      products: (result.content || result.products || result || []).map(
+        transformProductResponse
+      )
+    };
+    return transformedData;
+
+
+    return response;
+  } catch (error) {
+    console.error("❌ Error fetching top 5 products:", error);
+    throw error;
+  } 
+};
+
+
+
 
 
 
@@ -578,7 +600,7 @@ const productWorkerExport = {
   fetchProductAll,
   fetchProductById,
   fetchSearchProductVersion,
-  // searchProducts,
+  fetchTop5Products,
   fetchCountProduct,
   fetchProductStats,
   initializeProducts,

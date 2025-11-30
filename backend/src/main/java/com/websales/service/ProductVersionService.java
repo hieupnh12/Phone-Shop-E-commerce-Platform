@@ -2,19 +2,19 @@ package com.websales.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.websales.dto.request.ImageRequest;
-import com.websales.dto.request.ImageVersionRequest;
-import com.websales.dto.request.ProductVersionRequest;
-import com.websales.dto.request.ProductVersionUpdateRequest;
+import com.websales.dto.request.*;
 import com.websales.dto.response.NewVersionResponse;
 import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductResponse;
 import com.websales.dto.response.ProductVersionResponse;
 import com.websales.entity.*;
+import com.websales.enums.ItemStatus;
 import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
+import com.websales.mapper.ProductItemMapper;
 import com.websales.mapper.ProductMapper;
 import com.websales.mapper.ProductVersionMapper;
+import com.websales.repository.ProductItemRepository;
 import com.websales.repository.ProductVersionRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +22,15 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor  // thay cho autowrid
@@ -51,7 +51,136 @@ public class ProductVersionService {
     private final ProductService productService;
     private final Cloudinary cloudinary;
     private final ProductVersionRepository productVersionRepository;
+    private final ProductItemRepository productItemRepository;
+    private final ProductItemMapper productItemMapper;
+    private final ProductVersionMapper productVersionMapper;
 //   ProductService productService;
+
+    public ProductVersionResponse CreateProductVersion(Long id, ProductVersionSingleRequest request) {
+        Product product = productservice.getProductById(id);
+        if (product == null) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_EXIST);
+        }
+        Ram ram = ramservice.getRamById(request.getIdRam());
+        Rom rom = romservice.getRomById(request.getIdRom());
+        Color color = colorservice.getColorById(request.getIdColor());
+
+        ProductVersion productVersion = pvm.ToProducVersionCreate(request, ram, rom, color, product);
+
+        ProductVersion savedVersion;
+        try {
+            savedVersion = productVersionRepository.save(productVersion);
+        } catch (HibernateOptimisticLockingFailureException e) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
+
+        int quantity = request.getStockQuantity();
+
+        if (quantity > 0) {
+            // Xử lý các IMEI của productVersion
+            List<ProductItem> itemsToSave = new ArrayList<>();  // Batch để hiệu suất
+            Set<String> imeis = new HashSet<>();
+
+            String imeiNew = createImei();
+            Long baseNumber;
+            try {
+                baseNumber = Long.parseLong(imeiNew.substring(0, 14));
+            } catch (NumberFormatException e) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            log.info("IMEI first to generated: {}", imeiNew);
+
+            for (int i = 0; i < quantity; i++) {
+                String currentImei = generateSequentialImei(baseNumber, i);
+                log.info("IMEI generated: {}", currentImei);
+
+                // Check format (15 digits)
+                if (currentImei.length() != 15) {
+                    throw new AppException(ErrorCode.WRONG_FORM_IMEI);
+                }
+                log.info("Sequential IMEI generated: {} (offset: {})", currentImei, i);
+                if (productItemRepository.existsById(currentImei)) {
+                    log.warn("IMEI duplicate phát hiện: {}", currentImei);  // Log cảnh báo nếu duplicate
+                    throw new AppException(ErrorCode.IMEI_DUPLICATE);
+                }
+                if (!imeis.add(currentImei)) {
+                    log.warn("IMEI duplicate phát hiện number : {}", currentImei);  // Log cảnh báo nếu duplicate
+                    throw new AppException(ErrorCode.IMEI_DUPLICATE);
+                }
+
+                ProductItemRequest itemRequest = new ProductItemRequest();
+
+                itemRequest.setImei(currentImei);
+                itemRequest.setIdProductVersion(savedVersion.getIdVersion());
+                itemRequest.setStatus(ItemStatus.IN_STOCK);
+
+                ProductItem productItem = productItemMapper.ToProducItemcreate(itemRequest, savedVersion);
+
+                itemsToSave.add(productItem);
+            }
+            // Save batch - Hibernate sẽ persist với ID manual
+            productItemRepository.saveAll(itemsToSave);
+        }
+
+        // Chuyển đổi sang response
+        ProductVersionResponse versionResponse = productVersionMapper.ToProductVersionResponse(savedVersion);
+        return versionResponse;
+    }
+
+    public String createImei() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+        int randomNumber = 15;
+        int sum = 0;
+        boolean doubleDigit = true; //bat dau tu vi tri 2 tu phai
+
+        for (int i = 0; i < randomNumber - 1; i++) {
+            sb.append(random.nextInt(10));
+        }
+        for (int i = sb.length() - 1; i >= 0; i--) {
+            int c = Character.getNumericValue(sb.charAt(i));
+            if (doubleDigit) {
+                c *= 2;
+                if (c > 9) {
+                    c -= 9;
+                }
+            }
+            sum += c;
+            doubleDigit = !doubleDigit;
+        }
+        int cd = (10 - (sum % 10)) % 10;
+
+        sb.append(cd);
+
+        return sb.toString();
+    }
+
+
+     private String generateSequentialImei(long baseNumber, int offset) {
+        // Tạo 14 digits từ base + offset, pad zero nếu cần
+        String numStr = String.format("%014d", baseNumber + offset);
+
+        // Tính check digit Luhn (tương tự hàm createImei gốc)
+        int sum = 0;
+        boolean doubleDigit = true;  // Bắt đầu từ vị trí 2 từ phải (như code gốc)
+        for (int i = numStr.length() - 1; i >= 0; i--) {
+            int c = Character.getNumericValue(numStr.charAt(i));
+            if (doubleDigit) {
+                c *= 2;
+                if (c > 9) {
+                    c -= 9;
+                }
+            }
+            sum += c;
+            doubleDigit = !doubleDigit;
+        }
+        int checkDigit = (10 - (sum % 10)) % 10;
+
+        return numStr + checkDigit;  // 15 digits
+    }
+
+
+
 
 
 
@@ -267,5 +396,14 @@ public class ProductVersionService {
                 .map(pvm::ToNewVersionResponse); // Giả sử pvm là mapper instance
     }
 
+
+
+
+    public List<ProductFULLResponse> Top5Product(){
+         List<Product> results = pvr.findTop5ProductsByOrderDetailCount();
+         return  results.stream()
+                 .map(pm::toProductFULLResponse)
+                 .collect(Collectors.toList());
+    }
 
 }

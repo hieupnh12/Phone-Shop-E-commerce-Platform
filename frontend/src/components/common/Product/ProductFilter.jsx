@@ -243,7 +243,7 @@ const ProductFilter = ({
         <Checkbox label="Trên 5500 mAh" checked={isBatterySelected("5500+")} onChange={() => onBatteryChange("5500+")} />
       </Section>
 
-      <Section title="RAM">
+      {/* <Section title="RAM">
         <div className="flex flex-wrap">
           {["16", "12", "8", "6", "4", "3"].map((r) => (
             <Pill key={r} active={ram === r} onClick={() => onRamChange(ram === r ? "" : r)}>
@@ -251,7 +251,7 @@ const ProductFilter = ({
             </Pill>
           ))}
         </div>
-      </Section>
+      </Section> */}
 
       <Section title="Bộ nhớ trong">
         <div className="flex flex-wrap">
