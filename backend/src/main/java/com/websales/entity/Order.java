@@ -31,7 +31,7 @@ public class Order extends AuditableEntity {
     LocalDateTime createDatetime;
 
          @ManyToOne(fetch = FetchType.LAZY)
-         @JoinColumn(name = "employee_id")
+         @JoinColumn(name = "employee_id", nullable = true)
          Employee employeeId;
 
     @Column(name = "end_datetime")

@@ -2,11 +2,14 @@ package com.websales.service;
 
 import com.websales.dto.request.OrderRequest;
 import com.websales.entity.Customer;
+import com.websales.entity.Employee;
 import com.websales.entity.Order;
 import com.websales.entity.OrderDetail;
 import com.websales.entity.ProductVersion;
 import com.websales.enums.OrderStatus;
+import com.websales.handler.ContextUtils;
 import com.websales.repository.CustomerRepo;
+import com.websales.repository.EmployeeRepo;
 import com.websales.repository.OrderDetailRepository;
 import com.websales.repository.OrderRepository;
 import com.websales.repository.ProductVersionRepository;
@@ -29,6 +32,7 @@ public class OrderService {
     OrderDetailRepository orderDetailRepository;
     ProductVersionRepository productVersionRepository;
     CustomerRepo customerRepo;
+    EmployeeRepo employeeRepo;
 
 
     public List<Order> getOrdersByCustomer(Long  customerId) {
@@ -57,8 +61,21 @@ public class OrderService {
                     .orElseThrow(() -> new RuntimeException("Customer not found: " + request.getCustomerId()));
         }
         
+        // Lấy employeeId nếu đang đăng nhập bằng tài khoản employee
+        Employee employee = null;
+        try {
+            Long employeeId = ContextUtils.getEmployeeId();
+            if (employeeId != null) {
+                employee = employeeRepo.findById(employeeId).orElse(null);
+            }
+        } catch (Exception e) {
+            // Nếu không phải employee authentication hoặc không tìm thấy employee, bỏ qua
+            // Order có thể được tạo bởi customer (self-order)
+        }
+        
         Order order = Order.builder()
                 .customerId(customer)
+                .employeeId(employee)
                 .note(request.getNote())
                 .totalAmount(request.getTotalAmount())
                 .status(request.getStatus() != null ? request.getStatus() : OrderStatus.PENDING)
