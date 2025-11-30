@@ -30,9 +30,8 @@ public class CustomerController {
     }
      @PostMapping("/auth")
     public ApiResponse<String> sendOtp(@RequestBody SendOtpRequest request ) {
-         cusAuthService.sendOtp(request);
         return  ApiResponse.<String>builder()
-                .result("Opt da gui thanh cong")
+                .result(cusAuthService.sendOtp(request))
                 .build();
      }
     @PostMapping("/auth_verify_otp")

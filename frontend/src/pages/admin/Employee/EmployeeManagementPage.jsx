@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Settings, Users, Key, Save, Loader2, AlertTriangle, Edit, X, Plus, Trash2, Search, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Lock, CheckCircle, Unlock, Edit3, Mail } from 'lucide-react';
+import { Settings, Users, Key, Save, Loader2, AlertTriangle, Edit, X, Plus, Search, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Lock, CheckCircle, Unlock, Edit3, Filter } from 'lucide-react';
 import api from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,74 +11,8 @@ const API_ENDPOINTS = {
     GET_ROLES: '/role',
     CREATE_EMPLOYEE: '/employee',
     UPDATE_EMPLOYEE: '/employee',
-    DELETE_EMPLOYEE: '/employee',
 };
 
-
-// --- MODAL XÁC NHẬN XÓA/VÔ HIỆU HÓA ---
-const DeleteEmployeeModal = ({ isOpen, onClose, employee, onDeleteSuccess, setToast }) => { // Thêm setToast
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSendingReset, setIsSendingReset] = useState(false);
-    const [localError, setLocalError] = useState(null);
-
-    const handleDelete = async () => {
-        if (!employee) return;
-        setIsSubmitting(true);
-        setLocalError(null);
-
-        try {
-            await api.delete(`${API_ENDPOINTS.DELETE_EMPLOYEE}/${employee.id}`);
-
-            onDeleteSuccess(employee.id, employee.fullName);
-            onClose();
-
-        } catch (err) {
-            console.error("Lỗi vô hiệu hóa nhân viên:", err.response?.data || err.message);
-            const errorMessage = err.response?.data?.message || "Không thể vô hiệu hóa tài khoản.";
-            setLocalError(errorMessage);
-            setToast({ message: errorMessage, type: 'error' }); // Hiển thị lỗi chung lên Toast
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    if (!isOpen || !employee) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
-                <div className="p-6 text-center">
-                    <AlertTriangle className="w-12 h-12 mx-auto text-yellow-500 mb-4" />
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Vô hiệu hóa Tài khoản</h3>
-                    <p className="text-gray-600 mb-6">
-                        Bạn có chắc chắn muốn vô hiệu hóa tài khoản của nhân viên:
-                        <span className="font-semibold text-red-600"> {employee.fullName}</span>?
-                        <br />
-                        Họ sẽ không thể đăng nhập được nữa.
-                    </p>
-                    {localError && <p className="text-sm text-red-500 mb-3">{localError}</p>}
-                    <div className="flex justify-center space-x-3">
-                        <button
-                            onClick={onClose}
-                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors"
-                            disabled={isSubmitting}
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            disabled={isSubmitting}
-                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-                        >
-                            {isSubmitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Lock className="w-5 h-5 mr-2" />}
-                            {isSubmitting ? 'Đang vô hiệu hóa...' : 'Vô hiệu hóa'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 // --- MODAL TẠO/SỬA NHÂN VIÊN ---
 const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSuccess, setToast }) => {
@@ -93,7 +27,6 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [localError, setLocalError] = useState(null);
-    const [isSendingReset, setIsSendingReset] = useState(false);
 
     // Cập nhật formData khi modal mở hoặc employeeToEdit thay đổi
     useEffect(() => {
@@ -123,11 +56,11 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
                     roleId: new Set(roleIds),
                 });
             } else {
-                // Reset form khi tạo mới
+                // Reset form khi tạo mới - Backend tự set isActive = true
                 setFormData({ 
                     fullName: '', 
                     email: '', 
-                    isActive: true, 
+                    isActive: true, // Chỉ dùng để hiển thị, không gửi lên backend
                     roleId: new Set() 
                 });
             }
@@ -169,9 +102,12 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
                 fullName: formData.fullName,
                 email: formData.email,
                 roleId: Array.from(formData.roleId),
-                // Chỉ gửi isActive khi chỉnh sửa
-                ...(isEdit && { isActive: formData.isActive }),
             };
+
+            // Chỉ gửi isActive khi chỉnh sửa (backend tự set = true khi tạo mới)
+            if (isEdit) {
+                payload.isActive = formData.isActive;
+            }
 
             let response;
             if (isEdit) {
@@ -193,21 +129,6 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
             setToast({ message: errorMessage, type: 'error' }); // Hiển thị lỗi lên Toast
         } finally {
             setIsSubmitting(false);
-        }
-    };
-
-    const handleSendResetLink = async () => {
-        if (!employeeToEdit?.email) return;
-        setIsSendingReset(true);
-        try {
-            await api.post('/employee/forgot', { email: employeeToEdit.email });
-            setToast({ message: `Đã gửi email đặt lại mật khẩu tới ${employeeToEdit.email}`, type: 'success' });
-        } catch (err) {
-            console.error("Lỗi gửi link đặt lại mật khẩu:", err.response?.data || err.message);
-            const errorMessage = err.response?.data?.message || "Không thể gửi link đặt lại mật khẩu.";
-            setToast({ message: errorMessage, type: 'error' });
-        } finally {
-            setIsSendingReset(false);
         }
     };
 
@@ -241,23 +162,30 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
                         </div>
                     </div>
 
-                    {/* Trạng thái & Reset Password (Chỉ khi chỉnh sửa) */}
+                    {/* Trạng thái (Chỉ khi chỉnh sửa) */}
                     {isEdit && (
-                        <div className="flex items-center justify-between p-3 border rounded-lg bg-yellow-50">
-                            <label className="flex items-center space-x-2 text-gray-700 font-medium">
-                                <input type="checkbox" name="isActive" checked={formData.isActive} onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                                <span>Tài khoản đang hoạt động (Active)</span>
+                        <div className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                            <label className="flex items-center space-x-2 text-gray-700 font-medium cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    name="isActive" 
+                                    checked={formData.isActive} 
+                                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))} 
+                                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" 
+                                />
+                                <span>Tài khoản đang hoạt động</span>
                             </label>
-                            <button
-                                type="button"
-                                onClick={handleSendResetLink}
-                                disabled={formData.isActive || isSendingReset}
-                                className="text-sm text-red-600 hover:underline flex items-center disabled:opacity-50"
-                                title={formData.isActive ? "Tài khoản đã kích hoạt" : "Gửi lại link đặt mật khẩu"}
-                            >
-                                {isSendingReset ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
-                                {isSendingReset ? 'Đang gửi...' : 'Gửi link đặt mật khẩu'}
-                            </button>
+                            <div className="flex items-center">
+                                {formData.isActive ? (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <CheckCircle className="w-3 h-3 mr-1" /> Hoạt động
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <Lock className="w-3 h-3 mr-1" /> Vô hiệu hóa
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -305,13 +233,14 @@ const EmployeeModal = ({ isOpen, onClose, employeeToEdit, allRoles, onSaveSucces
 // --- COMPONENT CHÍNH (EMPLOYEE MANAGEMENT PAGE) ---
 
 const EmployeeManagementPage = () => {
-    const [employees, setEmployees] = useState([]);
+    const [allEmployees, setAllEmployees] = useState([]); // Tất cả employees từ API
+    const [employees, setEmployees] = useState([]); // Employees sau khi filter
     const [allRoles, setAllRoles] = useState([]);
     const [pagination, setPagination] = useState({ page: 0, size: 10, totalPages: 1, totalElements: 0 });
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
 
     const [employeeToEdit, setEmployeeToEdit] = useState(null); // State cho modal Edit
-    const [employeeToDelete, setEmployeeToDelete] = useState(null); // State cho modal Delete
     const [isModalOpen, setIsModalOpen] = useState(false); // State cho modal Create/Edit
 
     const [isLoading, setIsLoading] = useState(true);
@@ -334,8 +263,10 @@ const EmployeeManagementPage = () => {
             });
 
             const result = empResponse.data.result;
+            const fetchedEmployees = result.content || [];
 
-            setEmployees(result.content || []);
+            // Lưu tất cả employees
+            setAllEmployees(fetchedEmployees);
             setPagination({
                 page: result.number,
                 size: result.size,
@@ -351,6 +282,20 @@ const EmployeeManagementPage = () => {
         }
     };
 
+    // Filter employees theo status
+    useEffect(() => {
+        let filtered = [...allEmployees];
+        
+        if (statusFilter === 'active') {
+            filtered = filtered.filter(emp => emp.isActive === true);
+        } else if (statusFilter === 'inactive') {
+            filtered = filtered.filter(emp => emp.isActive === false);
+        }
+        // 'all' thì không filter
+        
+        setEmployees(filtered);
+    }, [allEmployees, statusFilter]);
+
     // Sử dụng useCallback để hàm này không bị re-render không cần thiết
     const fetchEmployeesCallback = useCallback(fetchEmployees, [pagination.size, searchTerm]);
 
@@ -362,6 +307,10 @@ const EmployeeManagementPage = () => {
     // --- LOGIC XỬ LÝ SỰ KIỆN ---
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
+    };
+
+    const handleStatusFilterChange = (e) => {
+        setStatusFilter(e.target.value);
     };
 
     const handlePageChange = (newPage) => {
@@ -398,8 +347,10 @@ const EmployeeManagementPage = () => {
             : `Tạo tài khoản nhân viên ${savedEmployeeData.fullName} thành công! Mật khẩu đã được gửi qua email.`;
 
         if (isEdit) {
-            // Sửa thành công, cập nhật state cục bộ
-            setEmployees(prev => prev.map(emp => emp.id === savedEmployeeData.id ? savedEmployeeData : emp));
+            // Sửa thành công, cập nhật state cục bộ với dữ liệu mới từ backend
+            setEmployees(prev => prev.map(emp => 
+                emp.id === savedEmployeeData.id ? savedEmployeeData : emp
+            ));
         } else {
             // Tạo mới, tải lại trang 0 để thấy nhân viên mới nhất
             fetchEmployees(0, pagination.size, searchTerm);
@@ -407,12 +358,6 @@ const EmployeeManagementPage = () => {
         setToast({ message: message, type: 'success' });
     };
 
-    // ✅ LOGIC XÓA/VÔ HIỆU HÓA
-    const handleDeleteSuccess = (employeeId, employeeName) => {
-        // Lọc khỏi danh sách hiện tại
-        setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-        setToast({ message: `Vô hiệu hóa tài khoản ${employeeName} thành công!`, type: 'success' });
-    };
 
     // --- RENDER COMPONENT CHÍNH ---
 
@@ -431,25 +376,47 @@ const EmployeeManagementPage = () => {
                     </div>
                 )}
 
-                {/* Thanh tìm kiếm và Tạo mới */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div className="relative w-full sm:w-80">
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm theo Tên hoặc Email..."
-                            className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchTerm}
-                            onChange={handleSearch}
-                        />
-                        <Search size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                {/* Thanh tìm kiếm, Lọc và Tạo mới */}
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="relative w-full sm:w-80">
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm theo Tên hoặc Email..."
+                                className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={searchTerm}
+                                onChange={handleSearch}
+                            />
+                            <Search size={20} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        </div>
+                        <button
+                            onClick={openCreateModal}
+                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors w-full sm:w-auto"
+                        >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Thêm Nhân viên
+                        </button>
                     </div>
-                    <button
-                        onClick={openCreateModal}
-                        className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors w-full sm:w-auto"
-                    >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Thêm Nhân viên
-                    </button>
+                    
+                    {/* Filter theo trạng thái */}
+                    <div className="flex items-center gap-3">
+                        <Filter className="w-5 h-5 text-gray-500" />
+                        <label className="text-sm font-medium text-gray-700">Lọc theo trạng thái:</label>
+                        <select
+                            value={statusFilter}
+                            onChange={handleStatusFilterChange}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                        >
+                            <option value="all">Tất cả</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive">Vô hiệu hóa</option>
+                        </select>
+                        {statusFilter !== 'all' && (
+                            <span className="text-sm text-gray-600">
+                                ({employees.length} {statusFilter === 'active' ? 'đang hoạt động' : 'vô hiệu hóa'})
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Bảng Danh sách Nhân viên */}
@@ -462,7 +429,7 @@ const EmployeeManagementPage = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -503,21 +470,13 @@ const EmployeeManagementPage = () => {
                                                 </span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                         <button
                                             onClick={() => openEditModal(employee)}
-                                            className="text-blue-600 hover:text-blue-900 mr-3 p-1 rounded-md hover:bg-blue-50 transition-colors"
-                                            title="Chỉnh sửa"
+                                            className="text-blue-600 hover:text-blue-900 p-2 rounded-md hover:bg-blue-50 transition-colors"
+                                            title="Chỉnh sửa thông tin và trạng thái"
                                         >
                                             <Edit3 className='w-5 h-5' />
-                                        </button>
-                                        <button
-                                            onClick={() => setEmployeeToDelete(employee)}
-                                            disabled={!employee.isActive} // Chỉ xóa/vô hiệu hóa tài khoản đang active
-                                            className={`p-1 rounded-md transition-colors ${!employee.isActive ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-900 hover:bg-red-50'}`}
-                                            title={employee.isActive ? "Vô hiệu hóa" : "Đã vô hiệu hóa"}
-                                        >
-                                            <Trash2 className='w-5 h-5' />
                                         </button>
                                     </td>
                                 </tr>
@@ -530,7 +489,7 @@ const EmployeeManagementPage = () => {
                 {/* Phân trang */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                     <p className="text-sm text-gray-600">
-                        Hiển thị {employees.length} trên {pagination.totalElements} kết quả.
+                        Hiển thị {employees.length} {statusFilter !== 'all' ? `(${statusFilter === 'active' ? 'đang hoạt động' : 'vô hiệu hóa'})` : ''} trên {pagination.totalElements} kết quả.
                     </p>
                     <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                         <button onClick={() => handlePageChange(0)} disabled={pagination.page === 0} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
@@ -566,17 +525,6 @@ const EmployeeManagementPage = () => {
                 setToast={setToast} // Truyền setToast vào Modal
             />
 
-            {/* Modal Xóa/Vô hiệu hóa */}
-            <DeleteEmployeeModal
-                isOpen={!!employeeToDelete}
-                onClose={() => setEmployeeToDelete(null)}
-                employee={employeeToDelete}
-                onDeleteSuccess={(id, name) => {
-                    handleDeleteSuccess(id, name);
-                    setEmployeeToDelete(null); // Đóng modal sau khi xóa
-                }}
-                setToast={setToast} // Truyền setToast vào Modal
-            />
 
             {/* Toast Notification */}
             <Toast
