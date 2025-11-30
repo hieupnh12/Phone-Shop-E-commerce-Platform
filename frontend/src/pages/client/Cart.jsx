@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Truck,
@@ -9,6 +9,8 @@ import {
   Plus,
   Minus,
   CreditCard,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -26,7 +28,11 @@ const MAX_QUANTITY = 5;
 
 export default function ShoppingCart() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
+  
+  // Lấy productVersionId cần tự động chọn từ navigation state (nếu có)
+  const autoSelectProductVersionId = location.state?.autoSelectProductVersionId || null;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -34,6 +40,8 @@ export default function ShoppingCart() {
     useState(null);
   const [updatingProductVersionId, setUpdatingProductVersionId] =
     useState(null);
+  // State để quản lý các sản phẩm được chọn để thanh toán
+  const [selectedItems, setSelectedItems] = useState(new Set());
 
   // Lấy giỏ hàng
   const loadCart = async () => {
@@ -69,6 +77,65 @@ export default function ShoppingCart() {
     loadCart();
   }, []);
 
+  // Khi items thay đổi, tự động chọn sản phẩm
+  useEffect(() => {
+    if (items.length > 0) {
+      // Nếu có autoSelectProductVersionId (từ "Mua ngay"), chỉ chọn sản phẩm đó
+      if (autoSelectProductVersionId) {
+        const item = items.find((item) => item.productVersionId === autoSelectProductVersionId);
+        if (item && (item.stockQuantity === undefined || item.quantity <= item.stockQuantity)) {
+          // Chỉ chọn sản phẩm vừa thêm
+          setSelectedItems(new Set([autoSelectProductVersionId]));
+          // Xóa state để không tự động chọn lại lần sau
+          window.history.replaceState({}, document.title);
+        } else {
+          // Nếu sản phẩm không hợp lệ, chọn tất cả sản phẩm hợp lệ
+          const validItems = items.filter(
+            (item) =>
+              item.stockQuantity === undefined ||
+              item.quantity <= item.stockQuantity
+          );
+          setSelectedItems(new Set(validItems.map((item) => item.productVersionId)));
+        }
+      } else {
+        // Nếu không có autoSelectProductVersionId, chọn tất cả các sản phẩm hợp lệ
+        const validItems = items.filter(
+          (item) =>
+            item.stockQuantity === undefined ||
+            item.quantity <= item.stockQuantity
+        );
+        setSelectedItems(new Set(validItems.map((item) => item.productVersionId)));
+      }
+    }
+  }, [items.length, autoSelectProductVersionId]); // Chạy khi items thay đổi hoặc có autoSelectProductVersionId
+
+  // Toggle chọn/bỏ chọn sản phẩm
+  const toggleItemSelection = (productVersionId) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(productVersionId)) {
+        newSet.delete(productVersionId);
+      } else {
+        newSet.add(productVersionId);
+      }
+      return newSet;
+    });
+  };
+
+  // Chọn tất cả / Bỏ chọn tất cả
+  const toggleSelectAll = () => {
+    const validItems = items.filter(
+      (item) =>
+        item.stockQuantity === undefined ||
+        item.quantity <= item.stockQuantity
+    );
+    if (selectedItems.size === validItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(validItems.map((item) => item.productVersionId)));
+    }
+  };
+
   // Cập nhật số lượng
   const updateQuantity = async (productVersionId, delta) => {
     const item = items.find((x) => x.productVersionId === productVersionId);
@@ -85,7 +152,16 @@ export default function ShoppingCart() {
 
     // Kiểm tra số lượng tồn kho
     if (item.stockQuantity !== undefined && newQuantity > item.stockQuantity) {
-      setErr(`Sản phẩm "${item.productName}" chỉ còn ${item.stockQuantity} sản phẩm trong kho`);
+      const errorMessage = `Sản phẩm "${item.productName}" chỉ còn ${item.stockQuantity} sản phẩm trong kho. Không thể tăng số lượng lên ${newQuantity}.`;
+      console.warn('⚠️ Số lượng sản phẩm không đủ:', {
+        productName: item.productName,
+        requestedQuantity: newQuantity,
+        availableStock: item.stockQuantity,
+        currentQuantity: item.quantity
+      });
+      setErr(errorMessage);
+      // Hiển thị alert để người dùng chú ý
+      alert(errorMessage);
       return;
     }
 
@@ -108,7 +184,24 @@ export default function ShoppingCart() {
         setItems(prev => prev.map(x =>
           x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
         ));
-        setErr(res?.message || t('cart.failedUpdate'));
+        const errorMsg = res?.message || t('cart.failedUpdate');
+        console.error('❌ Cập nhật số lượng thất bại:', {
+          productVersionId,
+          requestedQuantity: newQuantity,
+          error: errorMsg,
+          response: res
+        });
+        setErr(errorMsg);
+        // Kiểm tra nếu lỗi liên quan đến số lượng tồn kho
+        if (errorMsg.toLowerCase().includes('không đủ') || errorMsg.toLowerCase().includes('hết hàng') || errorMsg.toLowerCase().includes('stock')) {
+          alert(`⚠️ ${errorMsg}`);
+        }
+      } else {
+        console.log('✅ Cập nhật số lượng thành công:', {
+          productName: item.productName,
+          newQuantity,
+          stockQuantity: item.stockQuantity
+        });
       }
     } catch (e) {
       setItems(prev => prev.map(x =>
@@ -139,14 +232,19 @@ export default function ShoppingCart() {
     }
   };
 
-  // Tính toán
+  // Tính toán chỉ dựa trên các sản phẩm được chọn
+  const selectedItemsList = useMemo(
+    () => items.filter((item) => selectedItems.has(item.productVersionId)),
+    [items, selectedItems]
+  );
+
   const subtotal = useMemo(
     () =>
-      items.reduce(
+      selectedItemsList.reduce(
         (sum, it) => sum + (Number(it.price) || 0) * (it.quantity || 1),
         0
       ),
-    [items]
+    [selectedItemsList]
   );
   const FREE_SHIP_LIMIT = 1000;
   const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : 30000;
@@ -157,6 +255,23 @@ export default function ShoppingCart() {
   const hasOutOfStockItems = items.some(
     (item) => item.stockQuantity !== undefined && item.quantity > item.stockQuantity
   );
+
+  // Kiểm tra xem có sản phẩm nào được chọn không
+  const hasSelectedItems = selectedItems.size > 0;
+
+  // Xử lý thanh toán - chuyển đến trang payment với danh sách sản phẩm được chọn
+  const handleCheckout = () => {
+    if (!hasSelectedItems) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+      return;
+    }
+    // Chuyển đến trang payment với state chứa danh sách productVersionId được chọn
+    navigate('/user/payment', {
+      state: {
+        selectedProductVersionIds: Array.from(selectedItems)
+      }
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-20 sm:pt-24">
@@ -241,6 +356,29 @@ export default function ShoppingCart() {
               </div>
             )}
 
+            {/* Select All Checkbox */}
+            {items.length > 0 && (
+              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm mb-4">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-3 w-full text-left hover:bg-slate-50 rounded-lg p-2 transition-colors"
+                >
+                  {selectedItems.size === items.filter(
+                    (item) =>
+                      item.stockQuantity === undefined ||
+                      item.quantity <= item.stockQuantity
+                  ).length && selectedItems.size > 0 ? (
+                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                  ) : (
+                    <Square className="w-5 h-5 text-slate-400" />
+                  )}
+                  <span className="font-semibold text-slate-900">
+                    Chọn tất cả ({selectedItems.size}/{items.length})
+                  </span>
+                </button>
+              </div>
+            )}
+
             {/* Items List */}
             <div className="space-y-4">
               {loading ? (
@@ -267,16 +405,49 @@ export default function ShoppingCart() {
                   </button>
                 </div>
               ) : (
-                items.map((item) => (
+                items.map((item) => {
+                  const isSelected = selectedItems.has(item.productVersionId);
+                  const isOutOfStock = item.stockQuantity !== undefined && item.quantity > item.stockQuantity;
+                  const canSelect = !isOutOfStock;
+                  
+                  return (
                   <div
                     key={item.productVersionId}
-                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 ${
+                    className={`group relative bg-white rounded-xl p-4 lg:p-5 border-2 shadow-sm hover:shadow-md transition-all duration-200 ${
                       removingProductVersionId === item.productVersionId
                         ? "opacity-50"
-                        : ""
+                        : isSelected
+                        ? "border-blue-500 bg-blue-50/30"
+                        : "border-slate-200"
                     }`}
                   >
                     <div className="flex gap-4">
+                      {/* Checkbox */}
+                      <div className="flex items-start pt-1">
+                        <button
+                          onClick={() => canSelect && toggleItemSelection(item.productVersionId)}
+                          disabled={!canSelect}
+                          className={`transition-all ${
+                            canSelect
+                              ? "cursor-pointer hover:scale-110"
+                              : "cursor-not-allowed opacity-40"
+                          }`}
+                          title={
+                            canSelect
+                              ? isSelected
+                                ? "Bỏ chọn sản phẩm"
+                                : "Chọn sản phẩm để thanh toán"
+                              : "Sản phẩm không đủ hàng, không thể chọn"
+                          }
+                        >
+                          {isSelected && canSelect ? (
+                            <CheckSquare className="w-6 h-6 text-blue-600" />
+                          ) : (
+                            <Square className="w-6 h-6 text-slate-400" />
+                          )}
+                        </button>
+                      </div>
+
                       {/* Image */}
                       <div className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-xl flex-shrink-0 bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200 overflow-hidden">
                         {item.image ? (
@@ -411,7 +582,8 @@ export default function ShoppingCart() {
                       </div>
                     </div>
                   </div>
-                ))
+                );
+                })
               )}
             </div>
           </div>
@@ -447,12 +619,14 @@ export default function ShoppingCart() {
               </div>
 
               <button
-                onClick={() => navigate("/user/payment")}
-                disabled={items.length === 0 || loading}
+                onClick={handleCheckout}
+                disabled={!hasSelectedItems || loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-blue-600/30 disabled:shadow-none flex items-center justify-center gap-2"
               >
                 <CreditCard className="w-5 h-5" />
-                {t('cart.paymentNow')}
+                {hasSelectedItems
+                  ? `${t('cart.paymentNow')} (${selectedItems.size} sản phẩm)`
+                  : t('cart.paymentNow')}
               </button>
 
               <p className="text-xs text-slate-500 text-center mt-4">

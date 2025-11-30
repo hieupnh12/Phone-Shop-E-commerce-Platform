@@ -19,6 +19,8 @@ public class NewVersionResponse {
 
     String idProduct;
 
+    String productName;
+
     String romName;
 
     String ramName;
