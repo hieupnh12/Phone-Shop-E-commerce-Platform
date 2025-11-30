@@ -9,6 +9,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,9 +31,8 @@ public class CustomerController {
     }
      @PostMapping("/auth")
     public ApiResponse<String> sendOtp(@RequestBody SendOtpRequest request ) {
-         cusAuthService.sendOtp(request);
         return  ApiResponse.<String>builder()
-                .result("Opt da gui thanh cong")
+                .result(cusAuthService.sendOtp(request))
                 .build();
      }
     @PostMapping("/auth_verify_otp")
@@ -40,7 +42,32 @@ public class CustomerController {
                  .build();
      }
     @PutMapping("/update/{id}")
-     public ApiResponse<CustomerResponse> updateCustomer(@PathVariable Long id, @Valid @RequestBody  CustomerUpdateRequest request) {
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_UPDATE_BASIC') or hasAuthority('SCOPE_CUSTOMER_MANAGE_ACCOUNT')")
+    public ApiResponse<CustomerResponse> updateCustomer(
+            @PathVariable Long id, 
+            @Valid @RequestBody CustomerUpdateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        // Resource-based authorization: Customer chỉ sửa được thông tin của chính mình
+        // Employee với CUSTOMER_MANAGE_ACCOUNT có thể sửa tất cả
+        try {
+            Long jwtCustomerId = Long.valueOf(jwt.getSubject());
+            // Kiểm tra nếu là customer token và không có quyền MANAGE_ACCOUNT
+            // Lưu ý: Trong JWT, scope được lưu KHÔNG có prefix "SCOPE_"
+            boolean hasManageAccount = jwt.getClaims().containsKey("scopes") && 
+                jwt.getClaims().get("scopes") != null &&
+                ((List<?>) jwt.getClaims().get("scopes")).stream()
+                    .anyMatch(s -> s.toString().equals("CUSTOMER_MANAGE_ACCOUNT"));
+            
+            if (!hasManageAccount && !jwtCustomerId.equals(id)) {
+                return ApiResponse.<CustomerResponse>builder()
+                        .code(403)
+                        .message("Bạn chỉ có thể cập nhật thông tin của chính mình")
+                        .build();
+            }
+        } catch (NumberFormatException e) {
+            // Nếu subject không phải là số, có thể là employee token (subject là fullName)
+            // Employee với CUSTOMER_MANAGE_ACCOUNT có thể sửa tất cả, không cần check
+        }
         return ApiResponse.<CustomerResponse>builder()
                 .result(customerService.updateCustomer(id,request))
                 .build();
@@ -81,6 +108,7 @@ public class CustomerController {
      }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_VIEW_ALL')")
     public ApiResponse<Page<CustomerResponse>> search(
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
@@ -96,6 +124,7 @@ public class CustomerController {
 
     // Endpoint mới để tìm kiếm theo số điện thoại hoặc email (KHÔNG ảnh hưởng endpoint cũ)
     @GetMapping("/search/phone-or-email")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_VIEW_ALL')")
     public ApiResponse<Page<CustomerResponse>> searchByPhoneOrEmail(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
@@ -110,6 +139,7 @@ public class CustomerController {
 
     // Endpoint để lấy gợi ý khách hàng khi gõ 4 số đầu
     @GetMapping("/suggestions/phone")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_VIEW_ALL')")
     public ApiResponse<List<CustomerResponse>> getPhoneSuggestions(
             @RequestParam String prefix
     ) {

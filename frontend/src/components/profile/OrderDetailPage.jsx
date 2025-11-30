@@ -4,8 +4,10 @@ import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone
 import {useAuthFullOptions} from "../../contexts/AuthContext";
 import { profileService, orderService } from "../../services/api";
 import api from "../../services/api";
+import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
+import { formatPhoneNumber } from "../../utils/phoneUtils";
 
 
 
@@ -70,6 +72,7 @@ const OrderDetailPage = () => {
                 }
                 
                 console.log('Final payment method:', paymentMethod);
+                console.log('API Result (Order Details):', apiResult);
 
                 const normalizedData = normalizeOrderDetail(
                     apiResult,
@@ -155,6 +158,7 @@ const OrderDetailPage = () => {
             }
             
             // Gọi API để hủy đơn hàng
+            // Lưu ý: Backend cần tự động cộng lại số lượng sản phẩm vào kho khi status được cập nhật sang CANCELED hoặc RETURNED
             const response = await orderService.updateOrderStatus(orderId, newStatus);
             
             if (response?.result) {
@@ -214,6 +218,9 @@ const OrderDetailPage = () => {
                     type: 'success',
                     message: statusMessage
                 });
+                
+                // Chuyển hướng về trang lịch sử đơn hàng sau khi hủy thành công
+                navigate('/user/profile/order');
             } else {
                 setToast({
                     type: 'error',
@@ -234,39 +241,90 @@ const OrderDetailPage = () => {
     // Kiểm tra xem đơn hàng có thể hủy không
     const canCancelOrder = () => {
         if (!orderData) return false;
-        // Không thể hủy nếu đã bị hủy, đã giao hàng, hoặc đã nhận hàng
-        const status = orderData.status?.toLowerCase() || '';
-        const nonCancellableStatuses = ['cancelled', 'đã hủy', 'shipped', 'đang vận chuyển', 'delivered', 'đã giao hàng', 'returned', 'đã trả'];
         
-        // Nếu đã ở trạng thái không thể hủy
-        if (nonCancellableStatuses.some(s => status.includes(s.toLowerCase()))) {
+        // Lấy status từ nhiều nguồn để đảm bảo chính xác
+        // Ưu tiên: location.state > orderData (nếu có raw status) > orderData.status (text tiếng Việt)
+        const statusFromState = location.state?.status;
+        const statusFromData = orderData.status;
+        
+        // Normalize status về uppercase để so sánh chính xác
+        let statusNormalized = '';
+        if (statusFromState) {
+            // Status từ state thường là uppercase từ API (PENDING, PAID, SHIPPED, DELIVERED, etc.)
+            statusNormalized = (statusFromState || '').toUpperCase();
+        } else if (statusFromData) {
+            // Nếu status là text tiếng Việt, cần map lại
+            const statusText = (statusFromData || '').toLowerCase();
+            const statusMap = {
+                'đang xử lý': 'PENDING',
+                'đã thanh toán': 'PAID',
+                'đang vận chuyển': 'SHIPPED',
+                'đã giao hàng': 'DELIVERED',
+                'đã hủy': 'CANCELED',
+                'hoàn trả': 'RETURNED'
+            };
+            statusNormalized = statusMap[statusText] || statusText.toUpperCase();
+        }
+        
+        // Không thể hủy nếu status là SHIPPED, DELIVERED, CANCELED, CANCELLED, hoặc RETURNED
+        const nonCancellableStatuses = ['SHIPPED', 'DELIVERED', 'CANCELED', 'CANCELLED', 'RETURNED'];
+        if (statusNormalized && nonCancellableStatuses.includes(statusNormalized)) {
             return false;
         }
         
-        // Có thể hủy nếu đơn hàng ở trạng thái: pending, paid (nhưng chưa shipped)
-        const cancellableStatuses = ['pending', 'đang xử lý', 'paid', 'đã thanh toán'];
-        return cancellableStatuses.some(s => status.includes(s.toLowerCase()));
+        // Có thể hủy nếu đơn hàng ở trạng thái: PENDING, PAID (nhưng chưa SHIPPED)
+        return statusNormalized === 'PENDING' || statusNormalized === 'PAID';
+    };
+
+    // Hàm xử lý mua lại sản phẩm
+    const handleRepurchase = async (product) => {
+        if (!product.productVersionId) {
+            setToast({
+                type: 'error',
+                message: 'Không tìm thấy thông tin sản phẩm'
+            });
+            return;
+        }
+
+        try {
+            // Thêm sản phẩm vào giỏ hàng với số lượng từ đơn hàng
+            await cartService.addToCart(product.productVersionId, product.quantity);
+            
+            // Chuyển hướng đến trang giỏ hàng
+            navigate('/user/cart');
+        } catch (err) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", err);
+            setToast({
+                type: 'error',
+                message: err.response?.data?.message || err.message || 'Không thể thêm vào giỏ hàng'
+            });
+        }
     };
 
     const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderInfo) => {
-        const products = apiProducts.map(p => ({
-            id: p.productId,
-            name: p.productName,
-            image: p.picture,
-            price: p.unitPriceAfter,
-            quantity: 1,
-            warrantyEnd: '23/03/2026',
-            canRepurchase: true,
-        }));
+        console.log('Normalizing products, first product:', apiProducts?.[0]);
+        const products = apiProducts.map(p => {
+            console.log('Product data:', p, 'quantity field:', p.quantity, 'getQuantity:', p.getQuantity);
+            return {
+                id: p.productId,
+                productVersionId: p.productVersionId,
+                name: p.productName,
+                image: p.picture,
+                price: p.unitPriceAfter,
+                quantity: p.quantity ?? p.getQuantity?.() ?? 1,
+                warrantyEnd: '23/03/2026',
+                canRepurchase: true,
+            };
+        });
 
-        const subtotal = products.reduce((sum, p) => sum + p.price, 0);
+        const subtotal = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
         const FREE_SHIP_LIMIT = 1000;
         const SHIPPING_FEE = 30000;
         const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : SHIPPING_FEE;
         const totalAmount = passedTotalAmount ?? subtotal + shippingFee;
         const defaultCustomer = {
             name: customerData?.fullName || 'Khách hàng',
-            phone: customerData?.phoneNumber || 'Đang cập nhật',
+            phone: formatPhoneNumber(customerData?.phoneNumber) || 'Đang cập nhật',
             address: customerData?.address || 'Chưa có địa chỉ',
             note: '-',
         };
@@ -289,41 +347,47 @@ const OrderDetailPage = () => {
         const createDateTime = formatDateTime(createDate);
         const endDateTime = endDate ? formatDateTime(endDate) : null;
 
-        // Tạo timeline dựa trên status
+        // Tạo timeline dựa trên status (giống code mẫu)
         const timeline = [];
+        
+        // Normalize status: backend trả về uppercase (PENDING, PAID, SHIPPED, DELIVERED, CANCELED, RETURNED, COMPLETED)
+        const statusNormalized = (orderStatus || '').toUpperCase();
+        const statusLower = statusNormalized.toLowerCase();
         
         // Bước 1: Đặt hàng thành công (luôn có)
         timeline.push({
-            status: t('profile.orderSuccess'),
+            status: t('profile.orderSuccess') || 'Đặt hàng thành công',
             date: createDateTime.date,
             time: createDateTime.time,
             completed: true
         });
 
-        // Bước 2: Đang xử lý (nếu status là pending hoặc đã qua pending)
-        if (orderStatus === 'pending' || orderStatus === 'shipping' || orderStatus === 'delivered') {
+        // Bước 2: Đang xử lý (nếu status là PENDING hoặc đã qua PENDING)
+        if (statusNormalized === 'PENDING' || statusNormalized === 'PAID' || statusNormalized === 'SHIPPED' || 
+            statusNormalized === 'DELIVERED' || statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED') {
             timeline.push({
-                status: t('profile.processing'),
+                status: t('profile.processing') || 'Đang xử lý',
                 date: createDateTime.date,
                 time: createDateTime.time,
-                completed: orderStatus !== 'pending'
+                completed: statusNormalized !== 'PENDING'
             });
         }
 
-        // Bước 3: Đang vận chuyển (nếu status là shipping hoặc delivered)
-        if (orderStatus === 'shipping' || orderStatus === 'delivered') {
+        // Bước 3: Đang vận chuyển (nếu status là SHIPPED hoặc DELIVERED)
+        if (statusNormalized === 'SHIPPED' || statusNormalized === 'DELIVERED' || 
+            statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED') {
             timeline.push({
-                status: t('profile.shipping'),
+                status: t('profile.shipping') || 'Đang vận chuyển',
                 date: createDateTime.date,
                 time: createDateTime.time,
-                completed: orderStatus === 'delivered'
+                completed: statusNormalized === 'DELIVERED' || statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED'
             });
         }
 
-        // Bước 4: Đã giao hàng (nếu status là delivered và có endDateTime)
-        if (orderStatus === 'delivered' && endDateTime) {
+        // Bước 4: Đã giao hàng (nếu status là DELIVERED và có endDateTime)
+        if (statusNormalized === 'DELIVERED' && endDateTime) {
             timeline.push({
-                status: t('profile.delivered'),
+                status: t('profile.delivered') || 'Đã giao hàng',
                 date: endDateTime.date,
                 time: endDateTime.time,
                 completed: true
@@ -331,9 +395,29 @@ const OrderDetailPage = () => {
         }
 
         // Nếu bị hủy
-        if (orderStatus === 'cancelled') {
+        if (statusNormalized === 'CANCELED' || statusNormalized === 'CANCELLED') {
             timeline.push({
-                status: t('profile.cancelled'),
+                status: t('profile.cancelled') || 'Đơn hàng đã hủy',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu đã hoàn trả
+        if (statusNormalized === 'RETURNED') {
+            timeline.push({
+                status: t('profile.returned') || 'Hoàn trả',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu đã hoàn thành (COMPLETED)
+        if (statusNormalized === 'COMPLETED') {
+            timeline.push({
+                status: 'Đã hoàn thành',
                 date: endDateTime?.date || createDateTime.date,
                 time: endDateTime?.time || createDateTime.time,
                 completed: true
@@ -342,11 +426,14 @@ const OrderDetailPage = () => {
 
         // Map status để hiển thị
         const statusMap = {
-            'pending': t('profile.processing'),
-            'shipping': t('profile.shipping'),
-            'delivered': t('profile.delivered'),
-            'cancelled': t('profile.cancelled'),
-            'returned': t('profile.returned')
+            'pending': t('profile.processing') || 'Đang xử lý',
+            'paid': t('profile.paid') || 'Đã thanh toán',
+            'shipped': t('profile.shipping') || 'Đang vận chuyển',
+            'delivered': t('profile.delivered') || 'Đã giao hàng',
+            'canceled': t('profile.cancelled') || 'Đã hủy',
+            'cancelled': t('profile.cancelled') || 'Đã hủy',
+            'returned': t('profile.returned') || 'Hoàn trả',
+            'completed': 'Đã hoàn thành'
         };
 
         // Tính "Đã thanh toán trước": COD = 0, PayOS = totalAmount nếu đã thanh toán
@@ -356,7 +443,7 @@ const OrderDetailPage = () => {
             id: id,
             orderCode: `#${id}`,
             date: createDateTime.date,
-            status: statusMap[orderStatus] || 'Đang xử lý',
+            status: statusMap[(orderStatus || '').toLowerCase()] || statusMap['pending'] || 'Đang xử lý',
             products: products,
             summary: {
                 subtotal: subtotal,
@@ -421,11 +508,15 @@ const OrderDetailPage = () => {
         </div>
     );
 
-    const PaymentInfoCard = () => (
+    const PaymentInfoCard = () => {
+        // Tính tổng số lượng sản phẩm (tổng quantity của tất cả sản phẩm)
+        const totalQuantity = orderData.products.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        
+        return (
         <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
             <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Thông tin thanh toán</h4>
             <div className="space-y-2">
-                <InfoRow label={t('common.products')} value={orderData.products.length} note={t('common.quantityNote')} />
+                <InfoRow label={t('common.products')} value={totalQuantity} note={t('common.quantityNote')} />
                 <InfoRow label="Tổng tiền hàng" value={orderData.summary.subtotal} currency />
                 <InfoRow label="Giảm giá" value={-orderData.summary.discount} currency highlight />
                 <InfoRow
@@ -453,7 +544,8 @@ const OrderDetailPage = () => {
             </div>
             <p className="mt-3 text-xs text-gray-500">Phương thức: {orderData.paymentMethod}</p>
         </div>
-    );
+        );
+    };
 
     const OrderTimeline = () => {
         const steps = orderData.timeline;
@@ -561,7 +653,10 @@ const OrderDetailPage = () => {
                             <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
                                 <p className="text-sm text-gray-600">Số lượng: {product.quantity}</p>
                                 {product.canRepurchase && (
-                                    <button className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                                    <button 
+                                        onClick={() => handleRepurchase(product)}
+                                        className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                    >
                                         Mua lại
                                     </button>
                                 )}

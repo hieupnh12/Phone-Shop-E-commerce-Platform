@@ -1,5 +1,6 @@
 package com.websales.repository;
 
+import com.websales.dto.response.YSendChatBot;
 import com.websales.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -160,6 +162,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             Pageable pageable
     );
 
+    List<Product> findByNameProduct(String nameProduct);
+
+    List<Product> findByNameProductContainingIgnoreCase(String nameProduct);
+
 
 //    @Query("SELECT DISTINCT p FROM Product p " +
 //            "LEFT JOIN FETCH p.origin " +
@@ -171,6 +177,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 //            "WHERE pi.versionId = pv AND pi.imei = :imei AND pi.export_id IS NULL)")
 //    Optional<Product> findByImei(String imei);
 
+
+
+    @Query("""
+        SELECT new com.websales.dto.response.YSendChatBot(
+            p.idProduct,
+            p.nameProduct,
+            p.image,
+            p.brand.nameBrand
+        )
+        FROM Product p
+        LEFT JOIN p.brand
+        WHERE LOWER(p.nameProduct) LIKE LOWER(CONCAT('%', :name, '%'))
+        """)
+    List<YSendChatBot> findProductAsChatBot(@Param("name") String name);
 
 
 }

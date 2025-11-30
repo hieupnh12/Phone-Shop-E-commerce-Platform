@@ -94,7 +94,7 @@ export default function PaymentCancel() {
               <div className="flex flex-col sm:flex-row gap-4">
                 {orderId && (
                   <button
-                    onClick={() => navigate(`/payment?retryOrder=${orderId}`)}
+                    onClick={() => navigate(`/user/payment?retryOrder=${orderId}`)}
                     className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
                   >
                     <ShoppingCart className="w-5 h-5" />
@@ -103,7 +103,7 @@ export default function PaymentCancel() {
                 )}
                 
                 <button
-                  onClick={() => navigate('/cart')}
+                  onClick={() => navigate('/user/cart')}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -113,7 +113,7 @@ export default function PaymentCancel() {
 
               <div className="mt-4">
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/user/')}
                   className="w-full bg-transparent hover:bg-gray-50 text-gray-600 font-medium py-2 px-6 rounded-lg transition-all"
                 >
                   {t('cart.continueShopping')}

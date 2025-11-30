@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Settings, Users, Key, Save, Loader2, AlertTriangle, Edit, X, Plus, Trash2 } from 'lucide-react';
 import api from "../../../services/api";
 import { useNavigate } from 'react-router-dom';
+import { usePermission, PERMISSIONS } from '../../../hooks/usePermission';
 
 const API_ENDPOINTS = {
     GET_ROLES: '/role',
@@ -255,6 +256,7 @@ const CreateRoleModal = ({ isOpen, onClose, allPermissions, onCreateSuccess }) =
 };
 
 const RoleManagementPage = () => {
+    const { hasPermission } = usePermission();
     const [roles, setRoles] = useState([]);
     const [allPermissions, setAllPermissions] = useState({});
     const [selectedRole, setSelectedRole] = useState(null);
@@ -479,13 +481,15 @@ const RoleManagementPage = () => {
                                 <Users className="w-5 h-5 mr-2 text-blue-600" />
                                 Danh sách Vai trò ({roles.length})
                             </h2>
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center transition-colors"
-                            >
-                                <Plus className="w-4 h-4 mr-1" />
-                                Tạo mới
-                            </button>
+                            {hasPermission(PERMISSIONS.STAFF_MANAGE_ROLES) && (
+                                <button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center transition-colors"
+                                >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Tạo mới
+                                </button>
+                            )}
                         </div>
 
                         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
@@ -505,20 +509,22 @@ const RoleManagementPage = () => {
                                         {role.description}
                                     </p>
                                 </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Ngăn chặn kích hoạt handleSelectRole
-                                            setRoleToDelete(role);
-                                        }}
-                                        className={`absolute top-2 right-2 p-1 rounded-full 
-                                            ${selectedRole?.id === role.id
-                                            ? 'bg-red-500 hover:bg-red-700 text-white'
-                                            : 'bg-gray-200 hover:bg-red-500 hover:text-white text-gray-600'
-                                        } transition-colors`}
-                                        title={`Xóa Role ${role.name}`}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {hasPermission(PERMISSIONS.STAFF_MANAGE_ROLES) && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Ngăn chặn kích hoạt handleSelectRole
+                                                setRoleToDelete(role);
+                                            }}
+                                            className={`absolute top-2 right-2 p-1 rounded-full 
+                                                ${selectedRole?.id === role.id
+                                                ? 'bg-red-500 hover:bg-red-700 text-white'
+                                                : 'bg-gray-200 hover:bg-red-500 hover:text-white text-gray-600'
+                                            } transition-colors`}
+                                            title={`Xóa Role ${role.name}`}
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -533,14 +539,16 @@ const RoleManagementPage = () => {
                                         <Key className="w-6 h-6 mr-2" />
                                         Quyền hạn của Role: {selectedRole.name}
                                     </h2>
-                                    <button
-                                        onClick={handleSaveRole}
-                                        disabled={isSaving}
-                                        className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
-                                    >
-                                        {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
-                                        {isSaving ? 'Đang lưu...' : 'Lưu Thay đổi'}
-                                    </button>
+                                    {hasPermission(PERMISSIONS.STAFF_MANAGE_ROLES) && (
+                                        <button
+                                            onClick={handleSaveRole}
+                                            disabled={isSaving}
+                                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors disabled:opacity-50"
+                                        >
+                                            {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
+                                            {isSaving ? 'Đang lưu...' : 'Lưu Thay đổi'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="max-h-[60vh] overflow-y-auto space-y-6 pr-4">

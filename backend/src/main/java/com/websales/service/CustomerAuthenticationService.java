@@ -65,7 +65,7 @@ public class CustomerAuthenticationService {
 
 
 
-    public void sendOtp(SendOtpRequest request) {
+    public String sendOtp(SendOtpRequest request) {
         String phone = PhoneUtils.normalize(request.getPhoneNumber());
 
         // if (!PhoneUtils.isValidVietnamPhone(request.getPhoneNumber())) {
@@ -77,6 +77,7 @@ public class CustomerAuthenticationService {
 
         String otp = String.valueOf((int)(Math.random() * 900000 + 100000));
 
+        log.debug("Sending OTP request: " + otp);
 
         otpReq.setVerified(false);
 
@@ -85,22 +86,22 @@ public class CustomerAuthenticationService {
             throw new AppException(ErrorCode.OTP_SEND_TOO_FAST);
         }
 
-        if (otpReq.getSentCount() >= 5 &&
-                otpReq.getLastSentAt().isAfter(LocalDateTime.now().minusMinutes(10))) {
-            throw new AppException(ErrorCode.OTP_SEND_LIMIT);
-        }
+//        if (otpReq.getSentCount() >= 5 &&
+//                otpReq.getLastSentAt().isAfter(LocalDateTime.now().minusMinutes(10))) {
+//            throw new AppException(ErrorCode.OTP_SEND_LIMIT);
+//        }
 
-        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
-        if(!sent) {
-            throw new RuntimeException("Gửi OTP thất bại");
-        }
+//        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
+//        if(!sent) {
+//            throw new RuntimeException("Gửi OTP thất bại");
+//        }
         otpReq.setOtpHash(passwordEncoder.encode(otp));
-        otpReq.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+        otpReq.setExpiresAt(LocalDateTime.now().plusMinutes(1));
         otpReq.setLastSentAt(LocalDateTime.now());
         otpReq.incrementSentCount();
         otpReq.resetAttempt();
-        otpRepo.save(otpReq);
-
+      var Rp = otpRepo.save(otpReq);
+        return Rp.getExpiresAt().toString();
     }
 
     @Transactional

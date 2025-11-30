@@ -12,10 +12,12 @@ import com.websales.repository.CustomerRepo;
 import com.websales.repository.EmployeeRepo;
 import com.websales.repository.OrderDetailRepository;
 import com.websales.repository.OrderRepository;
+import com.websales.repository.PaymentTransactionRepository;
 import com.websales.repository.ProductVersionRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -33,6 +36,7 @@ public class OrderService {
     ProductVersionRepository productVersionRepository;
     CustomerRepo customerRepo;
     EmployeeRepo employeeRepo;
+    PaymentTransactionRepository paymentTransactionRepository;
 
 
     public List<Order> getOrdersByCustomer(Long  customerId) {
@@ -48,6 +52,10 @@ public class OrderService {
         return orderRepository.findAll(pageable);
     }
 
+    public Page<Order> getOrdersByEmployee(Long employeeId, Pageable pageable) {
+        return orderRepository.findByEmployeeId_Id(employeeId, pageable);
+    }
+
     public Optional<Order> getOrderById(Integer orderId) {
         return orderRepository.findByOrderId(orderId);
     }
@@ -60,7 +68,7 @@ public class OrderService {
             customer = customerRepo.findById(request.getCustomerId())
                     .orElseThrow(() -> new RuntimeException("Customer not found: " + request.getCustomerId()));
         }
-        
+
         // Lấy employeeId nếu đang đăng nhập bằng tài khoản employee
         Employee employee = null;
         try {
@@ -72,7 +80,7 @@ public class OrderService {
             // Nếu không phải employee authentication hoặc không tìm thấy employee, bỏ qua
             // Order có thể được tạo bởi customer (self-order)
         }
-        
+
         Order order = Order.builder()
                 .customerId(customer)
                 .employeeId(employee)
@@ -96,10 +104,10 @@ public class OrderService {
                                 .unitPriceAfter(detailRequest.getUnitPriceAfter())
                                 .quantity(detailRequest.getQuantity())
                                 .build();
-                        
+
                         // Set productVersion using setter to ensure Hibernate recognizes the relationship
                         orderDetail.setProductVersion(productVersion);
-                        
+
                         return orderDetail;
                     })
                     .toList();
@@ -107,10 +115,10 @@ public class OrderService {
             orderDetailRepository.saveAll(orderDetails);
             savedOrder.setOrderDetails(orderDetails);
             
-            // Trừ số lượng sản phẩm trong kho khi tạo order với status PENDING
-            if (savedOrder.getStatus() == OrderStatus.PENDING) {
-                reduceStockFromOrder(savedOrder.getOrderId());
-            }
+            // KHÔNG giảm stock ở đây vì:
+            // - COD: sẽ được giảm stock trong CartController.checkout() sau khi tạo order
+            // - PayOS: sẽ được giảm stock khi webhook xác nhận thanh toán thành công
+            // - In-store orders: sẽ được giảm stock trong CartController hoặc logic tương ứng
         }
 
         return savedOrder;
@@ -127,11 +135,70 @@ public class OrderService {
                 order.setEndDatetime(java.time.LocalDateTime.now());
             }
             
+            // Nếu chuyển sang DELIVERED và là đơn COD, tự động set isPaid = true
+            if (status == OrderStatus.DELIVERED && oldStatus != OrderStatus.DELIVERED) {
+                List<com.websales.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByOrderId(orderId);
+                log.info("Checking payment transactions for order {}: found {} transactions", orderId, transactions.size());
+                
+                // Kiểm tra xem có phải đơn COD không
+                boolean isCOD = false;
+                
+                if (transactions.isEmpty()) {
+                    // Nếu không có payment transaction, mặc định coi là COD (đơn tại cửa hàng)
+                    log.info("No payment transaction found for order {}, defaulting to COD", orderId);
+                    isCOD = true;
+                } else {
+                    // Kiểm tra từ payment transactions
+                    isCOD = transactions.stream()
+                            .anyMatch(transaction -> {
+                                String transactionCode = transaction.getTransactionCode();
+                                log.info("Checking transaction {} with code: {}", transaction.getTransactionId(), transactionCode);
+                                
+                                // Kiểm tra transaction code
+                                if (transactionCode != null && transactionCode.startsWith("CODE-")) {
+                                    log.info("Found COD transaction by transaction code: {}", transactionCode);
+                                    return true;
+                                }
+                                
+                                // Kiểm tra payment method type
+                                if (transaction.getPaymentMethod() != null) {
+                                    String paymentMethodType = transaction.getPaymentMethod().getPaymentMethodType();
+                                    log.info("Payment method type: {}", paymentMethodType);
+                                    if (paymentMethodType != null && 
+                                        ("cod".equalsIgnoreCase(paymentMethodType) || "COD".equalsIgnoreCase(paymentMethodType))) {
+                                        log.info("Found COD transaction by payment method type: {}", paymentMethodType);
+                                        return true;
+                                    }
+                                }
+                                
+                                // Kiểm tra nếu không phải PayOS thì mặc định là COD
+                                if (transactionCode == null || !transactionCode.startsWith("PAYOS-")) {
+                                    log.info("Transaction is not PayOS, defaulting to COD");
+                                    return true;
+                                }
+                                
+                                return false;
+                            });
+                }
+                
+                log.info("Order {} is COD: {}, current isPaid: {}", orderId, isCOD, order.getIsPaid());
+                
+                // Nếu là COD, set isPaid = true khi chuyển sang DELIVERED
+                if (isCOD && !Boolean.TRUE.equals(order.getIsPaid())) {
+                    order.setIsPaid(true);
+                    log.info("Setting isPaid = true for COD order {} when status changed to DELIVERED", orderId);
+                } else if (!isCOD) {
+                    log.info("Order {} is not COD, skipping isPaid update", orderId);
+                } else {
+                    log.info("Order {} isPaid already true, skipping update", orderId);
+                }
+            }
+            
             // Nếu chuyển sang CANCELED, cộng lại quantity vào kho
             if (status == OrderStatus.CANCELED && oldStatus != OrderStatus.CANCELED) {
                 restoreStockFromOrder(orderId);
             }
-            
+
             return Optional.of(orderRepository.save(order));
         }
         return Optional.empty();
@@ -145,27 +212,27 @@ public class OrderService {
     public void reduceStockFromOrder(Integer orderId) {
         Order order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
-        
+
         if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
             return;
         }
-        
+
         for (OrderDetail orderDetail : order.getOrderDetails()) {
             ProductVersion productVersion = orderDetail.getProductVersion();
             if (productVersion != null) {
                 Integer currentStock = productVersion.getStockQuantity();
                 Integer quantityToReduce = orderDetail.getQuantity();
-                
+
                 if (currentStock != null && quantityToReduce != null) {
                     // Kiểm tra số lượng tồn kho có đủ không
                     if (currentStock < quantityToReduce) {
                         throw new RuntimeException(
-                            "Không đủ số lượng trong kho cho sản phẩm " + 
-                            productVersion.getIdVersion() + 
-                            ". Tồn kho: " + currentStock + ", Yêu cầu: " + quantityToReduce
+                                "Không đủ số lượng trong kho cho sản phẩm " +
+                                        productVersion.getIdVersion() +
+                                        ". Tồn kho: " + currentStock + ", Yêu cầu: " + quantityToReduce
                         );
                     }
-                    
+
                     int newStock = currentStock - quantityToReduce;
                     productVersion.setStockQuantity(newStock);
                     productVersionRepository.save(productVersion);
@@ -182,17 +249,17 @@ public class OrderService {
     public void restoreStockFromOrder(Integer orderId) {
         Order order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
-        
+
         if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
             return;
         }
-        
+
         for (OrderDetail orderDetail : order.getOrderDetails()) {
             ProductVersion productVersion = orderDetail.getProductVersion();
             if (productVersion != null) {
                 Integer currentStock = productVersion.getStockQuantity();
                 Integer quantityToRestore = orderDetail.getQuantity();
-                
+
                 if (currentStock != null && quantityToRestore != null) {
                     int newStock = currentStock + quantityToRestore;
                     productVersion.setStockQuantity(newStock);

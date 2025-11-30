@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
 @Table(name = "products") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
-public class Product {
+public class Product extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

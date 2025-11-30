@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Mail,
   Lock,
@@ -11,12 +11,55 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
+  Clock,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import Toast from "../../components/common/Toast";
+
+// Constants
+const PHONE_PATTERN = /^84(3|5|7|8|9)[0-9]{8}$/;
+const OTP_PATTERN = /^\d{6}$/;
+const MAX_PHONE_LENGTH = 13;
+const MAX_OTP_LENGTH = 6;
+
+// Utility functions
+const normalizePhone = (phone) => {
+  const cleaned = phone.replace(/[^0-9+]/g, '');
+  if (cleaned.startsWith('+84')) {
+    return cleaned.substring(1);
+  }
+  if (cleaned.startsWith('84') && cleaned.length === 11) {
+    return cleaned;
+  }
+  if (cleaned.startsWith('0') && cleaned.length === 10) {
+    return '84' + cleaned.substring(1);
+  }
+  return cleaned;
+};
+
+const validatePhone = (phone) => {
+  if (!phone?.trim()) return false;
+  const normalized = normalizePhone(phone);
+  return PHONE_PATTERN.test(normalized);
+};
+
+const getErrorMessage = (error) => {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    'Đã xảy ra lỗi'
+  );
+};
+
+const formatCountdown = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -31,76 +74,191 @@ const Login = () => {
   });
   const [otpSent, setOtpSent] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [expiresAt, setExpiresAt] = useState(null);
   const { loading, loginEmployee, sendOtp, verifyOtp } = useContext(AuthContext);
   const { t } = useLanguage();
-
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
 
-  const handleSendOTP = async () => {
+  // Reset OTP state helper
+  const resetOtpState = useCallback(() => {
+    setOtpSent(false);
+    setCountdown(0);
+    setExpiresAt(null);
+    setFormData(prev => ({ ...prev, otp: '' }));
+  }, []);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (!expiresAt || !otpSent) {
+      setCountdown(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      try {
+        const now = Date.now();
+        const expirationTime = new Date(expiresAt).getTime();
+        const remaining = Math.max(0, Math.floor((expirationTime - now) / 1000));
+        
+        setCountdown(remaining);
+        if (remaining === 0) {
+          setExpiresAt(null);
+        }
+      } catch (error) {
+        console.error('Error calculating countdown:', error);
+        setCountdown(0);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt, otpSent]);
+
+  // Phone input handler
+  const handlePhoneChange = useCallback((e) => {
+    const value = e.target.value;
+    const cleaned = value.replace(/[^0-9+]/g, '');
+    const finalValue = cleaned.startsWith('+') 
+      ? '+' + cleaned.slice(1).replace(/[^0-9]/g, '')
+      : cleaned.replace(/[^0-9]/g, '');
+    
+    setFormData(prev => ({ ...prev, phone: finalValue }));
+    
+    if (otpSent) {
+      resetOtpState();
+    }
+  }, [otpSent, resetOtpState]);
+
+  // OTP input handler
+  const handleOtpChange = useCallback((e) => {
+    const value = e.target.value.replace(/[^0-9]/g, '').slice(0, MAX_OTP_LENGTH);
+    setFormData(prev => ({ ...prev, otp: value }));
+  }, []);
+
+  // Generic input handler
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  // Phone key press handler
+  const handlePhoneKeyPress = useCallback((e) => {
+    const char = e.key;
+    if (!/[0-9+]/.test(char)) {
+      e.preventDefault();
+      return;
+    }
+    if (char === '+' && formData.phone.length > 0) {
+      e.preventDefault();
+    }
+  }, [formData.phone]);
+
+  // OTP key press handler
+  const handleOtpKeyPress = useCallback((e) => {
+    if (!/[0-9]/.test(e.key)) {
+      e.preventDefault();
+    }
+  }, []);
+
+  // Send OTP handler
+  const handleSendOTP = useCallback(async () => {
     try {
-      const phoneRegex = /^0\d{9}$/;
+      const phone = formData?.phone?.trim();
+      
+      if (!phone) {
+        setToast({ message: 'Vui lòng nhập số điện thoại', type: "warning" });
+        return;
+      }
 
-      if (!phoneRegex.test(formData?.phone)) {
+      if (!validatePhone(phone)) {
         setToast({
-          message: `Số điện thoại không hợp lệ. Vui lòng nhập 10 số và bắt đầu bằng 0.`,
+          message: 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam (0xxxxxxxxx, 84xxxxxxxxx, hoặc +84xxxxxxxxx)',
           type: "warning",
         });
         return;
       }
 
-      const response = await sendOtp(formData?.phone);
-      console.log("gọi otp", response);
+      const response = await sendOtp(phone);
 
-      if (response?.code === 1000) {
+      if (response?.code === 1000 && response?.result) {
         setOtpSent(true);
+        setExpiresAt(response.result);
+        setFormData(prev => ({ ...prev, otp: '' }));
+        setToast({ message: 'Mã OTP đã được gửi thành công!', type: "success" });
+      } else {
+        const errorMessage = response?.message || 'Có lỗi xảy ra khi gửi OTP';
+        setToast({ message: errorMessage, type: "error" });
+        resetOtpState();
       }
     } catch (error) {
-      console.log("lỗi dn sdt", error);
+      console.error("Send OTP error:", error);
+      setToast({ message: getErrorMessage(error) || 'Có lỗi xảy ra khi gửi OTP', type: "error" });
+      resetOtpState();
     }
-  };
+  }, [formData.phone, sendOtp, resetOtpState]);
 
-  const handleSubmit = async () => {
+  // Handle login submit
+  const handleSubmit = useCallback(async () => {
     try {
       if (loginMethod === "phone") {
-        const otpRegex = /^\d{6}$/;
-
-        // Validate OTP
-        if (!otpRegex.test(formData?.otp)) {
-          setToast({ message: `Mã OTP phải gồm 6 chữ số.`, type: "warning" });
+        if (!OTP_PATTERN.test(formData?.otp)) {
+          setToast({ message: 'Mã OTP phải gồm 6 chữ số.', type: "warning" });
           return;
         }
-        const account = {
+
+        const response = await verifyOtp({
           rawPhone: formData?.phone,
           otpCode: formData?.otp,
-        };
-        const response = await verifyOtp(account);
-        console.log("Login success customer", response);
-        navigate("/");
+        });
+
+        const isSuccess = (response?.code === 1000) || !!response?.result;
+        
+        if (isSuccess) {
+          setToast({ message: 'Đăng nhập thành công!', type: "success" });
+          setTimeout(() => navigate("/"), 1000);
+        } else {
+          setToast({
+            message: response?.message || 'Xác thực OTP thất bại',
+            type: "error",
+          });
+        }
       } else if (loginMethod === "email") {
         const account = {
           email: "nguyennhattrinhbs@gmail.com",
           password: "13022004",
         };
-        const res = await loginEmployee(account);
-        console.log("Login success admin", res);
+        await loginEmployee(account);
         navigate("/admin");
       }
     } catch (error) {
       console.error("Login error:", error);
+      setToast({ message: getErrorMessage(error) || 'Đăng nhập thất bại', type: "error" });
     }
-  };
+  }, [loginMethod, formData, verifyOtp, loginEmployee, navigate]);
 
-  const handleSocialLogin = (provider) => {
-    window.location.href =
-      "http://localhost:8080/phoneShop/oauth2/authorization/google";
-  };
+  // Social login handler
+  const handleSocialLogin = useCallback((provider) => {
+    window.location.href = "http://localhost:8080/phoneShop/oauth2/authorization/google";
+  }, []);
+
+  // Reset form when switching login method
+  const handleMethodChange = useCallback(() => {
+    setLoginMethod("phone");
+    resetOtpState();
+  }, [resetOtpState]);
+
+  // Memoized countdown display
+  const countdownDisplay = useMemo(() => formatCountdown(countdown), [countdown]);
+
+  // Memoized features list
+  const features = useMemo(() => [
+    { icon: ShieldCheck, title: t('auth.warrantyTitle'), desc: t('auth.warrantyDesc') },
+    { icon: Zap, title: t('auth.deliveryTitle'), desc: t('auth.deliveryDesc') },
+    { icon: TrendingUp, title: t('auth.priceTitle'), desc: t('auth.priceDesc') },
+  ], [t]);
 
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
@@ -196,23 +354,7 @@ const Login = () => {
 
             {/* Features */}
             <div className="space-y-4">
-              {[
-                {
-                  icon: ShieldCheck,
-                  title: t('auth.warrantyTitle'),
-                  desc: t('auth.warrantyDesc'),
-                },
-                {
-                  icon: Zap,
-                  title: t('auth.deliveryTitle'),
-                  desc: t('auth.deliveryDesc'),
-                },
-                {
-                  icon: TrendingUp,
-                  title: t('auth.priceTitle'),
-                  desc: t('auth.priceDesc'),
-                },
-              ].map((feature, index) => (
+              {features.map((feature, index) => (
                 <div
                   key={index}
                   className="flex items-center gap-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all"
@@ -277,10 +419,7 @@ const Login = () => {
                 {/* Login Method Tabs */}
                 <div className="flex gap-2 bg-gray-100 rounded-xl p-1 mb-6">
                   <button
-                    onClick={() => {
-                      setLoginMethod("phone");
-                      setOtpSent(false);
-                    }}
+                    onClick={handleMethodChange}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
                       loginMethod === "phone"
                         ? "bg-white text-indigo-600 shadow-md"
@@ -376,10 +515,11 @@ const Login = () => {
                               type="tel"
                               name="phone"
                               value={formData.phone}
-                              onChange={handleChange}
-                              placeholder="0912345678"
+                              onChange={handlePhoneChange}
+                              onKeyPress={handlePhoneKeyPress}
+                              placeholder="09.. +84..."
                               disabled={otpSent}
-                              maxLength={10}
+                              maxLength={MAX_PHONE_LENGTH}
                               className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all disabled:opacity-60"
                             />
                           </div>
@@ -402,7 +542,7 @@ const Login = () => {
 
                       {/* OTP Field */}
                       {otpSent && (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           <label className="text-gray-700 text-sm font-medium flex items-center gap-1">
                             Mã OTP <span className="text-red-500">*</span>
                           </label>
@@ -410,18 +550,38 @@ const Login = () => {
                             type="text"
                             name="otp"
                             value={formData.otp}
-                            onChange={handleChange}
+                            onChange={handleOtpChange}
+                            onKeyPress={handleOtpKeyPress}
                             placeholder="000000"
-                            maxLength="6"
+                            maxLength={MAX_OTP_LENGTH}
+                            inputMode="numeric"
                             className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 text-center text-2xl tracking-widest font-semibold focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
                           />
-                          <button
-                            type="button"
-                            onClick={handleSendOTP}
-                            className="text-indigo-600 text-sm font-medium hover:text-purple-600"
-                          >
-                            {t('auth.resendOTP')}
-                          </button>
+                          
+                          {/* Countdown Timer - Hide "Gửi lại mã OTP" button when countdown > 0 */}
+                          {countdown > 0 ? (
+                            <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl shadow-sm">
+                              <Clock className="w-5 h-5 text-indigo-600 animate-pulse" />
+                              <span className="text-sm font-medium text-gray-700">
+                                {t('auth.resendOTP')} sau
+                              </span>
+                              <div className="flex items-center justify-center min-w-[80px] px-4 py-2 bg-white rounded-lg border-2 border-indigo-400 shadow-md">
+                                <span className="text-xl font-bold text-indigo-600 tabular-nums">
+                                  {countdownDisplay}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleSendOTP}
+                              disabled={loading}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-indigo-600 text-sm font-semibold hover:text-indigo-700 hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Clock className="w-4 h-4" />
+                              {t('auth.resendOTP')}
+                            </button>
+                          )}
                         </div>
                       )}
                     </>

@@ -37,6 +37,8 @@ import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
 import ProfilePageLayout from "./components/profile/ProfilePageLayout";
 import OrderDetailPage from "./components/profile/OrderDetailPage";
+import WarrantyPage from "./components/profile/WarrantyPage";
+import SupportPage from "./components/profile/SupportPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
 import { useUrlTokenHandler } from "./hooks/useUrlTokenHandler";
@@ -58,6 +60,8 @@ import Customers from "./pages/admin/Customer";
 import Employee from "./pages/admin/Employee";
 import Role from "./pages/admin/Role";
 import AuditLogPage from "./pages/admin/Employee/AuditLogPage";
+import PermissionRoute from "./routes/PermissionRoute";
+import { PERMISSIONS } from "./hooks/usePermission";
 
 const RouterInitializer = () => {
   useUrlTokenHandler();
@@ -111,6 +115,8 @@ const router = createBrowserRouter(
               path: "order/order-detail/:orderId",
               element: <OrderDetailPage />,
             },
+            { path: "warranty", element: <WarrantyPage /> },
+            { path: "support", element: <SupportPage /> },
           ],
         },
       ],
@@ -139,13 +145,41 @@ const router = createBrowserRouter(
               path: "products",
               children: [
                 { index: true, element: <ListProduct /> },
-                { path: "create", element: <AddProduct /> },
-                { path: ":id/edit", element: <EditProduct /> },
+                { 
+                  path: "create", 
+                  element: (
+                    <PermissionRoute requiredPermission={PERMISSIONS.PRODUCT_CREATE_ALL}>
+                      <AddProduct />
+                    </PermissionRoute>
+                  )
+                },
+                { 
+                  path: ":id/edit", 
+                  element: (
+                    <PermissionRoute requiredPermission={PERMISSIONS.PRODUCT_UPDATE_ALL}>
+                      <EditProduct />
+                    </PermissionRoute>
+                  )
+                },
               ],
             },
 
-            { path: "orders", element: <Orders /> },
-            { path: "orders/create-in-store", element: <CreateInStoreOrder /> },
+            { 
+              path: "orders", 
+              element: (
+                <PermissionRoute requiredPermission={[PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL]}>
+                  <Orders />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "orders/create-in-store", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.ORDER_CREATE_ALL}>
+                  <CreateInStoreOrder />
+                </PermissionRoute>
+              )
+            },
 
             {
               path: "statistic",
@@ -159,10 +193,38 @@ const router = createBrowserRouter(
                 { path: "setting", element: <Settings /> },
               ],
             },
-            { path: "roles", element: <RoleManagementPage /> },
-            { path: "customers", element: <Customers /> },
-            { path: "employee", element: <EmployeeManagementPage /> },
-            { path: "audit", element: <AuditLogPage /> },
+            { 
+              path: "roles", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.STAFF_MANAGE_ROLES}>
+                  <RoleManagementPage />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "customers", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.CUSTOMER_VIEW_ALL}>
+                  <Customers />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "employee", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.STAFF_VIEW_ALL}>
+                  <EmployeeManagementPage />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "audit", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.SYSTEM_VIEW_AUDIT}>
+                  <AuditLogPage />
+                </PermissionRoute>
+              )
+            },
           ],
         },
       ],

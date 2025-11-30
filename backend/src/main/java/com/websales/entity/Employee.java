@@ -25,7 +25,7 @@ public class Employee extends AuditableEntity {
     String passwordHash;
     String fullName;
     @Builder.Default
-    Boolean isActive = false;
+    Boolean isActive = true;
     @CreationTimestamp
     LocalDateTime createdAt;
     @UpdateTimestamp

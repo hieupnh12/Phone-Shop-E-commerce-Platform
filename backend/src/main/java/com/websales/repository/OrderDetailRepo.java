@@ -2,7 +2,6 @@ package com.websales.repository;
 
 import com.websales.dto.response.DetailResponse;
 import com.websales.dto.response.ListOrderDetailResponse;
-import com.websales.dto.response.OrderDetailResponse;
 import com.websales.entity.OrderDetail;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -38,7 +37,7 @@ LIMIT 1
                                od.unit_price_after, 
                                    p.product_name, 
                                        p.picture, 
-                                           od.quantity
+                                           od.quantity as quantity
     from order_details od left join 
             product_versions pv on 
                     od.product_version_id = pv.product_version_id

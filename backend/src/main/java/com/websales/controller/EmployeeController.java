@@ -91,6 +91,7 @@ public class EmployeeController {
 
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_VIEW_ALL')")
     public ApiResponse<Page<EmployeeResponse>> getAllEmployee(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -102,6 +103,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{employeeId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_VIEW_ALL')")
     public ApiResponse<EmployeeResponse> getEmployeeById(@PathVariable Long employeeId) {
         return ApiResponse.<EmployeeResponse>builder()
                 .result(employeeService.getEmployeeById(employeeId))
@@ -119,6 +121,7 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{employeeId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_UPDATE_BASIC')")
     public ApiResponse<Void> deleteEmployee(@PathVariable Long employeeId) {
         employeeService.deleteEmployee(employeeId);
         return ApiResponse.<Void>builder()
@@ -126,7 +129,10 @@ public class EmployeeController {
     }
 
     @GetMapping("/get_infor")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse<Employee> getMyInfor() {
+        // Resource-based: Employee chỉ xem được thông tin của chính mình
+        // Logic này đã được xử lý trong service layer
         return ApiResponse.<Employee>builder()
                 .result(employeeService.getMyInfor())
                 .build();

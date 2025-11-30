@@ -5,6 +5,7 @@ import Modal from "../common/Modal";
 import Button from "../common/Button";
 import Toast from "../common/Toast";
 import { customerService } from '../../services/api';
+import { formatPhoneNumber } from "../../utils/phoneUtils";
 
 const AddressBook = () => {
     const [addresses, setAddresses] = useState([]);
@@ -230,7 +231,7 @@ const AddressBook = () => {
                             {/* Thông tin địa chỉ */}
                             <div className="text-sm text-gray-700 space-y-1 mb-3">
                                 <p><span className="font-medium">Người nhận:</span> {customerInfo.fullName || 'N/A'}</p>
-                                <p><span className="font-medium">SĐT:</span> {customerInfo.phoneNumber || 'N/A'}</p>
+                                <p><span className="font-medium">SĐT:</span> {formatPhoneNumber(customerInfo.phoneNumber) || 'N/A'}</p>
                                 <p><span className="font-medium">Địa chỉ:</span> {addr.address || 'Chưa có'}</p>
                             </div>
 

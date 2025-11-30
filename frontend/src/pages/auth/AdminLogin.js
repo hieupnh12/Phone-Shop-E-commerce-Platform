@@ -1,8 +1,9 @@
 import React, { useState, useContext } from "react";
-import { Mail, Lock, Eye, EyeOff, Smartphone } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Smartphone, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { AuthContext } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Toast from "../../components/common/Toast";
+import api from "../../services/api";
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +12,9 @@ const AdminLogin = () => {
     password: "",
   });
   const [toast, setToast] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
   const { loading, loginEmployee } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -52,6 +56,50 @@ const AdminLogin = () => {
         message: `Đăng nhập không thành công. ${err?.response?.data.message} ${err?.message}`,
         type: "error",
       });
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Validate email
+    if (!forgotPasswordEmail.trim()) {
+      setToast({
+        message: "Vui lòng nhập email!",
+        type: "warning",
+      });
+      return;
+    }
+
+    if (!emailRegex.test(forgotPasswordEmail.trim())) {
+      setToast({
+        message: "Email không hợp lệ!",
+        type: "warning",
+      });
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      const response = await api.post("/employee/forgot", {
+        email: forgotPasswordEmail.trim(),
+      });
+      
+      setToast({
+        message: response.data?.message || "Email khôi phục đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
+        type: "success",
+      });
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
+    } catch (err) {
+      console.error("Lỗi gửi email đặt lại mật khẩu:", err);
+      const errorMessage = err?.response?.data?.message || err?.message || "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.";
+      setToast({
+        message: errorMessage,
+        type: "error",
+      });
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -124,6 +172,79 @@ const AdminLogin = () => {
         >
           {loading ? "Loading..." : "Đăng nhập Admin"}
         </button>
+
+        {/* Link Đổi mật khẩu */}
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowForgotPassword(!showForgotPassword)}
+            className="w-full flex items-center justify-between text-sm text-indigo-600 hover:text-indigo-700 transition-colors p-2 rounded-lg hover:bg-indigo-50"
+          >
+            <span className="flex items-center">
+              <Lock className="w-4 h-4 mr-2" />
+              Đổi mật khẩu
+            </span>
+            {showForgotPassword ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+
+          {/* Dropdown form đổi mật khẩu */}
+          {showForgotPassword && (
+            <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3 animate-fade-in">
+              <p className="text-xs text-gray-600 mb-2">
+                Nhập email của nhân viên để nhận link đặt lại mật khẩu.
+              </p>
+              
+              <div className="space-y-2">
+                <label className="text-gray-700 text-xs font-medium">Email nhân viên</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Nhập email nhân viên"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        handleForgotPassword();
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={handleForgotPassword}
+                  disabled={isSendingReset}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSendingReset ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang gửi...
+                    </>
+                  ) : (
+                    "Gửi email"
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordEmail("");
+                  }}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

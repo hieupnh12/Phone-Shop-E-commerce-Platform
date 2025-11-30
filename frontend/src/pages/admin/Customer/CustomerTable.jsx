@@ -1,8 +1,10 @@
 import { Edit, Edit2, Edit2Icon, Edit3, Search } from "lucide-react";
 import Loading from "../../../components/common/Loading";
 import { useState } from "react";
+import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
 export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdit, setKeyword, keyword }) {
+  const { hasPermission } = usePermission();
   const customers = mockResponse?.content || [];
   const {
     totalPages,
@@ -86,9 +88,11 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Ngày cập nhật
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Hành động
-              </th>
+              {hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT) ? (
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Hành động
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -121,15 +125,17 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
                 <td className="px-6 py-4 text-sm text-gray-700">
                   {formatDateTime(customer.updateAt)}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">
-                  <button
-                  onClick={() => onEdit(customer)}
-                    className="rounded-lg text-blue-600 hover:text-blue-900"
-                    title="Chỉnh sửa"
-                  >
-                    <Edit3 className='w-5 h-5' />
-                  </button>
-                </td>
+                {(hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT)) && (
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <button
+                      onClick={() => onEdit(customer)}
+                      className="rounded-lg text-blue-600 hover:text-blue-900"
+                      title="Chỉnh sửa"
+                    >
+                      <Edit3 className='w-5 h-5' />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

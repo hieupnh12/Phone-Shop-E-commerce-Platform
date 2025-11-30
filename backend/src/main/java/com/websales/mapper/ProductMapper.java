@@ -5,12 +5,14 @@ import com.cloudinary.Cloudinary;
 import com.websales.dto.request.*;
 import com.websales.dto.response.ProductFULLResponse;
 import com.websales.dto.response.ProductResponse;
+import com.websales.dto.response.YSendChatBot;
 import com.websales.entity.*;
 import org.mapstruct.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @Mapper(componentModel = "spring", uses = {ProductVersionMapper.class})
@@ -24,6 +26,9 @@ public interface ProductMapper {
 
     @Mapping(target = "image", ignore = true) // Bỏ qua ánh xạ image, xử lý thủ công
     Product toProductV2 (ProductFullRequest request);
+
+
+    List<YSendChatBot.YProductResponse> toListProductResponse (List<Product> products);
 
     @Mapping(source = "origin.nameOrigin", target = "originName")
     @Mapping(source = "operatingSystem.nameOS", target = "operatingSystemName")
