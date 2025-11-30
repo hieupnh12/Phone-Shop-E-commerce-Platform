@@ -11,15 +11,36 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import chatsApi, { sendMessage } from "../../services/chatBotService";
 
-export default function Chatbot() {
-  const [messages, setMessages] = useState([
+const STORAGE_KEY = "chatbot_messages";
+
+// Helper function để load messages từ localStorage
+const loadMessagesFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Chuyển timestamp từ string về Date object
+      return parsed.map((msg) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+      }));
+    }
+  } catch (error) {
+    console.error("Lỗi khi load messages từ localStorage:", error);
+  }
+  // Nếu không có hoặc lỗi, trả về message mặc định
+  return [
     {
       id: 1,
       text: "Xin chào! Tôi có thể giúp gì cho bạn?",
       sender: "bot",
       timestamp: new Date(),
     },
-  ]);
+  ];
+};
+
+export default function Chatbot() {
+  const [messages, setMessages] = useState(loadMessagesFromStorage);
   const [input, setInput] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -34,6 +55,9 @@ export default function Chatbot() {
   const messagesContainerRef = useRef(null);
   const lastScrollTop = useRef(0);
   const [isSending, setIsSending] = useState(false);
+  const [file, setFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Mock older messages để demo lazy loading
   const generateOlderMessages = (pageNum) => {
@@ -97,6 +121,20 @@ export default function Chatbot() {
     inputRef.current?.focus();
   }, []);
 
+  // Lưu messages vào localStorage mỗi khi messages thay đổi
+  useEffect(() => {
+    try {
+      // Chuyển Date objects thành strings để lưu vào localStorage
+      const messagesToStore = messages.map((msg) => ({
+        ...msg,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messagesToStore));
+    } catch (error) {
+      console.error("Lỗi khi lưu messages vào localStorage:", error);
+    }
+  }, [messages]);
+
   // Load older messages với lazy loading
   const loadOlderMessages = async () => {
     setIsLoadingOlder(true);
@@ -143,35 +181,50 @@ export default function Chatbot() {
   };
 
   const handleSend = async () => {
-    if (input.trim() === "" || isTyping) return;
+    if ((!input.trim() && !file) || isTyping) return;
 
     const userText = input.trim();
     setInput("");
     setIsSending(true);
 
+    // Tạo message người dùng
     const userMessage = {
       id: `user-${Date.now()}`,
-      text: input,
+      text: userText,
       sender: "user",
       timestamp: new Date(),
+      extra: { file, imageUrl: input.startsWith("http") ? input : null },
     };
 
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      const response = await chatsApi.sendMessage(input);
-      console.log("trả về lại",response);
-      
-      const { answer, products, orders } = response;
+      let response;
+
+      if (file || (input.startsWith("http") && !userText)) {
+        const formData = new FormData();
+        formData.append("message", input);
+        if (file) formData.append("file", file);
+
+        response = await chatsApi.sendImage(formData);
+
+        setInput("");
+        setFile(null);
+      } else {
+        // Gọi API gửi text bình thường
+        response = await chatsApi.sendMessage(userText);
+      }
+
+      const { answer, ySendChatBots, orders } = response;
       const botText = answer || "Cảm ơn bạn! Tôi đã nhận được tin nhắn.";
+
       streamText(botText, (fullText) => {
         const botMessage = {
           id: `bot-${Date.now()}`,
           text: fullText,
           sender: "bot",
           timestamp: new Date(),
-          // Nếu muốn hiển thị Product/Order, bạn có thể thêm field riêng
-          extra: { products, orders },
+          extra: { ySendChatBots, orders },
         };
         setMessages((prev) => [...prev, botMessage]);
       });
@@ -187,14 +240,10 @@ export default function Chatbot() {
     } finally {
       setIsSending(false);
       inputRef.current?.focus();
+      setFile(null);
+      setImagePreview(null);
     }
   };
-
-
-console.log("san", messages);
-
-
-
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -211,8 +260,44 @@ console.log("san", messages);
     }
   };
 
+  // Dán ảnh hoặc link
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (item.kind === "file") {
+        const blob = item.getAsFile();
+        setFile(blob);
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result);
+        reader.readAsDataURL(blob);
+      } else if (item.kind === "string") {
+        item.getAsString((str) => {
+          if (str.startsWith("http")) {
+            setImageUrl(str);
+            setImagePreview(str); // preview link
+          }
+        });
+      }
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    setFile(selectedFile);
+    setImageUrl(null); // nếu chọn file, bỏ link
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(selectedFile);
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-20 right-6 z-50">
       {/* Chat Button - Icon nổi */}
       {!isOpen && (
         <button
@@ -275,7 +360,7 @@ console.log("san", messages);
           <div
             ref={messagesContainerRef}
             className="overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white relative"
-            style={{ height: "calc(100% - 140px)" }}
+            style={{ height: "calc(100% - 140px)", maxHeight: "calc(100% - 140px)" }}
           >
             {/* Loading indicator ở đầu */}
             {isLoadingOlder && (
@@ -345,48 +430,54 @@ console.log("san", messages);
                     >
                       {message.text}
                     </div>
-         {/* Nếu bot có Product */}
-{message.sender === "bot" && message?.extra?.products && (
-  <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
-    <h4 className="font-semibold text-gray-700 mb-2">Sản phẩm:</h4>
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      {message?.extra?.products.map((p) => (
-        
-        <a
-          key={p.idProduct}
-          href={`/products/${p.idProduct}`}
-          className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition block"
-        >
-          {/* Ảnh */}
-          <img
-            src={p.image}
-            alt={p.nameProduct}
-            className="w-full h-24 object-cover"
-          />
+                    {/* Nếu bot có Product và mảng không rỗng */}
+                    {message.sender === "bot" &&
+                      message?.extra?.ySendChatBots &&
+                      Array.isArray(message.extra.ySendChatBots) &&
+                      message.extra.ySendChatBots.length > 0 && (
+                        <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
+                          <h4 className="font-semibold text-gray-700 mb-2">
+                            Sản phẩm:
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {message.extra.ySendChatBots.map((p) => (
+                              <a
+                                key={p.idProduct}
+                                href={`/user/products/${p.idProduct}`}
+                                className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition block"
+                              >
+                                {/* Ảnh */}
+                                <img
+                                  src={p.image}
+                                  alt={p.nameProduct}
+                                  className="w-full h-24 object-cover"
+                                />
 
-          {/* Tên */}
-          <div className="p-1 text-center text-sm font-medium text-gray-800">
-            {p.nameProduct}
-          </div>
-        </a>
-      ))}
-    </div>
-  </div>
-)}
+                                {/* Tên */}
+                                <div className="p-1 text-center text-sm font-medium text-gray-800">
+                                  {p.nameProduct}
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-  {/* Nếu bot có Order */}
-  {message.sender === "bot" && message.extra?.Order && (
-    <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
-      <h4 className="font-semibold text-gray-700">Đơn hàng:</h4>
-      <ul className="list-disc list-inside text-gray-600">
-        {message.extra.Order.map((o) => (
-          <li key={o.id}>
-            #{o.id} - Tổng: {o.totalAmount}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
+                    {/* Nếu bot có Order */}
+                    {message.sender === "bot" && message.extra?.Order && (
+                      <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
+                        <h4 className="font-semibold text-gray-700">
+                          Đơn hàng:
+                        </h4>
+                        <ul className="list-disc list-inside text-gray-600">
+                          {message.extra.Order.map((o) => (
+                            <li key={o.id}>
+                              #{o.id} - Tổng: {o.totalAmount}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <div
                       className={`text-xs text-gray-400 mt-1 ${
                         message.sender === "user" ? "text-right" : "text-left"
@@ -463,24 +554,60 @@ console.log("san", messages);
           )}
 
           {/* Input Area */}
-          <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl">
+
+          <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl relative">
+            {/* Preview ảnh trong khung nhập với position absolute để không làm khung chat bị kéo dài */}
+            {imagePreview && (
+              <div className="absolute bottom-full left-4 right-4 mb-2 flex items-center gap-2 bg-gray-100 p-2 rounded-xl border border-gray-200 z-10">
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="h-16 w-16 object-cover rounded-lg"
+                />
+                <div className="flex-1"></div>
+                <button
+                  onClick={() => {
+                    setFile(null);
+                    setImageUrl(null);
+                    setImagePreview(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-800 font-bold px-2 py-1 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Nhập tin nhắn..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <button
-                onClick={handleSend}
-                disabled={isTyping || !input.trim()}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer px-3 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors flex items-center"
+                >
+                  📎
+                </label>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  onPaste={handlePaste}
+                  placeholder="Nhập tin nhắn..."
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={isTyping || (!input.trim() && !file)} // nếu có file vẫn enable
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
             </div>
           </div>
         </div>

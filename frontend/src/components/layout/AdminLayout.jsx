@@ -21,12 +21,14 @@ import {
 } from "lucide-react";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { usePermission, PERMISSIONS } from "../../hooks/usePermission";
 
 export default function AdminLayout() {
   const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const { user, logout } = useAuthFullOptions();
+  const { hasPermission } = usePermission();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,25 +53,63 @@ export default function AdminLayout() {
   }, [windowWidth]);
   const isDesktop = windowWidth >= 1024;
 
-  const menuItems = [
+  // Menu items với permission requirements
+  const allMenuItems = [
     {
       id: "dashboard",
       icon: Home,
       label: "Dashboard",
       path: "/admin/dashboard",
+      permission: null, // Dashboard luôn hiển thị cho employee
     },
-    { id: "products", icon: Grid, label: t('admin.products'), path: "/admin/products" },
+    { 
+      id: "products", 
+      icon: Grid, 
+      label: t('admin.products'), 
+      path: "/admin/products",
+      permission: PERMISSIONS.PRODUCT_VIEW_ALL,
+    },
     {
       id: "statistic",
       icon: ChartNoAxesCombined,
       label: "Thống kê",
       path: "/admin/statistic",
+      permission: PERMISSIONS.REPORT_VIEW_SALES, // Hoặc có thể dùng permission khác
     },
-    { id: "orders", icon: ShoppingCart, label: t('admin.orders'), path: "/admin/orders" },
-    { id: "roles", icon: Shield, label: "Phân quyền", path: "/admin/roles" },
-    { id: "customers", icon: Users2, label: "Khách hàng", path: "/admin/customers" },
-    { id: "employee", icon: UserMinus, label: "Nhân Viên", path: "/admin/employee" },
+    { 
+      id: "orders", 
+      icon: ShoppingCart, 
+      label: t('admin.orders'), 
+      path: "/admin/orders",
+      permission: PERMISSIONS.ORDER_VIEW_ALL,
+    },
+    { 
+      id: "roles", 
+      icon: Shield, 
+      label: "Phân quyền", 
+      path: "/admin/roles",
+      permission: PERMISSIONS.STAFF_MANAGE_ROLES,
+    },
+    { 
+      id: "customers", 
+      icon: Users2, 
+      label: "Khách hàng", 
+      path: "/admin/customers",
+      permission: PERMISSIONS.CUSTOMER_VIEW_ALL,
+    },
+    { 
+      id: "employee", 
+      icon: UserMinus, 
+      label: "Nhân Viên", 
+      path: "/admin/employee",
+      permission: PERMISSIONS.STAFF_VIEW_ALL,
+    },
   ];
+
+  // Filter menu items dựa trên permission
+  const menuItems = allMenuItems.filter(item => 
+    !item.permission || hasPermission(item.permission)
+  );
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);

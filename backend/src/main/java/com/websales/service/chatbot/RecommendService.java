@@ -43,20 +43,26 @@ public class RecommendService {
                 .content();
 
         YSendChatBot.YProduct yProduct = parseAiJson(aiResponse);
-        if ("result".equals(yProduct.type())) {
-//            List<ProductFULLResponse> matched = matchProductsByNames(yProduct.getProductNames(), listPhones.toList());
-            return new RagResponse(yProduct.message(), null, null, yProduct.productNames());
-        } else {
-            return new RagResponse(yProduct.message(), null, null, null);
-        }
+//        if ("result".equals(yProduct.type())) {
+//            return new RagResponse(yProduct.message(), null, null, yProduct.productNames());
+//        } else {
+//        }
+        return new RagResponse(yProduct.message(), null, null, yProduct.productNames());
+
     }
 
     private YSendChatBot.YProduct parseAiJson(String answer) {
         try {
-            String cleaned = answer.replaceAll("(?s)```json|```", "").trim();
+            // loại bỏ ``` nếu có
+            answer = answer.strip();
+            if (answer.startsWith("```")) {
+                answer = answer.substring(answer.indexOf('\n') + 1, answer.lastIndexOf("```"));
+            }
+
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(cleaned, YSendChatBot.YProduct.class);
+            return mapper.readValue(answer, YSendChatBot.YProduct.class);
         } catch (Exception e) {
+            e.printStackTrace(); // xem lỗi thực tế
             return new YSendChatBot.YProduct(
                     "clarify",
                     "Bạn có thể mô tả kỹ hơn nhu cầu không ạ?",
@@ -84,7 +90,8 @@ public class RecommendService {
 
                     // Chuỗi main product
                     return String.format(
-                            "%s - Brand: %s, Pin: %s, Camera: %s/%s, Màn hình: %s (%s), Chipset: %s, OS: %s, Origin: %s, Versions: %s",
+                            "idProduct %s, %s - Brand: %s, Pin: %s, Camera: %s/%s, Màn hình: %s (%s), Chipset: %s, OS: %s, Origin: %s, Versions: %s",
+                            p.getIdProduct(),
                             p.getNameProduct(),
                             p.getBrandName(),
                             p.getBattery(),
@@ -96,6 +103,7 @@ public class RecommendService {
                             p.getImage(),
                             p.getOperatingSystemName(),
                             p.getOriginName(),
+                            p.getIdProduct(),
                             versions
                     );
                 })

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
+import Toast from "../../components/common/Toast";
 
 // Format tiền VND
 const vnd = (n) =>
@@ -42,6 +43,7 @@ export default function ShoppingCart() {
     useState(null);
   // State để quản lý các sản phẩm được chọn để thanh toán
   const [selectedItems, setSelectedItems] = useState(new Set());
+  const [toast, setToast] = useState(null);
 
   // Lấy giỏ hàng
   const loadCart = async () => {
@@ -62,12 +64,22 @@ export default function ShoppingCart() {
         }));
         setItems(mappedItems);
       } else {
-        setErr(data?.message || t('cart.failedLoad'));
+        const errorMsg = data?.message || t('cart.failedLoad');
+        setErr(errorMsg);
         setItems([]);
+        setToast({
+          type: 'error',
+          message: errorMsg
+        });
       }
     } catch (e) {
-      setErr(e.message || t('cart.networkError'));
+      const errorMsg = e.message || t('cart.networkError');
+      setErr(errorMsg);
       setItems([]);
+      setToast({
+        type: 'error',
+        message: errorMsg
+      });
     } finally {
       setLoading(false);
     }
@@ -146,7 +158,12 @@ export default function ShoppingCart() {
     // Kiểm tra giới hạn tối thiểu và tối đa
     if (newQuantity < 1) return;
     if (newQuantity > MAX_QUANTITY) {
-      setErr(`Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`);
+      const errorMsg = `Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`;
+      setErr(errorMsg);
+      setToast({
+        type: 'error',
+        message: errorMsg
+      });
       return;
     }
 
@@ -160,8 +177,10 @@ export default function ShoppingCart() {
         currentQuantity: item.quantity
       });
       setErr(errorMessage);
-      // Hiển thị alert để người dùng chú ý
-      alert(errorMessage);
+      setToast({
+        type: 'error',
+        message: errorMessage
+      });
       return;
     }
 
@@ -192,10 +211,10 @@ export default function ShoppingCart() {
           response: res
         });
         setErr(errorMsg);
-        // Kiểm tra nếu lỗi liên quan đến số lượng tồn kho
-        if (errorMsg.toLowerCase().includes('không đủ') || errorMsg.toLowerCase().includes('hết hàng') || errorMsg.toLowerCase().includes('stock')) {
-          alert(`⚠️ ${errorMsg}`);
-        }
+        setToast({
+          type: 'error',
+          message: errorMsg
+        });
       } else {
         console.log('✅ Cập nhật số lượng thành công:', {
           productName: item.productName,
@@ -207,7 +226,12 @@ export default function ShoppingCart() {
       setItems(prev => prev.map(x =>
         x.productVersionId === productVersionId ? { ...x, quantity: item.quantity } : x
       ));
-      setErr(e.message || t('cart.networkError2'));
+      const errorMsg = e.message || t('cart.networkError2');
+      setErr(errorMsg);
+      setToast({
+        type: 'error',
+        message: errorMsg
+      });
     } finally {
       setUpdatingProductVersionId(null);
     }
@@ -215,6 +239,7 @@ export default function ShoppingCart() {
 
   // Xóa sản phẩm
   const removeItem = async (productVersionId) => {
+    const item = items.find((x) => x.productVersionId === productVersionId);
     try {
       setRemovingProductVersionId(productVersionId);
       const res = await cartService.removeItem(productVersionId);
@@ -222,11 +247,25 @@ export default function ShoppingCart() {
         setItems((prev) =>
           prev.filter((x) => x.productVersionId !== productVersionId)
         );
+        setToast({
+          type: 'success',
+          message: `Đã xóa "${item?.productName || 'sản phẩm'}" khỏi giỏ hàng`
+        });
       } else {
-        setErr(res?.message || t('cart.failedDelete'));
+        const errorMsg = res?.message || t('cart.failedDelete');
+        setErr(errorMsg);
+        setToast({
+          type: 'error',
+          message: errorMsg
+        });
       }
     } catch (e) {
-      setErr(e.message || t('cart.networkError2'));
+      const errorMsg = e.message || t('cart.networkError2');
+      setErr(errorMsg);
+      setToast({
+        type: 'error',
+        message: errorMsg
+      });
     } finally {
       setRemovingProductVersionId(null);
     }
@@ -262,7 +301,10 @@ export default function ShoppingCart() {
   // Xử lý thanh toán - chuyển đến trang payment với danh sách sản phẩm được chọn
   const handleCheckout = () => {
     if (!hasSelectedItems) {
-      alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+      setToast({
+        type: 'warning',
+        message: 'Vui lòng chọn ít nhất một sản phẩm để thanh toán'
+      });
       return;
     }
     // Chuyển đến trang payment với state chứa danh sách productVersionId được chọn
@@ -636,6 +678,15 @@ export default function ShoppingCart() {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

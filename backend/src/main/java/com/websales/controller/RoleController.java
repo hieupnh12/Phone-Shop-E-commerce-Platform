@@ -9,6 +9,7 @@ import com.websales.service.RoleService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class RoleController {
     RoleService roleService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_MANAGE_ROLES')")
     public ApiResponse<RoleResponse> createRole(@RequestBody CreateRoleRequest request) {
         return ApiResponse.<RoleResponse>builder()
                 .result(roleService.createRole(request))
@@ -29,6 +31,7 @@ public class RoleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_VIEW_ALL') or hasAuthority('SCOPE_STAFF_MANAGE_ROLES')")
     public ApiResponse<List<RoleResponse>> getAllRoles() {
     return ApiResponse.<List<RoleResponse>>builder()
             .result(roleService.getAllRole())
@@ -36,6 +39,7 @@ public class RoleController {
     }
 
     @GetMapping("/permission")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_VIEW_ALL') or hasAuthority('SCOPE_STAFF_MANAGE_ROLES')")
     public ApiResponse<List<Permission>> getAllPermission() {
         return ApiResponse.<List<Permission>>builder()
                 .result(roleService.getAllPermission())
@@ -43,6 +47,7 @@ public class RoleController {
     }
 
     @PutMapping("/{roleId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_MANAGE_ROLES')")
     public ApiResponse<String> updateRole(@PathVariable Integer roleId, @RequestBody UpdateRoleRequest request) {
         roleService.updateRole(roleId, request);
         return ApiResponse.<String>builder()
@@ -51,6 +56,7 @@ public class RoleController {
     }
 
     @DeleteMapping("/{roleId}")
+    @PreAuthorize("hasAuthority('SCOPE_STAFF_MANAGE_ROLES')")
     public ApiResponse<String> deleteRole(@PathVariable Integer roleId) {
         roleService.deleteRole(roleId);
         return ApiResponse.<String>builder()

@@ -52,6 +52,10 @@ public class OrderService {
         return orderRepository.findAll(pageable);
     }
 
+    public Page<Order> getOrdersByEmployee(Long employeeId, Pageable pageable) {
+        return orderRepository.findByEmployeeId_Id(employeeId, pageable);
+    }
+
     public Optional<Order> getOrderById(Integer orderId) {
         return orderRepository.findByOrderId(orderId);
     }
@@ -64,7 +68,7 @@ public class OrderService {
             customer = customerRepo.findById(request.getCustomerId())
                     .orElseThrow(() -> new RuntimeException("Customer not found: " + request.getCustomerId()));
         }
-        
+
         // Lấy employeeId nếu đang đăng nhập bằng tài khoản employee
         Employee employee = null;
         try {
@@ -76,7 +80,7 @@ public class OrderService {
             // Nếu không phải employee authentication hoặc không tìm thấy employee, bỏ qua
             // Order có thể được tạo bởi customer (self-order)
         }
-        
+
         Order order = Order.builder()
                 .customerId(customer)
                 .employeeId(employee)
@@ -100,10 +104,10 @@ public class OrderService {
                                 .unitPriceAfter(detailRequest.getUnitPriceAfter())
                                 .quantity(detailRequest.getQuantity())
                                 .build();
-                        
+
                         // Set productVersion using setter to ensure Hibernate recognizes the relationship
                         orderDetail.setProductVersion(productVersion);
-                        
+
                         return orderDetail;
                     })
                     .toList();
@@ -111,10 +115,10 @@ public class OrderService {
             orderDetailRepository.saveAll(orderDetails);
             savedOrder.setOrderDetails(orderDetails);
             
-            // Trừ số lượng sản phẩm trong kho khi tạo order với status PENDING
-            if (savedOrder.getStatus() == OrderStatus.PENDING) {
-                reduceStockFromOrder(savedOrder.getOrderId());
-            }
+            // KHÔNG giảm stock ở đây vì:
+            // - COD: sẽ được giảm stock trong CartController.checkout() sau khi tạo order
+            // - PayOS: sẽ được giảm stock khi webhook xác nhận thanh toán thành công
+            // - In-store orders: sẽ được giảm stock trong CartController hoặc logic tương ứng
         }
 
         return savedOrder;
@@ -194,7 +198,7 @@ public class OrderService {
             if (status == OrderStatus.CANCELED && oldStatus != OrderStatus.CANCELED) {
                 restoreStockFromOrder(orderId);
             }
-            
+
             return Optional.of(orderRepository.save(order));
         }
         return Optional.empty();
@@ -208,27 +212,27 @@ public class OrderService {
     public void reduceStockFromOrder(Integer orderId) {
         Order order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
-        
+
         if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
             return;
         }
-        
+
         for (OrderDetail orderDetail : order.getOrderDetails()) {
             ProductVersion productVersion = orderDetail.getProductVersion();
             if (productVersion != null) {
                 Integer currentStock = productVersion.getStockQuantity();
                 Integer quantityToReduce = orderDetail.getQuantity();
-                
+
                 if (currentStock != null && quantityToReduce != null) {
                     // Kiểm tra số lượng tồn kho có đủ không
                     if (currentStock < quantityToReduce) {
                         throw new RuntimeException(
-                            "Không đủ số lượng trong kho cho sản phẩm " + 
-                            productVersion.getIdVersion() + 
-                            ". Tồn kho: " + currentStock + ", Yêu cầu: " + quantityToReduce
+                                "Không đủ số lượng trong kho cho sản phẩm " +
+                                        productVersion.getIdVersion() +
+                                        ". Tồn kho: " + currentStock + ", Yêu cầu: " + quantityToReduce
                         );
                     }
-                    
+
                     int newStock = currentStock - quantityToReduce;
                     productVersion.setStockQuantity(newStock);
                     productVersionRepository.save(productVersion);
@@ -245,17 +249,17 @@ public class OrderService {
     public void restoreStockFromOrder(Integer orderId) {
         Order order = orderRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
-        
+
         if (order.getOrderDetails() == null || order.getOrderDetails().isEmpty()) {
             return;
         }
-        
+
         for (OrderDetail orderDetail : order.getOrderDetails()) {
             ProductVersion productVersion = orderDetail.getProductVersion();
             if (productVersion != null) {
                 Integer currentStock = productVersion.getStockQuantity();
                 Integer quantityToRestore = orderDetail.getQuantity();
-                
+
                 if (currentStock != null && quantityToRestore != null) {
                     int newStock = currentStock + quantityToRestore;
                     productVersion.setStockQuantity(newStock);

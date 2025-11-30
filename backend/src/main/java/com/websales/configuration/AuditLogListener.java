@@ -3,10 +3,12 @@ package com.websales.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.websales.entity.AuditLog;
 import com.websales.entity.Employee;
+import com.websales.entity.Product;
 import com.websales.entity.Role;
 import com.websales.handler.ContextUtils;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -34,9 +36,11 @@ public class AuditLogListener {
     private String serializeObject(Object obj) {
         try {
             if (obj instanceof Role) {
-                return serializeRole((Role) obj);
+                return serializeRole(obj);
             } else if (obj instanceof Employee) {
                 return serializeEmployee((Employee) obj);
+            } else if (obj instanceof Product) {
+                return serializeProduct((Product) obj);
             } else {
                 // Fallback to JSON serialization for other types
                 ObjectMapper mapper = ContextUtils.getObjectMapper();
@@ -117,6 +121,71 @@ public class AuditLogListener {
         }
     }
     
+    private String serializeProduct(Product product) {
+        try {
+            Map<String, Object> data = new HashMap<>();
+            // Use reflection to safely access fields without triggering Hibernate operations
+            data.put("idProduct", getFieldValue(product, "idProduct"));
+            data.put("nameProduct", getFieldValue(product, "nameProduct"));
+            data.put("image", getFieldValue(product, "image"));
+            data.put("battery", getFieldValue(product, "battery"));
+            data.put("scanFrequency", getFieldValue(product, "scanFrequency"));
+            data.put("screenSize", getFieldValue(product, "screenSize"));
+            data.put("screenResolution", getFieldValue(product, "screenResolution"));
+            data.put("screenTech", getFieldValue(product, "screenTech"));
+            data.put("chipset", getFieldValue(product, "chipset"));
+            data.put("rearCamera", getFieldValue(product, "rearCamera"));
+            data.put("frontCamera", getFieldValue(product, "frontCamera"));
+            data.put("warrantyPeriod", getFieldValue(product, "warrantyPeriod"));
+            data.put("stockQuantity", getFieldValue(product, "stockQuantity"));
+            data.put("status", getFieldValue(product, "status"));
+            
+            // Serialize relationships safely - only IDs to avoid lazy loading
+            Object origin = getFieldValue(product, "origin");
+            if (origin != null) {
+                Object originId = getFieldValue(origin, "id");
+                data.put("originId", originId);
+            }
+            
+            Object brand = getFieldValue(product, "brand");
+            if (brand != null) {
+                Object brandId = getFieldValue(brand, "id");
+                data.put("brandId", brandId);
+            }
+            
+            Object category = getFieldValue(product, "category");
+            if (category != null) {
+                Object categoryId = getFieldValue(category, "id");
+                data.put("categoryId", categoryId);
+            }
+            
+            Object operatingSystem = getFieldValue(product, "operatingSystem");
+            if (operatingSystem != null) {
+                Object osId = getFieldValue(operatingSystem, "id");
+                data.put("operatingSystemId", osId);
+            }
+            
+            Object warehouseArea = getFieldValue(product, "warehouseArea");
+            if (warehouseArea != null) {
+                Object waId = getFieldValue(warehouseArea, "id");
+                data.put("warehouseAreaId", waId);
+            }
+            
+            // Don't serialize productVersion list to avoid lazy loading issues
+            // Only include count if available
+            List<?> productVersions = (List<?>) getFieldValue(product, "productVersion");
+            if (productVersions != null) {
+                data.put("productVersionCount", productVersions.size());
+            }
+            
+            ObjectMapper mapper = ContextUtils.getObjectMapper();
+            return mapper.writeValueAsString(data);
+        } catch (Exception e) {
+            log.error("Error serializing Product", e);
+            return "{}";
+        }
+    }
+    
     /**
      * Safely get field value using reflection to avoid triggering Hibernate getters
      */
@@ -151,12 +220,12 @@ public class AuditLogListener {
     public void postPersist(Object entity) {
         try {
             log.debug("PostPersist called for entity: {}", entity.getClass().getSimpleName());
-            if (entity instanceof Employee || entity instanceof Role) {
-                log.debug("Entity is Employee or Role, scheduling audit log creation...");
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product) {
+                log.debug("Entity is Employee, Role or Product, scheduling audit log creation...");
                 // Delay building audit log until after transaction commit to avoid Hibernate session issues
                 scheduleAuditLogCreation(entity, "CREATE");
             } else {
-                log.debug("Entity {} is not Employee or Role, skipping audit log", entity.getClass().getSimpleName());
+                log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
             }
         } catch (Exception e) {
             log.error("Error in postPersist audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
@@ -167,19 +236,37 @@ public class AuditLogListener {
     public void preUpdate(Object entity) {
         try {
             log.debug("PreUpdate called for entity: {}", entity.getClass().getSimpleName());
-            if (entity instanceof Employee || entity instanceof Role) {
-                log.debug("Entity is Employee or Role, saving old state and scheduling audit log creation...");
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product) {
+                log.debug("Entity is Employee, Role or Product, saving old state and scheduling audit log creation...");
                 // Save old state before update for comparison
                 saveOldEntityState(entity);
                 // Delay building audit log until after transaction commit to avoid Hibernate session issues
                 scheduleAuditLogCreation(entity, "UPDATE");
             } else {
-                log.debug("Entity {} is not Employee or Role, skipping audit log", entity.getClass().getSimpleName());
+                log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
             }
         } catch (Exception e) {
             log.error("Error in preUpdate audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
         }
         // Note: Don't remove oldEntityState here - it will be cleaned up in afterCommit
+    }
+    
+    @PreRemove
+    public void preRemove(Object entity) {
+        try {
+            log.debug("PreRemove called for entity: {}", entity.getClass().getSimpleName());
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product) {
+                log.debug("Entity is Employee, Role or Product, saving state before deletion...");
+                // Save state before deletion
+                saveOldEntityState(entity);
+                // Schedule audit log creation for DELETE
+                scheduleAuditLogCreation(entity, "DELETE");
+            } else {
+                log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
+            }
+        } catch (Exception e) {
+            log.error("Error in preRemove audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
+        }
     }
     
     /**
@@ -273,6 +360,19 @@ public class AuditLogListener {
                             if ("UPDATE".equals(action)) {
                                 // For UPDATE, create diff object with old and new values
                                 changes = createUpdateDiff(entityRef, recordId);
+                            } else if ("DELETE".equals(action)) {
+                                // For DELETE, only save old state (entity is being deleted)
+                                Map<String, String> oldStateMap = oldEntityState.get();
+                                String oldStateJson = null;
+                                if (oldStateMap != null && recordId != null) {
+                                    oldStateJson = oldStateMap.get(recordId.toString());
+                                }
+                                if (oldStateJson != null) {
+                                    changes = oldStateJson;
+                                } else {
+                                    // Fallback: try to serialize current entity
+                                    changes = serializeObject(entityRef);
+                                }
                             } else {
                                 // For CREATE, just serialize the new entity
                                 changes = serializeObject(entityRef);
@@ -351,10 +451,12 @@ public class AuditLogListener {
             Class<?> entityClass = entity.getClass();
             Field idField = null;
 
-            // Try to find id field
+            // Try to find id field - handle different naming conventions
             Field[] fields = entityClass.getDeclaredFields();
             for (Field field : fields) {
-                if (field.getName().equals("id")) {
+                String fieldName = field.getName();
+                // Check for common ID field names
+                if (fieldName.equals("id") || fieldName.equals("idProduct")) {
                     idField = field;
                     break;
                 }
@@ -395,6 +497,10 @@ public class AuditLogListener {
             if (entity instanceof Role) {
                 Integer id = ((Role) entity).getId();
                 return id != null ? id.longValue() : null;
+            }
+            if (entity instanceof Product) {
+                Long id = ((Product) entity).getIdProduct();
+                return id != null ? id : null;
             }
             return null;
         } catch (Exception e) {

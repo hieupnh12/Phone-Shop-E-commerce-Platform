@@ -6,6 +6,7 @@ import {  useOutletContext } from 'react-router-dom';
 import { profileService} from "../../services/api";
 import { useAuthFullOptions } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { formatPhoneNumber } from "../../utils/phoneUtils";
 
 
 
@@ -226,7 +227,7 @@ const PersonalInfoForm = () => {
                         ) : (
                             <>
                                 <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
-                                <InfoDisplayItem label={t('common.phone')} value={formData.phone} />
+                                <InfoDisplayItem label={t('common.phone')} value={formatPhoneNumber(formData.phone)} />
                                 <InfoDisplayItem label="Email" value={formData.email} />
                                 <InfoDisplayItem
                                     label="Ngày sinh"

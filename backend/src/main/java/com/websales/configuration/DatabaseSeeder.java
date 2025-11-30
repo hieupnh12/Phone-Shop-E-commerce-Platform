@@ -49,13 +49,24 @@ public class DatabaseSeeder implements CommandLineRunner {
         Set<Permission> createdPermissions = new HashSet<>();
 
         for (String permKey : PermissionKeys.ALL_PERMISSIONS) {
-            String[] parts = permKey.split(":");
+            // Parse format mới: PRODUCT_VIEW_ALL -> module: PRODUCT, action: VIEW, resource: ALL
+            // Format: MODULE_ACTION_RESOURCE (với underscore)
+            String[] parts = permKey.split("_");
 
-            if (parts.length != 3) continue;
+            // Cần ít nhất 3 phần: MODULE_ACTION_RESOURCE
+            // Ví dụ: PRODUCT_VIEW_ALL -> [PRODUCT, VIEW, ALL]
+            //        STAFF_MANAGE_ROLES -> [STAFF, MANAGE, ROLES]
+            if (parts.length < 3) {
+                log.warn("Permission key không đúng format (cần ít nhất 3 phần): {}", permKey);
+                continue;
+            }
 
+            // Phần đầu là MODULE
             String module = parts[0];
+            // Phần thứ 2 là ACTION
             String action = parts[1];
-            String resource = parts[2];
+            // Phần còn lại (từ phần 3 trở đi) là RESOURCE, nối lại bằng underscore
+            String resource = String.join("_", Arrays.copyOfRange(parts, 2, parts.length));
 
             Permission existingPerm = permissionRepository
                     .findByModuleAndActionAndResource(module, action, resource)

@@ -24,4 +24,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<ListOrderResponse> findAllOrderByCustomerId(Long customerId);
 
     List<Order> findByCustomerId(Customer customer, Sort sort);
+    
+    // Tìm đơn hàng theo employeeId với pagination
+    org.springframework.data.domain.Page<Order> findByEmployeeId_Id(Long employeeId, org.springframework.data.domain.Pageable pageable);
 }
