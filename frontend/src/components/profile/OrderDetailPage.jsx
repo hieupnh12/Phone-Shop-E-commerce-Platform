@@ -4,6 +4,7 @@ import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone
 import {useAuthFullOptions} from "../../contexts/AuthContext";
 import { profileService, orderService } from "../../services/api";
 import api from "../../services/api";
+import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
 import { formatPhoneNumber } from "../../utils/phoneUtils";
@@ -217,6 +218,9 @@ const OrderDetailPage = () => {
                     type: 'success',
                     message: statusMessage
                 });
+                
+                // Chuyển hướng về trang lịch sử đơn hàng sau khi hủy thành công
+                navigate('/user/profile/order');
             } else {
                 setToast({
                     type: 'error',
@@ -272,12 +276,38 @@ const OrderDetailPage = () => {
         return statusNormalized === 'PENDING' || statusNormalized === 'PAID';
     };
 
+    // Hàm xử lý mua lại sản phẩm
+    const handleRepurchase = async (product) => {
+        if (!product.productVersionId) {
+            setToast({
+                type: 'error',
+                message: 'Không tìm thấy thông tin sản phẩm'
+            });
+            return;
+        }
+
+        try {
+            // Thêm sản phẩm vào giỏ hàng với số lượng từ đơn hàng
+            await cartService.addToCart(product.productVersionId, product.quantity);
+            
+            // Chuyển hướng đến trang giỏ hàng
+            navigate('/user/cart');
+        } catch (err) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", err);
+            setToast({
+                type: 'error',
+                message: err.response?.data?.message || err.message || 'Không thể thêm vào giỏ hàng'
+            });
+        }
+    };
+
     const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderInfo) => {
         console.log('Normalizing products, first product:', apiProducts?.[0]);
         const products = apiProducts.map(p => {
             console.log('Product data:', p, 'quantity field:', p.quantity, 'getQuantity:', p.getQuantity);
             return {
                 id: p.productId,
+                productVersionId: p.productVersionId,
                 name: p.productName,
                 image: p.picture,
                 price: p.unitPriceAfter,
@@ -623,7 +653,10 @@ const OrderDetailPage = () => {
                             <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
                                 <p className="text-sm text-gray-600">Số lượng: {product.quantity}</p>
                                 {product.canRepurchase && (
-                                    <button className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                                    <button 
+                                        onClick={() => handleRepurchase(product)}
+                                        className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                    >
                                         Mua lại
                                     </button>
                                 )}
