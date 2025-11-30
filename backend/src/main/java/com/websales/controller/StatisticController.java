@@ -52,7 +52,8 @@ public class StatisticController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "create_datetime,desc") String sort
+            @RequestParam(defaultValue = "create_datetime,desc") String sort,
+            @RequestParam(defaultValue = "rangeType") String rangeType
     ) {
         RevenueStatisticRequest request = RevenueStatisticRequest.builder()
                 .startDate((startDate))
@@ -62,6 +63,7 @@ public class StatisticController {
                 .size(size)
                 .search(search)
                 .sort(sort)
+                .rangeType(rangeType)
                 .build();
 
         ApiResponse<RevenueStatisticResponse> response = new ApiResponse<>();

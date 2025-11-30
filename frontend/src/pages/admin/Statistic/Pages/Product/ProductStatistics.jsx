@@ -91,7 +91,7 @@ const { data: apiData, isLoading } = useQuery({
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Top Product */}
           <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-blue-500 transform transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-2">
@@ -123,7 +123,7 @@ const { data: apiData, isLoading } = useQuery({
           </div>
 
           {/* Inventory Product */}
-          <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-green-500 transform transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1 sm:col-span-2 lg:col-span-1">
+          {/* <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-green-500 transform transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between mb-2">
               <div className="text-slate-600 text-xs sm:text-sm font-medium">
                 Sản phẩm tồn
@@ -136,7 +136,7 @@ const { data: apiData, isLoading } = useQuery({
             <div className="text-slate-500 text-xs sm:text-sm">
               Tồn: {inventoryProduct.stockQuantity}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Charts */}
@@ -144,7 +144,7 @@ const { data: apiData, isLoading } = useQuery({
           {/* Bar Chart Top Products */}
           <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 transform transition-all duration-300 hover:shadow-xl">
             <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
-              Top Sản Phẩm Bán Chạy
+              Top Sản Phẩm Bán Chạy - 30d
             </h2>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={topProducts}>

@@ -162,23 +162,26 @@ public interface SummaryCardRepository extends JpaRepository<Order, Integer> {
 """, nativeQuery = true)
     Object getTopProduct(@Param("from") String from, @Param("to") String to);
 
-    // Top 10 sản phẩm bán chạy
     @Query(value = """
-        SELECT p.product_name as name,
-               SUM(od.quantity) as soldQuantity,
-               SUM(pv.stock_quantity) as stockQuantity
-        FROM order_details od
-        JOIN orders o ON od.order_id = o.order_id
-        JOIN product_versions pv ON od.product_version_id = pv.product_version_id
-        JOIN products p ON pv.product_id = p.product_id
-        WHERE (:from IS NULL OR o.create_datetime >= :from)
-      AND (:to IS NULL OR o.create_datetime <= :to)
-          AND o.status = 'DELIVERED'
-        GROUP BY p.product_id
-        ORDER BY soldQuantity DESC
-        LIMIT 10
-    """, nativeQuery = true)
-    List<Object[]> getTopProducts(@Param("from") String from, @Param("to") String to);
+    SELECT 
+        p.product_name AS name,
+        SUM(od.quantity) AS soldQuantity,
+        SUM(pv.stock_quantity) AS stockQuantity
+    FROM orders o
+    JOIN order_details od ON od.order_id = o.order_id
+    JOIN product_versions pv ON od.product_version_id = pv.product_version_id
+    JOIN products p ON pv.product_id = p.product_id
+    WHERE o.status = 'DELIVERED'
+      AND o.end_datetime >= :fromDate
+      AND o.end_datetime <= :toDate
+    GROUP BY p.product_id, p.product_name
+    ORDER BY SUM(od.quantity) DESC
+    LIMIT 10
+""", nativeQuery = true)
+    List<Object[]> getTopProducts(
+            @Param("fromDate") String fromDate,
+            @Param("toDate") String toDate
+    );
 
     // Tổng số lượng bán ra
     @Query(value = """
