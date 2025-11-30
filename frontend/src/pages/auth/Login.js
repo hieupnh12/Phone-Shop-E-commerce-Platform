@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
+  
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
@@ -33,7 +34,6 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const { loading, loginEmployee, sendOtp, verifyOtp } = useContext(AuthContext);
   const { t } = useLanguage();
-
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
   const handleChange = (e) => {

@@ -9,4 +9,5 @@ public interface ListOrderDetailResponse {
     BigDecimal getUnitPriceAfter();
     String getProductName();
     String getPicture();
+    Integer getQuantity();
 }
