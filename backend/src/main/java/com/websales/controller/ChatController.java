@@ -1,10 +1,8 @@
 package com.websales.controller;
 
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 
 import com.websales.dto.request.ChatRequest;
 import com.websales.dto.response.RagResponse;
@@ -13,6 +11,7 @@ import com.websales.service.ChatService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/chats")
@@ -24,5 +23,18 @@ public class ChatController {
     @PostMapping
     public RagResponse chat(@RequestBody ChatRequest request) {
         return chatService.ask(request);
+    }
+
+    @PostMapping(value = "/chat-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public RagResponse chatWithImage(
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "imageUrl", required = false) String imageUrl,
+            @RequestParam(value = "message", required = false) String message
+    ) {
+        System.out.println("file=" + file + ", imageUrl=" + imageUrl);
+        if (file != null) {
+            System.out.println("Tên file backend nhận: " + file.getOriginalFilename());
+        }
+        return chatService.chatImage(file, imageUrl, message);
     }
 }
