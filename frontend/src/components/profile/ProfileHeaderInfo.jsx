@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Clock, ShoppingCart, DollarSign } from 'lucide-react';
+import { ShoppingCart, DollarSign } from 'lucide-react';
 import useFetchTotalInfo from "../../hooks/useFetchTotalInfo";
+import { formatPhoneNumber } from "../../utils/phoneUtils";
 
 const MOCK_CUSTOMER_ID = 11;
 
@@ -29,17 +30,6 @@ const ProfileHeaderInfo = ({ customer }) => {
         return amount.toLocaleString('vi-VN') + 'đ';
     };
 
-    const renderRankTag = (rank) => {
-        let baseClasses = "px-3 py-1 text-xs font-semibold rounded-full mr-2";
-        if (rank === 'S-MEM') {
-            return <span className={`${baseClasses} bg-yellow-100 text-yellow-800`}>{rank}</span>;
-        }
-        if (rank === 'S-Student') {
-            return <span className={`${baseClasses} bg-green-100 text-green-800`}>{rank}</span>;
-        }
-        return null;
-    };
-
     const StatItem = ({ icon: Icon, value, label, iconBgColor, valueColor }) => (
         <div className="flex flex-col items-center justify-center p-2">
             <div className="flex items-center">
@@ -66,15 +56,7 @@ const ProfileHeaderInfo = ({ customer }) => {
                     <div className="flex flex-col justify-center">
                         <h3 className="text-xl font-bold text-gray-800">{data.fullName}</h3>
                         <p className="text-sm text-gray-500 my-1">
-                            {data.phoneNumber}
-                        </p>
-                        <div className="flex items-center mt-1">
-                            {renderRankTag(data.rank)}
-                            {renderRankTag('S-Student')} {/* Giả định tag thứ 2 luôn là S-Student */}
-                        </div>
-                        <p className="text-xs text-gray-400 mt-2 flex items-center">
-                            <Clock size={14} className="mr-1.5" />
-                            Cập nhật lại sau {data.lastUpdate}
+                            {formatPhoneNumber(data.phoneNumber)}
                         </p>
                     </div>
                 </div>

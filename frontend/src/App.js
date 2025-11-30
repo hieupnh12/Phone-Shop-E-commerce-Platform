@@ -36,6 +36,8 @@ import OrderHistoryPage from "./components/profile/OrderHistoryPage";
 import PersonalInfoForm from "./components/profile/PersonalInfoForm";
 import ProfilePageLayout from "./components/profile/ProfilePageLayout";
 import OrderDetailPage from "./components/profile/OrderDetailPage";
+import WarrantyPage from "./components/profile/WarrantyPage";
+import SupportPage from "./components/profile/SupportPage";
 import ProductDetailPage from "./components/common/Product/ProductDetail";
 import ProductsContainer from "./components/common/Product/ProductContainer";
 import { useUrlTokenHandler } from "./hooks/useUrlTokenHandler";
@@ -109,6 +111,8 @@ const router = createBrowserRouter(
               path: "order/order-detail/:orderId",
               element: <OrderDetailPage />,
             },
+            { path: "warranty", element: <WarrantyPage /> },
+            { path: "support", element: <SupportPage /> },
           ],
         },
       ],

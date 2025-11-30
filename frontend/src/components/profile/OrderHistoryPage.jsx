@@ -1,9 +1,11 @@
 // file OrderHistoryPage
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Search, Calendar, ChevronRight } from 'lucide-react';
 import {profileService} from "../../services/api"
 import { Link, useOutletContext } from 'react-router-dom';
 import { useLanguage } from "../../contexts/LanguageContext";
+import Toast from "../common/Toast";
+import Pagination from "../common/Pagination";
 
 const MOCK_CUSTOMER_ID = 11;
 
@@ -24,10 +26,13 @@ const OrderHistoryPage = () => {
 
     const [activeTab, setActiveTab] = useState('all');
     const [searchTerm, setSearchTerm] = useState('')
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5); // Số đơn hàng mỗi trang
 
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -42,8 +47,13 @@ const OrderHistoryPage = () => {
                 setError(null);
             } catch (err) {
                 console.error("Lỗi khi tải đơn hàng:", err);
-                setError("Không thể tải lịch sử đơn hàng.");
+                const errorMsg = "Không thể tải lịch sử đơn hàng.";
+                setError(errorMsg);
                 setOrders([]);
+                setToast({
+                    type: 'error',
+                    message: errorMsg
+                });
             } finally {
                 setLoading(false);
             }
@@ -116,32 +126,45 @@ const OrderHistoryPage = () => {
         );
     };
 
-    const filteredOrders = orders.filter(order => {
-        // 2. Lọc theo Tab (So sánh với status lowercase)
-        if (activeTab !== 'all') {
-            const orderStatusLower = (order.status || '').toLowerCase();
-            // Map tab id với status
-            // Lưu ý: PAID (đã thanh toán) sẽ hiển thị trong tab "pending" (đang xử lý) vì chưa được giao hàng
-            const tabStatusMap = {
-                'pending': ['pending', 'paid'], // PAID cũng nằm trong "Đang xử lý"
-                'shipping': ['shipped', 'shipping'],
-                'delivered': ['delivered'],
-                'cancelled': ['canceled', 'cancelled'],
-                'returned': ['returned']
-            };
-            
-            const allowedStatuses = tabStatusMap[activeTab] || [];
-            if (!allowedStatuses.some(s => orderStatusLower === s)) {
-                return false;
+    const filteredOrders = useMemo(() => {
+        return orders.filter(order => {
+            // 2. Lọc theo Tab (So sánh với status lowercase)
+            if (activeTab !== 'all') {
+                const orderStatusLower = (order.status || '').toLowerCase();
+                // Map tab id với status
+                // Lưu ý: PAID (đã thanh toán) sẽ hiển thị trong tab "pending" (đang xử lý) vì chưa được giao hàng
+                const tabStatusMap = {
+                    'pending': ['pending', 'paid'], // PAID cũng nằm trong "Đang xử lý"
+                    'shipping': ['shipped', 'shipping'],
+                    'delivered': ['delivered'],
+                    'cancelled': ['canceled', 'cancelled'],
+                    'returned': ['returned']
+                };
+                
+                const allowedStatuses = tabStatusMap[activeTab] || [];
+                if (!allowedStatuses.some(s => orderStatusLower === s)) {
+                    return false;
+                }
             }
-        }
 
-        // 3. Lọc theo SearchTerm
-        if (searchTerm === '') return true;
-        return order.products.some(product =>
-            product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        ) || order.id.toLowerCase().includes(searchTerm.toLowerCase());
-    });
+            // 3. Lọc theo SearchTerm
+            if (searchTerm === '') return true;
+            return order.products.some(product =>
+                product.name.toLowerCase().includes(searchTerm.toLowerCase())
+            ) || order.id.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+    }, [orders, activeTab, searchTerm]);
+
+    // Tính toán phân trang
+    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+    // Reset về trang 1 khi thay đổi tab hoặc search
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchTerm]);
     if (loading) {
         return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] flex justify-center items-center">Đang tải đơn hàng...</div>;
     }
@@ -196,10 +219,18 @@ const OrderHistoryPage = () => {
             {/* </div>*/}
             {/*</div>*/}
 
+            {/* Thông tin số lượng đơn hàng */}
+            {filteredOrders.length > 0 && (
+                <div className="mb-4 text-sm text-gray-600">
+                    tổng số {filteredOrders.length} đơn hàng
+                </div>
+            )}
+
             {/* Hiển thị danh sách đơn hàng hoặc Empty State */}
             {filteredOrders.length > 0 ? (
-                <div className="space-y-6">
-                    {filteredOrders.map((order) => (
+                <>
+                    <div className="space-y-6 mb-6">
+                        {paginatedOrders.map((order) => (
                         <div key={order.id} className="border border-gray-200 rounded-lg p-4 bg-white">
                             <div className="flex items-center justify-between mb-3 border-b pb-3">
                                 <div className="flex items-center text-sm">
@@ -245,8 +276,22 @@ const OrderHistoryPage = () => {
                                 </div>
                             ))}
                         </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+
+                    {/* Phân trang */}
+                    {totalPages > 1 && (
+                        <div className="mt-8 pt-6 border-t border-gray-200">
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                                maxVisiblePages={5}
+                                size="md"
+                            />
+                        </div>
+                    )}
+                </>
             ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center text-gray-500 bg-gray-100">
                     <img
@@ -260,6 +305,15 @@ const OrderHistoryPage = () => {
                         Khám phá ngay
                     </button>
                 </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
             )}
         </div>
     );

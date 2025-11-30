@@ -6,6 +6,7 @@ import { profileService, orderService } from "../../services/api";
 import api from "../../services/api";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
+import { formatPhoneNumber } from "../../utils/phoneUtils";
 
 
 
@@ -70,6 +71,7 @@ const OrderDetailPage = () => {
                 }
                 
                 console.log('Final payment method:', paymentMethod);
+                console.log('API Result (Order Details):', apiResult);
 
                 const normalizedData = normalizeOrderDetail(
                     apiResult,
@@ -271,24 +273,28 @@ const OrderDetailPage = () => {
     };
 
     const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderInfo) => {
-        const products = apiProducts.map(p => ({
-            id: p.productId,
-            name: p.productName,
-            image: p.picture,
-            price: p.unitPriceAfter,
-            quantity: 1,
-            warrantyEnd: '23/03/2026',
-            canRepurchase: true,
-        }));
+        console.log('Normalizing products, first product:', apiProducts?.[0]);
+        const products = apiProducts.map(p => {
+            console.log('Product data:', p, 'quantity field:', p.quantity, 'getQuantity:', p.getQuantity);
+            return {
+                id: p.productId,
+                name: p.productName,
+                image: p.picture,
+                price: p.unitPriceAfter,
+                quantity: p.quantity ?? p.getQuantity?.() ?? 1,
+                warrantyEnd: '23/03/2026',
+                canRepurchase: true,
+            };
+        });
 
-        const subtotal = products.reduce((sum, p) => sum + p.price, 0);
+        const subtotal = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
         const FREE_SHIP_LIMIT = 1000;
         const SHIPPING_FEE = 30000;
         const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : SHIPPING_FEE;
         const totalAmount = passedTotalAmount ?? subtotal + shippingFee;
         const defaultCustomer = {
             name: customerData?.fullName || 'Khách hàng',
-            phone: customerData?.phoneNumber || 'Đang cập nhật',
+            phone: formatPhoneNumber(customerData?.phoneNumber) || 'Đang cập nhật',
             address: customerData?.address || 'Chưa có địa chỉ',
             note: '-',
         };
@@ -472,11 +478,15 @@ const OrderDetailPage = () => {
         </div>
     );
 
-    const PaymentInfoCard = () => (
+    const PaymentInfoCard = () => {
+        // Tính tổng số lượng sản phẩm (tổng quantity của tất cả sản phẩm)
+        const totalQuantity = orderData.products.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        
+        return (
         <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
             <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Thông tin thanh toán</h4>
             <div className="space-y-2">
-                <InfoRow label={t('common.products')} value={orderData.products.length} note={t('common.quantityNote')} />
+                <InfoRow label={t('common.products')} value={totalQuantity} note={t('common.quantityNote')} />
                 <InfoRow label="Tổng tiền hàng" value={orderData.summary.subtotal} currency />
                 <InfoRow label="Giảm giá" value={-orderData.summary.discount} currency highlight />
                 <InfoRow
@@ -504,7 +514,8 @@ const OrderDetailPage = () => {
             </div>
             <p className="mt-3 text-xs text-gray-500">Phương thức: {orderData.paymentMethod}</p>
         </div>
-    );
+        );
+    };
 
     const OrderTimeline = () => {
         const steps = orderData.timeline;

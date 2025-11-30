@@ -7,6 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 import AddressForm from '../../components/common/AddressForm';
 import Toast from '../../components/common/Toast';
+import { formatPhoneNumber } from '../../utils/phoneUtils';
 
 // Format tiền VND
 const vnd = (n) =>
@@ -348,7 +349,7 @@ export default function Payment() {
                     <Phone className="w-4 h-4" />
                     Số điện thoại
                   </span>
-                  <span className="text-right font-medium text-gray-900">{customerInfo.phone || t('payment.notUpdated')}</span>
+                  <span className="text-right font-medium text-gray-900">{formatPhoneNumber(customerInfo.phone) || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-2.5 text-sm">
