@@ -44,7 +44,7 @@ const ListProduct = () => {
       if (hasFilters) {
         response = await productService.searchProducts(filters, page, pageSize);
       } else {
-        response = await productService.getProducts(page, pageSize);
+        response = await productService.getProducts(page, pageSize, true);
       }
 
       // Handle both response.result and direct response
