@@ -420,7 +420,7 @@ export default function Orders() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 px-4 py-3 bg-white rounded-lg border">
+        <div className="flex flex-col items-center justify-center gap-4 mt-6 px-4 py-3 bg-white rounded-lg border">
           <div className="text-sm text-gray-600">
             Hiển thị {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} trong tổng số {totalElements} đơn hàng
           </div>

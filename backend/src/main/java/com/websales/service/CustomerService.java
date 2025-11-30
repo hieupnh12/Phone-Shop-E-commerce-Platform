@@ -34,12 +34,26 @@ public class CustomerService {
     OrderDetailRepo orderDetailRepo;
 
     public CustomerResponse createCustomer(CustomerCreateRequest request) {
-
         Customer customer = customerMapper.toCustomer(request);
+        
+        // TODO: Uncomment after adding employee_id column to customers table
+        // Lấy employeeId nếu đang đăng nhập bằng tài khoản employee
+        // try {
+        //     Long employeeId = ContextUtils.getEmployeeId();
+        //     if (employeeId != null) {
+        //         Employee employee = employeeRepo.findById(employeeId)
+        //                 .orElse(null);
+        //         if (employee != null) {
+        //             customer.setEmployeeId(employee);
+        //         }
+        //     }
+        // } catch (Exception e) {
+        //     // Nếu không phải employee authentication hoặc không tìm thấy employee, bỏ qua
+        //     // Customer có thể được tạo bởi chính họ (self-registration)
+        // }
+        
         var c = customerRepository.save(customer);
-
         return customerMapper.toCustomerResponse(c);
-
     }
 
     public CustomerResponse updateCustomer(Long id, CustomerUpdateRequest request) {

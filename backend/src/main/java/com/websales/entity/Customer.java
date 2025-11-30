@@ -27,6 +27,7 @@ class Customer extends AuditableEntity {
     Boolean gender;
     LocalDate birthDate;
     String address;
+    
     @CreationTimestamp
     LocalDateTime createAt;
     @UpdateTimestamp
