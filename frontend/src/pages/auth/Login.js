@@ -332,10 +332,12 @@ const Login = () => {
           <div className="hidden lg:block space-y-8">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Smartphone className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-4xl font-bold text-white">FShop</span>
+                <img
+                src="/image/flogo.png"
+                alt="FShop Logo"
+                className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+              />
+              <span className="text-4xl font-bold text-white">Shop</span>
             </div>
 
             {/* Main Heading */}
