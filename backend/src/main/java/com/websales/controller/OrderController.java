@@ -34,11 +34,12 @@ public class OrderController {
     OrderMapper orderMapper;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_ALL')")
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_ALL') or isAuthenticated()")
     public ApiResponse<Page<OrderResponse>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createDatetime,desc") String sort
+            @RequestParam(defaultValue = "createDatetime,desc") String sort,
+            @AuthenticationPrincipal Jwt jwt
     ) {
         // Parse sort parameter (format: "field,direction")
         String[] sortParts = sort.split(",");
@@ -50,7 +51,43 @@ public class OrderController {
         Sort sortObj = Sort.by(direction, sortField);
         Pageable pageable = PageRequest.of(page, size, sortObj);
         
-        Page<Order> ordersPage = orderService.getAllOrders(pageable);
+        // Kiểm tra xem user có phải là employee không
+        boolean isEmployee = jwt.getClaims().containsKey("scopes") && 
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().startsWith("ROLE_"));
+        
+        boolean hasViewAllPermission = jwt.getClaims().containsKey("scopes") && 
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().equals("SCOPE_ORDER_VIEW_ALL"));
+        
+        Page<Order> ordersPage;
+        
+        // Nếu là employee và có ORDER_VIEW_ALL: xem tất cả đơn hàng
+        // Nếu là employee nhưng không có ORDER_VIEW_ALL: chỉ xem đơn hàng do họ tạo
+        // Nếu là customer: không được truy cập endpoint này (sẽ bị @PreAuthorize chặn)
+        if (isEmployee && hasViewAllPermission) {
+            ordersPage = orderService.getAllOrders(pageable);
+        } else if (isEmployee) {
+            // Lấy employeeId từ JWT subject (fullName) và chỉ xem đơn hàng do họ tạo
+            try {
+                Long employeeId = com.websales.handler.ContextUtils.getEmployeeId();
+                if (employeeId != null) {
+                    ordersPage = orderService.getOrdersByEmployee(employeeId, pageable);
+                } else {
+                    // Nếu không lấy được employeeId, trả về empty page
+                    ordersPage = org.springframework.data.domain.Page.empty(pageable);
+                }
+            } catch (Exception e) {
+                // Nếu có lỗi, trả về empty page
+                ordersPage = org.springframework.data.domain.Page.empty(pageable);
+            }
+        } else {
+            // Customer không được truy cập endpoint này
+            ordersPage = org.springframework.data.domain.Page.empty(pageable);
+        }
+        
         Page<OrderResponse> responsePage = ordersPage.map(orderMapper::toOrderResponse);
         
         return ApiResponse.<Page<OrderResponse>>builder()
@@ -76,7 +113,30 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<OrderResponse> createOrder(@RequestBody @Valid OrderRequest request) {
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_CREATE_ALL') or isAuthenticated()")
+    public ApiResponse<OrderResponse> createOrder(
+            @RequestBody @Valid OrderRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        // Kiểm tra permission: chỉ employee với ORDER_CREATE_ALL mới được tạo đơn tại cửa hàng
+        // Customer vẫn có thể tạo đơn hàng online (không cần permission này)
+        boolean isEmployee = jwt.getClaims().containsKey("scopes") && 
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().startsWith("ROLE_"));
+        
+        boolean hasCreatePermission = jwt.getClaims().containsKey("scopes") && 
+            jwt.getClaims().get("scopes") != null &&
+            ((List<?>) jwt.getClaims().get("scopes")).stream()
+                .anyMatch(s -> s.toString().equals("SCOPE_ORDER_CREATE_ALL"));
+        
+        // Nếu là employee nhưng không có ORDER_CREATE_ALL permission, từ chối
+        if (isEmployee && !hasCreatePermission) {
+            return ApiResponse.<OrderResponse>builder()
+                    .code(403)
+                    .message("Bạn không có quyền tạo đơn hàng tại cửa hàng")
+                    .build();
+        }
+        
         Order order = orderService.createOrder(request);
         return ApiResponse.<OrderResponse>builder()
                 .result(orderMapper.toOrderResponse(order))

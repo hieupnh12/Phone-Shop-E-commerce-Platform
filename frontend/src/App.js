@@ -165,7 +165,7 @@ const router = createBrowserRouter(
             { 
               path: "orders", 
               element: (
-                <PermissionRoute requiredPermission={PERMISSIONS.ORDER_VIEW_ALL}>
+                <PermissionRoute requiredPermission={[PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL]}>
                   <Orders />
                 </PermissionRoute>
               )
@@ -173,7 +173,7 @@ const router = createBrowserRouter(
             { 
               path: "orders/create-in-store", 
               element: (
-                <PermissionRoute requiredPermission={PERMISSIONS.ORDER_VIEW_ALL}>
+                <PermissionRoute requiredPermission={PERMISSIONS.ORDER_CREATE_ALL}>
                   <CreateInStoreOrder />
                 </PermissionRoute>
               )

@@ -222,7 +222,7 @@ export default function Orders() {
       {/* Title with Create Button */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        {hasPermission(PERMISSIONS.ORDER_VIEW_ALL) && (
+        {hasPermission(PERMISSIONS.ORDER_CREATE_ALL) && (
           <button
             onClick={() => navigate("/admin/orders/create-in-store")}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"

@@ -17,6 +17,7 @@ import customerService from "../../../services/customerService";
 import orderService from "../../../services/orderService";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
+import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
 const vnd = (n) =>
   new Intl.NumberFormat("vi-VN", {
@@ -27,8 +28,23 @@ const vnd = (n) =>
 
 export default function CreateInStoreOrder() {
   const navigate = useNavigate();
+  const { hasPermission } = usePermission();
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Kiểm tra permission khi component mount
+  useEffect(() => {
+    if (!hasPermission(PERMISSIONS.ORDER_CREATE_ALL)) {
+      setToast({
+        message: "Bạn không có quyền tạo đơn hàng tại cửa hàng",
+        type: "error",
+      });
+      // Redirect về trang orders sau 2 giây
+      setTimeout(() => {
+        navigate("/admin/orders", { replace: true });
+      }, 2000);
+    }
+  }, [hasPermission, navigate]);
 
   // Customer state
   const [customerSearch, setCustomerSearch] = useState("");
