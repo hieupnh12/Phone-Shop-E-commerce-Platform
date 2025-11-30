@@ -11,15 +11,36 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import chatsApi, { sendMessage } from "../../services/chatBotService";
 
-export default function Chatbot() {
-  const [messages, setMessages] = useState([
+const STORAGE_KEY = "chatbot_messages";
+
+// Helper function để load messages từ localStorage
+const loadMessagesFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Chuyển timestamp từ string về Date object
+      return parsed.map((msg) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+      }));
+    }
+  } catch (error) {
+    console.error("Lỗi khi load messages từ localStorage:", error);
+  }
+  // Nếu không có hoặc lỗi, trả về message mặc định
+  return [
     {
       id: 1,
       text: "Xin chào! Tôi có thể giúp gì cho bạn?",
       sender: "bot",
       timestamp: new Date(),
     },
-  ]);
+  ];
+};
+
+export default function Chatbot() {
+  const [messages, setMessages] = useState(loadMessagesFromStorage);
   const [input, setInput] = useState("");
   const [isMaximized, setIsMaximized] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -99,6 +120,20 @@ export default function Chatbot() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Lưu messages vào localStorage mỗi khi messages thay đổi
+  useEffect(() => {
+    try {
+      // Chuyển Date objects thành strings để lưu vào localStorage
+      const messagesToStore = messages.map((msg) => ({
+        ...msg,
+        timestamp: msg.timestamp.toISOString(),
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messagesToStore));
+    } catch (error) {
+      console.error("Lỗi khi lưu messages vào localStorage:", error);
+    }
+  }, [messages]);
 
   // Load older messages với lazy loading
   const loadOlderMessages = async () => {
@@ -206,6 +241,7 @@ export default function Chatbot() {
       setIsSending(false);
       inputRef.current?.focus();
       setFile(null);
+      setImagePreview(null);
     }
   };
 
@@ -324,7 +360,7 @@ export default function Chatbot() {
           <div
             ref={messagesContainerRef}
             className="overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white relative"
-            style={{ height: "calc(100% - 140px)" }}
+            style={{ height: "calc(100% - 140px)", maxHeight: "calc(100% - 140px)" }}
           >
             {/* Loading indicator ở đầu */}
             {isLoadingOlder && (
@@ -394,15 +430,17 @@ export default function Chatbot() {
                     >
                       {message.text}
                     </div>
-                    {/* Nếu bot có Product */}
+                    {/* Nếu bot có Product và mảng không rỗng */}
                     {message.sender === "bot" &&
-                      message?.extra?.ySendChatBots && (
+                      message?.extra?.ySendChatBots &&
+                      Array.isArray(message.extra.ySendChatBots) &&
+                      message.extra.ySendChatBots.length > 0 && (
                         <div className="mt-2 p-2 border border-gray-200 rounded-lg bg-gray-50">
                           <h4 className="font-semibold text-gray-700 mb-2">
                             Sản phẩm:
                           </h4>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {message?.extra?.ySendChatBots.map((p) => (
+                            {message.extra.ySendChatBots.map((p) => (
                               <a
                                 key={p.idProduct}
                                 href={`/user/products/${p.idProduct}`}
@@ -500,27 +538,6 @@ export default function Chatbot() {
             )}
 
             <div ref={messagesEndRef} />
-            {imagePreview && (
-              <div className="flex items-center gap-2 mt-2 bg-gray-100 p-2 rounded-xl max-w-xs">
-                <img
-                  src={imagePreview}
-                  alt="preview"
-                  className="h-20 w-20 object-cover rounded-lg"
-                />
-                <div className="flex-1 flex justify-between items-start">
-                  <button
-                    onClick={() => {
-                      setFile(null);
-                      setImageUrl(null);
-                      setImagePreview(null);
-                    }}
-                    className="text-gray-500 hover:text-gray-800 font-bold px-2 py-1 rounded-full bg-gray-200 hover:bg-gray-300"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Scroll to bottom button */}
@@ -538,40 +555,59 @@ export default function Chatbot() {
 
           {/* Input Area */}
 
-          <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl">
-            {/* ✅ Chèn preview ảnh ở đây */}
-
+          <div className="p-4 border-t border-gray-200 bg-white rounded-b-2xl relative">
+            {/* Preview ảnh trong khung nhập với position absolute để không làm khung chat bị kéo dài */}
+            {imagePreview && (
+              <div className="absolute bottom-full left-4 right-4 mb-2 flex items-center gap-2 bg-gray-100 p-2 rounded-xl border border-gray-200 z-10">
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="h-16 w-16 object-cover rounded-lg"
+                />
+                <div className="flex-1"></div>
+                <button
+                  onClick={() => {
+                    setFile(null);
+                    setImageUrl(null);
+                    setImagePreview(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-800 font-bold px-2 py-1 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div className="flex gap-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer px-3 py-2 bg-gray-200 rounded-full hover:bg-gray-300"
-              >
-                📎
-              </label>
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                onPaste={handlePaste}
-                placeholder="Nhập tin nhắn..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
-              <button
-                onClick={handleSend}
-                disabled={isTyping || (!input.trim() && !file)} // nếu có file vẫn enable
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer px-3 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors flex items-center"
+                >
+                  📎
+                </label>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  onPaste={handlePaste}
+                  placeholder="Nhập tin nhắn..."
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={isTyping || (!input.trim() && !file)} // nếu có file vẫn enable
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
             </div>
           </div>
         </div>
