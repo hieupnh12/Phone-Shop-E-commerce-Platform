@@ -17,6 +17,7 @@ import customerService from "../../../services/customerService";
 import orderService from "../../../services/orderService";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
+import api from "../../../services/api";
 
 const vnd = (n) =>
   new Intl.NumberFormat("vi-VN", {
@@ -488,6 +489,7 @@ export default function CreateInStoreOrder() {
         totalAmount: Number(subtotal),
         status: "PENDING",
         isPaid: false,
+        paymentMethod: "cod", // Mặc định là COD cho đơn hàng tại cửa hàng
         orderDetails: cartItems.map((item) => ({
           productVersionId: String(item.productVersionId),
           unitPriceBefore: Number(item.unitPriceBefore || item.price),
@@ -496,7 +498,49 @@ export default function CreateInStoreOrder() {
         })),
       };
 
-      await orderService.createInStoreOrder(orderData);
+      const createdOrder = await orderService.createInStoreOrder(orderData);
+
+      // Tạo payment transaction với COD sau khi tạo order thành công
+      if (createdOrder?.orderId) {
+        try {
+          // Lấy payment methods để tìm COD
+          const paymentMethodsResponse = await api.get("/payment/method");
+          const paymentMethods = paymentMethodsResponse?.data?.result || paymentMethodsResponse?.data || paymentMethodsResponse?.result || [];
+          
+          // Tìm payment method COD
+          let codPaymentMethod = paymentMethods.find(
+            (pm) => pm.paymentMethodType === "cod" || pm.paymentMethodType === "COD"
+          );
+
+          // Nếu không tìm thấy, tạo mới
+          if (!codPaymentMethod) {
+            const createMethodResponse = await api.post("/payment/method", {
+              paymentMethodType: "cod",
+              provider: "COD",
+              status: true,
+            });
+            codPaymentMethod = createMethodResponse?.data?.result || createMethodResponse?.data || createMethodResponse?.result;
+          }
+
+          // Tạo payment transaction
+          const transactionCode = `CODE-${Date.now()}-${createdOrder.orderId}`;
+          const transactionData = {
+            idOrder: createdOrder.orderId,
+            idPaymentMethod: codPaymentMethod.paymentMethodId || codPaymentMethod.id,
+            amountUsed: Number(subtotal),
+            paymentStatus: "PENDING",
+            transactionType: "PAYMENT",
+            transactionCode: transactionCode,
+            responseMessage: "Chờ thanh toán khi nhận hàng",
+          };
+
+          await api.post("/payment/transaction", transactionData);
+        } catch (error) {
+          console.error("Error creating payment transaction:", error);
+          // Không throw error để không ảnh hưởng đến việc tạo order
+          // Payment transaction có thể được tạo sau
+        }
+      }
 
       setToast({
         message: "Tạo đơn hàng thành công!",
