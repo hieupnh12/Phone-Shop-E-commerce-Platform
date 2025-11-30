@@ -204,107 +204,99 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
           Đánh giá {productName || "Sản phẩm"}
         </h1>
 
-        <div className="flex flex-wrap md:flex-nowrap justify-between items-start mb-8 gap-6">
-          {/* Left + center block: Rating summary and distribution (stack on small, row on md) */}
-          <div className="w-full md:w-2/3 flex flex-col md:flex-row gap-4 items-start md:items-center">
-            {/* Rating summary */}
-            <div className="w-full md:w-1/3 bg-white text-center">
-              <div className="flex items-center mb-3 justify-center">
-                <span className="text-5xl font-bold text-gray-900 mr-2">
-                  {averageRating.toFixed(1)}
-                </span>
-                <span className="text-xl text-gray-600">/5</span>
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          {/* Main Rating Summary Block - Trở thành phần chính */}
+          <div className="w-full lg:w-2/5">
+            <div className="bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 rounded-lg p-5 shadow-sm border border-red-100">
+              {/* Rating Score - Large and Prominent */}
+              <div className="text-center mb-4">
+                <div className="flex items-baseline justify-center mb-2">
+                  <span className="text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                    {averageRating.toFixed(1)}
+                  </span>
+                  <span className="text-xl text-gray-500 ml-1.5">/5</span>
+                </div>
+
+                {/* Star Rating */}
+                <div className="flex justify-center mb-2">
+                  <StarRating
+                    rating={Math.round(averageRating)}
+                    size="medium"
+                    interactive={false}
+                  />
+                </div>
+
+                {/* Total Reviews */}
+                <div className="flex items-center justify-center gap-1.5 mb-4">
+                  <span className="text-sm font-semibold text-gray-700">
+                    {totalReviews}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    lượt đánh giá
+                  </span>
+                </div>
+
+                {/* Action Button or Status Message */}
+                {user && hasPurchased && !hasReviewed && !checkingPermission && (
+                  <button
+                    onClick={() => setShowReviewPopup(true)}
+                    className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.01] text-xs"
+                  >
+                    Viết đánh giá
+                  </button>
+                )}
+                {user && !hasPurchased && !checkingPermission && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                    <p className="text-xs text-blue-700 text-center font-medium">
+                      Mua sản phẩm để đánh giá
+                    </p>
+                  </div>
+                )}
+                {user && hasReviewed && !checkingPermission && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                    <p className="text-xs text-green-700 text-center font-medium">
+                      ✓ Bạn đã đánh giá sản phẩm này
+                    </p>
+                  </div>
+                )}
+                {!user && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
+                    <p className="text-xs text-gray-600 text-center font-medium">
+                      Đăng nhập để đánh giá
+                    </p>
+                  </div>
+                )}
               </div>
-
-              <div className="flex flex-col mb-4">
-                <StarRating
-                  rating={Math.round(averageRating)}
-                  size="medium"
-                  interactive={false}
-                />
-
-                <span className="text-base text-gray-600 mt-1">
-                  {totalReviews} lượt đánh giá
-                </span>
-              </div>
-
-              {user && hasPurchased && !hasReviewed && !checkingPermission && (
-                <button
-                  onClick={() => setShowReviewPopup(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors shadow-md"
-                >
-                  Viết đánh giá
-                </button>
-              )}
-              {user && !hasPurchased && !checkingPermission && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Mua sản phẩm để đánh giá
-                </p>
-              )}
-              {user && hasReviewed && !checkingPermission && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Bạn đã đánh giá sản phẩm này
-                </p>
-              )}
-              {!user && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Đăng nhập để đánh giá
-                </p>
-              )}
             </div>
+          </div>
 
-            {/* Rating distribution (aligned top, same width as summary) */}
-            <div className="w-full md:w-2/3 align-center">
+          {/* Rating Distribution Block */}
+          <div className="w-full lg:w-3/5">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+              <h3 className="text-sm font-bold text-gray-800 mb-2.5">
+                Phân bố đánh giá
+              </h3>
               <div className="space-y-2">
                 {ratingDistribution.map((item) => (
-                  <div key={item.stars} className="flex items-center">
-                    <span className="w-8 text-sm font-medium text-gray-700 mr-2">
-                      {item.stars}⭐
+                  <div key={item.stars} className="flex items-center gap-2">
+                    <span className="w-9 text-xs font-semibold text-gray-700 flex items-center gap-1">
+                      {item.stars}
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                     </span>
-                    <div className="flex-1 mx-2 bg-gray-200 rounded-full h-2.5">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
                       <div
-                        className="bg-red-600 h-2.5 rounded-full"
+                        className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.round(item.percentage * 100)}%`,
                         }}
                       ></div>
                     </div>
-                    <span className="w-20 text-sm text-gray-600 text-right">
+                    <span className="w-20 text-xs font-medium text-gray-600 text-right">
                       {item.count} đánh giá
                     </span>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-
-          {/* Right block: Experience ratings */}
-          <div className="w-full md:w-1/2 md:pl-6 md:border-l border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Đánh giá theo trải nghiệm
-            </h2>
-            <div className="space-y-3">
-              {experienceRatingsDisplay.map((exp) => (
-                <div
-                  key={exp.label}
-                  className="flex justify-between items-center"
-                >
-                  <span className="text-base text-gray-700">{exp.label}</span>
-                  <div className="flex items-center">
-                    <StarRating
-                      rating={exp.rating}
-                      size="small"
-                      interactive={false}
-                    />
-                    <span className="text-sm font-semibold text-gray-800 mx-2">
-                      {exp.rating}/5
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      ({exp.count} đánh giá)
-                    </span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>

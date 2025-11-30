@@ -280,10 +280,10 @@ if (!error && noResults && hasFilters) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
       {/* Header */}
-      <div className="bg-slate-800/60 backdrop-blur-md border-b border-cyan-500/20 sticky top-0 z-50 shadow-lg shadow-black/20">
+      {/* <div className="bg-slate-800/60 backdrop-blur-md border-b border-cyan-500/20 sticky top-0 z-50 shadow-lg shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">Điện thoại</h1>
-          {/* <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {['OPPO', 'HONOR', 'Nubia', 'Sony', 'Nokia', 'Infinix', 'Nothing Phone', 'Masstel', 'Realme', 'Itel', 'vivo'].map(brand => (
               <button 
                 key={brand} 
@@ -292,13 +292,13 @@ if (!error && noResults && hasFilters) {
                 {brand}
               </button>
             ))}
-          </div> */}
+          </div>
         </div>
-      </div>
+      </div> */}
 
       <main>
         {/* Products Grid */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-8xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {paginatedProducts.map((product) => {
               const version = product.versions?.[0];
@@ -321,9 +321,9 @@ if (!error && noResults && hasFilters) {
                   )}
 
                   {/* Installment Badge */}
-                  <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-lg">
-                    Trả góp 0%
-                  </div>
+                      {/* <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-lg">
+                        Trả góp 0%
+                      </div> */}
 
                   {/* Image Container */}
                   <button
@@ -377,7 +377,7 @@ if (!error && noResults && hasFilters) {
                     </div>
 
                     {/* Smember Promotion */}
-                    {product.discount > 0 && (
+                      {product.discount > 0 && (
                       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 text-xs px-3 py-2 rounded-lg mb-3 border border-cyan-200 font-medium">
                         Smember giảm đến {Math.round(product.price * 0.01)}.000đ
                       </div>

@@ -77,12 +77,12 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
             // Thêm range conditions cho price (exportPrice)
             "AND (:minExportPrice IS NULL OR pv.exportPrice >= :minExportPrice)" +
             "AND (:maxExportPrice IS NULL OR pv.exportPrice <= :maxExportPrice)" +
-            // Thêm range cho battery (extract số từ String "3500 mAh" → CAST(SUBSTRING(p.battery, 1, LOCATE(' ', p.battery)-1) AS INTEGER))
-            "AND (:minBattery IS NULL OR CAST(SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) AS INTEGER) >= :minBattery)" +
-            "AND (:maxBattery IS NULL OR CAST(SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) AS INTEGER) <= :maxBattery)" +
-            // Thêm range cho screenSize (extract số từ "6.2 inch" → CAST(REPLACE(SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1), '.', '.') AS DOUBLE) – adjust nếu cần
-            "AND (:minScreenSize IS NULL OR CAST(REPLACE(SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1), ',', '.') AS DOUBLE) >= :minScreenSize)" +
-            "AND (:maxScreenSize IS NULL OR CAST(REPLACE(SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1), ',', '.') AS DOUBLE) <= :maxScreenSize)" +
+            // Thêm range cho battery (extract số từ String "3500 mAh" hoặc "3200mAh" → CAST với xử lý cả 2 trường hợp
+            "AND (:minBattery IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) WHEN LOCATE('mAh', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE('mAh', p.battery) - 1) ELSE p.battery END, ',', '') AS INTEGER) >= :minBattery)" +
+            "AND (:maxBattery IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) WHEN LOCATE('mAh', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE('mAh', p.battery) - 1) ELSE p.battery END, ',', '') AS INTEGER) <= :maxBattery)" +
+            // Thêm range cho screenSize (extract số từ "6.2 inch" hoặc "6.2" → CAST với xử lý cả 2 trường hợp
+            "AND (:minScreenSize IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.screenSize) > 0 THEN SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1) ELSE p.screenSize END, ',', '.') AS DOUBLE) >= :minScreenSize)" +
+            "AND (:maxScreenSize IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.screenSize) > 0 THEN SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1) ELSE p.screenSize END, ',', '.') AS DOUBLE) <= :maxScreenSize)" +
             "ORDER BY p.idProduct DESC ")
     Page<ProductVersion> findProductVersionsWithCombinedFilters(
             // Params cũ giữ nguyên

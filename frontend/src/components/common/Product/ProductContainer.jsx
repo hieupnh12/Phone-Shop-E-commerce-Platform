@@ -93,7 +93,7 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
   { label: 'Samsung', value: 'Samsung', logo: '../image/samsung-swoop-svgrepo-com.svg' },
   { label: 'Xiaomi', value: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
   { label: 'OPPO', value: 'OPPO', logo: '../image/oppo-seeklogo.svg' },
-  { label: 'iPhone', value: 'iPhone', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/APPLE_IPHONE_LOGO.svg' },
+  { label: 'Apple', value: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
   { label: 'Sony', value: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
   { label: 'Google', value: 'Google', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' }
 ],
