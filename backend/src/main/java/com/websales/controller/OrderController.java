@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -66,7 +67,23 @@ public class OrderController {
     @PutMapping("/{orderId}/status")
     public ApiResponse<OrderResponse> updateOrderStatus(
             @PathVariable Integer orderId,
-            @RequestBody OrderStatus status) {
+            @RequestBody Map<String, String> request) {
+        String statusStr = request.get("status");
+        if (statusStr == null) {
+            return ApiResponse.<OrderResponse>builder()
+                    .code(400)
+                    .message("Status is required")
+                    .build();
+        }
+        OrderStatus status;
+        try {
+            status = OrderStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.<OrderResponse>builder()
+                    .code(400)
+                    .message("Invalid status: " + statusStr)
+                    .build();
+        }
         Optional<Order> orderOpt = orderService.updateOrderStatus(orderId, status);
         if (orderOpt.isPresent()) {
             return ApiResponse.<OrderResponse>builder()

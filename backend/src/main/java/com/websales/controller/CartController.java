@@ -105,13 +105,17 @@ public class CartController {
                             ? pv.getImage()
                             : (product.getImage() != null ? product.getImage() : "");
 
+                    // Lấy số lượng tồn kho
+                    Integer stockQuantity = pv.getStockQuantity() != null ? pv.getStockQuantity() : 0;
+
                     CartItemResponse resp = new CartItemResponse(
                             pv.getIdVersion(), // product_version_id
                             product.getIdProduct(),
                             product.getNameProduct(),
                             image,
                             price,
-                            qty);
+                            qty,
+                            stockQuantity);
                     cartItemsResp.add(resp);
                     grandTotal += price * qty;
                 }
@@ -384,6 +388,46 @@ public class CartController {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", "Cart is empty"));
+        }
+
+        // Kiểm tra số lượng tồn kho trước khi thanh toán
+        List<String> outOfStockMessages = new ArrayList<>();
+        for (CartItem item : cart.getCartItems()) {
+            if (item.getStatus() == null || !item.getStatus()) {
+                continue; // Bỏ qua items không active
+            }
+            
+            ProductVersion pv = item.getProductVersion();
+            if (pv == null) {
+                continue;
+            }
+            
+            Integer cartQuantity = item.getQuantity() != null ? item.getQuantity() : 1;
+            Integer stockQuantity = pv.getStockQuantity() != null ? pv.getStockQuantity() : 0;
+            
+            // Kiểm tra nếu số lượng trong giỏ hàng lớn hơn số lượng tồn kho
+            if (cartQuantity > stockQuantity) {
+                // Lấy tên sản phẩm
+                String productName = "Sản phẩm";
+                if (pv.getProduct() != null && pv.getProduct().getNameProduct() != null) {
+                    productName = pv.getProduct().getNameProduct();
+                }
+                
+                String message = String.format(
+                    "Sản phẩm '%s' không đủ hàng. Số lượng trong giỏ: %d, Số lượng tồn kho: %d",
+                    productName, cartQuantity, stockQuantity
+                );
+                outOfStockMessages.add(message);
+            }
+        }
+        
+        // Nếu có sản phẩm hết hàng, trả về lỗi với thông báo chi tiết
+        if (!outOfStockMessages.isEmpty()) {
+            String errorMessage = "Không thể đặt hàng. " + String.join("; ", outOfStockMessages);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", errorMessage,
+                    "outOfStockItems", outOfStockMessages));
         }
 
         // Lấy total amount từ orderData hoặc tính từ cart

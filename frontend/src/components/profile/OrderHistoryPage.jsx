@@ -15,6 +15,7 @@ const OrderHistoryPage = () => {
     const orderTabs = [
         { id: 'all', label: t('common.all') },
         { id: 'pending', label: t('profile.processing') },
+        { id: 'paid', label: t('orders.paid') || 'Đã thanh toán' },
         { id: 'shipping', label: t('profile.shipping') },
         { id: 'delivered', label: t('profile.delivered') },
         { id: 'cancelled', label: t('profile.cancelled') },
@@ -69,7 +70,7 @@ const OrderHistoryPage = () => {
                     id: `#${orderId}`,
                     orderId: orderId,
                     date: new Date(createDatetime).toLocaleDateString('vi-VN'),
-                    status: status.toLowerCase(),
+                    status: status || 'PENDING', // Giữ nguyên status từ API (uppercase)
                     totalAmount: totalAmount,
                     createDatetime: new Date(createDatetime), // Lưu trữ Date object để sắp xếp
                     endDateTime: endDateTime ? new Date(endDateTime) : null,
@@ -92,23 +93,49 @@ const OrderHistoryPage = () => {
     };
 
     const getStatusDisplay = (status) => {
-        switch (status) {
-            case 'delivered':
-                return <span className="text-green-600 bg-green-100 px-3 py-1 rounded-full text-xs font-medium">Đã giao hàng</span>;
-            case 'cancelled':
-                return <span className="text-red-600 bg-red-100 px-3 py-1 rounded-full text-xs font-medium">Đã hủy</span>;
-            case 'shipping':
-                return <span className="text-blue-600 bg-blue-100 px-3 py-1 rounded-full text-xs font-medium">Đang vận chuyển</span>;
-            case 'pending':
-                return <span className="text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full text-xs font-medium">Đang xử lý</span>;
-            default:
-                return <span className="text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">Trả hàng</span>;
-        }
+        // Normalize status to uppercase để so sánh với enum OrderStatus
+        const normalizedStatus = (status || '').toUpperCase();
+        
+        // Map các giá trị có thể có
+        const statusMap = {
+            'PENDING': { label: 'Đang xử lý', className: 'text-yellow-600 bg-yellow-100' },
+            'PAID': { label: 'Đã thanh toán', className: 'text-blue-600 bg-blue-100' },
+            'SHIPPED': { label: 'Đang vận chuyển', className: 'text-blue-600 bg-blue-100' },
+            'SHIPPING': { label: 'Đang vận chuyển', className: 'text-blue-600 bg-blue-100' },
+            'DELIVERED': { label: 'Đã giao hàng', className: 'text-green-600 bg-green-100' },
+            'CANCELED': { label: 'Đã hủy', className: 'text-red-600 bg-red-100' },
+            'CANCELLED': { label: 'Đã hủy', className: 'text-red-600 bg-red-100' },
+            'RETURNED': { label: 'Hoàn trả', className: 'text-gray-600 bg-gray-100' },
+        };
+        
+        const statusInfo = statusMap[normalizedStatus] || { label: 'Đang xử lý', className: 'text-yellow-600 bg-yellow-100' };
+        
+        return (
+            <span className={`${statusInfo.className} px-3 py-1 rounded-full text-xs font-medium`}>
+                {statusInfo.label}
+            </span>
+        );
     };
 
     const filteredOrders = orders.filter(order => {
-        // 2. Lọc theo Tab (Sử dụng order.status từ API)
-        if (activeTab !== 'all' && order.status !== activeTab) return false;
+        // 2. Lọc theo Tab (So sánh với status lowercase)
+        if (activeTab !== 'all') {
+            const orderStatusLower = (order.status || '').toLowerCase();
+            // Map tab id với status
+            const tabStatusMap = {
+                'pending': ['pending'],
+                'paid': ['paid'],
+                'shipping': ['shipped', 'shipping'],
+                'delivered': ['delivered'],
+                'cancelled': ['canceled', 'cancelled'],
+                'returned': ['returned']
+            };
+            
+            const allowedStatuses = tabStatusMap[activeTab] || [];
+            if (!allowedStatuses.some(s => orderStatusLower === s)) {
+                return false;
+            }
+        }
 
         // 3. Lọc theo SearchTerm
         if (searchTerm === '') return true;
