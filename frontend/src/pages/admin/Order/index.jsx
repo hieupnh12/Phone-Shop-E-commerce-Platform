@@ -96,7 +96,16 @@ export default function Orders() {
       }
     } catch (err) {
       console.error("Fetch orders failed:", err);
-      showToast("Không thể tải danh sách đơn hàng!", "error");
+      // Hiển thị message từ backend nếu có, nếu không thì dùng message mặc định
+      const errorMessage = err?.message || err?.response?.data?.message || "Không thể tải danh sách đơn hàng!";
+      showToast(errorMessage, "error");
+      
+      // Nếu là lỗi 403, set orders về empty array
+      if (err?.response?.status === 403) {
+        setOrders([]);
+        setTotalPages(0);
+        setTotalElements(0);
+      }
     } finally {
       if (showLoading) {
         setLoadingOrders(false);

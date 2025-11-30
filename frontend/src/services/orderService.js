@@ -29,13 +29,29 @@ const parseProductResponse = (response) => {
 const orderService = {
     // --- Lấy tất cả đơn hàng với pagination ---
     getAll: async (page = 0, size = 20, sort = "createDatetime,desc") => {
-        const params = new URLSearchParams({
-            page: page.toString(),
-            size: size.toString(),
-            sort: sort
-        });
-        const res = await axiosClient.get(`/orders?${params.toString()}`);
-        return res || { result: { content: [], totalElements: 0, totalPages: 0 } };
+        try {
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: size.toString(),
+                sort: sort
+            });
+            const res = await axiosClient.get(`/orders?${params.toString()}`);
+            return res || { result: { content: [], totalElements: 0, totalPages: 0 } };
+        } catch (error) {
+            console.error("Get all orders error:", error);
+            // Nếu là lỗi 403 (Forbidden), throw error với message từ backend
+            if (error.response?.status === 403) {
+                const errorMessage = error.response?.data?.message || "Bạn không có quyền xem đơn hàng";
+                throw new Error(errorMessage);
+            }
+            // Nếu là lỗi khác, throw error với message từ backend hoặc message mặc định
+            const errorMessage = 
+                error.response?.data?.message ||
+                error.response?.message ||
+                error.message ||
+                "Không thể tải danh sách đơn hàng";
+            throw new Error(errorMessage);
+        }
     },
 
     // --- Lấy chi tiết đơn ---
