@@ -24,6 +24,7 @@ const ProductsContainer = () => {
   const [rom, setRom] = useState('');
   const [screenSize, setScreenSize] = useState('all');
   const [refreshRate, setRefreshRate] = useState('');
+  const [sortOrder, setSortOrder] = useState('none');
   const [totalCount, setTotalCount] = useState(0);
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
@@ -135,6 +136,7 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
     setRom('');
     setScreenSize('all');
     setRefreshRate('');
+    setSortOrder('none');
   };
 
   const handleProductsCountChange = (count) => {
@@ -201,7 +203,7 @@ useEffect(() => {
 
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className=" mx-auto px-4 sm:px-6 lg:px-8 width-full">
       <div className="flex gap-6">
         {/* ProductFilter */}
         <ProductFilter
@@ -269,6 +271,11 @@ useEffect(() => {
           }}
           minRating={minRating}
           onMinRatingChange={handleRatingChange}
+          sortOrder={sortOrder}
+          onSortOrderChange={(value) => {
+            console.log('[ProductFilter] sortOrder ->', value);
+            setSortOrder(value);
+          }}
           onResetFilters={() => {
             console.log('[ProductFilter] reset invoked');
             handleResetFilters();
@@ -289,6 +296,7 @@ useEffect(() => {
           {/* Render ProductListAll */}
           <ProductListAll
             filters={filters}
+            sortOrder={sortOrder}
             favorites={favorites}
             onAddToCart={handleAddToCart}
             onFavorite={handleFavorite}

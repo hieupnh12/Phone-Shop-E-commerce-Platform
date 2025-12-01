@@ -84,7 +84,10 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
       if (!productId) return;
       setLoadingStats(true);
       try {
-        const stats = await feedbackService.getRatingStats(productId);
+        const response = await feedbackService.getRatingStats(productId);
+        // Handle both direct response and nested response.data
+        const stats = response?.data || response?.result || response;
+        console.log("Rating stats received:", stats);
         setRatingStats(stats);
       } catch (error) {
         console.error("Error loading rating stats:", error);
@@ -130,17 +133,37 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
     checkPermission();
   }, [user, productId]);
 
-  // Tính toán rating distribution từ stats
-  const ratingDistribution = ratingStats ? [
-    { stars: 5, count: ratingStats.five_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.five_star_count || 0) / ratingStats.total_reviews : 0 },
-    { stars: 4, count: ratingStats.four_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.four_star_count || 0) / ratingStats.total_reviews : 0 },
-    { stars: 3, count: ratingStats.three_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.three_star_count || 0) / ratingStats.total_reviews : 0 },
-    { stars: 2, count: ratingStats.two_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.two_star_count || 0) / ratingStats.total_reviews : 0 },
-    { stars: 1, count: ratingStats.one_star_count || 0, percentage: ratingStats.total_reviews > 0 ? (ratingStats.one_star_count || 0) / ratingStats.total_reviews : 0 },
-  ] : [];
+  // Tính toán rating distribution từ stats - Luôn hiển thị 5 mức sao, kể cả khi chưa có đánh giá
+  const totalReviews = ratingStats?.total_reviews || ratingStats?.totalReviews || 0;
+  const ratingDistribution = [
+    { 
+      stars: 5, 
+      count: ratingStats?.five_star_count || ratingStats?.fiveStarCount || 0, 
+      percentage: totalReviews > 0 ? ((ratingStats?.five_star_count || ratingStats?.fiveStarCount || 0) / totalReviews) : 0 
+    },
+    { 
+      stars: 4, 
+      count: ratingStats?.four_star_count || ratingStats?.fourStarCount || 0, 
+      percentage: totalReviews > 0 ? ((ratingStats?.four_star_count || ratingStats?.fourStarCount || 0) / totalReviews) : 0 
+    },
+    { 
+      stars: 3, 
+      count: ratingStats?.three_star_count || ratingStats?.threeStarCount || 0, 
+      percentage: totalReviews > 0 ? ((ratingStats?.three_star_count || ratingStats?.threeStarCount || 0) / totalReviews) : 0 
+    },
+    { 
+      stars: 2, 
+      count: ratingStats?.two_star_count || ratingStats?.twoStarCount || 0, 
+      percentage: totalReviews > 0 ? ((ratingStats?.two_star_count || ratingStats?.twoStarCount || 0) / totalReviews) : 0 
+    },
+    { 
+      stars: 1, 
+      count: ratingStats?.one_star_count || ratingStats?.oneStarCount || 0, 
+      percentage: totalReviews > 0 ? ((ratingStats?.one_star_count || ratingStats?.oneStarCount || 0) / totalReviews) : 0 
+    },
+  ];
 
-  const averageRating = ratingStats?.average_rating || 0;
-  const totalReviews = ratingStats?.total_reviews || 0;
+  const averageRating = ratingStats?.average_rating || ratingStats?.averageRating || 0;
 
   // Handle submit feedback
   const handleSubmit = async () => {
@@ -270,7 +293,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
             </div>
           </div>
 
-          {/* Rating Distribution Block */}
+          {/* Rating Distribution Block - Luôn hiển thị, kể cả khi chưa có đánh giá */}
           <div className="w-full lg:w-3/5">
             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <h3 className="text-sm font-bold text-gray-800 mb-2.5">
@@ -288,6 +311,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                         className="bg-gradient-to-r from-red-500 to-orange-500 h-2 rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.round(item.percentage * 100)}%`,
+                          minWidth: item.percentage > 0 ? '2px' : '0px'
                         }}
                       ></div>
                     </div>

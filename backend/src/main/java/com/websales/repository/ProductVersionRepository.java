@@ -69,8 +69,7 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
             "AND (:warrantyPeriod IS NULL OR p.warrantyPeriod = :warrantyPeriod)" +
 //        "AND (:stockQuantity IS NULL OR p.stockQuantity = :stockQuantity OR pv.stockQuantity = :stockQuantity)" +
 //        "AND (:status IS NULL OR p.status = :status OR pv.status = :status)" +
-            "AND (:romName IS NULL OR LOWER(r.nameRom) LIKE LOWER(CONCAT('%', :romName, '%')))" +
-            "AND (:ramName IS NULL OR LOWER(ra.nameRam) LIKE LOWER(CONCAT('%', :ramName, '%')))" +
+            "AND (:romName IS NULL OR r.nameRom LIKE CONCAT(:romName, 'GB') OR r.nameRom LIKE CONCAT(:romName, ' GB'))" +            "AND (:ramName IS NULL OR LOWER(ra.nameRam) LIKE LOWER(CONCAT('%', :ramName, '%')))" +
             "AND (:colorName IS NULL OR LOWER(col.nameColor) LIKE LOWER(CONCAT('%', :colorName, '%')))" +
             "AND (:importPrice IS NULL OR pv.importPrice = :importPrice)" +
             "AND (:exportPrice IS NULL OR pv.exportPrice = :exportPrice)" +
