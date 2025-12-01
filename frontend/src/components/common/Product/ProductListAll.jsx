@@ -3,6 +3,7 @@ import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProductAll, fetchSearchAll } from '../../../services/productWorker';
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from '../../../contexts/LanguageContext';
+import feedbackService from '../../../services/feedbackService';
 
 const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProducts thay fetch thủ công
   const { t } = useLanguage();
@@ -12,6 +13,9 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [favorites, setFavorites] = useState(new Set());
+  const [noResults, setNoResults] = useState(false); // Không tìm thấy sản phẩm
+  const [productRatings, setProductRatings] = useState({}); // Map productId -> rating
+
   const navigate = useNavigate();
   const PAGE_SIZE = 8;
 
@@ -51,6 +55,21 @@ const loadAllProducts = async () => {
     const count = data.total || list.length;
     setTotalCount(count);
     props.onProductsCountChange?.(count);
+
+    // Fetch ratings cho tất cả products
+    const ratingsMap = {};
+    const ratingPromises = list.map(async (product) => {
+      try {
+        const ratingData = await feedbackService.getAverageRating(product.id);
+        const rating = typeof ratingData === 'number' ? ratingData : (ratingData?.average_rating || ratingData?.rating || 0);
+        ratingsMap[product.id] = rating;
+      } catch (err) {
+        console.warn(`Không thể tải rating cho product ${product.id}:`, err);
+        ratingsMap[product.id] = 0;
+      }
+    });
+    await Promise.all(ratingPromises);
+    setProductRatings(ratingsMap);
   } catch (error) {
     console.error('Lỗi tải danh sách sản phẩm:', error);
     setError(t('common.loadingProductsError'));
@@ -91,38 +110,54 @@ if (!hasFilters) {
     return;
   }
 
-  const runSearch = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const searchData = await fetchSearchAll(normalizedFilters, 0, 200);
-      // 👇 FIX: Sử dụng searchData.products thay vì .versions (vì fetchSearchAll giờ return products enriched)
-      // Không cần matchedNames nữa, vì search đã filter và enrich sẵn
-      const matches = searchData.products || [];
+ const runSearch = async () => {
+  setLoading(true);
+  setError(null);
+  setNoResults(false); // reset trạng thái
+  try {
+    const searchData = await fetchSearchAll(normalizedFilters, 0, 200);
+    const matches = searchData.products || [];
 
-      setFilteredProducts(matches);
-      const count = matches.length;
-      setTotalCount(count);  // Hoặc searchData.total * searchData.size nếu cần total pages, nhưng với size=200 lớn, length ≈ total
-      props.onProductsCountChange?.(count);
-      if (!count) {
-        setError('Không tìm thấy sản phẩm phù hợp.');
-      } else {
-        setError(null);
+    setFilteredProducts(matches);
+    const count = matches.length;
+    setTotalCount(count);
+    props.onProductsCountChange?.(count);
+
+    // Fetch ratings cho các products tìm được
+    const ratingsMap = {};
+    const ratingPromises = matches.map(async (product) => {
+      try {
+        const ratingData = await feedbackService.getAverageRating(product.id);
+        const rating = typeof ratingData === 'number' ? ratingData : (ratingData?.average_rating || ratingData?.rating || 0);
+        ratingsMap[product.id] = rating;
+      } catch (err) {
+        console.warn(`Không thể tải rating cho product ${product.id}:`, err);
+        ratingsMap[product.id] = 0;
       }
-    } catch (error) {
-      console.error('Lỗi tìm kiếm sản phẩm:', error);
-      setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
-      setFilteredProducts([]);
-      setTotalCount(0);
-      props.onProductsCountChange?.(0);
-    } finally {
-      setLoading(false);
+    });
+    await Promise.all(ratingPromises);
+    setProductRatings(prev => ({ ...prev, ...ratingsMap }));
+
+    if (!count) {
+      setNoResults(true); // set trạng thái không tìm thấy
     }
-  };
+  } catch (err) {
+    console.error('Lỗi tìm kiếm sản phẩm:', err);
+    setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
+    setFilteredProducts([]);
+    setTotalCount(0);
+    props.onProductsCountChange?.(0);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   runSearch();
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [filtersKey, allProducts]);
+
+
 // useEffect(() => {
 //   // Fetch the total count asynchronously on mount (or when dependencies change, if any)
 //   const loadTotalCount = async () => {
@@ -210,27 +245,37 @@ if (!hasFilters) {
     );
   }
 
-  if (error && !filteredProducts.length) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 text-lg mb-4">{error}</p>
-          <button 
-            onClick={() => {
-              if (Object.keys(normalizedFilters).length > 0) {
-                setFilteredProducts([]);
-                setCurrentPage(0);
-              }
-              loadAllProducts();
-            }}
-            className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
-          >
-            Thử lại
-          </button>
-        </div>
+ // 1️⃣ Lỗi thật
+if (error) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+      <div className="text-center">
+        <p className="text-red-400 text-lg mb-4">{error}</p>
+        <button
+          onClick={loadAllProducts}
+          className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
+        >
+          Thử lại
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+// ← FIX: Thêm điều kiện hasFilters để chỉ show noResults khi đang filter (tránh dính khi reset)
+if (!error && noResults && hasFilters) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+      <div className="text-center">
+        <p className="text-yellow-400 text-lg mb-4">
+          Không tìm thấy sản phẩm phù hợp với bộ lọc
+        </p>
+        {/* Không có nút Thử lại */}
+      </div>
+    </div>
+  );
+}
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
@@ -347,7 +392,11 @@ if (!hasFilters) {
                     <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-semibold text-gray-800 text-sm">{product.rating || 5}</span>
+                        <span className="font-semibold text-gray-800 text-sm">
+                          {productRatings[product.id] !== undefined 
+                            ? productRatings[product.id].toFixed(1) 
+                            : (product.rating || '0.0')}
+                        </span>
                       </div>
                       <button 
                         onClick={() => toggleFavorite(product.id)}

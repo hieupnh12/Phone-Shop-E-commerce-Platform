@@ -54,7 +54,9 @@ public class StatisticService {
         // 2. Chart Data (có rangeType)
         List<Object[]> chartRows = statisticRepository.getChartData(
                 req.startDate(),
-                req.endDate()
+                req.endDate(),
+                req.search(),
+                req.rangeType()
         );
 
         List<RevenueStatisticResponse.ChartData> chartData = chartRows.stream()
@@ -260,8 +262,19 @@ public class StatisticService {
                 ((Number) topArr[2]).longValue()
         );
 
+        LocalDate today = LocalDate.now();
+        LocalDate thirtyDaysAgo = today.minusDays(30);
+
+// Kiểm tra nếu from/to rỗng thì gán mặc định
+        String fromDate = (from == null || from.isEmpty())
+                ? thirtyDaysAgo.atStartOfDay().toString()
+                : from;
+        String toDate = (to == null || to.isEmpty())
+                ? today.atStartOfDay().toString()
+                : to;
+
         // Top 10 sản phẩm
-        List<StatisticProductResponse.ProductInfoDTO> topProducts = summaryCardRepository.getTopProducts(from, to).stream().map(o -> {
+        List<StatisticProductResponse.ProductInfoDTO> topProducts = summaryCardRepository.getTopProducts(fromDate, toDate).stream().map(o -> {
             Object[] arr = (Object[]) o;
             return new StatisticProductResponse.ProductInfoDTO(
                     (String) arr[0],

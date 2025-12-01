@@ -7,7 +7,7 @@ export default function SummaryCards({dataCard, isLoadingCard, errorCard}) {
     return <Loading type='dots'/>
   }
   const cards = [
-    { title: "Doanh Thu Tuần này", value: dataCard?.revenue.value, icon: DollarSign, color: 'bg-blue-500', change: dataCard?.revenue.change },
+    { title: "Doanh Thu Tuần này", value: `${Number(dataCard?.revenue.value || 0).toLocaleString("vi-VN")} đ`, icon: DollarSign, color: 'bg-blue-500', change: dataCard?.revenue.change },
     { title: 'Sản Phẩm Tuần', value: `${dataCard?.topProduct.value}`, icon: TrendingUp, color: 'bg-purple-500', change: dataCard?.topProduct.change },
     { title: 'Lợi nhuận tuần', value: `${Number(dataCard?.profit?.value || 0).toLocaleString("vi-VN")} đ`, icon: DollarSign, color: 'bg-pink-500', textColor: 'text-red-500', change: dataCard?.profit.change },
     { title: 'Đặt Hàng Tuần', value: dataCard?.orderCount.value, icon: ShoppingCart, color: 'bg-orange-500', change: dataCard?.orderCount.change },
