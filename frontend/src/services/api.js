@@ -252,4 +252,58 @@ export const profileService = {
           .get(`/customer/order_detail/${orderId}`)
           .then(res => res.data.result),
 };
+
+export const warrantyRequestService = {
+  // Create warranty/return request
+  createRequest: (requestData) =>
+      api
+          .post('/return-warranty-requests', requestData)
+          .then(res => res.data),
+
+  // Get my warranty requests (for customer)
+  getMyRequests: () =>
+      api
+          .get('/return-warranty-requests/me')
+          .then(res => res.data.result || res.data),
+
+  // Get all requests (for employee/admin)
+  getAllRequests: (page = 0, size = 20, sort = 'requestId,desc', status = null) => {
+      const params = new URLSearchParams({
+          page: page.toString(),
+          size: size.toString(),
+          sort: sort
+      });
+      // Chỉ thêm status vào params nếu nó có giá trị và không phải empty string
+      if (status && status.trim() !== '') {
+          params.append('status', status);
+      }
+      return api
+          .get(`/return-warranty-requests?${params.toString()}`)
+          .then(res => {
+              console.log('Warranty requests API response:', res.data);
+              console.log('Response result:', res.data?.result);
+              // Backend trả về ApiResponse<Page<ReturnWarrantyRequestResponse>>
+              // Structure: { code, message, result: Page }
+              return res.data.result || res.data;
+          })
+          .catch(err => {
+              console.error('Warranty requests API error:', err);
+              console.error('Error response:', err.response?.data);
+              throw err;
+          });
+  },
+
+  // Get request by ID
+  getRequestById: (requestId) =>
+      api
+          .get(`/return-warranty-requests/${requestId}`)
+          .then(res => res.data.result || res.data),
+
+  // Update request status (for employee/admin)
+  updateRequestStatus: (requestId, updateData) =>
+      api
+          .put(`/return-warranty-requests/${requestId}/status`, updateData)
+          .then(res => res.data.result || res.data),
+};
+
 export default api;

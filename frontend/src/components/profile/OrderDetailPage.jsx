@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {useParams, Link, useOutletContext, useLocation, useNavigate} from 'react-router-dom';
-import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart, XCircle, Shield } from 'lucide-react';
 import {useAuthFullOptions} from "../../contexts/AuthContext";
 import { profileService, orderService } from "../../services/api";
 import api from "../../services/api";
@@ -8,6 +8,7 @@ import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
 import { formatPhoneNumber } from "../../utils/phoneUtils";
+import WarrantyRequestModal from "../common/WarrantyRequestModal";
 
 
 
@@ -22,6 +23,7 @@ const OrderDetailPage = () => {
     const [isCancelling, setIsCancelling] = useState(false);
     const [toast, setToast] = useState(null);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [warrantyModal, setWarrantyModal] = useState({ isOpen: false, product: null });
     const { getCurrentUser } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
 
@@ -238,22 +240,17 @@ const OrderDetailPage = () => {
         }
     };
 
-    // Kiểm tra xem đơn hàng có thể hủy không
-    const canCancelOrder = () => {
-        if (!orderData) return false;
+    // Helper function to normalize status
+    const getNormalizedStatus = () => {
+        if (!orderData) return '';
         
-        // Lấy status từ nhiều nguồn để đảm bảo chính xác
-        // Ưu tiên: location.state > orderData (nếu có raw status) > orderData.status (text tiếng Việt)
         const statusFromState = location.state?.status;
         const statusFromData = orderData.status;
         
-        // Normalize status về uppercase để so sánh chính xác
         let statusNormalized = '';
         if (statusFromState) {
-            // Status từ state thường là uppercase từ API (PENDING, PAID, SHIPPED, DELIVERED, etc.)
             statusNormalized = (statusFromState || '').toUpperCase();
         } else if (statusFromData) {
-            // Nếu status là text tiếng Việt, cần map lại
             const statusText = (statusFromData || '').toLowerCase();
             const statusMap = {
                 'đang xử lý': 'PENDING',
@@ -266,6 +263,13 @@ const OrderDetailPage = () => {
             statusNormalized = statusMap[statusText] || statusText.toUpperCase();
         }
         
+        return statusNormalized;
+    };
+
+    // Kiểm tra xem đơn hàng có thể hủy không
+    const canCancelOrder = () => {
+        const statusNormalized = getNormalizedStatus();
+        
         // Không thể hủy nếu status là SHIPPED, DELIVERED, CANCELED, CANCELLED, hoặc RETURNED
         const nonCancellableStatuses = ['SHIPPED', 'DELIVERED', 'CANCELED', 'CANCELLED', 'RETURNED'];
         if (statusNormalized && nonCancellableStatuses.includes(statusNormalized)) {
@@ -274,6 +278,34 @@ const OrderDetailPage = () => {
         
         // Có thể hủy nếu đơn hàng ở trạng thái: PENDING, PAID (nhưng chưa SHIPPED)
         return statusNormalized === 'PENDING' || statusNormalized === 'PAID';
+    };
+
+    // Kiểm tra xem đơn hàng đã được giao chưa (để hiển thị nút bảo hành)
+    const isOrderDelivered = () => {
+        const statusNormalized = getNormalizedStatus();
+        return statusNormalized === 'DELIVERED';
+    };
+
+    // Mở modal bảo hành
+    const handleOpenWarrantyModal = (product) => {
+        setWarrantyModal({
+            isOpen: true,
+            product: product
+        });
+    };
+
+    // Đóng modal bảo hành
+    const handleCloseWarrantyModal = (success = false) => {
+        setWarrantyModal({
+            isOpen: false,
+            product: null
+        });
+        if (success) {
+            setToast({
+                type: 'success',
+                message: 'Yêu cầu bảo hành/đổi trả đã được gửi thành công!'
+            });
+        }
     };
 
     // Hàm xử lý mua lại sản phẩm
@@ -652,14 +684,25 @@ const OrderDetailPage = () => {
                             </div>
                             <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
                                 <p className="text-sm text-gray-600">Số lượng: {product.quantity}</p>
-                                {product.canRepurchase && (
-                                    <button 
-                                        onClick={() => handleRepurchase(product)}
-                                        className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                                    >
-                                        Mua lại
-                                    </button>
-                                )}
+                                <div className="flex gap-2">
+                                    {isOrderDelivered() && product.productVersionId && (
+                                        <button 
+                                            onClick={() => handleOpenWarrantyModal(product)}
+                                            className="flex items-center gap-1 bg-blue-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                        >
+                                            <Shield size={14} />
+                                            Bảo hành
+                                        </button>
+                                    )}
+                                    {product.canRepurchase && (
+                                        <button 
+                                            onClick={() => handleRepurchase(product)}
+                                            className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                        >
+                                            Mua lại
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -741,6 +784,17 @@ const OrderDetailPage = () => {
                     message={toast.message}
                     type={toast.type}
                     onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Warranty Request Modal */}
+            {warrantyModal.isOpen && warrantyModal.product && (
+                <WarrantyRequestModal
+                    isOpen={warrantyModal.isOpen}
+                    onClose={handleCloseWarrantyModal}
+                    orderId={parseInt(orderId)}
+                    productVersionId={warrantyModal.product.productVersionId}
+                    productName={warrantyModal.product.name}
                 />
             )}
         </div>

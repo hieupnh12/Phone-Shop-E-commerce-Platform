@@ -1,6 +1,6 @@
 // file OrderHistoryPage
 import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Calendar, ChevronRight } from 'lucide-react';
+import { Search, Calendar, ChevronRight, Shield } from 'lucide-react';
 import {profileService} from "../../services/api"
 import { Link, useOutletContext } from 'react-router-dom';
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -259,19 +259,37 @@ const OrderHistoryPage = () => {
                                     <div className="text-right">
                                         <p className="text-red-500 font-bold text-lg">{formatCurrency(order.totalAmount)}</p>
 
-                                        <Link
-                                            to={`/user/profile/order/order-detail/${order.orderId}`}
-                                            state={{
-                                                totalAmount: order.totalAmount,
-                                                createDatetime: order.createDatetime,
-                                                endDateTime: order.endDateTime,
-                                                status: order.status
-                                            }}
-                                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center mt-1"
-                                        >
-                                            Xem chi tiết
-                                            <ChevronRight size={14} className="ml-1"/>
-                                        </Link>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <Link
+                                                to={`/user/profile/order/order-detail/${order.orderId}`}
+                                                state={{
+                                                    totalAmount: order.totalAmount,
+                                                    createDatetime: order.createDatetime,
+                                                    endDateTime: order.endDateTime,
+                                                    status: order.status
+                                                }}
+                                                className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                                            >
+                                                Xem chi tiết
+                                                <ChevronRight size={14} className="ml-1"/>
+                                            </Link>
+                                            {/* Hiển thị nút bảo hành cho đơn hàng đã giao */}
+                                            {(order.status === 'DELIVERED' || order.status === 'delivered') && (
+                                                <Link
+                                                    to={`/user/profile/order/order-detail/${order.orderId}`}
+                                                    state={{
+                                                        totalAmount: order.totalAmount,
+                                                        createDatetime: order.createDatetime,
+                                                        endDateTime: order.endDateTime,
+                                                        status: order.status
+                                                    }}
+                                                    className="flex items-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                                                >
+                                                    <Shield size={14} />
+                                                    Bảo hành
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
