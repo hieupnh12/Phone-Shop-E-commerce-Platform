@@ -256,6 +256,10 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
     );
 
 
-    @Query("SELECT p FROM ProductVersion p WHERE p.stockQuantity <= :threshold")
+    @Query("SELECT p FROM ProductVersion p " +
+           "LEFT JOIN FETCH p.ram " +
+           "LEFT JOIN FETCH p.rom " +
+           "LEFT JOIN FETCH p.color " +
+           "WHERE p.stockQuantity <= :threshold")
     List<ProductVersion> findLowStockProducts(@Param("threshold") Integer threshold);
 }
