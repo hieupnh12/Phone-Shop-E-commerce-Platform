@@ -1,7 +1,18 @@
-import React, { useState, useContext } from "react";
-import { Mail, Lock, Eye, EyeOff, Smartphone, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { AuthContext } from "../../contexts/AuthContext";
+import React, { useState, useContext, useEffect } from "react";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Smartphone,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { AuthContext, getUserRole } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import constants from "../../constants/index.js";
 import Toast from "../../components/common/Toast";
 import api from "../../services/api";
 
@@ -17,6 +28,18 @@ const AdminLogin = () => {
   const [isSendingReset, setIsSendingReset] = useState(false);
   const { loading, loginEmployee } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Check if user is already logged in and redirect
+  useEffect(() => {
+    const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
+    if (token) {
+      const role = getUserRole();
+      // If has employee role, redirect to admin
+      if (role && role.startsWith("ROLE_")) {
+        navigate("/admin", { replace: true });
+      }
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -51,7 +74,7 @@ const AdminLogin = () => {
       navigate("/admin");
     } catch (err) {
       console.log(err);
-      
+
       setToast({
         message: `Đăng nhập không thành công. ${err?.response?.data.message} ${err?.message}`,
         type: "error",
@@ -84,16 +107,21 @@ const AdminLogin = () => {
       const response = await api.post("/employee/forgot", {
         email: forgotPasswordEmail.trim(),
       });
-      
+
       setToast({
-        message: response.data?.message || "Email khôi phục đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
+        message:
+          response.data?.message ||
+          "Email khôi phục đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
         type: "success",
       });
       setShowForgotPassword(false);
       setForgotPasswordEmail("");
     } catch (err) {
       console.error("Lỗi gửi email đặt lại mật khẩu:", err);
-      const errorMessage = err?.response?.data?.message || err?.message || "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.";
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.";
       setToast({
         message: errorMessage,
         type: "error",
@@ -197,9 +225,11 @@ const AdminLogin = () => {
               <p className="text-xs text-gray-600 mb-2">
                 Nhập email của nhân viên để nhận link đặt lại mật khẩu.
               </p>
-              
+
               <div className="space-y-2">
-                <label className="text-gray-700 text-xs font-medium">Email nhân viên</label>
+                <label className="text-gray-700 text-xs font-medium">
+                  Email nhân viên
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
