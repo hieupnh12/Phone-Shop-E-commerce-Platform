@@ -38,6 +38,12 @@ public final class PermissionKeys {
     public static final String SCOPE_REPORT_VIEW_SALES = "REPORT_VIEW_SALES";
     public static final String SCOPE_REPORT_VIEW_STOCK = "REPORT_VIEW_STOCK";
 
+    //WARRANTY
+    public static final String SCOPE_WARRANTY_VIEW_ALL = "WARRANTY_VIEW_ALL";
+    public static final String SCOPE_WARRANTY_UPDATE_BASIC  = "WARRANTY_UPDATE_BASIC";
+
+
+
 
     public static final String[] ALL_PERMISSIONS = {
             SCOPE_PRODUCT_VIEW_ALL,SCOPE_PRODUCT_CREATE_ALL, SCOPE_PRODUCT_UPDATE_ALL,
@@ -53,7 +59,9 @@ public final class PermissionKeys {
             SCOPE_SYSTEM_VIEW_AUDIT,
             SCOPE_REPORT_VIEW_SALES,
             SCOPE_REPORT_VIEW_STOCK,
-            SCOPE_ORDER_VIEW_DETAIL
+            SCOPE_ORDER_VIEW_DETAIL,
+            SCOPE_WARRANTY_VIEW_ALL,
+            SCOPE_WARRANTY_UPDATE_BASIC
 
     };
 

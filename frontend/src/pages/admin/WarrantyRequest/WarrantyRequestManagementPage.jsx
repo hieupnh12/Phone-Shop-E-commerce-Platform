@@ -14,11 +14,14 @@ import Toast from "../../../components/common/Toast";
 import Pagination from "../../../components/common/Pagination";
 import { useAuthFullOptions } from "../../../contexts/AuthContext";
 import { hasRole } from "../../../utils/permissionUtils";
+import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
 const WarrantyRequestManagementPage = () => {
   const { user } = useAuthFullOptions();
   const currentEmployeeId = user?.id || null;
   const isAdmin = hasRole("ROLE_ADMIN");
+  const { hasPermission } = usePermission();
+  const hasUpdatePermission = hasPermission(PERMISSIONS.WARRANTY_UPDATE_BASIC);
 
   // State for all requests (common table)
   const [requests, setRequests] = useState([]);
@@ -249,6 +252,15 @@ const WarrantyRequestManagementPage = () => {
       });
       return;
     }
+    
+    // Check permission to update warranty requests
+    if (!hasUpdatePermission) {
+      setToast({
+        type: "error",
+        message: "Bạn không có quyền chọn xử lý yêu cầu bảo hành",
+      });
+      return;
+    }
 
     if (request.employeeId && request.employeeId !== currentEmployeeId) {
       setToast({
@@ -290,6 +302,15 @@ const WarrantyRequestManagementPage = () => {
   };
 
   const handleOpenUpdateModal = (request) => {
+    // Check permission first
+    if (!hasUpdatePermission) {
+      setToast({
+        type: "error",
+        message: "Bạn không có quyền cập nhật yêu cầu bảo hành",
+      });
+      return;
+    }
+    
     // Check if current employee can edit this request
     if (request.employeeId && request.employeeId !== currentEmployeeId) {
       setToast({
@@ -316,6 +337,15 @@ const WarrantyRequestManagementPage = () => {
       setToast({
         type: "error",
         message: "Bạn cần đăng nhập để thực hiện thao tác này",
+      });
+      return;
+    }
+
+    // Check permission to update warranty requests
+    if (!hasUpdatePermission) {
+      setToast({
+        type: "error",
+        message: "Bạn không có quyền hủy xử lý yêu cầu bảo hành",
       });
       return;
     }
@@ -350,6 +380,16 @@ const WarrantyRequestManagementPage = () => {
 
   const handleUpdateRequest = async () => {
     if (!selectedRequest) return;
+
+    // Check permission first
+    if (!hasUpdatePermission) {
+      setToast({
+        type: "error",
+        message: "Bạn không có quyền cập nhật yêu cầu bảo hành",
+      });
+      setShowUpdateModal(false);
+      return;
+    }
 
     // Double check permission
     if (
@@ -591,14 +631,20 @@ const WarrantyRequestManagementPage = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center gap-2">
                           {!request.employeeId ? (
-                            <button
-                              onClick={() => handleAssignRequest(request)}
-                              className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium"
-                            >
-                              <UserCheck className="w-4 h-4" />
-                              Chọn xử lý
-                            </button>
-                          ) : canEdit ? (
+                            hasUpdatePermission ? (
+                              <button
+                                onClick={() => handleAssignRequest(request)}
+                                className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium"
+                              >
+                                <UserCheck className="w-4 h-4" />
+                                Chọn xử lý
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-sm">
+                                Không có quyền
+                              </span>
+                            )
+                          ) : canEdit && hasUpdatePermission ? (
                             <button
                               onClick={() => handleOpenUpdateModal(request)}
                               className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
@@ -606,7 +652,7 @@ const WarrantyRequestManagementPage = () => {
                               <Edit className="w-4 h-4" />
                               Cập nhật
                             </button>
-                          ) : isAdmin ? (
+                          ) : isAdmin && hasUpdatePermission ? (
                             <button
                               onClick={() => handleUnassignRequest(request)}
                               className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-medium"
@@ -754,21 +800,30 @@ const WarrantyRequestManagementPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleOpenUpdateModal(request)}
-                            className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Cập nhật
-                          </button>
-                          <button
-                            onClick={() => handleUnassignRequest(request)}
-                            className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium"
-                            title="Hủy xử lý yêu cầu này"
-                          >
-                            <X className="w-4 h-4" />
-                            Hủy xử lý
-                          </button>
+                          {hasUpdatePermission && (
+                            <>
+                              <button
+                                onClick={() => handleOpenUpdateModal(request)}
+                                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                <Edit className="w-4 h-4" />
+                                Cập nhật
+                              </button>
+                              <button
+                                onClick={() => handleUnassignRequest(request)}
+                                className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium"
+                                title="Hủy xử lý yêu cầu này"
+                              >
+                                <X className="w-4 h-4" />
+                                Hủy xử lý
+                              </button>
+                            </>
+                          )}
+                          {!hasUpdatePermission && (
+                            <span className="text-gray-400 text-sm">
+                              Không có quyền cập nhật
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>
