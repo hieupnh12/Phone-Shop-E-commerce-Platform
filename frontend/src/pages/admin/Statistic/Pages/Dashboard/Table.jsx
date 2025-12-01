@@ -50,7 +50,7 @@ export default function Table({data7Day, isLoading}) {
             <tr>
               {[
                 { key: "topProduct", label: "Sản phẩm bán chạy" },
-                { key: "orders", label: "Đơn hàng" },
+                { key: "orders", label: "Đơn hàng đã mua" },
                 { key: "revenue", label: "Doanh thu" },
                 { key: "cost", label: "Chi phí" },
                 { key: "benefit", label: "Lợi nhuận" },
