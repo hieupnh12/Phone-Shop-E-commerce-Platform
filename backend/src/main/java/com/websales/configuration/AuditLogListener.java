@@ -8,11 +8,18 @@ import com.websales.entity.Order;
 import com.websales.entity.Product;
 import com.websales.entity.Role;
 import com.websales.handler.ContextUtils;
+import com.websales.repository.CustomerRepo;
+import com.websales.repository.EmployeeRepo;
+import com.websales.repository.OrderRepository;
+import com.websales.repository.ProductRepository;
+import com.websales.repository.RoleRepo;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -26,6 +33,10 @@ public class AuditLogListener {
 
     // ThreadLocal to store old entity state before update
     private static final ThreadLocal<Map<String, String>> oldEntityState = new ThreadLocal<>();
+    
+    // ThreadLocal to track if audit log is already scheduled for this entity in current transaction
+    // Key: entityClassName_recordId_action, Value: true if scheduled
+    private static final ThreadLocal<Set<String>> scheduledAuditLogs = new ThreadLocal<>();
 
     private Long getCurrentEmployeeId() {
         return ContextUtils.getEmployeeId();
@@ -307,18 +318,39 @@ public class AuditLogListener {
             log.debug("PreUpdate called for entity: {}", entity.getClass().getSimpleName());
             if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
                     || entity instanceof Order || entity instanceof Customer) {
+                
+                Long recordId = getRecordIdUsingReflection(entity);
+                if (recordId == null) {
+                    log.warn("Cannot create audit log: recordId is null in preUpdate for entity {}", entity.getClass().getSimpleName());
+                    return;
+                }
+                
+                // Check if audit log is already scheduled for this entity
+                String auditKey = entity.getClass().getSimpleName() + "_" + recordId + "_UPDATE";
+                Set<String> scheduled = scheduledAuditLogs.get();
+                if (scheduled != null && scheduled.contains(auditKey)) {
+                    log.debug("Audit log already scheduled for entity: {}, skipping duplicate", auditKey);
+                    return;
+                }
+                
                 log.debug("Entity is tracked for audit log, saving old state and scheduling audit log creation...");
-                // Save old state before update for comparison
+                // Save old state before update for comparison (reload from database)
                 saveOldEntityState(entity);
                 // Delay building audit log until after transaction commit to avoid Hibernate session issues
                 scheduleAuditLogCreation(entity, "UPDATE");
+                
+                // Mark as scheduled
+                if (scheduled == null) {
+                    scheduled = new HashSet<>();
+                    scheduledAuditLogs.set(scheduled);
+                }
+                scheduled.add(auditKey);
             } else {
                 log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
             }
         } catch (Exception e) {
             log.error("Error in preUpdate audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
         }
-        // Note: Don't remove oldEntityState here - it will be cleaned up in afterCommit
     }
     
     @PreRemove
@@ -342,19 +374,87 @@ public class AuditLogListener {
     
     /**
      * Save old entity state before update for comparison
+     * Reloads entity from database to get the actual old state before changes
      */
     private void saveOldEntityState(Object entity) {
         try {
-            String oldState = serializeObject(entity);
             Long recordId = getRecordIdUsingReflection(entity);
-            if (recordId != null) {
-                Map<String, String> stateMap = new HashMap<>();
-                stateMap.put(recordId.toString(), oldState);
-                oldEntityState.set(stateMap);
-                log.debug("Saved old state for entity with ID: {}", recordId);
+            if (recordId == null) {
+                log.warn("Cannot save old state: recordId is null");
+                return;
             }
+
+            // Reload entity from database to get the actual old state
+            Object oldEntity = reloadEntityFromDatabase(entity, recordId);
+            if (oldEntity == null) {
+                log.warn("Cannot reload entity from database for ID: {}, entity type: {}", 
+                        recordId, entity.getClass().getSimpleName());
+                return;
+            }
+
+            // Serialize the old entity from database
+            String oldState = serializeObject(oldEntity);
+            Map<String, String> stateMap = new HashMap<>();
+            stateMap.put(recordId.toString(), oldState);
+            oldEntityState.set(stateMap);
+            log.debug("Saved old state for entity with ID: {} (reloaded from database)", recordId);
         } catch (Exception e) {
             log.error("Error saving old entity state", e);
+        }
+    }
+
+    /**
+     * Reload entity from database to get the actual old state before update
+     * Uses repository to reload from database. Since entity hasn't been flushed yet,
+     * repository will get the old state from database.
+     * IMPORTANT: Do NOT evict or modify the entity being updated as it will break the update process.
+     */
+    private Object reloadEntityFromDatabase(Object entity, Long recordId) {
+        try {
+            // Use repository to reload entity from database
+            // Since the update hasn't been flushed yet, this will get the old state
+            Object oldEntity = null;
+            
+            if (entity instanceof Employee) {
+                EmployeeRepo repo = ContextUtils.getBean(EmployeeRepo.class);
+                if (repo != null) {
+                    oldEntity = repo.findById(recordId).orElse(null);
+                }
+            } else if (entity instanceof Role) {
+                RoleRepo repo = ContextUtils.getBean(RoleRepo.class);
+                if (repo != null) {
+                    oldEntity = repo.findById(recordId.intValue()).orElse(null);
+                }
+            } else if (entity instanceof Product) {
+                ProductRepository repo = ContextUtils.getBean(ProductRepository.class);
+                if (repo != null) {
+                    oldEntity = repo.findById(recordId).orElse(null);
+                }
+            } else if (entity instanceof Order) {
+                OrderRepository repo = ContextUtils.getBean(OrderRepository.class);
+                if (repo != null) {
+                    oldEntity = repo.findById(recordId.intValue()).orElse(null);
+                }
+            } else if (entity instanceof Customer) {
+                CustomerRepo repo = ContextUtils.getBean(CustomerRepo.class);
+                if (repo != null) {
+                    oldEntity = repo.findById(recordId).orElse(null);
+                }
+            }
+
+            if (oldEntity != null) {
+                log.debug("Successfully reloaded entity from database: {} with ID: {}", 
+                        entity.getClass().getSimpleName(), recordId);
+            } else {
+                log.warn("Entity not found in database: {} with ID: {}", 
+                        entity.getClass().getSimpleName(), recordId);
+            }
+
+            return oldEntity;
+        } catch (Exception e) {
+            log.error("Error reloading entity from database for entity: {} with ID: {}", 
+                    entity.getClass().getSimpleName(), recordId, e);
+            return null;
         }
     }
 
@@ -464,8 +564,9 @@ public class AuditLogListener {
                         } catch (Exception e) {
                             log.error("Error creating audit log after commit", e);
                         } finally {
-                            // Clean up old state after processing
+                            // Clean up old state and scheduled tracking after processing
                             oldEntityState.remove();
+                            scheduledAuditLogs.remove();
                         }
                     }
                 });
@@ -522,9 +623,10 @@ public class AuditLogListener {
                     log.debug("Audit log saved successfully");
                 }
                 
-                // Clean up old state after processing
+                // Clean up old state and scheduled tracking after processing
                 if ("UPDATE".equals(action) || "DELETE".equals(action)) {
                     oldEntityState.remove();
+                    scheduledAuditLogs.remove();
                 }
             }        } catch (Exception e) {
             log.error("Error in scheduleAuditLogCreation", e);
