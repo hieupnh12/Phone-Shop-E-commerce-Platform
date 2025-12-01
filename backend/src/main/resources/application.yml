@@ -8,6 +8,11 @@ spring:
   application:
     name: web-sales-backend
 
+  spring:
+    redis:
+      host: localhost
+      port: 6379
+
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
@@ -29,10 +34,6 @@ spring:
     username: avnadmin
     password: AVNS_HNcbA_yh7QK4UPUikiH
     driver-class-name: com.mysql.cj.jdbc.Driver
-  data:
-    redis:
-      repositories:
-        enabled: false
 
 
   jpa:

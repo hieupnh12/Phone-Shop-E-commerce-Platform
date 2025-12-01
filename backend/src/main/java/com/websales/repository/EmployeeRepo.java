@@ -5,8 +5,11 @@ import com.websales.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,4 +26,7 @@ public interface EmployeeRepo extends JpaRepository<Employee, Long> {
     boolean existsByEmployeeRolesContains(Role employeeRoles);
 
     Page<Employee> findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String search, String search1, Pageable pageable);
+
+    @Query("SELECT e FROM Employee e JOIN e.employeeRoles r WHERE r.id = :roleId")
+    List<Employee> findByRoleId(@Param("roleId") Integer roleId);
 }

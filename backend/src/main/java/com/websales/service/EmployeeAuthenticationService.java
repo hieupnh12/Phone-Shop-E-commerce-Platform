@@ -23,6 +23,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -41,6 +42,8 @@ public class EmployeeAuthenticationService {
     EmployeeRepo employeeRepo;
     PasswordEncoder passwordEncoder;
     InvalidTokenRepository  invalidTokenRepo;
+    RedisTemplate<String, String> redisTemplate;
+
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -90,15 +93,20 @@ public class EmployeeAuthenticationService {
             Payload payload = new Payload(jwtClaimsSet.toJSONObject());
 
             JWSObject jwsObject = new JWSObject(jwsHeader, payload);
-
-            try {
-                jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
-                String token = jwsObject.serialize();
-                return token;
-            } catch (JOSEException e) {
-                log.error("Cannot creat token", e);
-                throw new RuntimeException(e);
-            }
+        try {
+            jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
+            String token = jwsObject.serialize();
+            redisTemplate.opsForValue().set(
+                    "jwt:" + employee.getFullName(),
+                    jwtId,
+                    VALID_DURATION,
+                    TimeUnit.SECONDS
+            );
+            return token;
+        } catch (JOSEException e) {
+            log.error("Cannot creat token", e);
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -162,7 +170,8 @@ public class EmployeeAuthenticationService {
                     .build();
 
             invalidTokenRepo.save(invalidToken);
-
+            String username = signToken.getJWTClaimsSet().getSubject();
+            redisTemplate.delete("jwt:" + username);
         } catch (AppException e) {
             log.info("Token already expired");
         }
@@ -202,6 +211,7 @@ public class EmployeeAuthenticationService {
         invalidTokenRepo.save(invalidToken);
 
         var username = signedJWT.getJWTClaimsSet().getSubject();
+        redisTemplate.delete("jwt:" + username);
         var employee = employeeRepo.findByFullName(username).orElseThrow(
                 () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST));
         if (!employee.getIsActive()) {
