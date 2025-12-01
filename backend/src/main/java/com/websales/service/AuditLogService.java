@@ -9,9 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -38,4 +41,13 @@ public class AuditLogService {
     public void saveAuditLog(AuditLog log) {
         auditLogRepository.save(log);
     }
+
+
+    @Scheduled(cron = "0 0 0 * * *")
+    public void cleanOldData() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(10);
+        int rows = auditLogRepository.deleteOld(threshold);
+        System.out.println("Đã xóa " + rows + " dòng.");
+    }
+
 }
