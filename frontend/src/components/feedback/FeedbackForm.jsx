@@ -1,9 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuthFullOptions } from '../../contexts/AuthContext';
-import { Star, X, ChevronDown } from 'lucide-react';
+import { Star, X, ChevronDown, PenLine } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 import orderService from '../../services/orderService';
+
+// StarRating Component
+const StarRating = ({ rating, onRate, size = "medium", interactive = true }) => {
+  const sizeClasses = {
+    small: "w-5 h-5",
+    medium: "w-8 h-8",
+    large: "w-10 h-10",
+  };
+
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => interactive && onRate(star)}
+          className={`transition-transform duration-200 ${interactive ? "hover:scale-110" : "cursor-default"}`}
+          disabled={!interactive}
+        >
+          <Star
+            className={`${sizeClasses[size]} transition-colors ${
+              star <= rating
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-slate-600"
+            }`}
+            strokeWidth={1.5}
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const FeedbackForm = ({ productId, onSuccess, onClose }) => {
   const { t } = useLanguage();
@@ -22,7 +54,6 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [myFeedbackProducts, setMyFeedbackProducts] = useState(new Set());
 
-  // Load user's existing feedbacks to filter them out from product list
   useEffect(() => {
     const loadMyFeedbacks = async () => {
       if (!user) return;
@@ -37,10 +68,8 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
       }
     };
     loadMyFeedbacks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Tải danh sách đơn hàng hoàn thành
   useEffect(() => {
     const load = async () => {
       setLoadingOrders(true);
@@ -58,35 +87,26 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [productId]);
 
-  // Tải sản phẩm khi chọn đơn hàng
   useEffect(() => {
     const load = async () => {
       if (selectedOrder?.orderId) {
         try {
-          // Lấy products từ orderDetails của order
           if (selectedOrder?.orderDetails && selectedOrder.orderDetails.length > 0) {
-            // Map orderDetails để có product information
-            // FILTER OUT products that user already has feedbacks for
             const products = selectedOrder.orderDetails
               .filter(detail => !myFeedbackProducts.has(detail.productId))
               .map(detail => ({
-                productId: detail.productId, // Use actual productId from product
+                productId: detail.productId,
                 nameProduct: detail.productName || 'Unknown Product'
               }));
-            console.log('Available products (excluding already reviewed):', products);
             setOrderProducts(products);
-            // Tự động chọn sản phẩm đầu tiên nếu còn
             if (products.length > 0) {
               setSelectedProductId(products[0].productId);
             } else {
-              console.log('All products in this order have been reviewed');
               setSelectedProductId(null);
             }
           } else {
-            console.log('No orderDetails found');
             setOrderProducts([]);
             setSelectedProductId(null);
           }
@@ -98,7 +118,6 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedOrder?.orderId, myFeedbackProducts]);
 
   const handleSubmit = async (e) => {
@@ -128,7 +147,6 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
         content: content.trim()
       });
       
-      // Add to myFeedbackProducts set to exclude from future list
       setMyFeedbackProducts(prev => new Set([...prev, finalProductId]));
       
       onSuccess?.();
@@ -152,24 +170,37 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
     return product?.nameProduct || 'Chọn sản phẩm';
   };
 
-  // If user is not logged in, don't render the form at all
+  // If user is not logged in
   if (!user) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">{t('feedback.writeReview') || 'Viết đánh giá'}</h2>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+        <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-slate-700 bg-slate-800/50 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <PenLine className="w-5 h-5 text-cyan-400" />
+              {t('feedback.writeReview') || 'Viết đánh giá'}
+            </h2>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-200 rounded"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-slate-400" />
             </button>
           </div>
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-center">
-            <p className="font-medium mb-3">Vui lòng đăng nhập để viết đánh giá</p>
-            <a href="/login" className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Đăng nhập
+          
+          {/* Content */}
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+              <Star className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Đăng nhập để viết đánh giá</h3>
+            <p className="text-slate-400 mb-6">Vui lòng đăng nhập để chia sẻ trải nghiệm của bạn</p>
+            <a 
+              href="/login" 
+              className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl hover:bg-cyan-400 transition-colors font-semibold"
+            >
+              Đăng nhập ngay
             </a>
           </div>
         </div>
@@ -178,166 +209,179 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-96 overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">{t('feedback.writeReview') || 'Viết đánh giá'}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+      <div className="w-full max-w-xl max-h-[90vh] bg-slate-800 border border-slate-700 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-700 bg-slate-800/50 flex items-center justify-between flex-shrink-0">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <PenLine className="w-5 h-5 text-cyan-400" />
+            {t('feedback.writeReview') || 'Đánh giá & nhận xét'}
+          </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-200 rounded"
+            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
 
-        {(
-          <>
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
-                {error}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Order Selection */}
+            {!productId && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Chọn đơn hàng</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowOrderDropdown(!showOrderDropdown)}
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl flex justify-between items-center hover:bg-slate-900/70 transition-colors text-white"
+                    disabled={loadingOrders}
+                  >
+                    <span className={loadingOrders ? "text-slate-500" : "text-white"}>
+                      {loadingOrders ? "Đang tải..." : getSelectedOrderName()}
+                    </span>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showOrderDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showOrderDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
+                      {completedOrders.length === 0 ? (
+                        <div className="p-4 text-slate-400 text-sm text-center">Không có đơn hàng hoàn thành</div>
+                      ) : (
+                        completedOrders.map(order => (
+                          <button
+                            key={order.orderId}
+                            type="button"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowOrderDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-3 hover:bg-slate-700/50 text-sm border-b border-slate-700/50 last:border-b-0 transition-colors"
+                          >
+                            <div className="font-medium text-white">Đơn #{order.orderId}</div>
+                            <div className="text-xs text-slate-400">{order.totalPrice?.toLocaleString()} VNĐ</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Order Selection - chỉ hiển thị nếu không có productId */}
-          {!productId && (
-            <div>
-              <label className="block text-sm font-medium mb-2">Chọn đơn hàng</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowOrderDropdown(!showOrderDropdown)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg flex justify-between items-center hover:bg-gray-50"
-                  disabled={loadingOrders}
-                >
-                  <span>{getSelectedOrderName()}</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                
-                {showOrderDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 border border-gray-300 rounded-lg bg-white shadow-lg z-10 max-h-40 overflow-y-auto">
-                    {completedOrders.length === 0 ? (
-                      <div className="p-3 text-gray-500 text-sm">Không có đơn hàng hoàn thành</div>
-                    ) : (
-                      completedOrders.map(order => (
+            {/* Product Selection */}
+            {!productId && selectedOrder && orderProducts.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Chọn sản phẩm</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowProductDropdown(!showProductDropdown)}
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl flex justify-between items-center hover:bg-slate-900/70 transition-colors text-white"
+                  >
+                    <span>{getSelectedProductName()}</span>
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showProductDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showProductDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
+                      {orderProducts.map(product => (
                         <button
-                          key={order.orderId}
+                          key={product.productId}
                           type="button"
                           onClick={() => {
-                            setSelectedOrder(order);
-                            setShowOrderDropdown(false);
+                            setSelectedProductId(product.productId);
+                            setShowProductDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b last:border-b-0"
+                          className="w-full text-left px-4 py-3 hover:bg-slate-700/50 text-sm text-white border-b border-slate-700/50 last:border-b-0 transition-colors"
                         >
-                          Đơn #{order.orderId} - {order.totalPrice?.toLocaleString()} VNĐ
+                          {product.nameProduct}
                         </button>
-                      ))
-                    )}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Product Selection */}
-          {!productId && selectedOrder && orderProducts.length > 0 && (
+            {/* Rating Stars */}
+            <div className="text-center py-4">
+              <h3 className="font-semibold text-white mb-4">Đánh giá chung</h3>
+              <div className="flex justify-center mb-3">
+                <StarRating
+                  rating={rating}
+                  onRate={setRating}
+                  size="large"
+                  interactive={true}
+                />
+              </div>
+              {rating > 0 && (
+                <p className="text-slate-400 text-sm">
+                  {rating === 5 && "Tuyệt vời"}
+                  {rating === 4 && "Tốt"}
+                  {rating === 3 && "Bình thường"}
+                  {rating === 2 && "Tệ"}
+                  {rating === 1 && "Rất Tệ"}
+                </p>
+              )}
+            </div>
+
+            {/* Content */}
             <div>
-              <label className="block text-sm font-medium mb-2">Chọn sản phẩm</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowProductDropdown(!showProductDropdown)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg flex justify-between items-center hover:bg-gray-50"
-                >
-                  <span>{getSelectedProductName()}</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                
-                {showProductDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 border border-gray-300 rounded-lg bg-white shadow-lg z-10 max-h-40 overflow-y-auto">
-                    {orderProducts.map(product => (
-                      <button
-                        key={product.productId}
-                        type="button"
-                        onClick={() => {
-                          setSelectedProductId(product.productId);
-                          setShowProductDropdown(false);
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b last:border-b-0"
-                      >
-                        {product.nameProduct}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <label className="block font-medium text-slate-300 mb-2">
+                Viết đánh giá của bạn
+              </label>
+              <textarea
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  setError("");
+                }}
+                placeholder="Xin mời chia sẻ cảm nhận về sản phẩm (tối thiểu 15 ký tự)"
+                className="w-full h-28 px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 resize-none text-white placeholder-slate-500 transition-all"
+                disabled={loading}
+                maxLength={500}
+              />
+              <p className="text-sm text-slate-500 mt-1 text-right">
+                {content.length}/500
+              </p>
             </div>
-          )}
 
-          {/* Rating Stars */}
-          <div>
-            <label className="block text-sm font-medium mb-2">{t('feedback.rating') || 'Đánh giá'}</label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-8 h-8 ${
-                      star <= rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                </button>
-              ))}
+            {/* Footer */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-3 bg-slate-700 text-slate-300 rounded-xl hover:bg-slate-600 transition-colors font-medium"
+                disabled={loading}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={!rating || content.length < 15 || loading}
+                className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
+                  rating && content.length >= 15 && !loading
+                    ? "bg-cyan-500 text-white hover:bg-cyan-400"
+                    : "bg-slate-700 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                {loading ? "Đang gửi..." : "Gửi đánh giá"}
+              </button>
             </div>
-          </div>
-
-          {/* Content */}
-          <div>
-            <label className="block text-sm font-medium mb-2">{t('feedback.content') || 'Nội dung'}</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-24"
-              disabled={loading}
-              maxLength={500}
-            />
-            <div className="text-xs text-gray-500 mt-1">
-              {content.length}/500
-            </div>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-              disabled={loading}
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? t('common.loading') : t('feedback.submit')}
-            </button>
-          </div>
-            </form>
-          </>
-        )}
+          </form>
+        </div>
       </div>
     </div>
   );
 };
 
 export default FeedbackForm;
-

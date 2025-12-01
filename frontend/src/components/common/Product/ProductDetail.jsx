@@ -15,17 +15,22 @@ import { useParams } from "react-router-dom"; // Import useParams
 import cartService from "../../../services/cartService";
 import Toast from "../../../components/common/Toast";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { useAuthFullOptions } from "../../../contexts/AuthContext";
 import { X, Smartphone, Camera, Cpu, Battery, Monitor, Zap, Shield, HardDrive, Palette } from 'lucide-react';
 import ProductFeedback from "../../../components/common/Product/feedBackProduct";
 import feedbackService from "../../../services/feedbackService";
+import Modal from "../Modal";
 
 const ProductDetailPage = () => {
   const { t } = useLanguage();
+  const authContext = useAuthFullOptions();
+  const user = authContext?.user; 
   const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
   const [selectedRam, setSelectedRam] = useState(null);
   const [selectedRom, setSelectedRom] = useState(null);
+
   const [selectedColor, setSelectedColor] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,6 +38,8 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   // THÊM MỚI: State cho popup specs
   const [isOpen, setIsOpen] = useState(false);
+  // State cho modal đăng nhập
+  const [showLoginModal, setShowLoginModal] = useState(false);
   // State cho rating từ API
   const [productRating, setProductRating] = useState(null);
   const [reviewCount, setReviewCount] = useState(0);
@@ -270,6 +277,11 @@ const ProductDetailPage = () => {
   };
   // === ADD TO CART ===
   const handleAddToCart = async () => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+      navigate('/login');
+      return;
+    }
     try {
       if (!selectedVersion?.id) {
         setToast({
@@ -1088,14 +1100,22 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                       alert("Không tìm thấy phiên bản hợp lệ!");
                       return;
                     }
-
-                    await cartService.addToCart(selectedVersion.id, 1);
-                    // Chuyển đến cart và tự động chọn sản phẩm vừa thêm
-                    navigate('/user/cart', {
-                      state: {
-                        autoSelectProductVersionId: selectedVersion.id
-                      }
-                    });
+                    if (!user) {
+                      setShowLoginModal(true);
+                      return;
+                    }
+                    try {
+                      await cartService.addToCart(selectedVersion.id, 1);
+                      // Chuyển đến cart và tự động chọn sản phẩm vừa thêm
+                      navigate('/user/cart', {
+                        state: {
+                          autoSelectProductVersionId: selectedVersion.id
+                        }
+                      });
+                    } catch (error) {
+                      console.error("Lỗi khi thêm vào giỏ hàng:", error);
+                      alert("Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng!");
+                    }
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
                 >
@@ -1105,7 +1125,13 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
 
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
-                  onClick={handleAddToCart}
+                  onClick={async () => {
+                    if (!user) {
+                      setShowLoginModal(true);
+                      return;
+                    }
+                    await handleAddToCart();
+                   } }
                 >
                   <ShoppingCart className="w-6 h-6" />
                   THÊM VÀO GIỎ
@@ -1148,6 +1174,37 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
               productName={product?.nameProduct}
               productImage={product?.image}
             />
+
+      {/* Modal đăng nhập */}
+      <Modal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="Đăng nhập"
+        size="sm"
+      >
+        <div className="text-center ">
+          <p className="text-gray-700 mb-6">
+            Vui lòng đăng nhập để tiếp tục mua hàng
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                navigate('/login');
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Đăng nhập
+            </button>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
 

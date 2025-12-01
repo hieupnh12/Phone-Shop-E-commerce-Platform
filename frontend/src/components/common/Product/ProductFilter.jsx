@@ -78,6 +78,8 @@ const ProductFilter = ({
   onRefreshRateChange = () => {},
   minRating = 0,
   onMinRatingChange = () => {},
+  sortOrder = "none",
+  onSortOrderChange = () => {},
   onResetFilters = () => {},
 }) => {
   const { t } = useLanguage();
@@ -184,8 +186,8 @@ const ProductFilter = ({
         <Checkbox label="Từ 13 - 20 triệu" checked={isPriceRangeSelected("13-20")} onChange={() => onPriceChange("13-20")} />
         <Checkbox label="Trên 20 triệu" checked={isPriceRangeSelected("20+")} onChange={() => onPriceChange("20+")} />
 
-        <p className="text-xs text-slate-500 mt-2">Hoặc nhập khoảng giá (VND):</p>
-        <div className="flex items-center gap-2 mt-2">
+        {/* <p className="text-xs text-slate-500 mt-2">Hoặc nhập khoảng giá (VND):</p> */}
+        {/* <div className="flex items-center gap-2 mt-2">
           <input
             type="number"
             placeholder="Từ"
@@ -200,10 +202,26 @@ const ProductFilter = ({
             onChange={(e) => onCustomMaxPriceChange(e.target.value)}
             className="w-1/2 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
+        </div> */}
+        
+        {/* Sắp xếp theo giá */}
+        <div className="mt-4 pt-3 border-t border-slate-200">
+          <label className="block text-xs font-semibold text-slate-700 mb-2">
+            Sắp xếp theo giá
+          </label>
+          <select
+            value={sortOrder}
+            onChange={(e) => onSortOrderChange(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+          >
+            <option value="none">Mặc định</option>
+            <option value="asc">Giá: Thấp đến Cao</option>
+            <option value="desc">Giá: Cao đến Thấp</option>
+          </select>
         </div>
       </Section>
 
-      <Section title={t('profile.minRating')}>
+      {/* <Section title={t('profile.minRating')}>
         <div className="flex flex-wrap">
           {ratingOptions.map((option) => (
             <Pill
@@ -215,7 +233,7 @@ const ProductFilter = ({
             </Pill>
           ))}
         </div>
-      </Section>
+      </Section> */}
 
       <Section title="Hệ điều hành">
         <div className="flex flex-wrap">
