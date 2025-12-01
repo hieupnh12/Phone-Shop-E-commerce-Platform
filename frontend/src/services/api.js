@@ -304,6 +304,31 @@ export const warrantyRequestService = {
       api
           .put(`/return-warranty-requests/${requestId}/status`, updateData)
           .then(res => res.data.result || res.data),
+
+  // Get requests assigned to current employee
+  getMyAssignedRequests: (page = 0, size = 20, sort = 'requestId,desc') => {
+      const params = new URLSearchParams({
+          page: page.toString(),
+          size: size.toString(),
+          sort: sort
+      });
+      return api
+          .get(`/return-warranty-requests/my-assigned?${params.toString()}`)
+          .then(res => {
+              console.log('My assigned requests API response:', res.data);
+              return res.data.result || res.data;
+          })
+          .catch(err => {
+              console.error('My assigned requests API error:', err);
+              throw err;
+          });
+  },
+
+  // Unassign request (remove from employee's list)
+  unassignRequest: (requestId) =>
+      api
+          .put(`/return-warranty-requests/${requestId}/unassign`)
+          .then(res => res.data.result || res.data),
 };
 
 export default api;

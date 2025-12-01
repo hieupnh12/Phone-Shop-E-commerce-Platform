@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -78,6 +79,7 @@ public class ReturnWarrantyRequestService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public Page<ReturnWarrantyRequestResponse> getAllRequests(Pageable pageable) {
         log.info("Getting all warranty requests with pageable: page={}, size={}, sort={}", 
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
@@ -88,20 +90,29 @@ public class ReturnWarrantyRequestService {
         return responsePage;
     }
 
+    @Transactional(readOnly = true)
     public Page<ReturnWarrantyRequestResponse> getRequestsByCustomer(Long customerId, Pageable pageable) {
         return requestRepository.findByCustomer_CustomerId(customerId, pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
     public List<ReturnWarrantyRequestResponse> getRequestsByCustomer(Long customerId) {
         return requestRepository.findByCustomer_CustomerId(customerId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public Page<ReturnWarrantyRequestResponse> getRequestsByStatus(RequestStatus status, Pageable pageable) {
         return requestRepository.findByStatus(status, pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<ReturnWarrantyRequestResponse> getRequestsByEmployee(Long employeeId, Pageable pageable) {
+        return requestRepository.findByEmployee_Id(employeeId, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<ReturnWarrantyRequestResponse> getRequestById(Integer requestId) {
         return requestRepository.findById(requestId).map(this::toResponse);
     }
@@ -131,7 +142,73 @@ public class ReturnWarrantyRequestService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public ReturnWarrantyRequestResponse unassignRequest(Integer requestId, Long employeeId) {
+        ReturnWarrantyRequest request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found: " + requestId));
+
+        if (employeeId == null) {
+            throw new RuntimeException("Bạn cần đăng nhập để thực hiện thao tác này");
+        }
+
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found: " + employeeId));
+
+        // Check if employee is admin
+        boolean isAdmin = employee.getEmployeeRoles() != null && 
+                employee.getEmployeeRoles().stream()
+                        .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
+
+        // Check permission: only assigned employee or admin can unassign
+        if (!isAdmin && (request.getEmployee() == null || !request.getEmployee().getId().equals(employeeId))) {
+            throw new RuntimeException("Bạn không có quyền hủy xử lý yêu cầu này");
+        }
+
+        request.setEmployee(null);
+        ReturnWarrantyRequest saved = requestRepository.save(request);
+        return toResponse(saved);
+    }
+
     private ReturnWarrantyRequestResponse toResponse(ReturnWarrantyRequest request) {
+        String productName = null;
+        Integer warrantyPeriod = null;
+        LocalDateTime warrantyExpiryDate = null;
+
+        // Get product info from order details
+        if (request.getOrder() != null) {
+            // Force load order details if lazy
+            if (request.getOrder().getOrderDetails() != null) {
+                Optional<com.websales.entity.OrderDetail> matchingDetail = request.getOrder().getOrderDetails().stream()
+                        .filter(detail -> detail.getProductVersion() != null
+                                && detail.getProductVersion().getIdVersion() != null
+                                && detail.getProductVersion().getIdVersion().equals(request.getProductVersionId()))
+                        .findFirst();
+
+                if (matchingDetail.isPresent()) {
+                    com.websales.entity.OrderDetail orderDetail = matchingDetail.get();
+                    if (orderDetail.getProductVersion() != null
+                            && orderDetail.getProductVersion().getProduct() != null) {
+                        var product = orderDetail.getProductVersion().getProduct();
+                        productName = product.getNameProduct();
+                        warrantyPeriod = product.getWarrantyPeriod();
+
+                        // Calculate warranty expiry date: order creation date + warranty period (months)
+                        LocalDateTime orderCreateDate = request.getOrder().getCreateDatetime();
+                        if (warrantyPeriod != null && orderCreateDate != null) {
+                            warrantyExpiryDate = orderCreateDate.plusMonths(warrantyPeriod);
+                            log.debug("Calculated warranty expiry date: {} (order date: {}, warranty period: {} months)", 
+                                    warrantyExpiryDate, orderCreateDate, warrantyPeriod);
+                        } else {
+                            log.warn("Cannot calculate warranty expiry date for request {}: warrantyPeriod={}, orderCreateDate={}", 
+                                    request.getRequestId(), warrantyPeriod, orderCreateDate);
+                        }
+                    }
+                }
+            }
+        } else {
+            log.warn("Request {} has no order associated", request.getRequestId());
+        }
+
         return ReturnWarrantyRequestResponse.builder()
                 .requestId(request.getRequestId())
                 .orderId(request.getOrder() != null ? request.getOrder().getOrderId() : null)
@@ -140,7 +217,9 @@ public class ReturnWarrantyRequestService {
                 .employeeId(request.getEmployee() != null ? request.getEmployee().getId() : null)
                 .employeeName(request.getEmployee() != null ? request.getEmployee().getFullName() : null)
                 .productVersionId(request.getProductVersionId())
-                .productName(null) // Can be populated from ProductVersion if needed
+                .productName(productName)
+                .warrantyPeriod(warrantyPeriod)
+                .warrantyExpiryDate(warrantyExpiryDate)
                 .type(request.getType())
                 .reason(request.getReason())
                 .status(request.getStatus())

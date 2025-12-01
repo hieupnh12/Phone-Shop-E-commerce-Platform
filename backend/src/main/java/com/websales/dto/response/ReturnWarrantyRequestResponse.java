@@ -18,6 +18,8 @@ public class ReturnWarrantyRequestResponse {
     String employeeName;
     String productVersionId;
     String productName;
+    Integer warrantyPeriod; // Thời hạn bảo hành (tháng)
+    LocalDateTime warrantyExpiryDate; // Ngày hết hạn bảo hành
     RequestType type;
     String reason;
     RequestStatus status;

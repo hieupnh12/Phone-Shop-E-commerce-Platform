@@ -136,6 +136,53 @@ public class ReturnWarrantyRequestController {
                 .build();
     }
 
+    @GetMapping("/my-assigned")
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_ALL') or hasAuthority('SCOPE_ORDER_VIEW_DETAIL')")
+    public ApiResponse<Page<ReturnWarrantyRequestResponse>> getMyAssignedRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "requestId,desc") String sort) {
+        try {
+            Long employeeId = ContextUtils.getEmployeeId();
+            if (employeeId == null) {
+                return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                        .code(403)
+                        .message("Chỉ nhân viên mới có thể xem danh sách yêu cầu được giao")
+                        .build();
+            }
+
+            String[] sortParts = sort.split(",");
+            String sortField = sortParts[0].trim();
+            Sort.Direction direction = sortParts.length > 1 && sortParts[1].trim().equalsIgnoreCase("asc")
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+            
+            if (sortField.equalsIgnoreCase("createdAt") || sortField.equalsIgnoreCase("created_at")) {
+                sortField = "createdAt";
+            } else if (sortField.equalsIgnoreCase("updatedAt") || sortField.equalsIgnoreCase("updated_at")) {
+                sortField = "updatedAt";
+            } else {
+                sortField = "requestId";
+            }
+            
+            Sort sortObj = Sort.by(direction, sortField);
+            Pageable pageable = PageRequest.of(page, size, sortObj);
+            
+            Page<ReturnWarrantyRequestResponse> requests = requestService.getRequestsByEmployee(employeeId, pageable);
+            
+            return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                    .result(requests)
+                    .build();
+        } catch (Exception e) {
+            System.err.println("Error in getMyAssignedRequests: " + e.getMessage());
+            e.printStackTrace();
+            return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                    .code(400)
+                    .message("Lỗi khi lấy danh sách yêu cầu được giao: " + e.getMessage())
+                    .build();
+        }
+    }
+
     @GetMapping("/{requestId}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<ReturnWarrantyRequestResponse> getRequestById(@PathVariable Integer requestId) {
@@ -167,6 +214,27 @@ public class ReturnWarrantyRequestController {
         return ApiResponse.<ReturnWarrantyRequestResponse>builder()
                 .result(response)
                 .message("Trạng thái yêu cầu đã được cập nhật thành công")
+                .build();
+    }
+
+    @PutMapping("/{requestId}/unassign")
+    @PreAuthorize("hasAuthority('SCOPE_ORDER_UPDATE_STATUS')")
+    public ApiResponse<ReturnWarrantyRequestResponse> unassignRequest(
+            @PathVariable Integer requestId) {
+        Long employeeId = null;
+        try {
+            employeeId = ContextUtils.getEmployeeId();
+        } catch (Exception e) {
+            return ApiResponse.<ReturnWarrantyRequestResponse>builder()
+                    .code(403)
+                    .message("Chỉ nhân viên mới có thể thực hiện thao tác này")
+                    .build();
+        }
+        
+        ReturnWarrantyRequestResponse response = requestService.unassignRequest(requestId, employeeId);
+        return ApiResponse.<ReturnWarrantyRequestResponse>builder()
+                .result(response)
+                .message("Đã hủy xử lý yêu cầu thành công")
                 .build();
     }
 }
