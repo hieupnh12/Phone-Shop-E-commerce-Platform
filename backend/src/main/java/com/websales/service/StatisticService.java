@@ -7,6 +7,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -252,6 +253,9 @@ public class StatisticService {
                 .toList();
     }
 
+    private boolean isDateOnly(String value) {
+        return value.matches("\\d{4}-\\d{2}-\\d{2}");
+    }
     public StatisticProductResponse getStatisticProduct(String from, String to) {
 
         // Top sản phẩm
@@ -265,13 +269,25 @@ public class StatisticService {
         LocalDate today = LocalDate.now();
         LocalDate thirtyDaysAgo = today.minusDays(30);
 
-// Kiểm tra nếu from/to rỗng thì gán mặc định
-        String fromDate = (from == null || from.isEmpty())
-                ? thirtyDaysAgo.atStartOfDay().toString()
-                : from;
-        String toDate = (to == null || to.isEmpty())
-                ? today.atStartOfDay().toString()
-                : to;
+// Xử lý from
+        String fromDate;
+        if (from == null || from.isEmpty()) {
+            fromDate = thirtyDaysAgo.atStartOfDay().toString();  // default 00:00
+        } else if (isDateOnly(from)) {
+            fromDate = LocalDate.parse(from).atStartOfDay().toString(); // thêm 00:00:00
+        } else {
+            fromDate = LocalDateTime.parse(from).toString(); // giữ nguyên nếu đã có giờ
+        }
+
+// Xử lý to
+        String toDate;
+        if (to == null || to.isEmpty()) {
+            toDate = today.atTime(23, 59, 59).toString(); // default 23:59:59
+        } else if (isDateOnly(to)) {
+            toDate = LocalDate.parse(to).atTime(23, 59, 59).toString(); // thêm 23:59:59
+        } else {
+            toDate = LocalDateTime.parse(to).toString(); // giữ nguyên nếu đã có giờ
+        }
 
         // Top 10 sản phẩm
         List<StatisticProductResponse.ProductInfoDTO> topProducts = summaryCardRepository.getTopProducts(fromDate, toDate).stream().map(o -> {
