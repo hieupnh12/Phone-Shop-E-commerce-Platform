@@ -27,7 +27,7 @@ const ChangesModal = ({ isOpen, onClose, log }) => {
             // Kiểm tra xem có phải structure của UPDATE (có old, new, changes)
             if (parsed && typeof parsed === 'object' && ('old' in parsed || 'new' in parsed || 'changes' in parsed)) {
                 return parsed;
-            }
+        }
             return null;
         } catch (e) {
             return null;
@@ -68,7 +68,7 @@ const ChangesModal = ({ isOpen, onClose, log }) => {
                             className="text-gray-400 hover:text-red-400 transition-colors font-mono"
                         >
                             [ CLOSE ]
-                        </button>
+                    </button>
                     </div>
                 </div>
 
@@ -124,7 +124,7 @@ const ChangesModal = ({ isOpen, onClose, log }) => {
                                     <pre className="text-red-300 text-xs font-mono leading-relaxed overflow-x-auto max-h-[300px] overflow-y-auto">
                                         {formatJSON(updateData.old)}
                                     </pre>
-                                </div>
+                    </div>
 
                                 {/* NEW DATA */}
                                 <div className="bg-black border border-green-500/30 p-4">
@@ -139,7 +139,7 @@ const ChangesModal = ({ isOpen, onClose, log }) => {
                         </div>
                     ) : (
                         /* Default JSON Display for CREATE/DELETE */
-                        <div>
+                    <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="text-green-400 font-mono text-sm">// CHANGES_DATA</span>
                             </div>
@@ -152,8 +152,8 @@ const ChangesModal = ({ isOpen, onClose, log }) => {
                                             return log.changes;
                                         }
                                     })() : null)}
-                                </pre>
-                            </div>
+                        </pre>
+                    </div>
                         </div>
                     )}
                 </div>
@@ -292,13 +292,13 @@ const AuditLogPage = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="relative w-full sm:w-96">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
+                        <input
+                            type="text"
                                 placeholder="Tìm kiếm theo Bảng, Action, Employee ID, Record ID..."
                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                value={searchTerm}
-                                onChange={handleSearch}
-                            />
+                            value={searchTerm}
+                            onChange={handleSearch}
+                        />
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-right">
@@ -311,10 +311,10 @@ const AuditLogPage = () => {
 
                 {/* Bảng Danh sách Logs */}
                 <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
-                                <tr>
+                        <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Employee</th>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Thời gian</th>
@@ -322,26 +322,26 @@ const AuditLogPage = () => {
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Hành động</th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Record ID</th>
                                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {isLoading ? (
-                                    <tr>
+                        </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                        {isLoading ? (
+                            <tr>
                                         <td colSpan="7" className="text-center py-16">
                                             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-500" />
                                             <p className="text-gray-500">Đang tải dữ liệu...</p>
-                                        </td>
-                                    </tr>
-                                ) : logs.length === 0 ? (
-                                    <tr>
+                                </td>
+                            </tr>
+                        ) : logs.length === 0 ? (
+                            <tr>
                                         <td colSpan="7" className="text-center py-16">
                                             <Shield className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                                             <p className="text-gray-500 font-medium">Không tìm thấy bản ghi hoạt động nào</p>
                                             <p className="text-sm text-gray-400 mt-1">Thử thay đổi từ khóa tìm kiếm</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    logs.map((log) => (
+                                </td>
+                            </tr>
+                        ) : (
+                            logs.map((log) => (
                                         <tr 
                                             key={log.id} 
                                             className="hover:bg-blue-50/50 transition-colors border-b border-gray-100"
@@ -365,72 +365,72 @@ const AuditLogPage = () => {
                                                     {log.tableName}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getActionStyle(log.action)}`}>
-                                                    {log.action}
-                                                </span>
-                                            </td>
+                                                {log.action}
+                                            </span>
+                                    </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <span className="text-sm font-medium text-gray-700">{log.recordId || 'N/A'}</span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <button
-                                                    onClick={() => setSelectedLog(log)}
+                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        <button
+                                            onClick={() => setSelectedLog(log)}
                                                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-sm font-medium"
-                                                    title="Xem chi tiết thay đổi"
-                                                >
+                                            title="Xem chi tiết thay đổi"
+                                        >
                                                     <Eye className="w-4 h-4" />
                                                     Chi tiết
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                        </tbody>
+                    </table>
                     </div>
                 </div>
 
                 {/* Phân trang */}
                 <div className="bg-white rounded-2xl shadow-lg p-5 mt-6">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600">
                             Hiển thị <span className="font-semibold text-gray-800">{logs.length}</span> trên{' '}
                             <span className="font-semibold text-gray-800">{pagination.totalElements}</span> log
-                        </p>
+                    </p>
                         <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">
                             <button 
                                 onClick={() => handlePageChange(0)} 
                                 disabled={pagination.page === 0} 
                                 className="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                <ChevronsLeft className="w-5 h-5" />
-                            </button>
+                            <ChevronsLeft className="w-5 h-5" />
+                        </button>
                             <button 
                                 onClick={() => handlePageChange(pagination.page - 1)} 
                                 disabled={pagination.page === 0} 
                                 className="relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
                             <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-gradient-to-r from-blue-600 to-cyan-500 text-sm font-semibold text-white">
                                 Trang {pagination.page + 1} / {pagination.totalPages || 1}
-                            </span>
+                        </span>
                             <button 
                                 onClick={() => handlePageChange(pagination.page + 1)} 
                                 disabled={pagination.page >= pagination.totalPages - 1} 
                                 className="relative inline-flex items-center px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
                             <button 
                                 onClick={() => handlePageChange(pagination.totalPages - 1)} 
                                 disabled={pagination.page >= pagination.totalPages - 1} 
                                 className="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                <ChevronsRight className="w-5 h-5" />
-                            </button>
-                        </nav>
+                            <ChevronsRight className="w-5 h-5" />
+                        </button>
+                    </nav>
                     </div>
                 </div>
             </div>

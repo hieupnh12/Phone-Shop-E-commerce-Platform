@@ -8,45 +8,46 @@ import {
   AlertCircle,
   Package,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { warrantyRequestService } from "../../services/api";
 import Toast from "../common/Toast";
 
 const WarrantyPage = () => {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    fetchMyRequests();
-  }, []);
-
-  const fetchMyRequests = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Use useQuery for automatic refetching with staleTime = 0
+  const {
+    data: requestsData,
+    isLoading: loading,
+    isError: error,
+    refetch: refetchMyRequests,
+  } = useQuery({
+    queryKey: ["my-warranty-requests"],
+    queryFn: async () => {
       const response = await warrantyRequestService.getMyRequests();
       console.log("My warranty requests:", response);
 
       if (Array.isArray(response)) {
-        setRequests(response);
+        return response;
       } else if (response?.result && Array.isArray(response.result)) {
-        setRequests(response.result);
+        return response.result;
       } else {
-        setRequests([]);
+        return [];
       }
-    } catch (err) {
+    },
+    staleTime: 0, // Always refetch
+    refetchInterval: 2000, // Refetch every 5 seconds
+    onError: (err) => {
       console.error("Error fetching warranty requests:", err);
-      setError("Không thể tải danh sách yêu cầu bảo hành");
       setToast({
         type: "error",
         message: "Không thể tải danh sách yêu cầu bảo hành",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
+
+  const requests = requestsData || [];
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -245,7 +246,7 @@ const WarrantyPage = () => {
             <option value="REJECTED">Đã từ chối</option>
           </select>
           <button
-            onClick={fetchMyRequests}
+            onClick={() => refetchMyRequests()}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <RefreshCw size={16} />

@@ -89,10 +89,6 @@ const ProfileHeaderInfo = ({ customer }) => {
                                     <p className="text-sm text-gray-500">Tổng tiền tích lũy</p>
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-600 ml-12">
-                                Từ 01/01/2024
-                                <br/>
-                            </p>
                         </div>
                     </div>
                 </div>

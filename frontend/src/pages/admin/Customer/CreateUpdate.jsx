@@ -11,6 +11,7 @@ export default function CustomerModal({ onClose, data, setToast }) {
     email: "",
     birthDate: "",
     gender: "",
+    address: "",
   });
 
   useEffect(() => {
@@ -21,27 +22,102 @@ export default function CustomerModal({ onClose, data, setToast }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const validateForm = () => {
+    // Validate fullName - bắt buộc
+    if (!form.fullName || form.fullName.trim().length < 2) {
+      setToast({
+        message: "Họ và tên phải có ít nhất 2 ký tự",
+        type: "error",
+      });
+      return false;
+    }
+
+    if (form.fullName.trim().length > 100) {
+      setToast({
+        message: "Họ và tên không được vượt quá 100 ký tự",
+        type: "error",
+      });
+      return false;
+    }
+
+    // Validate email format nếu có
+    if (form.email && form.email.trim()) {
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailPattern.test(form.email.trim())) {
+        setToast({
+          message: "Email không hợp lệ",
+          type: "error",
+        });
+        return false;
+      }
+    }
+
+    // Validate birthDate nếu có
+    if (form.birthDate) {
+      const selectedDate = new Date(form.birthDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate >= today) {
+        setToast({
+          message: "Ngày sinh phải là ngày trong quá khứ",
+          type: "error",
+        });
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     if (isEdit) {
       try {
-        const res = await customerService.updateCustomer(data.customerId, form);
+        // Chỉ gửi các field được phép update (không gửi phoneNumber)
+        const updateData = {
+          fullName: form.fullName.trim(),
+          email: form.email ? form.email.trim() : null,
+          birthDate: form.birthDate || null,
+          gender: form.gender || null,
+          address: form.address || null,
+        };
+
+        const res = await customerService.updateCustomer(data.customerId, updateData);
         if (res) {
           setToast({
             message: "Cập nhật thành công!",
             type: "success",
           });
+          queryClient.invalidateQueries(["customers"]);
+          onClose();
         }
       } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || "Cập nhật thất bại";
         setToast({
-          message: `Cập nhật thất bại ${error}`,
+          message: errorMessage,
           type: "error",
         });
       }
     } else {
-      await customerService.createCustomer(form);
+      try {
+        await customerService.createCustomer(form);
+        setToast({
+          message: "Tạo khách hàng thành công!",
+          type: "success",
+        });
+        queryClient.invalidateQueries(["customers"]);
+        onClose();
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || error.message || "Tạo khách hàng thất bại";
+        setToast({
+          message: errorMessage,
+          type: "error",
+        });
+      }
     }
-    queryClient.invalidateQueries(["customers"]);
-    onClose();
   };
 
   return (
@@ -52,48 +128,94 @@ export default function CustomerModal({ onClose, data, setToast }) {
         </h2>
 
         <div className="space-y-3">
-          <input
-            name="fullName"
-            value={form.fullName}
-            onChange={handleChange}
-            placeholder="Họ và tên"
-            className="w-full p-3 border rounded-lg"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Họ và tên <span className="text-red-500">*</span>
+            </label>
+            <input
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+              placeholder="Họ và tên (bắt buộc)"
+              required
+              maxLength={100}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
-          <input
-            name="phoneNumber"
-            value={form.phoneNumber}
-            onChange={handleChange}
-            placeholder="Số điện thoại"
-            className="w-full p-3 border rounded-lg"
-          />
+          {!isEdit && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="phoneNumber"
+                value={form.phoneNumber}
+                onChange={handleChange}
+                placeholder="Số điện thoại (bắt buộc)"
+                required
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          )}
 
-          <input
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="w-full p-3 border rounded-lg"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="Email (tùy chọn)"
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
-          <input
-            name="birthDate"
-            type="date"
-            value={form.birthDate}
-            onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ngày sinh
+            </label>
+            <input
+              name="birthDate"
+              type="date"
+              value={form.birthDate}
+              onChange={handleChange}
+              max={new Date().toISOString().split('T')[0]}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
-          <select
-            name="gender"
-            value={form.gender}
-            onChange={handleChange}
-            className="w-full p-3 border rounded-lg"
-          >
-            <option value="">Giới tính</option>
-            <option value="MALE">Nam</option>
-            <option value="FEMALE">Nữ</option>
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Giới tính
+            </label>
+            <select
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Chọn giới tính</option>
+              <option value="true">Nam</option>
+              <option value="false">Nữ</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Địa chỉ
+            </label>
+            <textarea
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+              placeholder="Địa chỉ (tùy chọn)"
+              rows={2}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 mt-5">
