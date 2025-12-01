@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Star, Trash2, Edit2, ChevronDown } from 'lucide-react';
+import { Star, Trash2, Edit2, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 
 const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: externalSelectedRating }) => {
@@ -11,9 +11,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
   const [totalPages, setTotalPages] = useState(0);
   const [deleting, setDeleting] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null);
-  const [showRatingFilter, setShowRatingFilter] = useState(false);
   
-  // Sử dụng externalSelectedRating nếu có, nếu không thì dùng internal state
   const activeRating = externalSelectedRating !== undefined ? externalSelectedRating : selectedRating;
 
   useEffect(() => {
@@ -24,7 +22,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
           productId,
           0,
           10,
-          null // Reset filter
+          null
         );
         setFeedbacks(response.content || []);
         setTotalPages(response.totalPages || 1);
@@ -36,7 +34,6 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, refreshTrigger]);
 
   useEffect(() => {
@@ -58,8 +55,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRating, page]);
+  }, [activeRating, page, productId]);
 
   const handleDelete = async (feedbackId) => {
     if (!window.confirm('Bạn chắc chắn muốn xóa đánh giá này?')) {
@@ -69,7 +65,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
     setDeleting(feedbackId);
     try {
       await feedbackService.deleteFeedback(feedbackId);
-      setPage(0); // Reset to first page
+      setPage(0);
     } catch (error) {
       console.error('Error deleting feedback:', error);
       alert('Lỗi khi xóa đánh giá');
@@ -80,7 +76,7 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
 
   const renderStars = (rating) => {
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
@@ -95,19 +91,24 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
     );
   };
 
-  const getRatingLabel = () => {
-    if (!activeRating) return 'Tất cả đánh giá';
-    return `${activeRating} sao`;
-  };
-
   if (loading && feedbacks.length === 0) {
-    return <div className="text-center py-8">Đang tải đánh giá...</div>;
+    return (
+      <div className="text-center py-10">
+        <div className="w-10 h-10 mx-auto mb-3 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+        <p className="text-gray-500">Đang tải đánh giá...</p>
+      </div>
+    );
   }
 
   if (feedbacks.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        {t('feedback.noReviews') || 'Chưa có đánh giá'}
+      <div className="text-center py-10">
+        <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+          <MessageCircle className="w-7 h-7 text-gray-400" />
+        </div>
+        <p className="text-gray-500">
+          {t('feedback.noReviews') || 'Chưa có đánh giá'}
+        </p>
       </div>
     );
   }
@@ -116,118 +117,107 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
     <div className="space-y-4">
       {/* Rating Filter - chỉ hiển thị khi không có externalSelectedRating */}
       {externalSelectedRating === undefined && (
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold">Đánh giá của khách hàng</h3>
-          <div className="relative">
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-gray-800 mb-3">Lọc đánh giá theo</h2>
+          <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setShowRatingFilter(!showRatingFilter)}
-              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+              onClick={() => setSelectedRating(null)}
+              className={`py-2 px-4 rounded-full text-sm font-medium transition-all ${
+                selectedRating === null
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
-              {getRatingLabel()}
-              <ChevronDown className="w-4 h-4" />
+              Tất cả
             </button>
-            
-            {showRatingFilter && (
-              <div className="absolute right-0 top-full mt-1 border border-gray-300 rounded-lg bg-white shadow-lg z-10 min-w-40">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedRating(null);
-                    setShowRatingFilter(false);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b"
-                >
-                  Tất cả đánh giá
-                </button>
-                {[5, 4, 3, 2, 1].map(rating => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRating(rating);
-                      setShowRatingFilter(false);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm border-b last:border-b-0 flex items-center gap-2"
-                  >
-                    <span>{rating} sao</span>
-                    <div className="flex gap-0.5">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star
-                          key={star}
-                          className={`w-3 h-3 ${
-                            star <= rating
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            {[5, 4, 3, 2, 1].map((rating) => (
+              <button
+                key={rating}
+                onClick={() => setSelectedRating(rating)}
+                className={`py-2 px-4 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                  selectedRating === rating
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {rating} <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+              </button>
+            ))}
           </div>
         </div>
       )}
 
       {/* Feedbacks List */}
-      {feedbacks.map((feedback) => (
-        <div
-          key={feedback.feedback_id}
-          className="border border-gray-200 rounded-lg p-4"
-        >
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <p className="font-semibold">{feedback.customer_name}</p>
-              <div className="flex gap-2 items-center mt-1">
-                {renderStars(feedback.rate)}
-                <span className="text-xs text-gray-500">
-                  {new Date(feedback.date).toLocaleDateString('vi-VN')}
-                </span>
+      <div className="space-y-3">
+        {feedbacks.map((feedback) => (
+          <div
+            key={feedback.feedback_id}
+            className="group bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                  {feedback.customer_name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{feedback.customer_name}</p>
+                  <div className="flex gap-2 items-center mt-0.5">
+                    {renderStars(feedback.rate)}
+                    <span className="text-xs text-gray-500">
+                      {new Date(feedback.date).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+                </div>
               </div>
+              {(onEdit || handleDelete) && (
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(feedback)}
+                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4 text-blue-600" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(feedback.feedback_id)}
+                    disabled={deleting === feedback.feedback_id}
+                    className="p-2 hover:bg-red-50 rounded-lg disabled:opacity-50 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onEdit?.(feedback)}
-                className="p-2 hover:bg-gray-100 rounded"
-                title="Edit"
-              >
-                <Edit2 className="w-4 h-4 text-blue-600" />
-              </button>
-              <button
-                onClick={() => handleDelete(feedback.feedback_id)}
-                disabled={deleting === feedback.feedback_id}
-                className="p-2 hover:bg-gray-100 rounded disabled:opacity-50"
-                title="Delete"
-              >
-                <Trash2 className="w-4 h-4 text-red-600" />
-              </button>
-            </div>
-          </div>
 
-          <p className="text-gray-700 text-sm">{feedback.content}</p>
-        </div>
-      ))}
+            <p className="text-gray-700 text-sm leading-relaxed">{feedback.content}</p>
+          </div>
+        ))}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex gap-2 justify-center mt-6">
+        <div className="flex gap-2 justify-center mt-6 pt-4 border-t border-gray-200">
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="px-3 py-2 border border-gray-300 rounded disabled:opacity-50"
+            className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            Trước
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
-          <div className="flex items-center px-3">
-            Trang {page + 1}/{totalPages}
+          <div className="flex items-center px-4 py-2 bg-gray-100 rounded-lg">
+            <span className="text-sm font-medium text-gray-700">
+              {page + 1} / {totalPages}
+            </span>
           </div>
           <button
             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
             disabled={page === totalPages - 1}
-            className="px-3 py-2 border border-gray-300 rounded disabled:opacity-50"
+            className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            Sau
+            <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       )}
