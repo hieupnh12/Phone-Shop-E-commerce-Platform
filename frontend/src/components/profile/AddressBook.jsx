@@ -85,14 +85,14 @@ const AddressBook = () => {
             setShowForm(false);
             setAddressToEdit(null);
             setToast({
-                message: isEditMode ? t('addressBook.updateSuccess') : t('addressBook.addSuccess'),
+                message: isEditMode ? t('profile.addressBook.updateSuccess') : t('profile.addressBook.addSuccess'),
                 type: "success"
             });
         } catch (error) {
             console.error("Lỗi khi lưu địa chỉ:", error);
             console.error("Error details:", error.response?.data || error.message);
             setToast({
-                message: t('addressBook.saveError') + (error.response?.data?.message || error.message || t('addressBook.pleaseTryAgain')),
+                message: t('profile.addressBook.saveError') + (error.response?.data?.message || error.message || t('profile.addressBook.pleaseTryAgain')),
                 type: "error"
             });
         } finally {
@@ -118,7 +118,7 @@ const AddressBook = () => {
         // Không cho xóa địa chỉ mặc định nếu còn nhiều địa chỉ
         if (addressToDelete && defaultAddressId === id && addresses.length > 1) {
             setToast({
-                message: t('addressBook.setDefaultBeforeDelete'),
+                message: t('profile.addressBook.setDefaultBeforeDelete'),
                 type: "warning"
             });
             setDeleteConfirm({ isOpen: false, addressId: null, address: null });
@@ -138,13 +138,13 @@ const AddressBook = () => {
             }
             setDeleteConfirm({ isOpen: false, addressId: null, address: null });
             setToast({
-                message: t('addressBook.deleteSuccess'),
+                message: t('profile.addressBook.deleteSuccess'),
                 type: "success"
             });
         } catch (error) {
             console.error("Lỗi khi xóa địa chỉ:", error);
             setToast({
-                message: t('addressBook.deleteError'),
+                message: t('profile.addressBook.deleteError'),
                 type: "error"
             });
         } finally {
@@ -172,7 +172,7 @@ const AddressBook = () => {
             return (
                 <div className="flex flex-col items-center justify-center py-8 text-center text-gray-500">
                     <Loader2 size={24} className="animate-spin text-red-500 mb-3" />
-                    <p>{t('addressBook.loading')}</p>
+                    <p>{t('profile.addressBook.loading')}</p>
                 </div>
             );
         }
@@ -185,7 +185,7 @@ const AddressBook = () => {
                         alt="No Address"
                         className="w-40 h-40 mb-4 object-contain"
                     />
-                    <p>{t('addressBook.noAddresses')}</p>
+                    <p>{t('profile.addressBook.noAddresses')}</p>
                 </div>
             );
         }
@@ -217,14 +217,14 @@ const AddressBook = () => {
                                         disabled
                                     >
                                         <Home size={12} />
-                                        {t('addressBook.home')}
+                                        {t('profile.addressBook.home')}
                                     </button>
                                     {isDefault && (
                                         <button
                                             className="px-2 py-1 text-xs bg-blue-500 text-white rounded"
                                             disabled
                                         >
-                                            {t('addressBook.default')}
+                                            {t('profile.addressBook.default')}
                                         </button>
                                     )}
                                 </div>
@@ -232,9 +232,9 @@ const AddressBook = () => {
 
                             {/* Thông tin địa chỉ */}
                             <div className="text-sm text-gray-700 space-y-1 mb-3">
-                                <p><span className="font-medium">{t('addressBook.recipient')}:</span> {customerInfo.fullName || 'N/A'}</p>
-                                <p><span className="font-medium">{t('addressBook.phone')}:</span> {formatPhoneNumber(customerInfo.phoneNumber) || 'N/A'}</p>
-                                <p><span className="font-medium">{t('addressBook.address')}:</span> {addr.address || t('addressBook.notAvailable')}</p>
+                                <p><span className="font-medium">{t('profile.addressBook.recipient')}:</span> {customerInfo.fullName || 'N/A'}</p>
+                                <p><span className="font-medium">{t('profile.addressBook.phone')}:</span> {formatPhoneNumber(customerInfo.phoneNumber) || 'N/A'}</p>
+                                <p><span className="font-medium">{t('profile.addressBook.address')}:</span> {addr.address || t('profile.addressBook.notAvailable')}</p>
                             </div>
 
                             {/* Actions */}
@@ -245,7 +245,7 @@ const AddressBook = () => {
                                         onClick={() => handleSetDefault(addr.addressBookId)}
                                         className="text-xs text-blue-500 hover:text-blue-600 font-medium"
                                     >
-                                        {t('addressBook.setAsDefault')}
+                                        {t('profile.addressBook.setAsDefault')}
                                     </button>
                                 )}
                                 <button
@@ -275,14 +275,14 @@ const AddressBook = () => {
     return (
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
             <div className="flex items-center justify-between border-b pb-4 mb-6">
-                <h3 className="text-xl font-bold text-gray-800">{t('addressBook.title')}</h3>
+                <h3 className="text-xl font-bold text-gray-800">{t('profile.addressBook.title')}</h3>
                 <button
                     onClick={handleAddAddress}
                     className="flex items-center text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
                     disabled={isLoading}
                 >
                     <Plus size={18} className="mr-2" />
-                    {t('addressBook.addAddress')}
+                    {t('profile.addressBook.addAddress')}
                 </button>
             </div>
 
@@ -314,14 +314,14 @@ const AddressBook = () => {
                             <AlertTriangle className="w-8 h-8 text-red-600" />
                         </div>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('addressBook.confirmDelete')}</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('profile.addressBook.confirmDelete')}</h3>
                     <p className="text-gray-600 mb-6">
-                        {t('addressBook.deleteConfirmMessage')}
+                        {t('profile.addressBook.deleteConfirmMessage')}
                     </p>
                     {deleteConfirm.address && (
                         <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
                             <p className="text-sm text-gray-700">
-                                <span className="font-medium">{t('addressBook.address')}:</span> {deleteConfirm.address.address || t('addressBook.notAvailable')}
+                                <span className="font-medium">{t('profile.addressBook.address')}:</span> {deleteConfirm.address.address || t('profile.addressBook.notAvailable')}
                             </p>
                         </div>
                     )}
