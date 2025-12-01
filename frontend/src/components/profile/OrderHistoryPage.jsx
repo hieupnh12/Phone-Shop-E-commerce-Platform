@@ -1,7 +1,7 @@
 // file OrderHistoryPage
 import React, { useEffect, useState, useMemo } from 'react';
-import { Search, Calendar, ChevronRight, Shield } from 'lucide-react';
-import {profileService} from "../../services/api"
+import { Search, Calendar, ChevronRight, Shield, Clock, CheckCircle, XCircle, RefreshCw, AlertCircle } from 'lucide-react';
+import {profileService, warrantyRequestService} from "../../services/api"
 import { Link, useOutletContext } from 'react-router-dom';
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
@@ -30,23 +30,32 @@ const OrderHistoryPage = () => {
     const [itemsPerPage] = useState(5); // Số đơn hàng mỗi trang
 
     const [orders, setOrders] = useState([]);
+    const [warrantyRequests, setWarrantyRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        const fetchOrders = async () => {
+        const fetchData = async () => {
             if (!customerId) return; // Không fetch nếu chưa có customerId
             try {
                 setLoading(true);
-                const data = await profileService.getOrdersByCustomer(customerId);
+                // Fetch orders và warranty requests song song
+                const [ordersData, warrantyData] = await Promise.all([
+                    profileService.getOrdersByCustomer(customerId),
+                    warrantyRequestService.getMyRequests().catch(() => []) // Nếu lỗi thì trả về mảng rỗng
+                ]);
 
-                const groupedOrders = groupAndNormalizeOrders(data.result || data); // Giả định API trả về .result
-
+                const groupedOrders = groupAndNormalizeOrders(ordersData.result || ordersData);
                 setOrders(groupedOrders);
+
+                // Xử lý warranty requests
+                const requests = Array.isArray(warrantyData) ? warrantyData : (warrantyData?.result || []);
+                setWarrantyRequests(requests);
+
                 setError(null);
             } catch (err) {
-                console.error("Lỗi khi tải đơn hàng:", err);
+                console.error("Lỗi khi tải dữ liệu:", err);
                 const errorMsg = "Không thể tải lịch sử đơn hàng.";
                 setError(errorMsg);
                 setOrders([]);
@@ -58,7 +67,7 @@ const OrderHistoryPage = () => {
                 setLoading(false);
             }
         };
-        fetchOrders();
+        fetchData();
     }, [customerId]);
 
     const groupAndNormalizeOrders = (apiData) => {
@@ -99,6 +108,41 @@ const OrderHistoryPage = () => {
 
     const formatCurrency = (amount) => {
         return amount.toLocaleString('vi-VN') + 'đ';
+    };
+
+    // Kiểm tra xem đơn hàng có yêu cầu bảo hành không
+    const getWarrantyRequestsForOrder = (orderId) => {
+        return warrantyRequests.filter(req => req.orderId === orderId);
+    };
+
+    // Lấy trạng thái yêu cầu bảo hành cho đơn hàng (lấy trạng thái mới nhất nếu có nhiều)
+    const getOrderWarrantyStatus = (orderId) => {
+        const requests = getWarrantyRequestsForOrder(orderId);
+        if (requests.length === 0) return null;
+        // Trả về request mới nhất (sắp xếp theo createdAt)
+        const sorted = requests.sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        return sorted[0].status;
+    };
+
+    // Hiển thị badge trạng thái yêu cầu bảo hành
+    const getWarrantyStatusBadge = (status) => {
+        const statusMap = {
+            'PENDING': { label: 'Đang chờ', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+            'ACCEPTED': { label: 'Đã chấp nhận', color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
+            'REJECTED': { label: 'Đã từ chối', color: 'bg-red-100 text-red-800', icon: XCircle },
+            'IN_PROGRESS': { label: 'Đang xử lý', color: 'bg-purple-100 text-purple-800', icon: RefreshCw },
+            'COMPLETED': { label: 'Đã hoàn thành', color: 'bg-green-100 text-green-800', icon: CheckCircle }
+        };
+        const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
+        const Icon = statusInfo.icon;
+        return (
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                <Icon size={12} />
+                {statusInfo.label}
+            </span>
+        );
     };
 
     const getStatusDisplay = (status) => {
@@ -233,10 +277,23 @@ const OrderHistoryPage = () => {
                         {paginatedOrders.map((order) => (
                         <div key={order.id} className="border border-gray-200 rounded-lg p-4 bg-white">
                             <div className="flex items-center justify-between mb-3 border-b pb-3">
-                                <div className="flex items-center text-sm">
+                                <div className="flex items-center gap-3 text-sm">
                                     <span className="font-semibold text-gray-800">Đơn hàng: {order.id}</span>
-                                    <span className="text-gray-500 mx-3">•</span>
+                                    <span className="text-gray-500">•</span>
                                     <span className="text-gray-500">Ngày đặt hàng: {order.date}</span>
+                                    {/* Hiển thị indicator yêu cầu bảo hành nếu có */}
+                                    {(() => {
+                                        const warrantyStatus = getOrderWarrantyStatus(order.orderId);
+                                        if (warrantyStatus) {
+                                            return (
+                                                <div className="flex items-center gap-1">
+                                                    <Shield size={14} className="text-blue-600" />
+                                                    {getWarrantyStatusBadge(warrantyStatus)}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                                 {getStatusDisplay(order.status)}
                             </div>
@@ -273,22 +330,35 @@ const OrderHistoryPage = () => {
                                                 Xem chi tiết
                                                 <ChevronRight size={14} className="ml-1"/>
                                             </Link>
-                                            {/* Hiển thị nút bảo hành cho đơn hàng đã giao */}
-                                            {(order.status === 'DELIVERED' || order.status === 'delivered') && (
-                                                <Link
-                                                    to={`/user/profile/order/order-detail/${order.orderId}`}
-                                                    state={{
-                                                        totalAmount: order.totalAmount,
-                                                        createDatetime: order.createDatetime,
-                                                        endDateTime: order.endDateTime,
-                                                        status: order.status
-                                                    }}
-                                                    className="flex items-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-colors"
-                                                >
-                                                    <Shield size={14} />
-                                                    Bảo hành
-                                                </Link>
-                                            )}
+                                            {/* Hiển thị nút bảo hành hoặc trạng thái cho đơn hàng đã giao */}
+                                            {(order.status === 'DELIVERED' || order.status === 'delivered') && (() => {
+                                                const warrantyStatus = getOrderWarrantyStatus(order.orderId);
+                                                if (warrantyStatus) {
+                                                    // Đã có yêu cầu bảo hành, hiển thị badge trạng thái
+                                                    return (
+                                                        <div className="flex items-center gap-1">
+                                                            {getWarrantyStatusBadge(warrantyStatus)}
+                                                        </div>
+                                                    );
+                                                } else {
+                                                    // Chưa có yêu cầu, hiển thị nút tạo mới
+                                                    return (
+                                                        <Link
+                                                            to={`/user/profile/order/order-detail/${order.orderId}`}
+                                                            state={{
+                                                                totalAmount: order.totalAmount,
+                                                                createDatetime: order.createDatetime,
+                                                                endDateTime: order.endDateTime,
+                                                                status: order.status
+                                                            }}
+                                                            className="flex items-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+                                                        >
+                                                            <Shield size={14} />
+                                                            Bảo hành
+                                                        </Link>
+                                                    );
+                                                }
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
