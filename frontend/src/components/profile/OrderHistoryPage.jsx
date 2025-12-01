@@ -299,8 +299,8 @@ const OrderHistoryPage = () => {
                         alt="Bạn chưa có đơn hàng nào"
                         className="w-auto h-auto scale-200 object-contain"
                     />
-                    <p className="text-lg mb-3">Bạn chưa có đơn hàng nào</p>
-                    <p className="text-sm mb-6">Cùng khám phá hàng ngàn sản phẩm tại FShop nhé!</p>
+                    <p className="text-lg mb-3">{t('orderHistory.noOrders')}</p>
+                    <p className="text-sm mb-6">{t('orderHistory.exploreProducts')}</p>
                     <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors">
                         Khám phá ngay
                     </button>

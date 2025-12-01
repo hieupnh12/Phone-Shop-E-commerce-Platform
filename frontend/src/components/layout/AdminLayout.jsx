@@ -61,7 +61,7 @@ export default function AdminLayout() {
     {
       id: "dashboard",
       icon: Home,
-      label: "Dashboard",
+      label: t('admin.dashboard'),
       path: "/admin/dashboard",
       permission: null, // Dashboard luôn hiển thị cho employee
     },
@@ -75,7 +75,7 @@ export default function AdminLayout() {
     {
       id: "statistic",
       icon: ChartNoAxesCombined,
-      label: "Thống kê",
+      label: t('admin.statistic'),
       path: "/admin/statistic",
       permission: PERMISSIONS.REPORT_VIEW_SALES, // Hoặc có thể dùng permission khác
     },
@@ -90,21 +90,21 @@ export default function AdminLayout() {
     { 
       id: "roles", 
       icon: Shield, 
-      label: "Phân quyền", 
+      label: t('admin.roles'), 
       path: "/admin/roles",
       permission: PERMISSIONS.STAFF_MANAGE_ROLES,
     },
     { 
       id: "customers", 
       icon: Users2, 
-      label: "Khách hàng", 
+      label: t('admin.customers'), 
       path: "/admin/customers",
       permission: PERMISSIONS.CUSTOMER_VIEW_ALL,
     },
     { 
       id: "employee", 
       icon: UserMinus, 
-      label: "Nhân Viên", 
+      label: t('admin.employee'), 
       path: "/admin/employee",
       permission: PERMISSIONS.STAFF_VIEW_ALL,
     },

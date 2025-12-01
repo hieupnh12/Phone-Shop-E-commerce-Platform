@@ -263,7 +263,7 @@ export default function Payment() {
     // Kiểm tra địa chỉ
     if (!selectedAddressId || addresses.length === 0) {
       setToast({
-        message: 'Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng!',
+        message: t('payment.addAddressBeforeOrder'),
         type: 'warning'
       });
       return;
@@ -300,7 +300,7 @@ export default function Payment() {
       }
     } catch (e) {
       // Xử lý lỗi từ API response
-      const errorMessage = e.response?.data?.message || e.message || 'Lỗi khi đặt hàng';
+      const errorMessage = e.response?.data?.message || e.message || t('payment.orderError');
       setError(errorMessage);
       
       // Nếu có danh sách sản phẩm hết hàng, hiển thị chi tiết
@@ -325,7 +325,7 @@ export default function Payment() {
         {/* Header */}
         <div className="bg-rose-600 text-white px-8 py-5 flex items-center gap-3">
           <CreditCard className="w-6 h-6" />
-          <h1 className="text-xl font-semibold">Thông tin thanh toán</h1>
+          <h1 className="text-xl font-semibold">{t('payment.paymentInfo')}</h1>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
@@ -335,19 +335,19 @@ export default function Payment() {
             <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
                 <User className="w-5 h-5" />
-                Thông tin khách hàng
+                {t('payment.customerInfo')}
               </h3>
 
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-2.5 text-sm">
-                  <span className="text-gray-600 flex-1">Họ và tên</span>
+                  <span className="text-gray-600 flex-1">{t('personalInfo.fullName')}</span>
                   <span className="text-right font-medium text-gray-900">{customerInfo.name || t('payment.notUpdated')}</span>
                 </div>
 
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1 flex items-center gap-2">
                     <Phone className="w-4 h-4" />
-                    Số điện thoại
+                    {t('common.phone')}
                   </span>
                   <span className="text-right font-medium text-gray-900">{formatPhoneNumber(customerInfo.phone) || t('payment.notUpdated')}</span>
                 </div>
@@ -355,7 +355,7 @@ export default function Payment() {
                 <div className="flex justify-between items-center py-2.5 text-sm">
                   <span className="text-gray-600 flex-1 flex items-center gap-2">
                     <Mail className="w-4 h-4" />
-                    Email
+                    {t('personalInfo.email')}
                   </span>
                   <span className="text-right font-medium text-gray-900">{customerInfo.email || t('payment.notUpdated')}</span>
                 </div>
@@ -363,7 +363,7 @@ export default function Payment() {
                 <div className="py-2.5 text-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-gray-600" />
-                    <span className="text-gray-600">Địa chỉ giao hàng</span>
+                    <span className="text-gray-600">{t('payment.deliveryAddress')}</span>
                   </div>
                   <div className="flex gap-2 items-center">
                     <select
@@ -373,10 +373,10 @@ export default function Payment() {
                       disabled={loadingAddresses || addresses.length === 0}
                     >
                       {addresses.length === 0 ? (
-                        <option value="">Chưa có địa chỉ</option>
+                        <option value="">{t('payment.noAddress')}</option>
                       ) : (
                         <>
-                          <option value="">Chọn địa chỉ...</option>
+                          <option value="">{t('payment.selectAddress')}</option>
                           {addresses.map((addr) => (
                             <option key={addr.addressBookId} value={addr.addressBookId}>
                               {addr.address}
@@ -391,7 +391,7 @@ export default function Payment() {
                       className="px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg flex items-center gap-1 text-sm transition-colors"
                     >
                       <Plus size={16} />
-                      Thêm
+                      {t('common.add')}
                     </button>
                   </div>
                   {selectedAddressId && (
@@ -422,7 +422,7 @@ export default function Payment() {
             <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900">
                 <CreditCard className="w-5 h-5" />
-                Phương thức thanh toán
+                {t('payment.paymentMethod')}
               </h3>
 
               <div className="space-y-3">
@@ -442,8 +442,8 @@ export default function Payment() {
                   />
                   <Truck className="w-5 h-5 text-rose-600 mr-3" />
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">Thanh toán khi nhận hàng (COD)</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Nhận hàng rồi thanh toán</div>
+                    <div className="font-medium text-gray-900">{t('payment.cod')}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{t('payment.codDescription')}</div>
                   </div>
                 </label>
 
@@ -463,8 +463,8 @@ export default function Payment() {
                   />
                   <QrCode className="w-5 h-5 text-rose-600 mr-3" />
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">Chuyển khoản ngân hàng</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Quét QR để thanh toán</div>
+                    <div className="font-medium text-gray-900">{t('payment.bankTransfer')}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{t('payment.scanQRToPay')}</div>
                   </div>
                 </label>
               </div>
@@ -475,18 +475,18 @@ export default function Payment() {
                   {loadingQR ? (
                     <div className="py-8">
                       <Loader2 className="w-8 h-8 animate-spin text-rose-600 mx-auto mb-2" />
-                      <p className="text-xs text-gray-500">Đang tạo mã QR...</p>
+                      <p className="text-xs text-gray-500">{t('payment.generatingQR')}</p>
                     </div>
                   ) : payOSQRCode ? (
                     <>
                       <div className="inline-block p-2 border border-gray-200 rounded-lg bg-white">
                         <img
                           src={payOSQRCode}
-                          alt="PayOS QR Code"
+                          alt={t('payment.payOSQRCode')}
                           className="w-[200px] h-[200px] rounded"
                         />
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">Quét mã QR bằng ứng dụng ngân hàng để thanh toán</p>
+                      <p className="text-xs text-gray-500 mt-2">{t('payment.scanQRInstruction')}</p>
                       {payOSLink && (
                         <a
                           href={payOSLink}
@@ -494,7 +494,7 @@ export default function Payment() {
                           rel="noopener noreferrer"
                           className="mt-2 inline-block text-xs text-rose-600 hover:text-rose-700 underline"
                         >
-                          Hoặc mở link thanh toán
+                          {t('payment.openPaymentLink')}
                         </a>
                       )}
                     </>
@@ -536,7 +536,7 @@ export default function Payment() {
                             <div className="flex-1">
                               <div className="font-medium text-gray-900">{item.productName || t('common.products')}</div>
                               <div className="text-sm text-gray-500 mt-1">
-                                Số lượng: {item.quantity || 1}
+                                {t('payment.quantity')}: {item.quantity || 1}
                               </div>
                             </div>
                             <div className="font-semibold text-rose-600 ml-4">
@@ -553,23 +553,23 @@ export default function Payment() {
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                     <div className="p-5 border-b border-gray-200">
                       <div className="flex justify-between items-center">
-                        <div className="text-gray-900">Tạm tính</div>
+                        <div className="text-gray-900">{t('payment.subtotal')}</div>
                         <div className="font-semibold text-gray-900">{vnd(subtotal)}</div>
                       </div>
                     </div>
 
                     <div className="p-5 border-b border-gray-200">
                       <div className="flex justify-between items-center">
-                        <div className="text-gray-900">Phí vận chuyển</div>
+                        <div className="text-gray-900">{t('payment.shippingFee')}</div>
                         <div className="font-semibold text-rose-600">
-                          {shippingFee === 0 ? 'Miễn phí' : vnd(shippingFee)}
+                          {shippingFee === 0 ? t('payment.free') : vnd(shippingFee)}
                         </div>
                       </div>
                     </div>
 
                     <div className="bg-rose-50 p-5">
                       <div className="flex justify-between items-center text-lg font-semibold text-rose-600">
-                        <div>Tổng cộng</div>
+                        <div>{t('payment.total')}</div>
                         <div>{vnd(total)}</div>
                       </div>
                     </div>
@@ -578,7 +578,7 @@ export default function Payment() {
 
                 {error && (
                   <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                    <div className="font-semibold mb-2">⚠️ Không thể đặt hàng:</div>
+                    <div className="font-semibold mb-2">⚠️ {t('payment.cannotPlaceOrder')}:</div>
                     <div className="whitespace-pre-line">{error}</div>
                   </div>
                 )}
@@ -591,12 +591,12 @@ export default function Payment() {
                   {placingOrder ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Đang xử lý...
+                      {t('payment.processing')}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="w-5 h-5" />
-                      Đặt hàng
+                      {t('payment.placeOrder')}
                     </>
                   )}
                 </button>
@@ -606,11 +606,11 @@ export default function Payment() {
                   className="w-full bg-transparent hover:bg-rose-50 text-rose-600 border-2 border-rose-600 font-semibold py-3.5 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
                 >
                   <Edit className="w-5 h-5" />
-                  Chỉnh sửa đơn hàng
+                  {t('payment.editOrder')}
                 </button>
 
                 <p className="text-xs text-gray-500 italic">
-                  * Quý khách vui lòng kiểm tra kỹ thông tin trước khi đặt hàng.
+                  * {t('payment.checkInfoBeforeOrder')}
                 </p>
               </>
             )}

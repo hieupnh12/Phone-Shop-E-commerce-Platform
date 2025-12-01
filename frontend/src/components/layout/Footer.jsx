@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, MapPin, Mail, Clock, Facebook, MessageCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Footer = () => {
+  const { t } = useLanguage();
   return (
     <footer className="bg-slate-900 text-white border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -13,32 +15,32 @@ const Footer = () => {
               <h3 className="text-xl font-bold">FShop</h3>
             </div>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Cửa hàng chuyên bán lẻ các sản phẩm điện thoại di động chất lượng cao với mức giá tối ưu nhất cho khách hàng.
+              {t('footer.about')}
             </p>
           </div>
           
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-white">Liên kết nhanh</h4>
+            <h4 className="text-lg font-semibold mb-4 text-white">{t('footer.quickLinks')}</h4>
             <ul className="space-y-3">
               <li>
                 <Link to="/" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
-                  Trang chủ
+                  {t('navigation.home')}
                 </Link>
               </li>
               <li>
                 <Link to="/user/products" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
-                  Sản phẩm
+                  {t('navigation.products')}
                 </Link>
               </li>
               <li>
                 <Link to="/user/feedbacks" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
-                  Đánh giá
+                  {t('navigation.feedbacks')}
                 </Link>
               </li>
               <li>
                 <Link to="/user/contact" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
-                  Liên hệ
+                  {t('navigation.contact')}
                 </Link>
               </li>
             </ul>
@@ -46,7 +48,7 @@ const Footer = () => {
           
           {/* Contact Info */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-white">Thông tin liên hệ</h4>
+            <h4 className="text-lg font-semibold mb-4 text-white">{t('footer.contactInfo')}</h4>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <Phone className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -54,7 +56,7 @@ const Footer = () => {
                   <a href="tel:0705432115" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
                     0705 432 115
                   </a>
-                  <p className="text-slate-500 text-xs">Hotline hỗ trợ</p>
+                  <p className="text-slate-500 text-xs">{t('footer.supportHotline')}</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -75,16 +77,16 @@ const Footer = () => {
           
           {/* Business Hours */}
           <div>
-            <h4 className="text-lg font-semibold mb-4 text-white">Giờ làm việc</h4>
+            <h4 className="text-lg font-semibold mb-4 text-white">{t('footer.businessHours')}</h4>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <Clock className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
                   <p className="text-slate-400">
-                    <span className="text-slate-500">T2 - T6:</span> 08:00 - 17:30
+                    <span className="text-slate-500">{t('footer.weekdays')}:</span> 08:00 - 17:30
                   </p>
                   <p className="text-slate-400">
-                    <span className="text-slate-500">T7 - CN:</span> 09:00 - 17:00
+                    <span className="text-slate-500">{t('footer.weekends')}:</span> 09:00 - 17:00
                   </p>
                 </div>
               </li>
@@ -92,7 +94,7 @@ const Footer = () => {
             
             {/* Social Links */}
             <div className="mt-6">
-              <p className="text-sm text-slate-500 mb-3">Kết nối với chúng tôi</p>
+              <p className="text-sm text-slate-500 mb-3">{t('footer.connectWithUs')}</p>
               <div className="flex gap-3">
                 <a 
                   href="https://facebook.com/minhtran324" 
@@ -119,14 +121,14 @@ const Footer = () => {
         <div className="border-t border-slate-800 mt-10 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-slate-500 text-sm">
-              © 2025 FShop. All rights reserved.
+              {t('footer.copyright')}
             </p>
             <div className="flex gap-6 text-sm">
               <Link to="/user/contact" className="text-slate-500 hover:text-cyan-400 transition-colors">
-                Chính sách bảo mật
+                {t('footer.privacyPolicy')}
               </Link>
-              <Link to="user/contact" className="text-slate-500 hover:text-cyan-400 transition-colors">
-                Điều khoản sử dụng
+              <Link to="/user/contact" className="text-slate-500 hover:text-cyan-400 transition-colors">
+                {t('footer.termsOfUse')}
               </Link>
             </div>
           </div>

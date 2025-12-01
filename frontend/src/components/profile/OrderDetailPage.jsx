@@ -514,14 +514,14 @@ const OrderDetailPage = () => {
         
         return (
         <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
-            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Thông tin thanh toán</h4>
+            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orderDetail.paymentInfo')}</h4>
             <div className="space-y-2">
                 <InfoRow label={t('common.products')} value={totalQuantity} note={t('common.quantityNote')} />
-                <InfoRow label="Tổng tiền hàng" value={orderData.summary.subtotal} currency />
-                <InfoRow label="Giảm giá" value={-orderData.summary.discount} currency highlight />
+                <InfoRow label={t('orderDetail.subtotal')} value={orderData.summary.subtotal} currency />
+                <InfoRow label={t('orderDetail.discount')} value={-orderData.summary.discount} currency highlight />
                 <InfoRow
-                    label="Phí vận chuyển"
-                    value={orderData.summary.shippingFee === 0 ? 'Miễn phí' : orderData.summary.shippingFee}
+                    label={t('orderDetail.shippingFee')}
+                    value={orderData.summary.shippingFee === 0 ? t('orderDetail.free') : orderData.summary.shippingFee}
                     currency={orderData.summary.shippingFee > 0}
                 />
 
@@ -529,14 +529,14 @@ const OrderDetailPage = () => {
 
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
                 <InfoRow
-                    label="Tổng số tiền"
+                    label={t('orderDetail.totalAmount')}
                     value={orderData.summary.totalAmountPaid}
                     currency
                     highlight
-                    note={orderData.summary.vatIncluded ? 'Đã bao gồm VAT' : ''}
+                    note={orderData.summary.vatIncluded ? t('profile.included') : ''}
                 />
                 <InfoRow
-                    label="Đã thanh toán trước"
+                    label={t('profile.paidBefore')}
                     value={orderData.summary.paidBefore}
                     currency
                     highlight
