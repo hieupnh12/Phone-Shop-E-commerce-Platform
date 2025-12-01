@@ -3,7 +3,14 @@ import Loading from "../../../components/common/Loading";
 import { useState } from "react";
 import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 
-export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdit, setKeyword, keyword }) {
+export default function CustomerTable({
+  mockResponse,
+  goToPage,
+  isLoading,
+  onEdit,
+  setKeyword,
+  keyword,
+}) {
   const { hasPermission } = usePermission();
   const customers = mockResponse?.content || [];
   const {
@@ -21,9 +28,6 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
     return date.toLocaleString("vi-VN");
   };
 
-  if (isLoading) {
-    return <Loading />;
-  }
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -40,8 +44,12 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
               <input
                 type="text"
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Mã đơn, họ và tên, sdt..."
+                onChange={(e) => {
+                  // Chỉ cho phép nhập số, dấu + và khoảng trắng
+                  const value = e.target.value.replace(/[^0-9+\s]/g, "");
+                  setKeyword(value);
+                }}
+                placeholder="Tìm kiếm theo số điện thoại..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
@@ -83,12 +91,16 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
                 Giới tính
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Địa chỉ
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Ngày tạo
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Ngày cập nhật
               </th>
-              {hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT) ? (
+              {hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC) ||
+              hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT) ? (
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Hành động
                 </th>
@@ -117,7 +129,17 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
                   {customer.birthDate}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">
-                  {customer.gender || "--"}
+                  {customer.gender === true
+                    ? "Nam"
+                    : customer.gender === false
+                    ? "Nữ"
+                    : "--"}
+                </td>
+                <td
+                  className="px-6 py-4 text-sm text-gray-700 max-w-xs truncate"
+                  title={customer.address || ""}
+                >
+                  {customer.address || "--"}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">
                   {formatDateTime(customer.createAt)}
@@ -125,14 +147,15 @@ export default function CustomerTable({ mockResponse, goToPage, isLoading, onEdi
                 <td className="px-6 py-4 text-sm text-gray-700">
                   {formatDateTime(customer.updateAt)}
                 </td>
-                {(hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC) || hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT)) && (
+                {(hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC) ||
+                  hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT)) && (
                   <td className="px-6 py-4 text-sm text-gray-700">
                     <button
                       onClick={() => onEdit(customer)}
                       className="rounded-lg text-blue-600 hover:text-blue-900"
                       title="Chỉnh sửa"
                     >
-                      <Edit3 className='w-5 h-5' />
+                      <Edit3 className="w-5 h-5" />
                     </button>
                   </td>
                 )}
