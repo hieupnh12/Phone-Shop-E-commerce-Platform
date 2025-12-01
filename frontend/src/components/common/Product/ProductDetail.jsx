@@ -650,7 +650,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 ({reviewCount > 0 ? reviewCount : (product.reviewCount || 0)} đánh giá)
               </span>
             </div>
-            <button
+            {/* <button
               onClick={() => setIsFavorite(!isFavorite)}
               className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
             >
@@ -660,7 +660,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 }`}
               />
               <span>Yêu thích</span>
-            </button>
+            </button> */}
             {/* <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
               <svg
                 className="w-5 h-5"
