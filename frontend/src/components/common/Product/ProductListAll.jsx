@@ -18,6 +18,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
 
   const navigate = useNavigate();
   const PAGE_SIZE = 8;
+  const sortOrder = props.sortOrder || 'none';
 
   const normalizedFilters = useMemo(() => {
     if (!props.filters) return {};
@@ -37,7 +38,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [filtersKey]);
+  }, [filtersKey, sortOrder]);
 
   // CẬP NHẬT (của tôi):
 const [error, setError] = useState(null);  // ← THÊM: State error
@@ -228,8 +229,30 @@ if (!hasFilters) {
 
 
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
-  const paginatedProducts = filteredProducts.slice(
+  // Sắp xếp sản phẩm theo giá
+  const sortedProducts = useMemo(() => {
+    if (sortOrder === 'none') {
+      return filteredProducts;
+    }
+    
+    const sorted = [...filteredProducts].sort((a, b) => {
+      const priceA = a.price || 0;
+      const priceB = b.price || 0;
+      
+      if (sortOrder === 'asc') {
+        return priceA - priceB; // Thấp đến cao
+      } else if (sortOrder === 'desc') {
+        return priceB - priceA; // Cao đến thấp
+      }
+      
+      return 0;
+    });
+    
+    return sorted;
+  }, [filteredProducts, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PAGE_SIZE));
+  const paginatedProducts = sortedProducts.slice(
     currentPage * PAGE_SIZE,
     currentPage * PAGE_SIZE + PAGE_SIZE
   );
@@ -278,12 +301,12 @@ if (!error && noResults && hasFilters) {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 ">
       {/* Header */}
-      <div className="bg-slate-800/60 backdrop-blur-md border-b border-cyan-500/20 sticky top-0 z-50 shadow-lg shadow-black/20">
+      {/* <div className="bg-slate-800/60 backdrop-blur-md border-b border-cyan-500/20 sticky top-0 z-50 shadow-lg shadow-black/20">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">Điện thoại</h1>
-          {/* <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {['OPPO', 'HONOR', 'Nubia', 'Sony', 'Nokia', 'Infinix', 'Nothing Phone', 'Masstel', 'Realme', 'Itel', 'vivo'].map(brand => (
               <button 
                 key={brand} 
@@ -292,14 +315,14 @@ if (!error && noResults && hasFilters) {
                 {brand}
               </button>
             ))}
-          </div> */}
+          </div>
         </div>
-      </div>
+      </div> */}
 
-      <main>
+      <main className="flex flex-col min-h-[calc(100vh-4rem)] ">
         {/* Products Grid */}
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="max-w-8xl mx-auto flex-1 flex flex-col w-full px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start min-h-[1050px]">
             {paginatedProducts.map((product) => {
               const version = product.versions?.[0];
               const isFavorite = favorites.has(product.id);
@@ -321,9 +344,9 @@ if (!error && noResults && hasFilters) {
                   )}
 
                   {/* Installment Badge */}
-                  <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-lg">
-                    Trả góp 0%
-                  </div>
+                      {/* <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-lg">
+                        Trả góp 0%
+                      </div> */}
 
                   {/* Image Container */}
                   <button
@@ -377,7 +400,7 @@ if (!error && noResults && hasFilters) {
                     </div>
 
                     {/* Smember Promotion */}
-                    {product.discount > 0 && (
+                      {product.discount > 0 && (
                       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 text-xs px-3 py-2 rounded-lg mb-3 border border-cyan-200 font-medium">
                         Smember giảm đến {Math.round(product.price * 0.01)}.000đ
                       </div>
@@ -385,7 +408,7 @@ if (!error && noResults && hasFilters) {
 
                     {/* Installment Info */}
                     <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                      Trả góp 0% - 0đ phụ thu - 0đ trả trước - kỳ hạn đến 12 tháng
+                      sản phẩm uy tín  - chất lượng cao - giá cả phải chăng - hỗ trợ bảo hành  đến 12 tháng
                     </p>
 
                     {/* Rating & Favorite */}
@@ -414,8 +437,8 @@ if (!error && noResults && hasFilters) {
             })}
           </div>
 
-          {/* Pagination */}
-          <div className="flex justify-center items-center gap-4 mt-12">
+          {/* Pagination - Fixed position at bottom */}
+          <div className="flex justify-center items-center gap-4 mt-auto pt-12 pb-8">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
               disabled={currentPage === 0}

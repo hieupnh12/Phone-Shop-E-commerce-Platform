@@ -18,6 +18,7 @@ import {
   ShoppingCart,
   UserMinus,
   Users2,
+  RefreshCw,
 } from "lucide-react";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -86,6 +87,13 @@ export default function AdminLayout() {
       path: "/admin/orders",
       // Hiển thị nếu có bất kỳ một trong các permissions: ORDER_VIEW_ALL, ORDER_VIEW_DETAIL, hoặc ORDER_CREATE_ALL
       permission: [PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL, PERMISSIONS.ORDER_CREATE_ALL],
+    },
+    { 
+      id: "warranty-requests", 
+      icon: RefreshCw, 
+      label: "Yêu cầu bảo hành", 
+      path: "/admin/warranty-requests",
+      permission: [PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL],
     },
     { 
       id: "roles", 
