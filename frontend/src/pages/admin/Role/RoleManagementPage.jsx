@@ -3,6 +3,7 @@ import { Settings, Users, Key, Save, Loader2, AlertTriangle, Edit, X, Plus, Tras
 import api from "../../../services/api";
 import { useNavigate } from 'react-router-dom';
 import { usePermission, PERMISSIONS } from '../../../hooks/usePermission';
+import Toast from '../../../components/common/Toast';
 
 const API_ENDPOINTS = {
     GET_ROLES: '/role',
@@ -12,24 +13,33 @@ const API_ENDPOINTS = {
     DELETE_ROLE: '/role',
 };
 
-const DeleteRoleModal = ({ isOpen, onClose, role, onDeleteSuccess }) => {
+const DeleteRoleModal = ({ isOpen, onClose, role, onDeleteSuccess, setToast }) => {
     const [isDeleting, setIsDeleting] = useState(false);
-    const [localError, setLocalError] = useState(null);
 
     const handleDelete = async () => {
         if (!role) return;
         setIsDeleting(true);
-        setLocalError(null);
 
         try {
             await api.delete(`${API_ENDPOINTS.DELETE_ROLE}/${role.id}`);
 
             onDeleteSuccess(role.id);
             onClose();
+            if (setToast) {
+                setToast({
+                    type: 'success',
+                    message: `Xóa Role "${role.name}" thành công!`
+                });
+            }
 
         } catch (err) {
             console.error("Lỗi xóa Role:", err.response?.data || err.message);
-            setLocalError(err.response?.data?.message || "Lỗi xóa Role không xác định.");
+            if (setToast) {
+                setToast({
+                    type: 'error',
+                    message: err.response?.data?.message || "Lỗi xóa Role không xác định."
+                });
+            }
         } finally {
             setIsDeleting(false);
         }
@@ -48,7 +58,6 @@ const DeleteRoleModal = ({ isOpen, onClose, role, onDeleteSuccess }) => {
                         <br />
                         Thao tác này không thể hoàn tác.
                     </p>
-                    {localError && <p className="text-sm text-red-500 mb-3">{localError}</p>}
                     <div className="flex justify-center space-x-3">
                         <button
                             onClick={onClose}
@@ -72,12 +81,11 @@ const DeleteRoleModal = ({ isOpen, onClose, role, onDeleteSuccess }) => {
     );
 };
 
-const CreateRoleModal = ({ isOpen, onClose, allPermissions, onCreateSuccess }) => {
+const CreateRoleModal = ({ isOpen, onClose, allPermissions, onCreateSuccess, setToast }) => {
     const [newRoleName, setNewRoleName] = useState('');
     const [newRoleDescription, setNewRoleDescription] = useState('');
     const [newRolePermissions, setNewRolePermissions] = useState(new Set());
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [localError, setLocalError] = useState(null);
 
     const handleTogglePermission = (permissionKey) => {
         setNewRolePermissions(prev => {
@@ -123,12 +131,16 @@ const CreateRoleModal = ({ isOpen, onClose, allPermissions, onCreateSuccess }) =
         const permissionIds = getSafePermissionIds;
 
         if (!newRoleName || permissionIds.length === 0) {
-            setLocalError("Vui lòng nhập Tên Role và chọn ít nhất một Quyền.");
+            if (setToast) {
+                setToast({
+                    type: 'warning',
+                    message: "Vui lòng nhập Tên Role và chọn ít nhất một Quyền."
+                });
+            }
             return;
         }
 
         setIsSubmitting(true);
-        setLocalError(null);
 
         try {
             const response = await api.post(API_ENDPOINTS.CREATE_ROLE, {
@@ -144,10 +156,22 @@ const CreateRoleModal = ({ isOpen, onClose, allPermissions, onCreateSuccess }) =
             setNewRoleDescription('');
             setNewRolePermissions(new Set());
             onClose();
+            
+            if (setToast) {
+                setToast({
+                    type: 'success',
+                    message: `Tạo Role "${newRoleName}" thành công!`
+                });
+            }
 
         } catch (err) {
             console.error("Lỗi tạo Role:", err.response?.data || err.message);
-            setLocalError(err.response?.data?.message || "Lỗi không xác định khi tạo Role.");
+            if (setToast) {
+                setToast({
+                    type: 'error',
+                    message: err.response?.data?.message || "Lỗi không xác định khi tạo Role."
+                });
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -234,7 +258,6 @@ const CreateRoleModal = ({ isOpen, onClose, allPermissions, onCreateSuccess }) =
 
                 {/* Modal Footer */}
                 <div className="p-5 border-t bg-gray-50 flex justify-end space-x-3">
-                    {localError && <span className='text-red-500 mr-auto text-sm flex items-center'><AlertTriangle className='w-4 h-4 mr-1' /> {localError}</span>}
                     <button
                         onClick={onClose}
                         className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -266,7 +289,7 @@ const RoleManagementPage = () => {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState(null);
+    const [toast, setToast] = useState(null);
     const navigate = useNavigate();
 
     const groupPermissions = (apiPermissions) => {
@@ -299,7 +322,6 @@ const RoleManagementPage = () => {
     const fetchRolesAndPermissions = async () => {
         try {
             setIsLoading(true);
-            setError(null);
 
             // 1. Lấy Permissions
             const permResponse = await api.get(API_ENDPOINTS.GET_ALL_PERMISSIONS);
@@ -327,7 +349,10 @@ const RoleManagementPage = () => {
 
         } catch (err) {
             console.error("Lỗi tải dữ liệu phân quyền:", err);
-            setError("Không thể tải cấu hình Role. Vui lòng kiểm tra API Backend.");
+            setToast({
+                type: 'error',
+                message: "Không thể tải cấu hình Role. Vui lòng kiểm tra API Backend."
+            });
         } finally {
             setIsLoading(false);
         }
@@ -341,7 +366,6 @@ const RoleManagementPage = () => {
     const handleSelectRole = (role) => {
         setSelectedRole(role);
         setCurrentPermissions(new Set(role.permissionKeys));
-        setError(null);
     };
 
     const handleTogglePermission = (permissionKey) => {
@@ -389,7 +413,6 @@ const RoleManagementPage = () => {
     const handleSaveRole = async () => {
         if (!selectedRole || isSaving) return;
         setIsSaving(true);
-        setError(null);
         try {
             const permissionIds = selectedPermissionIds;
 
@@ -410,25 +433,32 @@ const RoleManagementPage = () => {
             );
             setSelectedRole(updatedRole);
 
-           // alert(`Cập nhật Role ${updatedRole.name} thành công!`);
+            setToast({
+                type: 'success',
+                message: `Cập nhật Role "${updatedRole.name}" thành công!`
+            });
 
         } catch (err) {
             console.error("Lỗi khi lưu Role:", err.response?.data || err.message);
-            setError("Lỗi khi lưu quyền: " + (err.response?.data?.message || err.message));
+            setToast({
+                type: 'error',
+                message: "Lỗi khi lưu quyền: " + (err.response?.data?.message || err.message)
+            });
         } finally {
             setIsSaving(false);
         }
     };
     const handleDeleteRole = async (roleId) => {
         try {
+            const deletedRole = roles.find(r => r.id === roleId);
             setRoles(prev => prev.filter(r => r.id !== roleId));
 
             if (selectedRole && selectedRole.id === roleId) {
                 setSelectedRole(null);
                 setCurrentPermissions(new Set());
             }
-            alert("Xóa Role thành công!");
-
+            
+            // Toast đã được hiển thị trong DeleteRoleModal
         } catch (err) {
             console.error("Lỗi xóa role cục bộ:", err);
         }
@@ -466,13 +496,6 @@ const RoleManagementPage = () => {
                     <Settings className="w-7 h-7 mr-3 text-red-500" />
                     Quản lý Phân quyền
                 </h1>
-
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative flex items-center">
-                        <AlertTriangle className="w-5 h-5 mr-3" />
-                        <span>{error}</span>
-                    </div>
-                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-1 bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -597,13 +620,24 @@ const RoleManagementPage = () => {
                 onClose={() => setIsCreateModalOpen(false)}
                 allPermissions={allPermissions}
                 onCreateSuccess={handleRoleCreated}
+                setToast={setToast}
             />
             <DeleteRoleModal
                 isOpen={!!roleToDelete}
                 onClose={() => setRoleToDelete(null)}
                 role={roleToDelete}
                 onDeleteSuccess={handleDeleteRole}
+                setToast={setToast}
             />
+            
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </>
     );
 };
