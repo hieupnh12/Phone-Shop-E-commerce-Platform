@@ -32,11 +32,16 @@ const Customers = () => {
   const [toast, setToast] = useState(null);
   const debouncedSearch = useDebounce(keyword, 500); // 500ms
 
+  // Reset về trang đầu khi search thay đổi
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [debouncedSearch]);
+
   const {
     data: mockResponse = [],
     isLoading,
     isError,
-    refetch
+    refetch,
   } = useQuery({
     queryKey: ["customers", debouncedSearch, currentPage, pageSize],
     queryFn: async () => {
@@ -68,7 +73,6 @@ const Customers = () => {
     const date = new Date(dateTimeString);
     return date.toLocaleString("vi-VN");
   };
-
 
   const getDisplayValue = (value, defaultText = "Chưa cập nhật") => {
     return value || <span className="text-gray-400 italic">{defaultText}</span>;
@@ -109,14 +113,14 @@ const Customers = () => {
               </label>
             </div>
             <div className="flex gap-3">
-              {hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT) && (
+              {/* {hasPermission(PERMISSIONS.CUSTOMER_MANAGE_ACCOUNT) && (
                 <button
                   onClick={openCreate}
                   className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm">
                   <Download size={18} />
                   Tạo khách hàng
                 </button>
-              )}
+              )} */}
             </div>
           </div>
         </div>
@@ -149,12 +153,12 @@ const Customers = () => {
         </div>
 
         {showModal && (
-        <CustomerModal
-          onClose={closeModal}
-          data={selectedCustomer}
-          setToast={setToast}
-        />
-      )}
+          <CustomerModal
+            onClose={closeModal}
+            data={selectedCustomer}
+            setToast={setToast}
+          />
+        )}
       </div>
     </div>
   );

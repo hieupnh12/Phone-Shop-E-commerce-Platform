@@ -9,6 +9,7 @@ import com.websales.repository.EmployeeRepo;
 import com.websales.service.AuditLogService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -21,6 +22,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Optional;
 
+@Slf4j
 @Component
 public class ContextUtils implements ApplicationContextAware {
 
@@ -52,6 +54,7 @@ public class ContextUtils implements ApplicationContextAware {
     }
 
     public static Long getEmployeeId() {
+        try {
         EmployeeRepo employeeRepo = getBean(EmployeeRepo.class);
         if (employeeRepo == null) {
             return null;
@@ -65,6 +68,10 @@ public class ContextUtils implements ApplicationContextAware {
                 () -> new AppException(ErrorCode.ACCOUNT_EXITED)
         );
         return employee.getId();
+        } catch (Exception e) {
+            log.warn("Cannot get employeeId for audit log: {}", e.getMessage());
+            return null;
+        }
     }
 
     private static Optional<HttpServletRequest> getCurrentHttpRequest() {

@@ -60,6 +60,7 @@ import Customers from "./pages/admin/Customer";
 import Employee from "./pages/admin/Employee";
 import Role from "./pages/admin/Role";
 import AuditLogPage from "./pages/admin/Employee/AuditLogPage";
+import WarrantyRequestManagementPage from "./pages/admin/WarrantyRequest/WarrantyRequestManagementPage";
 import PermissionRoute from "./routes/PermissionRoute";
 import { PERMISSIONS } from "./hooks/usePermission";
 
@@ -175,6 +176,14 @@ const router = createBrowserRouter(
               element: (
                 <PermissionRoute requiredPermission={PERMISSIONS.ORDER_CREATE_ALL}>
                   <CreateInStoreOrder />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "warranty-requests", 
+              element: (
+                <PermissionRoute requiredPermission={[PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL]}>
+                  <WarrantyRequestManagementPage />
                 </PermissionRoute>
               )
             },

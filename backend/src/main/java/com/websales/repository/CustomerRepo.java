@@ -35,6 +35,20 @@ from orders where customer_id = ?1 and status = 'DELIVERED'
 
     Page<Customer> findCustomerByEmail(String email, Pageable pageable);
 
+    // Method để tìm kiếm theo số điện thoại
+    @Query(value = """
+        SELECT * FROM customers 
+        WHERE phone_number LIKE CONCAT('%', :keyword, '%')
+        ORDER BY create_at DESC
+        """
+         ,
+         countQuery = """
+         SELECT COUNT(*) FROM customers 
+         WHERE phone_number LIKE CONCAT('%', :keyword, '%')
+         """,
+        nativeQuery = true)
+    Page<Customer> searchCustomersByPhoneNumber(@Param("keyword") String keyword, Pageable pageable);
+
     // Method mới để tìm kiếm theo số điện thoại hoặc email (KHÔNG ảnh hưởng method cũ)
     // Query đơn giản, logic chuyển đổi format được xử lý ở Service layer
     @Query(value = """
@@ -62,6 +76,7 @@ from orders where customer_id = ?1 and status = 'DELIVERED'
         ORDER BY create_at DESC
         """, nativeQuery = true)
     List<Customer> findCustomersByPhonePrefix(@Param("phonePrefix") String phonePrefix, Pageable pageable);
+
 }
 
 

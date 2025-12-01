@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {useParams, Link, useOutletContext, useLocation, useNavigate} from 'react-router-dom';
-import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart, XCircle, Shield, RefreshCw, AlertCircle } from 'lucide-react';
 import {useAuthFullOptions} from "../../contexts/AuthContext";
-import { profileService, orderService } from "../../services/api";
+import { profileService, orderService, warrantyRequestService } from "../../services/api";
 import api from "../../services/api";
 import cartService from "../../services/cartService";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
 import { formatPhoneNumber } from "../../utils/phoneUtils";
+import WarrantyRequestModal from "../common/WarrantyRequestModal";
 
 
 
@@ -22,9 +23,28 @@ const OrderDetailPage = () => {
     const [isCancelling, setIsCancelling] = useState(false);
     const [toast, setToast] = useState(null);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [warrantyModal, setWarrantyModal] = useState({ isOpen: false, product: null });
+    const [warrantyRequests, setWarrantyRequests] = useState([]);
     const { getCurrentUser } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
 
+
+    // Fetch warranty requests for this order
+    useEffect(() => {
+        const fetchWarrantyRequests = async () => {
+            if (!orderId) return;
+            try {
+                const response = await warrantyRequestService.getMyRequests();
+                const requests = Array.isArray(response) ? response : (response?.result || []);
+                // Filter requests for this order
+                const orderRequests = requests.filter(req => req.orderId === parseInt(orderId));
+                setWarrantyRequests(orderRequests);
+            } catch (err) {
+                console.error('Error fetching warranty requests:', err);
+            }
+        };
+        fetchWarrantyRequests();
+    }, [orderId]);
 
     useEffect(() => {
         const fetchDetail = async () => {
@@ -238,22 +258,17 @@ const OrderDetailPage = () => {
         }
     };
 
-    // Kiểm tra xem đơn hàng có thể hủy không
-    const canCancelOrder = () => {
-        if (!orderData) return false;
+    // Helper function to normalize status
+    const getNormalizedStatus = () => {
+        if (!orderData) return '';
         
-        // Lấy status từ nhiều nguồn để đảm bảo chính xác
-        // Ưu tiên: location.state > orderData (nếu có raw status) > orderData.status (text tiếng Việt)
         const statusFromState = location.state?.status;
         const statusFromData = orderData.status;
         
-        // Normalize status về uppercase để so sánh chính xác
         let statusNormalized = '';
         if (statusFromState) {
-            // Status từ state thường là uppercase từ API (PENDING, PAID, SHIPPED, DELIVERED, etc.)
             statusNormalized = (statusFromState || '').toUpperCase();
         } else if (statusFromData) {
-            // Nếu status là text tiếng Việt, cần map lại
             const statusText = (statusFromData || '').toLowerCase();
             const statusMap = {
                 'đang xử lý': 'PENDING',
@@ -266,6 +281,13 @@ const OrderDetailPage = () => {
             statusNormalized = statusMap[statusText] || statusText.toUpperCase();
         }
         
+        return statusNormalized;
+    };
+
+    // Kiểm tra xem đơn hàng có thể hủy không
+    const canCancelOrder = () => {
+        const statusNormalized = getNormalizedStatus();
+        
         // Không thể hủy nếu status là SHIPPED, DELIVERED, CANCELED, CANCELLED, hoặc RETURNED
         const nonCancellableStatuses = ['SHIPPED', 'DELIVERED', 'CANCELED', 'CANCELLED', 'RETURNED'];
         if (statusNormalized && nonCancellableStatuses.includes(statusNormalized)) {
@@ -274,6 +296,67 @@ const OrderDetailPage = () => {
         
         // Có thể hủy nếu đơn hàng ở trạng thái: PENDING, PAID (nhưng chưa SHIPPED)
         return statusNormalized === 'PENDING' || statusNormalized === 'PAID';
+    };
+
+    // Kiểm tra xem đơn hàng đã được giao chưa (để hiển thị nút bảo hành)
+    const isOrderDelivered = () => {
+        const statusNormalized = getNormalizedStatus();
+        return statusNormalized === 'DELIVERED';
+    };
+
+    // Mở modal bảo hành
+    const handleOpenWarrantyModal = (product) => {
+        setWarrantyModal({
+            isOpen: true,
+            product: product
+        });
+    };
+
+    // Đóng modal bảo hành
+    const handleCloseWarrantyModal = async (success = false) => {
+        setWarrantyModal({
+            isOpen: false,
+            product: null
+        });
+        if (success) {
+            setToast({
+                type: 'success',
+                message: 'Yêu cầu bảo hành/đổi trả đã được gửi thành công!'
+            });
+            // Refresh warranty requests sau khi tạo thành công
+            try {
+                const response = await warrantyRequestService.getMyRequests();
+                const requests = Array.isArray(response) ? response : (response?.result || []);
+                const orderRequests = requests.filter(req => req.orderId === parseInt(orderId));
+                setWarrantyRequests(orderRequests);
+            } catch (err) {
+                console.error('Error refreshing warranty requests:', err);
+            }
+        }
+    };
+
+    // Lấy warranty request cho một sản phẩm cụ thể
+    const getWarrantyRequestForProduct = (productVersionId) => {
+        return warrantyRequests.find(req => req.productVersionId === productVersionId);
+    };
+
+    // Hiển thị badge trạng thái yêu cầu bảo hành
+    const getWarrantyStatusBadge = (status) => {
+        const statusMap = {
+            'PENDING': { label: 'Đang chờ xử lý', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+            'ACCEPTED': { label: 'Đã chấp nhận', color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
+            'REJECTED': { label: 'Đã từ chối', color: 'bg-red-100 text-red-800', icon: XCircle },
+            'IN_PROGRESS': { label: 'Đang xử lý', color: 'bg-purple-100 text-purple-800', icon: RefreshCw },
+            'COMPLETED': { label: 'Đã hoàn thành', color: 'bg-green-100 text-green-800', icon: CheckCircle }
+        };
+        const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
+        const Icon = statusInfo.icon;
+        return (
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                <Icon size={12} />
+                {statusInfo.label}
+            </span>
+        );
     };
 
     // Hàm xử lý mua lại sản phẩm
@@ -652,14 +735,43 @@ const OrderDetailPage = () => {
                             </div>
                             <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
                                 <p className="text-sm text-gray-600">Số lượng: {product.quantity}</p>
-                                {product.canRepurchase && (
-                                    <button 
-                                        onClick={() => handleRepurchase(product)}
-                                        className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                                    >
-                                        Mua lại
-                                    </button>
-                                )}
+                                <div className="flex flex-col items-end gap-2">
+                                    {isOrderDelivered() && product.productVersionId && (() => {
+                                        const warrantyRequest = getWarrantyRequestForProduct(product.productVersionId);
+                                        if (warrantyRequest) {
+                                            // Đã có yêu cầu bảo hành, hiển thị trạng thái
+                                            return (
+                                                <div className="flex flex-col items-end gap-1">
+                                                    {getWarrantyStatusBadge(warrantyRequest.status)}
+                                                    {warrantyRequest.adminNote && (
+                                                        <p className="text-xs text-gray-500 max-w-[200px] text-right">
+                                                            {warrantyRequest.adminNote}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        } else {
+                                            // Chưa có yêu cầu, hiển thị nút tạo mới
+                                            return (
+                                                <button 
+                                                    onClick={() => handleOpenWarrantyModal(product)}
+                                                    className="flex items-center gap-1 bg-blue-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                                >
+                                                    <Shield size={14} />
+                                                    Bảo hành
+                                                </button>
+                                            );
+                                        }
+                                    })()}
+                                    {product.canRepurchase && (
+                                        <button 
+                                            onClick={() => handleRepurchase(product)}
+                                            className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                        >
+                                            Mua lại
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -741,6 +853,17 @@ const OrderDetailPage = () => {
                     message={toast.message}
                     type={toast.type}
                     onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Warranty Request Modal */}
+            {warrantyModal.isOpen && warrantyModal.product && (
+                <WarrantyRequestModal
+                    isOpen={warrantyModal.isOpen}
+                    onClose={handleCloseWarrantyModal}
+                    orderId={parseInt(orderId)}
+                    productVersionId={warrantyModal.product.productVersionId}
+                    productName={warrantyModal.product.name}
                 />
             )}
         </div>
