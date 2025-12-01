@@ -9,18 +9,20 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const ClientSidebar = ({ isOpen, onClose }) => {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { logoutCustomer } = useAuthFullOptions();
 
   const menuItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/profile/order", icon: Package, label: "Orders" },
-    { to: "/products", icon: Box, label: "Products" },
-    { to: "/settings", icon: Settings, label: "Settings" },
-    { to: "/logout", icon: LogOut, label: "Logout", isLogout: true },
+    { to: "/", icon: LayoutDashboard, label: t('clientSidebar.dashboard') },
+    { to: "/profile/order", icon: Package, label: t('clientSidebar.orders') },
+    { to: "/products", icon: Box, label: t('clientSidebar.products') },
+    { to: "/settings", icon: Settings, label: t('clientSidebar.settings') },
+    { to: "/logout", icon: LogOut, label: t('auth.logout'), isLogout: true },
   ];
 
   const handleNavClick = (to, isLogout = false) => {
@@ -58,7 +60,7 @@ const ClientSidebar = ({ isOpen, onClose }) => {
                 </div>
                 <div>
                   <h3 className="text-white font-semibold">John Doe</h3>
-                  <p className="text-slate-400 text-sm">Premium Member</p>
+                  <p className="text-slate-400 text-sm">{t('clientSidebar.premiumMember')}</p>
                 </div>
               </div>
             </div>
@@ -97,13 +99,13 @@ const ClientSidebar = ({ isOpen, onClose }) => {
           <div className="pt-6 border-t border-slate-800/50">
             <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-600/10 border border-purple-500/20">
               <p className="text-sm text-slate-300 mb-2 font-semibold">
-                Upgrade to Pro
+                {t('clientSidebar.upgradeToPro')}
               </p>
               <p className="text-xs text-slate-400 mb-3">
-                Unlock premium features and benefits
+                {t('clientSidebar.unlockPremium')}
               </p>
               <button className="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105">
-                Upgrade Now
+                {t('clientSidebar.upgradeNow')}
               </button>
             </div>
           </div>

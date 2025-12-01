@@ -99,7 +99,7 @@ const PersonalInfoForm = () => {
 
         } catch (error) {
             console.error("Lỗi khi lưu thông tin:", error);
-            setUpdateError("Lỗi: Không thể cập nhật thông tin. Vui lòng thử lại.");
+            setUpdateError(t('profile.personalInfo.updateError'));
         } finally {
             setIsSaving(false);
         }
@@ -121,9 +121,9 @@ const PersonalInfoForm = () => {
         </div>
     );
     const displayGender = (gender) => {
-        if (gender === 'male' || gender === true) return 'Nam';
-        if (gender === 'female' || gender === false) return 'Nữ';
-        return 'Khác';
+        if (gender === 'male' || gender === true) return t('profile.personalInfo.gender.male');
+        if (gender === 'female' || gender === false) return t('profile.personalInfo.gender.female');
+        return t('profile.personalInfo.gender.other');
     }
 
     return (
@@ -132,7 +132,7 @@ const PersonalInfoForm = () => {
                 {/* Phần Thông tin cá nhân */}
                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                     <div className="flex items-center justify-between border-b pb-4 mb-6">
-                        <h3 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h3>
+                        <h3 className="text-xl font-bold text-gray-800">{t('profile.personalInfo.title')}</h3>
                         {isEditing ? (
                             <div className="flex space-x-3">
                                 <button
@@ -140,7 +140,7 @@ const PersonalInfoForm = () => {
                                     className="flex items-center text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors"
                                 >
                                     <Save size={18} className="mr-2" />
-                                    Lưu thay đổi
+                                    {t('profile.personalInfo.saveChanges')}
                                 </button>
                                 <button
                                     type="button"
@@ -148,7 +148,7 @@ const PersonalInfoForm = () => {
                                     className="flex items-center text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors"
                                 >
                                     <X size={18} className="mr-2" />
-                                    Hủy
+                                    {t('common.cancel')}
                                 </button>
                             </div>
                         ) : (
@@ -158,7 +158,7 @@ const PersonalInfoForm = () => {
                                 className="flex items-center text-red-500 hover:text-red-600 transition-colors"
                             >
                                 <Edit size={18} className="mr-2" />
-                                Cập nhật
+                                {t('common.update')}
                             </button>
                         )}
                     </div>
@@ -169,7 +169,7 @@ const PersonalInfoForm = () => {
                             <>
                                 {/* 1. Họ và tên */}
                                 <InputField
-                                    label="Họ và tên"
+                                    label={t('profile.personalInfo.fullName')}
                                     name="fullName"
                                     value={formData.fullName}
                                     onChange={handleInputChange}
@@ -181,21 +181,21 @@ const PersonalInfoForm = () => {
                                     name="phone"
                                     value={formData.phone}
                                     disabled
-                                    helperText="Liên hệ CSKH để đổi số điện thoại"
+                                    helperText={t('profile.personalInfo.contactToChangePhone')}
                                 />
                                 {/* 3. Email */}
                                 <InputField
-                                    label="Email"
+                                    label={t('profile.personalInfo.email')}
                                     name="email"
                                     type="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     required
-                                    placeholder="Nhập địa chỉ email"
+                                    placeholder={t('profile.personalInfo.emailPlaceholder')}
                                 />
                                 {/* 4. Ngày sinh */}
                                 <InputField
-                                    label="Ngày sinh"
+                                    label={t('profile.personalInfo.dateOfBirth')}
                                     name="dateOfBirth"
                                     type="date"
                                     value={formData.dateOfBirth}
@@ -203,17 +203,17 @@ const PersonalInfoForm = () => {
                                 />
                                 {/* 5. Giới tính (Select - Chiếm 1 cột) */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới tính</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.personalInfo.gender.label')}</label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
                                         onChange={handleInputChange}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
                                     >
-                                        <option value="">Chọn giới tính</option>
-                                        <option value="male">Nam</option>
-                                        <option value="female">Nữ</option>
-                                        <option value="other">Khác</option>
+                                        <option value="">{t('profile.personalInfo.gender.select')}</option>
+                                        <option value="male">{t('profile.personalInfo.gender.male')}</option>
+                                        <option value="female">{t('profile.personalInfo.gender.female')}</option>
+                                        <option value="other">{t('profile.personalInfo.gender.other')}</option>
                                     </select>
                                 </div>
                                 {/* 6. Địa chỉ (Chiếm 1 cột) */}
@@ -222,19 +222,19 @@ const PersonalInfoForm = () => {
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
-                                    placeholder="Nhập địa chỉ"
+                                    placeholder={t('profile.personalInfo.addressPlaceholder')}
                                 />
                             </>
                         ) : (
                             <>
-                                <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
+                                <InfoDisplayItem label={t('profile.personalInfo.fullName')} value={formData.fullName} />
                                 <InfoDisplayItem label={t('common.phone')} value={formatPhoneNumber(formData.phone)} />
-                                <InfoDisplayItem label="Email" value={formData.email} />
+                                <InfoDisplayItem label={t('profile.personalInfo.email')} value={formData.email} />
                                 <InfoDisplayItem
-                                    label="Ngày sinh"
+                                    label={t('profile.personalInfo.dateOfBirth')}
                                     value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('vi-VN') : '-'}
                                 />
-                                <InfoDisplayItem label="Giới tính" value={displayGender(formData.gender)} />
+                                <InfoDisplayItem label={t('profile.personalInfo.gender.label')} value={displayGender(formData.gender)} />
                                 <InfoDisplayItem label={t('profile.defaultAddress')} value={customerInfo.address || t('profile.noAddress')} />
                             </>
                         )}

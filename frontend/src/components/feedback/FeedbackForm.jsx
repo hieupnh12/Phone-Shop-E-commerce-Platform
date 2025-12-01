@@ -325,11 +325,11 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
               </div>
               {rating > 0 && (
                 <p className="text-slate-400 text-sm">
-                  {rating === 5 && "Tuyệt vời"}
-                  {rating === 4 && "Tốt"}
-                  {rating === 3 && "Bình thường"}
-                  {rating === 2 && "Tệ"}
-                  {rating === 1 && "Rất Tệ"}
+                  {rating === 5 && t('productFeedback.rating.excellent')}
+                  {rating === 4 && t('productFeedback.rating.good')}
+                  {rating === 3 && t('productFeedback.rating.average')}
+                  {rating === 2 && t('productFeedback.rating.bad')}
+                  {rating === 1 && t('productFeedback.rating.veryBad')}
                 </p>
               )}
             </div>
@@ -337,7 +337,7 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
             {/* Content */}
             <div>
               <label className="block font-medium text-slate-300 mb-2">
-                Viết đánh giá của bạn
+                {t('productFeedback.writeReview')}
               </label>
               <textarea
                 value={content}
@@ -345,7 +345,7 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
                   setContent(e.target.value);
                   setError("");
                 }}
-                placeholder="Xin mời chia sẻ cảm nhận về sản phẩm (tối thiểu 15 ký tự)"
+                placeholder={t('productFeedback.reviewPlaceholder')}
                 className="w-full h-28 px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 resize-none text-white placeholder-slate-500 transition-all"
                 disabled={loading}
                 maxLength={500}
@@ -363,7 +363,7 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
                 className="flex-1 px-4 py-3 bg-slate-700 text-slate-300 rounded-xl hover:bg-slate-600 transition-colors font-medium"
                 disabled={loading}
               >
-                Hủy
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
@@ -374,7 +374,7 @@ const FeedbackForm = ({ productId, onSuccess, onClose }) => {
                     : "bg-slate-700 text-slate-500 cursor-not-allowed"
                 }`}
               >
-                {loading ? "Đang gửi..." : "Gửi đánh giá"}
+                {loading ? t('productFeedback.submitting') : t('productFeedback.submitReview')}
               </button>
             </div>
           </form>

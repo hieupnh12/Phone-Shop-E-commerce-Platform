@@ -44,8 +44,8 @@ public class ProductUpdateRequest {
 
     Integer stockQuantity;
 
-//    Boolean status;
+    Boolean status;
 
-//               Long idCate;
+    Long categoryId;
 
 }

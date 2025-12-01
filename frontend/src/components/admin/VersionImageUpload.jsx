@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import Toast from '../common/Toast';
 import productService from '../../services/productService';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versionId = null, isEditMode = false }) => {
+  const { t } = useLanguage();
   const [preview, setPreview] = useState([]);
   const [toast, setToast] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -54,13 +56,13 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
     const newFiles = Array.from(files).filter(file => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        setToast({ type: 'error', message: 'Chỉ chấp nhận file hình ảnh' });
+        setToast({ type: 'error', message: t('admin.versionImageUpload.errors.imageOnly') });
         return false;
       }
 
       // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setToast({ type: 'error', message: 'Kích thước file không vượt quá 5MB' });
+        setToast({ type: 'error', message: t('admin.versionImageUpload.errors.fileTooLarge') });
         return false;
       }
 
@@ -69,7 +71,7 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
 
     // Check total limit
     if (preview.length + newFiles.length > maxImages) {
-      setToast({ type: 'error', message: `Tối đa ${maxImages} ảnh` });
+      setToast({ type: 'error', message: t('admin.versionImageUpload.errors.maxImages', { max: maxImages }) });
       return;
     }
 
@@ -132,7 +134,7 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
       // Track image ID to be deleted on submit
       const imageIdToDelete = img.imageId;
       setDeletedImageIds(prev => [...prev, imageIdToDelete]);
-      setToast({ type: 'info', message: 'Ảnh sẽ được xóa khi lưu' });
+      setToast({ type: 'info', message: t('admin.versionImageUpload.imageWillDelete') });
     }
 
     // Remove from preview
@@ -171,12 +173,12 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
           <div className="flex flex-col items-center gap-2">
             <Upload className="w-8 h-8 text-blue-500" />
             <p className="font-medium text-gray-900">
-              Kéo thả hoặc nhấp để chọn ảnh
+              {t('admin.versionImageUpload.dragDropOrClick')}
             </p>
             <p className="text-sm text-gray-600">
               {remainingSlots === 0 
-                ? `Đã đạt tối đa ${maxImages} ảnh` 
-                : `Tối đa ${remainingSlots} ảnh (5MB mỗi file)`
+                ? t('admin.versionImageUpload.reachedMax', { max: maxImages })
+                : t('admin.versionImageUpload.maxRemaining', { remaining: remainingSlots })
               }
             </p>
           </div>
@@ -187,7 +189,7 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
       {preview.length > 0 && (
         <div>
           <p className="text-sm font-medium text-gray-700 mb-3">
-            Ảnh đã chọn ({preview.length}/{maxImages})
+            {t('admin.versionImageUpload.selectedImages', { current: preview.length, max: maxImages })}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {preview.map((img) => (
@@ -206,13 +208,13 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
                     opacity-0 group-hover:opacity-100 transition-opacity
                     ${isDeletingImage === img.id ? 'cursor-wait' : 'cursor-pointer'}
                   `}
-                  title="Xoá ảnh"
+                  title={t('admin.versionImageUpload.deleteImage')}
                 >
                   <X className="w-4 h-4" />
                 </button>
                 {img.isNew && (
                   <span className="absolute bottom-1 right-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded">
-                    Mới
+                    {t('admin.versionImageUpload.new')}
                   </span>
                 )}
               </div>
@@ -225,7 +227,7 @@ const VersionImageUpload = ({ images = [], onImagesChange, maxImages = 5, versio
       {preview.length === 0 && (
         <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
           <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500">Chưa có ảnh nào được chọn</p>
+          <p className="text-gray-500">{t('admin.versionImageUpload.noImagesSelected')}</p>
         </div>
       )}
 

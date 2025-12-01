@@ -5,8 +5,10 @@ import { cartService } from '../../../services/api';
 import { fetchCountProduct } from '../../../services/productWorker';
 import ProductListAll from '../../../components/common/Product/ProductListAll';
 import ProductFilter from './ProductFilter';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const ProductsContainer = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
 
@@ -287,8 +289,7 @@ useEffect(() => {
           {/* Results Summary */}
           <div className="mb-6 flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-lg p-4">
           <p className="text-white">
-            Showing <span className="font-bold">{totalCount}</span> products
-            {/* {totalCount === 1 ? ' (1 result)' : ' results'} Improved pluralization for better UX */}
+            {t('productContainer.showingProducts').replace('{{count}}', totalCount)}
           </p>
             {error && <p className="text-red-400 text-sm">{error}</p>}
           </div>

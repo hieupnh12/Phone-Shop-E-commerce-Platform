@@ -12,6 +12,8 @@ const ProductCard = ({
   isFavorite = false,
   showRating = true,
   className = '',
+  // Translation props
+  labels = {},
 }) => {
   const { id, name, price, image, discount, rating, inStock } = product;
 
@@ -57,24 +59,24 @@ const ProductCard = ({
           )}
           {!inStock && (
             <span className="bg-gray-700 text-white text-xs font-bold px-2 py-1 rounded">
-              Out of Stock
+              {labels.outOfStock || 'Out of Stock'}
             </span>
           )}
         </div>
 
         {/* Action Buttons */}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
-          <Tooltip content="View Detail" position="bottom">
+          <Tooltip content={labels.viewDetail || "View Detail"} position="bottom">
             <button
               onClick={() => onViewDetail?.(id)}
               className="p-2 bg-white text-gray-900 rounded-full hover:bg-blue-600 hover:text-white transition-colors"
-              aria-label="View detail"
+              aria-label={labels.viewDetail || "View detail"}
             >
               <Eye size={20} />
             </button>
           </Tooltip>
 
-          <Tooltip content="Add to Favorites" position="bottom">
+          <Tooltip content={labels.addToFavorites || "Add to Favorites"} position="bottom">
             <button
               onClick={() => onFavorite?.(id)}
               className={`p-2 rounded-full transition-colors ${
@@ -82,18 +84,18 @@ const ProductCard = ({
                   ? 'bg-red-500 text-white'
                   : 'bg-white text-gray-900 hover:bg-red-500 hover:text-white'
               }`}
-              aria-label="Add to favorites"
+              aria-label={labels.addToFavorites || "Add to favorites"}
             >
               <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
             </button>
           </Tooltip>
 
-          <Tooltip content="Add to Cart" position="bottom">
+          <Tooltip content={labels.addToCart || "Add to Cart"} position="bottom">
             <button
               onClick={() => onAddToCart?.(id)}
               disabled={!inStock}
               className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Add to cart"
+              aria-label={labels.addToCart || "Add to cart"}
             >
               <ShoppingCart size={20} />
             </button>
@@ -122,7 +124,7 @@ const ProductCard = ({
           {discount && (
             <>
               <span className="text-sm text-gray-500 line-through">${price.toFixed(2)}</span>
-              <span className="text-xs text-green-600 font-semibold">Save ${savingAmount}</span>
+              <span className="text-xs text-green-600 font-semibold">{labels.save || 'Save'} ${savingAmount}</span>
             </>
           )}
         </div>
@@ -137,7 +139,7 @@ const ProductCard = ({
           className="mt-4"
           icon={ShoppingCart}
         >
-          {inStock ? 'Add to Cart' : 'Out of Stock'}
+          {inStock ? (labels.addToCart || 'Add to Cart') : (labels.outOfStock || 'Out of Stock')}
         </Button>
       </div>
     </div>
@@ -160,6 +162,13 @@ ProductCard.propTypes = {
   isFavorite: PropTypes.bool,
   showRating: PropTypes.bool,
   className: PropTypes.string,
+  labels: PropTypes.shape({
+    viewDetail: PropTypes.string,
+    addToFavorites: PropTypes.string,
+    addToCart: PropTypes.string,
+    outOfStock: PropTypes.string,
+    save: PropTypes.string,
+  }),
 };
 
 export default ProductCard;
