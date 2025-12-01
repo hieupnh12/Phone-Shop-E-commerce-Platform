@@ -8,18 +8,11 @@ import com.websales.entity.Order;
 import com.websales.entity.Product;
 import com.websales.entity.Role;
 import com.websales.handler.ContextUtils;
-import com.websales.repository.CustomerRepo;
-import com.websales.repository.EmployeeRepo;
-import com.websales.repository.OrderRepository;
-import com.websales.repository.ProductRepository;
-import com.websales.repository.RoleRepo;
-import jakarta.persistence.EntityManager;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -33,10 +26,6 @@ public class AuditLogListener {
 
     // ThreadLocal to store old entity state before update
     private static final ThreadLocal<Map<String, String>> oldEntityState = new ThreadLocal<>();
-    
-    // ThreadLocal to track if audit log is already scheduled for this entity in current transaction
-    // Key: entityClassName_recordId_action, Value: true if scheduled
-    private static final ThreadLocal<Set<String>> scheduledAuditLogs = new ThreadLocal<>();
 
     private Long getCurrentEmployeeId() {
         return ContextUtils.getEmployeeId();
@@ -137,7 +126,7 @@ public class AuditLogListener {
             return "{}";
         }
     }
-    
+
     private String serializeProduct(Product product) {
         try {
             Map<String, Object> data = new HashMap<>();
@@ -156,45 +145,45 @@ public class AuditLogListener {
             data.put("warrantyPeriod", getFieldValue(product, "warrantyPeriod"));
             data.put("stockQuantity", getFieldValue(product, "stockQuantity"));
             data.put("status", getFieldValue(product, "status"));
-            
+
             // Serialize relationships safely - only IDs to avoid lazy loading
             Object origin = getFieldValue(product, "origin");
             if (origin != null) {
                 Object originId = getFieldValue(origin, "id");
                 data.put("originId", originId);
             }
-            
+
             Object brand = getFieldValue(product, "brand");
             if (brand != null) {
                 Object brandId = getFieldValue(brand, "id");
                 data.put("brandId", brandId);
             }
-            
+
             Object category = getFieldValue(product, "category");
             if (category != null) {
                 Object categoryId = getFieldValue(category, "id");
                 data.put("categoryId", categoryId);
             }
-            
+
             Object operatingSystem = getFieldValue(product, "operatingSystem");
             if (operatingSystem != null) {
                 Object osId = getFieldValue(operatingSystem, "id");
                 data.put("operatingSystemId", osId);
             }
-            
+
             Object warehouseArea = getFieldValue(product, "warehouseArea");
             if (warehouseArea != null) {
                 Object waId = getFieldValue(warehouseArea, "id");
                 data.put("warehouseAreaId", waId);
             }
-            
+
             // Don't serialize productVersion list to avoid lazy loading issues
             // Only include count if available
             List<?> productVersions = (List<?>) getFieldValue(product, "productVersion");
             if (productVersions != null) {
                 data.put("productVersionCount", productVersions.size());
             }
-            
+
             ObjectMapper mapper = ContextUtils.getObjectMapper();
             return mapper.writeValueAsString(data);
         } catch (Exception e) {
@@ -202,7 +191,7 @@ public class AuditLogListener {
             return "{}";
         }
     }
-    
+
     private String serializeOrder(Order order) {
         try {
             Map<String, Object> data = new HashMap<>();
@@ -214,27 +203,27 @@ public class AuditLogListener {
             data.put("totalAmount", getFieldValue(order, "totalAmount"));
             data.put("status", getFieldValue(order, "status"));
             data.put("isPaid", getFieldValue(order, "isPaid"));
-            
+
             // Serialize relationships safely - only IDs to avoid lazy loading
             Object customerId = getFieldValue(order, "customerId");
             if (customerId != null) {
                 Object customerIdValue = getFieldValue(customerId, "customerId");
                 data.put("customerId", customerIdValue);
             }
-            
+
             Object employeeId = getFieldValue(order, "employeeId");
             if (employeeId != null) {
                 Object employeeIdValue = getFieldValue(employeeId, "id");
                 data.put("employeeId", employeeIdValue);
             }
-            
+
             // Don't serialize orderDetails list to avoid lazy loading issues
             // Only include count if available
             List<?> orderDetails = (List<?>) getFieldValue(order, "orderDetails");
             if (orderDetails != null) {
                 data.put("orderDetailsCount", orderDetails.size());
             }
-            
+
             ObjectMapper mapper = ContextUtils.getObjectMapper();
             return mapper.writeValueAsString(data);
         } catch (Exception e) {
@@ -242,7 +231,7 @@ public class AuditLogListener {
             return "{}";
         }
     }
-    
+
     private String serializeCustomer(Customer customer) {
         try {
             Map<String, Object> data = new HashMap<>();
@@ -256,7 +245,7 @@ public class AuditLogListener {
             data.put("address", getFieldValue(customer, "address"));
             data.put("createAt", getFieldValue(customer, "createAt"));
             data.put("updateAt", getFieldValue(customer, "updateAt"));
-            
+
             ObjectMapper mapper = ContextUtils.getObjectMapper();
             return mapper.writeValueAsString(data);
         } catch (Exception e) {
@@ -264,7 +253,7 @@ public class AuditLogListener {
             return "{}";
         }
     }
-    
+
     /**
      * Safely get field value using reflection to avoid triggering Hibernate getters
      */
@@ -272,7 +261,7 @@ public class AuditLogListener {
         try {
             Class<?> clazz = obj.getClass();
             Field field = null;
-            
+
             // Try to find field in current class and superclasses
             while (clazz != null && field == null) {
                 try {
@@ -281,12 +270,12 @@ public class AuditLogListener {
                     clazz = clazz.getSuperclass();
                 }
             }
-            
+
             if (field == null) {
                 log.warn("Could not find field: {} in class: {}", fieldName, obj.getClass().getSimpleName());
                 return null;
             }
-            
+
             field.setAccessible(true);
             return field.get(obj);
         } catch (Exception e) {
@@ -299,7 +288,7 @@ public class AuditLogListener {
     public void postPersist(Object entity) {
         try {
             log.debug("PostPersist called for entity: {}", entity.getClass().getSimpleName());
-            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product
                     || entity instanceof Order || entity instanceof Customer) {
                 log.debug("Entity is tracked for audit log, scheduling audit log creation...");
                 // Delay building audit log until after transaction commit to avoid Hibernate session issues
@@ -316,48 +305,27 @@ public class AuditLogListener {
     public void preUpdate(Object entity) {
         try {
             log.debug("PreUpdate called for entity: {}", entity.getClass().getSimpleName());
-            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product
                     || entity instanceof Order || entity instanceof Customer) {
-                
-                Long recordId = getRecordIdUsingReflection(entity);
-                if (recordId == null) {
-                    log.warn("Cannot create audit log: recordId is null in preUpdate for entity {}", entity.getClass().getSimpleName());
-                    return;
-                }
-                
-                // Check if audit log is already scheduled for this entity
-                String auditKey = entity.getClass().getSimpleName() + "_" + recordId + "_UPDATE";
-                Set<String> scheduled = scheduledAuditLogs.get();
-                if (scheduled != null && scheduled.contains(auditKey)) {
-                    log.debug("Audit log already scheduled for entity: {}, skipping duplicate", auditKey);
-                    return;
-                }
-                
                 log.debug("Entity is tracked for audit log, saving old state and scheduling audit log creation...");
-                // Save old state before update for comparison (reload from database)
+                // Save old state before update for comparison
                 saveOldEntityState(entity);
                 // Delay building audit log until after transaction commit to avoid Hibernate session issues
                 scheduleAuditLogCreation(entity, "UPDATE");
-                
-                // Mark as scheduled
-                if (scheduled == null) {
-                    scheduled = new HashSet<>();
-                    scheduledAuditLogs.set(scheduled);
-                }
-                scheduled.add(auditKey);
             } else {
                 log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
             }
         } catch (Exception e) {
             log.error("Error in preUpdate audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
         }
+        // Note: Don't remove oldEntityState here - it will be cleaned up in afterCommit
     }
-    
+
     @PreRemove
     public void preRemove(Object entity) {
         try {
             log.debug("PreRemove called for entity: {}", entity.getClass().getSimpleName());
-            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product
                     || entity instanceof Order || entity instanceof Customer) {
                 log.debug("Entity is tracked for audit log, saving state before deletion...");
                 // Save state before deletion
@@ -371,90 +339,22 @@ public class AuditLogListener {
             log.error("Error in preRemove audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
         }
     }
-    
+
     /**
      * Save old entity state before update for comparison
-     * Reloads entity from database to get the actual old state before changes
      */
     private void saveOldEntityState(Object entity) {
         try {
+            String oldState = serializeObject(entity);
             Long recordId = getRecordIdUsingReflection(entity);
-            if (recordId == null) {
-                log.warn("Cannot save old state: recordId is null");
-                return;
+            if (recordId != null) {
+                Map<String, String> stateMap = new HashMap<>();
+                stateMap.put(recordId.toString(), oldState);
+                oldEntityState.set(stateMap);
+                log.debug("Saved old state for entity with ID: {}", recordId);
             }
-
-            // Reload entity from database to get the actual old state
-            Object oldEntity = reloadEntityFromDatabase(entity, recordId);
-            if (oldEntity == null) {
-                log.warn("Cannot reload entity from database for ID: {}, entity type: {}", 
-                        recordId, entity.getClass().getSimpleName());
-                return;
-            }
-
-            // Serialize the old entity from database
-            String oldState = serializeObject(oldEntity);
-            Map<String, String> stateMap = new HashMap<>();
-            stateMap.put(recordId.toString(), oldState);
-            oldEntityState.set(stateMap);
-            log.debug("Saved old state for entity with ID: {} (reloaded from database)", recordId);
         } catch (Exception e) {
             log.error("Error saving old entity state", e);
-        }
-    }
-
-    /**
-     * Reload entity from database to get the actual old state before update
-     * Uses repository to reload from database. Since entity hasn't been flushed yet,
-     * repository will get the old state from database.
-     * IMPORTANT: Do NOT evict or modify the entity being updated as it will break the update process.
-     */
-    private Object reloadEntityFromDatabase(Object entity, Long recordId) {
-        try {
-            // Use repository to reload entity from database
-            // Since the update hasn't been flushed yet, this will get the old state
-            Object oldEntity = null;
-            
-            if (entity instanceof Employee) {
-                EmployeeRepo repo = ContextUtils.getBean(EmployeeRepo.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId).orElse(null);
-                }
-            } else if (entity instanceof Role) {
-                RoleRepo repo = ContextUtils.getBean(RoleRepo.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId.intValue()).orElse(null);
-                }
-            } else if (entity instanceof Product) {
-                ProductRepository repo = ContextUtils.getBean(ProductRepository.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId).orElse(null);
-                }
-            } else if (entity instanceof Order) {
-                OrderRepository repo = ContextUtils.getBean(OrderRepository.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId.intValue()).orElse(null);
-                }
-            } else if (entity instanceof Customer) {
-                CustomerRepo repo = ContextUtils.getBean(CustomerRepo.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId).orElse(null);
-                }
-            }
-
-            if (oldEntity != null) {
-                log.debug("Successfully reloaded entity from database: {} with ID: {}", 
-                        entity.getClass().getSimpleName(), recordId);
-            } else {
-                log.warn("Entity not found in database: {} with ID: {}", 
-                        entity.getClass().getSimpleName(), recordId);
-            }
-
-            return oldEntity;
-        } catch (Exception e) {
-            log.error("Error reloading entity from database for entity: {} with ID: {}", 
-                    entity.getClass().getSimpleName(), recordId, e);
-            return null;
         }
     }
 
@@ -564,28 +464,27 @@ public class AuditLogListener {
                         } catch (Exception e) {
                             log.error("Error creating audit log after commit", e);
                         } finally {
-                            // Clean up old state and scheduled tracking after processing
+                            // Clean up old state after processing
                             oldEntityState.remove();
-                            scheduledAuditLogs.remove();
                         }
                     }
                 });
             }
             else {
                 log.debug("No active transaction, creating audit log immediately");
-                
+
                 final Long employeeId = getCurrentEmployeeId();
                 if (employeeId == null) {
                     log.warn("Cannot create audit log: employeeId is null for action {} on entity {}", action, entity.getClass().getSimpleName());
                     return;
                 }
-                
+
                 final Long recordId = getRecordIdUsingReflection(entity);
                 if (recordId == null) {
                     log.warn("Cannot create audit log: recordId is null for action {} on entity {}", action, entity.getClass().getSimpleName());
                     return;
                 }
-                
+
                 String changes;
                 if ("UPDATE".equals(action)) {
                     // For UPDATE, create diff object with old and new values
@@ -607,7 +506,7 @@ public class AuditLogListener {
                     // For CREATE, just serialize the new entity
                     changes = serializeObject(entity);
                 }
-                
+
                 AuditLog auditLog = AuditLog.builder()
                         .employeeId(employeeId)
                         .action(action)
@@ -617,16 +516,15 @@ public class AuditLogListener {
                         .ipAddress(ContextUtils.getIpAddress())
                         .userAgent(ContextUtils.getUserAgent())
                         .build();
-                
+
                 if (auditLog != null) {
                     ContextUtils.getAuditLogService().saveAuditLog(auditLog);
                     log.debug("Audit log saved successfully");
                 }
-                
-                // Clean up old state and scheduled tracking after processing
+
+                // Clean up old state after processing
                 if ("UPDATE".equals(action) || "DELETE".equals(action)) {
                     oldEntityState.remove();
-                    scheduledAuditLogs.remove();
                 }
             }        } catch (Exception e) {
             log.error("Error in scheduleAuditLogCreation", e);
@@ -679,7 +577,7 @@ public class AuditLogListener {
             for (Field field : fields) {
                 String fieldName = field.getName();
                 // Check for common ID field names
-                if (fieldName.equals("id") || fieldName.equals("idProduct") 
+                if (fieldName.equals("id") || fieldName.equals("idProduct")
                         || fieldName.equals("orderId") || fieldName.equals("customerId")) {
                     idField = field;
                     break;
@@ -740,40 +638,40 @@ public class AuditLogListener {
             return null;
         }
     }
-    
+
     /**
      * Create diff object showing changes between old and new entity state
      */
     private String createUpdateDiff(Object newEntity, Long recordId) {
         try {
             Map<String, Object> diff = new HashMap<>();
-            
+
             // Get old state from ThreadLocal
             Map<String, String> oldStateMap = oldEntityState.get();
             String oldStateJson = null;
             if (oldStateMap != null && recordId != null) {
                 oldStateJson = oldStateMap.get(recordId.toString());
             }
-            
+
             // Serialize new state
             String newStateJson = serializeObject(newEntity);
-            
+
             // Parse old and new states to compare
             ObjectMapper mapper = ContextUtils.getObjectMapper();
-            Map<String, Object> oldState = oldStateJson != null ? 
-                mapper.readValue(oldStateJson, Map.class) : new HashMap<>();
+            Map<String, Object> oldState = oldStateJson != null ?
+                    mapper.readValue(oldStateJson, Map.class) : new HashMap<>();
             Map<String, Object> newState = mapper.readValue(newStateJson, Map.class);
-            
+
             // Find differences
             Map<String, Object> changes = new HashMap<>();
             Set<String> allKeys = new HashSet<>();
             allKeys.addAll(oldState.keySet());
             allKeys.addAll(newState.keySet());
-            
+
             for (String key : allKeys) {
                 Object oldValue = oldState.get(key);
                 Object newValue = newState.get(key);
-                
+
                 if (!Objects.equals(oldValue, newValue)) {
                     Map<String, Object> change = new HashMap<>();
                     change.put("old", oldValue);
@@ -781,11 +679,11 @@ public class AuditLogListener {
                     changes.put(key, change);
                 }
             }
-            
+
             diff.put("old", oldState);
             diff.put("new", newState);
             diff.put("changes", changes);
-            
+
             return mapper.writeValueAsString(diff);
         } catch (Exception e) {
             log.error("Error creating update diff", e);

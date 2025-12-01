@@ -78,7 +78,8 @@ const PersonalInfoForm = () => {
         // Tạo request body khớp với CustomerUpdateRequest (Spring Boot)
         const requestBody = {
             fullName: formData.fullName,
-            email: formData.email,
+            // Chỉ gửi email nếu có giá trị (không rỗng)
+            ...(formData.email && formData.email.trim() !== '' && { email: formData.email.trim() }),
             // Chuyển đổi lại giới tính từ string sang boolean
             gender: formData.gender === 'male' ? true : (formData.gender === 'female' ? false : null),
             birthDate: formData.dateOfBirth, // Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
