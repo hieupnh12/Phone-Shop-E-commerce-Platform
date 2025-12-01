@@ -8,6 +8,7 @@ import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
 import { useAuth } from "../../reducers";
 import { fetchTop5Products } from "../../services/productWorker";
+import feedbackService from "../../services/feedbackService";
 import { Flame, TrendingUp, Star, Zap } from "lucide-react";
 
 const ClientLayout = ({ children, showHero = true }) => {
@@ -18,6 +19,7 @@ const ClientLayout = ({ children, showHero = true }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hotProduct, setHotProduct] = useState([]);
+  const [productRatings, setProductRatings] = useState({}); // { productId: { averageRating, totalReviews } }
 
   const navigate = useNavigate();
   const user = getUserRole();
@@ -56,7 +58,13 @@ const ClientLayout = ({ children, showHero = true }) => {
     try {
       const data = await fetchTop5Products();
       console.log("✓ Hot product fetched:", data);
-      setHotProduct(data.products || []);
+      const products = data.products || [];
+      setHotProduct(products);
+      
+      // Fetch ratings cho tất cả sản phẩm
+      if (products.length > 0) {
+        fetchProductRatings(products);
+      }
     } catch (err) {
       setError("Failed to fetch top products.");
     } finally {
@@ -64,10 +72,118 @@ const ClientLayout = ({ children, showHero = true }) => {
     }
   };
 
-  // THÊM MỚI: Gọi fetch khi component mount
+  // Fetch ratings cho danh sách sản phẩm
+  const fetchProductRatings = async (products) => {
+    try {
+      console.log("📊 Fetching ratings for products:", products.map(p => ({ id: p.id, name: p.name })));
+      
+      const ratingPromises = products.map(async (product) => {
+        // Sử dụng product.id hoặc product.idProduct (tùy format)
+        const productId = product.id || product.idProduct;
+        
+        if (!productId) {
+          console.warn(`⚠️ Product missing ID:`, product);
+          return {
+            productId: product.id || product.idProduct,
+            averageRating: 0,
+            totalReviews: 0,
+          };
+        }
+        
+        try {
+          const [avgRatingResponse, statsResponse] = await Promise.all([
+            feedbackService.getAverageRating(productId),
+            feedbackService.getRatingStats(productId),
+          ]);
+          
+          console.log(`📊 Rating response for product ${productId}:`, {
+            avgRatingResponse,
+            statsResponse,
+            productName: product.name
+          });
+          
+          // Handle different response formats
+          // Backend có thể trả về Double trực tiếp hoặc object
+          let averageRating = 0;
+          if (typeof avgRatingResponse === 'number') {
+            averageRating = avgRatingResponse;
+          } else if (avgRatingResponse?.average_rating !== undefined) {
+            averageRating = avgRatingResponse.average_rating;
+          } else if (avgRatingResponse?.averageRating !== undefined) {
+            averageRating = avgRatingResponse.averageRating;
+          } else if (avgRatingResponse?.result !== undefined) {
+            // Nếu có wrapper result
+            const result = avgRatingResponse.result;
+            averageRating = typeof result === 'number' ? result : (result?.average_rating || result?.averageRating || 0);
+          }
+          
+          // Handle stats response
+          let totalReviews = 0;
+          if (statsResponse?.total_reviews !== undefined) {
+            totalReviews = statsResponse.total_reviews;
+          } else if (statsResponse?.totalReviews !== undefined) {
+            totalReviews = statsResponse.totalReviews;
+          } else if (statsResponse?.result) {
+            const result = statsResponse.result;
+            totalReviews = result?.total_reviews || result?.totalReviews || 0;
+          }
+          
+          console.log(`✅ Parsed rating for product ${productId}:`, {
+            averageRating,
+            totalReviews,
+            productName: product.name
+          });
+          
+          return {
+            productId: productId,
+            averageRating: Number(averageRating) || 0,
+            totalReviews: Number(totalReviews) || 0,
+          };
+        } catch (err) {
+          console.error(`❌ Error fetching rating for product ${productId}:`, err);
+          return {
+            productId: productId,
+            averageRating: 0,
+            totalReviews: 0,
+          };
+        }
+      });
+      
+      const ratings = await Promise.all(ratingPromises);
+      const ratingsMap = {};
+      ratings.forEach((rating) => {
+        if (rating.productId) {
+          ratingsMap[rating.productId] = {
+            averageRating: rating.averageRating,
+            totalReviews: rating.totalReviews,
+          };
+        }
+      });
+      
+      console.log("📊 Final productRatings map:", ratingsMap);
+      console.log("📊 Product IDs in hotProduct:", products.map(p => p.id || p.idProduct));
+      setProductRatings(ratingsMap);
+    } catch (err) {
+      console.error("❌ Error fetching product ratings:", err);
+    }
+  };
+
+  // THÊM MỚI: Gọi fetch khi component mount và auto-refresh định kỳ (realtime)
   useEffect(() => {
+    // Load ngay lập tức
     hotProductTop5();
-  }, []); // Dependency rỗng để chỉ gọi 1 lần
+    
+    // Auto-refresh mỗi 30 giây để cập nhật realtime
+    const refreshInterval = setInterval(() => {
+      console.log("🔄 Auto-refreshing hot products...");
+      hotProductTop5();
+    }, 30000); // 30 giây = 30000ms
+    
+    // Cleanup interval khi component unmount
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, []); // Dependency rỗng để chỉ setup 1 lần
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -228,19 +344,6 @@ const ClientLayout = ({ children, showHero = true }) => {
                 </p>
               </div>
 
-              {/* Loading State */}
-              {loading && (
-                <div className="flex flex-col justify-center items-center py-16">
-                  <div className="relative w-16 h-16 mb-4">
-                    <div className="absolute inset-0 border-4 border-cyan-500/30 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-transparent border-t-cyan-500 rounded-full animate-spin"></div>
-                  </div>
-                  <div className="text-white text-lg font-medium">
-                    Đang tải sản phẩm hot...
-                  </div>
-                </div>
-              )}
-
               {/* Error State */}
               {error && (
                 <div className="text-center py-16 bg-red-500/10 rounded-2xl border border-red-500/20">
@@ -258,7 +361,7 @@ const ClientLayout = ({ children, showHero = true }) => {
               )}
 
               {/* Main container box */}
-              {!loading && !error && hotProduct.length > 0 && (
+              {!error && hotProduct.length > 0 && (
                 <div className="relative">
                   {/* Border glow effect */}
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-3xl opacity-20 blur-xl"></div>
@@ -337,17 +440,35 @@ const ClientLayout = ({ children, showHero = true }) => {
                                 </h3>
 
                                 {/* Rating */}
-                                <div className="flex items-center gap-1 mb-3">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star
-                                      key={i}
-                                      className="w-3 h-3 fill-yellow-400 text-yellow-400"
-                                    />
-                                  ))}
-                                  <span className="text-gray-400 text-xs ml-1">
-                                    (4.8)
-                                  </span>
-                                </div>
+                                {(() => {
+                                  // Sử dụng product.id hoặc product.idProduct
+                                  const productId = product.id || product.idProduct;
+                                  const rating = productRatings[productId];
+                                  const averageRating = rating?.averageRating || 0;
+                                  const totalReviews = rating?.totalReviews || 0;
+                                  const roundedRating = Math.round(averageRating);
+                                  
+                                  return (
+                                    <div className="flex items-center gap-1 mb-3">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`w-3 h-3 ${
+                                            i < roundedRating
+                                              ? "fill-yellow-400 text-yellow-400"
+                                              : "fill-gray-600 text-gray-600"
+                                          }`}
+                                        />
+                                      ))}
+                                      <span className="text-gray-400 text-xs ml-1">
+                                        {averageRating > 0 ? `(${averageRating.toFixed(1)})` : "(0.0)"}
+                                        {totalReviews > 0 && (
+                                          <span className="text-gray-500"> • {totalReviews} đánh giá</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
 
                                 {/* Price */}
                                 <div className="mb-4">
@@ -385,7 +506,7 @@ const ClientLayout = ({ children, showHero = true }) => {
               )}
 
               {/* View all button */}
-              {!loading && !error && hotProduct.length > 0 && (
+              {!error && hotProduct.length > 0 && (
                 <div className="flex justify-center mt-8">
                   <button
                     onClick={handleViewAllProducts}
