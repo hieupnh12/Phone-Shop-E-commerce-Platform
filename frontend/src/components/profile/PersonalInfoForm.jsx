@@ -14,7 +14,7 @@ import { formatPhoneNumber } from "../../utils/phoneUtils";
 const PersonalInfoForm = () => {
     const { t } = useLanguage();
     const { getCurrentUser } = useAuthFullOptions();
-    const { customerInfo } = useOutletContext();
+    const { customerInfo, refetchCustomerInfo } = useOutletContext();
 
     const [formData, setFormData] = useState({});
     const [isEditing, setIsEditing] = useState(false);
@@ -85,14 +85,17 @@ const PersonalInfoForm = () => {
             address: formData.address || '', // Gửi địa chỉ từ form
         };
 
-        const customerId = formData.customerId;
-
         try {
-            const response = await profileService.updateCustomer(customerId, requestBody);
+            // Sử dụng endpoint mới /customer/me - không cần truyền customerId
+            const response = await profileService.updateMyProfile(requestBody);
 
             console.log("Saving data successful:", response);
 
+            // Refresh customer info để cập nhật ngay lập tức
             await getCurrentUser();
+            if (refetchCustomerInfo) {
+                await refetchCustomerInfo();
+            }
 
             setIsEditing(false);
 

@@ -8,7 +8,7 @@ import { Outlet } from 'react-router-dom';
 
 
 const ProfilePageLayout = () => {
-    const { customerInfo, isLoading, error } = useCustomerInfo();
+    const { customerInfo, isLoading, error, refetch } = useCustomerInfo();
 
     if (isLoading) {
         return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Đang tải ...</div>;
@@ -36,7 +36,7 @@ const ProfilePageLayout = () => {
 
                     {/* Cột 2: Nội dung Chính - CHÍNH LÀ children */}
                     <div className="md:col-span-3 lg:col-span-4">
-                        <Outlet context={{ customerInfo }} />
+                        <Outlet context={{ customerInfo, refetchCustomerInfo: refetch }} />
                     </div>
                 </div>
             </div>
