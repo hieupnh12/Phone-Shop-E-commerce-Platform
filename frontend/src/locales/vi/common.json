@@ -52,7 +52,17 @@
     "hotProductsTitle": "Sản Phẩm Bán Chạy",
     "hotProductsSubtitle": "Top điện thoại được yêu thích nhất",
     "viewAllProducts": "Xem Tất Cả Sản Phẩm",
-    "buyNow": "Mua Ngay"
+    "buyNow": "Mua Ngay",
+    "hotProducts": "Sản Phẩm Hot",
+    "hotProductsDescription": "Top sản phẩm bán chạy nhất được yêu thích nhất hiện nay",
+    "failedToFetchHotProducts": "Không thể tải sản phẩm hot.",
+    "retry": "Thử lại",
+    "badgeHot": "HOT",
+    "badgeNew": "MỚI",
+    "sold": "đã bán",
+    "reviews": "đánh giá",
+    "viewDetails": "Xem chi tiết",
+    "videoNotSupported": "Trình duyệt của bạn không hỗ trợ video nền."
   },
   "auth": {
     "login": "Đăng nhập",
@@ -357,6 +367,7 @@
   },
   "admin": {
     "dashboard": "Dashboard",
+    "dashboardTitle": "Admin Dashboard",
     "statistic": "Thống kê",
     "roles": "Phân quyền",
     "customers": "Khách hàng",
@@ -371,6 +382,7 @@
     "screenResolution": "Độ Phân Giải Màn Hình",
     "products": "Sản phẩm",
     "orders": "Đặt hàng",
+    "warrantyRequests": "Yêu cầu bảo hành",
     "clearFilters": "Xóa Lọc",
     "addEmployee": "Thêm Tài khoản Nhân viên Mới",
     "editEmployee": "Chỉnh sửa nhân viên",
@@ -579,6 +591,7 @@
     "delete": "Xóa",
     "edit": "Chỉnh sửa",
     "add": "Thêm",
+    "retry": "Thử lại",
     "close": "Đóng",
     "confirm": "Xác nhận",
     "update": "Cập nhật",
@@ -724,6 +737,7 @@
       "emailPlaceholder": "Nhập địa chỉ email",
       "dateOfBirth": "Ngày sinh",
       "saveChanges": "Lưu thay đổi",
+      "update": "Cập nhật",
       "updateError": "Lỗi: Không thể cập nhật thông tin. Vui lòng thử lại.",
       "contactToChangePhone": "Liên hệ CSKH để đổi số điện thoại",
       "addressPlaceholder": "Nhập địa chỉ",
@@ -737,6 +751,23 @@
     },
     "addressForm": {
       "fillAllFields": "Vui lòng điền đầy đủ thông tin địa chỉ"
+    },
+    "supportPage": {
+      "contactInfo": "Thông tin liên hệ",
+      "phone": "Số điện thoại",
+      "support24_7": "Hỗ trợ 24/7",
+      "storeAddress": "Địa chỉ cửa hàng",
+      "businessHours": "Giờ làm việc",
+      "businessHoursDesc": "Thứ 2 - Chủ nhật: 8:00 - 22:00",
+      "services": "Dịch vụ hỗ trợ",
+      "servicesDesc": "Chúng tôi luôn sẵn sàng hỗ trợ bạn với các dịch vụ:",
+      "service1": "Tư vấn sản phẩm và giải đáp thắc mắc",
+      "service2": "Hỗ trợ kỹ thuật và sửa chữa",
+      "service3": "Xử lý khiếu nại và phản hồi",
+      "service4": "Hướng dẫn sử dụng sản phẩm",
+      "service5": "Chăm sóc khách hàng sau bán hàng",
+      "feedback": "Góp ý của bạn",
+      "feedbackDesc": "Chúng tôi rất mong nhận được ý kiến đóng góp từ quý khách hàng để cải thiện chất lượng dịch vụ. Vui lòng liên hệ với chúng tôi qua số điện thoại hoặc đến trực tiếp cửa hàng."
     }
   },
   "productDetail": {
@@ -765,7 +796,8 @@
       "version": "Phiên bản",
       "rom": "ROM",
       "color": "Màu sắc",
-      "versionNotAvailable": "Phiên bản không có sẵn! Vui lòng thử lựa chọn khác."
+      "versionNotAvailable": "Phiên bản không có sẵn! Vui lòng thử lựa chọn khác.",
+      "notFound": "Không tìm thấy sản phẩm"
     },
   "notFound": {
     "title": "Page Not Found",

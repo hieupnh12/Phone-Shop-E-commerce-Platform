@@ -616,7 +616,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
-        <div className="text-xl text-cyan-400">Đang tải...</div>
+        <div className="text-xl text-cyan-400">{t('common.loading')}</div>
       </div>
     );
   }
@@ -629,7 +629,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
           onClick={() => fetchProductDetail(productId)}
           className="bg-cyan-600 text-white px-4 py-2 rounded hover:bg-cyan-700 transition"
         >
-          Tải lại trang
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -638,7 +638,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
-        <div className="text-xl text-cyan-100">Không tìm thấy sản phẩm</div>
+        <div className="text-xl text-cyan-100">{t('productDetail.notFound') || 'Không tìm thấy sản phẩm'}</div>
       </div>
     );
   }

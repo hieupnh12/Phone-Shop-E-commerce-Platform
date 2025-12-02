@@ -23,6 +23,7 @@ import {
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { usePermission, PERMISSIONS } from "../../hooks/usePermission";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 
 export default function AdminLayout() {
   const { t } = useLanguage();
@@ -91,7 +92,7 @@ export default function AdminLayout() {
     { 
       id: "warranty-requests", 
       icon: RefreshCw, 
-      label: "Yêu cầu bảo hành", 
+      label: t('admin.warrantyRequests'), 
       path: "/admin/warranty-requests",
       // Hiển thị nếu có quyền xem tất cả HOẶC quyền cập nhật (để xem yêu cầu của mình)
       permission: [PERMISSIONS.WARRANTY_VIEW_ALL, PERMISSIONS.WARRANTY_UPDATE_BASIC],
@@ -166,7 +167,7 @@ console.log(user);
               <Menu  size={24} className="text-gray-700" />
             )}
           </button>
-          <h1 className={`text-xl font-bold text-sky-600 underline ${!isDesktop? "hidden":""}`}>Admin Dashboard</h1>
+          <h1 className={`text-xl font-bold text-sky-600 underline ${!isDesktop? "hidden":""}`}>{t('admin.dashboardTitle')}</h1>
         </div>
         
         <div className="sm:flex-1 sm:max-w-md sm:mx-4 lg:mx-8">
@@ -188,6 +189,8 @@ console.log(user);
             <Bell size={20} />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button> */}
+
+          <LanguageSwitcher variant="light" />
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">

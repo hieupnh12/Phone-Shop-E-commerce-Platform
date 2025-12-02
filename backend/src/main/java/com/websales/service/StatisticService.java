@@ -260,12 +260,23 @@ public class StatisticService {
     public StatisticProductResponse getStatisticProduct(String from, String to) {
 
         // Top sản phẩm
-        Object[] topArr = (Object[]) summaryCardRepository.getTopProduct(from, to);
-        StatisticProductResponse.ProductInfoDTO topProduct = new StatisticProductResponse.ProductInfoDTO(
-                topArr[0] != null ? (String) topArr[0] : "",
-                ((Number) topArr[1]).longValue(),
-                ((Number) topArr[2]).longValue()
-        );
+        Object topProductResult = summaryCardRepository.getTopProduct(from, to);
+        StatisticProductResponse.ProductInfoDTO topProduct;
+        if (topProductResult != null) {
+            Object[] topArr = (Object[]) topProductResult;
+            topProduct = new StatisticProductResponse.ProductInfoDTO(
+                    topArr[0] != null ? (String) topArr[0] : "",
+                    topArr[1] != null ? ((Number) topArr[1]).longValue() : 0L,
+                    topArr[2] != null ? ((Number) topArr[2]).longValue() : 0L
+            );
+        } else {
+            // Trả về giá trị mặc định nếu không có dữ liệu
+            topProduct = new StatisticProductResponse.ProductInfoDTO(
+                    "",
+                    0L,
+                    0L
+            );
+        }
 
         LocalDate today = LocalDate.now();
         LocalDate thirtyDaysAgo = today.minusDays(30);
@@ -291,34 +302,53 @@ public class StatisticService {
         }
 
         // Top 10 sản phẩm
-        List<StatisticProductResponse.ProductInfoDTO> topProducts = summaryCardRepository.getTopProducts(fromDate, toDate).stream().map(o -> {
-            Object[] arr = (Object[]) o;
-            return new StatisticProductResponse.ProductInfoDTO(
-                    (String) arr[0],
-                    ((Number) arr[1]).longValue(),
-                    ((Number) arr[2]).longValue()
-            );
-        }).toList();
+        List<Object[]> topProductsRaw = summaryCardRepository.getTopProducts(fromDate, toDate);
+        List<StatisticProductResponse.ProductInfoDTO> topProducts = (topProductsRaw != null ? topProductsRaw : java.util.Collections.emptyList())
+                .stream()
+                .map(o -> {
+                    Object[] arr = (Object[]) o;
+                    return new StatisticProductResponse.ProductInfoDTO(
+                            arr[0] != null ? (String) arr[0] : "",
+                            arr[1] != null ? ((Number) arr[1]).longValue() : 0L,
+                            arr[2] != null ? ((Number) arr[2]).longValue() : 0L
+                    );
+                })
+                .toList();
 
         // Tổng số lượng
         Long totalQuantity = summaryCardRepository.getTotalQuantity(from, to);
         if (totalQuantity == null) totalQuantity = 0L;
 
         // Sản phẩm tồn kho
-        Object[] invArr = (Object[]) summaryCardRepository.getInventoryProduct();
-        StatisticProductResponse.ProductInfoDTO inventoryProduct = new StatisticProductResponse.ProductInfoDTO(
-                (String) invArr[0],
-                0L,
-                ((Number) invArr[1]).longValue()
-        );
-
-        List<StatisticProductResponse.BrandRevenueDTO> byBrand = summaryCardRepository.getByBrand(from, to).stream().map(o -> {
-            Object[] arr = (Object[]) o;
-            return new StatisticProductResponse.BrandRevenueDTO(
-                    (String) arr[0],                   // brand name
-                    (((Number) arr[1]).longValue()) // tổng số lượng bán
+        Object inventoryResult = summaryCardRepository.getInventoryProduct();
+        StatisticProductResponse.ProductInfoDTO inventoryProduct;
+        if (inventoryResult != null) {
+            Object[] invArr = (Object[]) inventoryResult;
+            inventoryProduct = new StatisticProductResponse.ProductInfoDTO(
+                    invArr[0] != null ? (String) invArr[0] : "",
+                    0L,
+                    invArr[1] != null ? ((Number) invArr[1]).longValue() : 0L
             );
-        }).toList();
+        } else {
+            // Trả về giá trị mặc định nếu không có dữ liệu
+            inventoryProduct = new StatisticProductResponse.ProductInfoDTO(
+                    "",
+                    0L,
+                    0L
+            );
+        }
+
+        List<Object[]> byBrandRaw = summaryCardRepository.getByBrand(from, to);
+        List<StatisticProductResponse.BrandRevenueDTO> byBrand = (byBrandRaw != null ? byBrandRaw : java.util.Collections.emptyList())
+                .stream()
+                .map(o -> {
+                    Object[] arr = (Object[]) o;
+                    return new StatisticProductResponse.BrandRevenueDTO(
+                            arr[0] != null ? (String) arr[0] : "",                   // brand name
+                            arr[1] != null ? ((Number) arr[1]).longValue() : 0L // tổng số lượng bán
+                    );
+                })
+                .toList();
 
         return new StatisticProductResponse(
                 topProduct,

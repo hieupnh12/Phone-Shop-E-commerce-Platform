@@ -91,6 +91,26 @@ public class ReturnWarrantyRequestService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ReturnWarrantyRequestResponse> getAllRequestsWithDateRange(
+            LocalDateTime startDate, 
+            LocalDateTime endDate, 
+            Pageable pageable) {
+        log.info("Getting all warranty requests with date range: startDate={}, endDate={}, pageable: page={}, size={}, sort={}", 
+                startDate, endDate, pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        
+        // Set endDate to end of day if provided
+        if (endDate != null) {
+            endDate = endDate.withHour(23).withMinute(59).withSecond(59);
+        }
+        
+        Page<ReturnWarrantyRequest> entityPage = requestRepository.findByCreatedAtBetween(startDate, endDate, pageable);
+        log.info("Found {} total warranty requests in repository with date range", entityPage.getTotalElements());
+        Page<ReturnWarrantyRequestResponse> responsePage = entityPage.map(this::toResponse);
+        log.info("Mapped to {} response objects", responsePage.getContent().size());
+        return responsePage;
+    }
+
+    @Transactional(readOnly = true)
     public Page<ReturnWarrantyRequestResponse> getRequestsByCustomer(Long customerId, Pageable pageable) {
         return requestRepository.findByCustomer_CustomerId(customerId, pageable).map(this::toResponse);
     }
@@ -105,6 +125,25 @@ public class ReturnWarrantyRequestService {
     @Transactional(readOnly = true)
     public Page<ReturnWarrantyRequestResponse> getRequestsByStatus(RequestStatus status, Pageable pageable) {
         return requestRepository.findByStatus(status, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReturnWarrantyRequestResponse> getRequestsByStatusWithDateRange(
+            RequestStatus status,
+            LocalDateTime startDate,
+            LocalDateTime endDate,
+            Pageable pageable) {
+        log.info("Getting warranty requests by status with date range: status={}, startDate={}, endDate={}, pageable: page={}, size={}, sort={}", 
+                status, startDate, endDate, pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        
+        // Set endDate to end of day if provided
+        if (endDate != null) {
+            endDate = endDate.withHour(23).withMinute(59).withSecond(59);
+        }
+        
+        Page<ReturnWarrantyRequest> entityPage = requestRepository.findByStatusAndCreatedAtBetween(status, startDate, endDate, pageable);
+        log.info("Found {} total warranty requests with status {} and date range", entityPage.getTotalElements(), status);
+        return entityPage.map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

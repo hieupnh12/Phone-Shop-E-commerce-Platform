@@ -45,7 +45,7 @@ const ProfileHeaderInfo = ({ customer }) => {
     );
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 mb-6 mt-16">
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 mb-4">
             <div className="flex flex-col lg:flex-row items-center lg:items-stretch">
 
                 {/* Cột 1: Thông tin cá nhân và Thẻ thành viên */}

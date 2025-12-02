@@ -19,7 +19,7 @@ export default function DashboardStatistic() {
     enabled: !!isAuth, 
     staleTime: 0, 
     refetchOnWindowFocus: true, 
-    refetchInterval: 0, 
+    refetchInterval: 1000, 
   })
   
   const { data, isLoading, error } = useQuery({
@@ -33,7 +33,7 @@ export default function DashboardStatistic() {
     enabled: !!isAuth, 
     staleTime: 0, 
     refetchOnWindowFocus: true, 
-    refetchInterval: 0, 
+    refetchInterval: 1000, 
   });
 
 

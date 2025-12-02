@@ -13,17 +13,39 @@ import chatsApi, { sendMessage } from "../../services/chatBotService";
 
 const STORAGE_KEY = "chatbot_messages";
 
-// Helper function để load messages từ localStorage
+// Helper function để load messages từ localStorage và xóa messages cũ hơn 1 ngày
 const loadMessagesFromStorage = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Chuyển timestamp từ string về Date object
-      return parsed.map((msg) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      }));
+      const now = new Date();
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 ngày trước
+
+      // Lọc và chuyển timestamp từ string về Date object, đồng thời xóa messages cũ hơn 1 ngày
+      const validMessages = parsed
+        .map((msg) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp),
+        }))
+        .filter((msg) => {
+          const msgDate = new Date(msg.timestamp);
+          return msgDate >= oneDayAgo;
+        });
+
+      // Nếu có messages bị xóa, cập nhật lại localStorage
+      if (validMessages.length < parsed.length) {
+        const messagesToStore = validMessages.map((msg) => ({
+          ...msg,
+          timestamp: msg.timestamp.toISOString(),
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messagesToStore));
+      }
+
+      // Nếu còn messages hợp lệ, trả về
+      if (validMessages.length > 0) {
+        return validMessages;
+      }
     }
   } catch (error) {
     console.error("Lỗi khi load messages từ localStorage:", error);
@@ -47,9 +69,6 @@ export default function Chatbot() {
   const [isTyping, setIsTyping] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [page, setPage] = useState(1);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -58,23 +77,6 @@ export default function Chatbot() {
   const [file, setFile] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-
-  // Mock older messages để demo lazy loading
-  const generateOlderMessages = (pageNum) => {
-    const oldMessages = [];
-    const startId = (pageNum - 1) * 5;
-    for (let i = 5; i > 0; i--) {
-      oldMessages.push({
-        id: `old-${startId + i}`,
-        text: `Đây là tin nhắn cũ số ${
-          startId + i
-        }. Nội dung mẫu để test lazy loading.`,
-        sender: i % 2 === 0 ? "bot" : "user",
-        timestamp: new Date(Date.now() - (pageNum * 5 + i) * 3600000),
-      });
-    }
-    return oldMessages;
-  };
 
   const scrollToBottom = (behavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -91,13 +93,8 @@ export default function Chatbot() {
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShowScrollButton(!isNearBottom && scrollTop > 100);
 
-    // Load more khi scroll lên trên cùng
-    if (scrollTop === 0 && !isLoadingOlder && hasMoreMessages) {
-      loadOlderMessages();
-    }
-
     lastScrollTop.current = scrollTop;
-  }, [isLoadingOlder, hasMoreMessages]);
+  }, []);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -135,35 +132,6 @@ export default function Chatbot() {
     }
   }, [messages]);
 
-  // Load older messages với lazy loading
-  const loadOlderMessages = async () => {
-    setIsLoadingOlder(true);
-    const container = messagesContainerRef.current;
-    const previousScrollHeight = container?.scrollHeight || 0;
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const olderMessages = generateOlderMessages(page);
-
-    if (page >= 3) {
-      // Giới hạn 3 trang để demo
-      setHasMoreMessages(false);
-    }
-
-    setMessages((prev) => [...olderMessages, ...prev]);
-    setPage((prev) => prev + 1);
-    setIsLoadingOlder(false);
-
-    // Giữ vị trí scroll sau khi load
-    setTimeout(() => {
-      if (container) {
-        const newScrollHeight = container.scrollHeight;
-        container.scrollTop = newScrollHeight - previousScrollHeight;
-      }
-    }, 0);
-  };
-
   // Stream text từ từ
   const streamText = async (text, callback) => {
     setIsTyping(true);
@@ -187,13 +155,28 @@ export default function Chatbot() {
     setInput("");
     setIsSending(true);
 
+    // Lưu ảnh dưới dạng base64 nếu có file
+    let imageData = null;
+    if (file) {
+      const reader = new FileReader();
+      imageData = await new Promise((resolve) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    } else if (input.startsWith("http") && !userText) {
+      imageData = input;
+    }
+
     // Tạo message người dùng
     const userMessage = {
       id: `user-${Date.now()}`,
-      text: userText,
+      text: userText || (imageData ? "Đã gửi ảnh" : ""),
       sender: "user",
       timestamp: new Date(),
-      extra: { file, imageUrl: input.startsWith("http") ? input : null },
+      extra: {
+        imageData: imageData || (input.startsWith("http") ? input : null),
+        imageUrl: input.startsWith("http") ? input : null,
+      },
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -360,37 +343,11 @@ export default function Chatbot() {
           <div
             ref={messagesContainerRef}
             className="overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white relative"
-            style={{ height: "calc(100% - 140px)", maxHeight: "calc(100% - 140px)" }}
+            style={{
+              height: "calc(100% - 140px)",
+              maxHeight: "calc(100% - 140px)",
+            }}
           >
-            {/* Loading indicator ở đầu */}
-            {isLoadingOlder && (
-              <div className="flex justify-center py-4">
-                <div className="flex gap-1">
-                  <div
-                    className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            {/* No more messages indicator */}
-            {!hasMoreMessages && (
-              <div className="text-center py-2">
-                <p className="text-xs text-gray-400">
-                  Đã hiển thị tất cả tin nhắn
-                </p>
-              </div>
-            )}
-
             {messages.map((message, index) => (
               <div
                 key={message.id}
@@ -428,7 +385,21 @@ export default function Chatbot() {
                           : "bg-white text-gray-800 rounded-tl-sm border border-gray-200"
                       }`}
                     >
-                      {message.text}
+                      {/* Hiển thị ảnh nếu có */}
+                      {message.extra?.imageData && (
+                        <div className="mb-2">
+                          <img
+                            src={message.extra.imageData}
+                            alt="User uploaded"
+                            className="max-w-full h-auto rounded-lg max-h-64 object-cover"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
+                        </div>
+                      )}
+                      {/* Hiển thị text nếu có */}
+                      {message.text && <div>{message.text}</div>}
                     </div>
                     {/* Nếu bot có Product và mảng không rỗng */}
                     {message.sender === "bot" &&
@@ -578,36 +549,36 @@ export default function Chatbot() {
               </div>
             )}
             <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer px-3 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors flex items-center"
-                >
-                  📎
-                </label>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  onPaste={handlePaste}
-                  placeholder="Nhập tin nhắn..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={isTyping || (!input.trim() && !file)} // nếu có file vẫn enable
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                id="file-upload"
+              />
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer px-3 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors flex items-center"
+              >
+                📎
+              </label>
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                onPaste={handlePaste}
+                placeholder="Nhập tin nhắn..."
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <button
+                onClick={handleSend}
+                disabled={isTyping || (!input.trim() && !file)} // nếu có file vẫn enable
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-full hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                <Send className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

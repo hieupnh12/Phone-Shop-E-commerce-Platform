@@ -24,9 +24,13 @@ export default function HomeClient() {
     }
   }, [navigate, authLoading]);
 
-  // Show loading while checking auth
+  // Show loading while checking auth - use subtle loading instead of blocking
   if (authLoading) {
-    return <Loading fullScreen type="dots" />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <Loading type="dots" size="lg" message="" />
+      </div>
+    );
   }
 
   return (

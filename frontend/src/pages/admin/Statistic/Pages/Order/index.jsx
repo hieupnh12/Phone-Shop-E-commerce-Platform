@@ -142,7 +142,7 @@ export default function OrderStatistic() {
     enabled: !!isAuth, // chỉ chạy khi user auth
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: 0,
+    refetchInterval: 1000,
   });
   const [totalOrder, setTotalOrder] = useState(0);
 
@@ -184,7 +184,7 @@ export default function OrderStatistic() {
   const statusFilters = [
     { label: "Tất cả", value: "all" },
     { label: "Đơn mới", value: "PENDING" },
-    { label: "Đã xác nhận", value: "paid" },
+    { label: "Đã xác nhận", value: "PAID" },
     { label: "Đang giao", value: "SHIPPED" },
     { label: "Hoàn tất", value: "delivered" },
     { label: "Đã hủy", value: "CANCELED" },
@@ -244,37 +244,42 @@ export default function OrderStatistic() {
               </div>
 
               {/* Date Range */}
-<div className="grid grid-cols-2 gap-3">
-  <div>
-    <label className="text-xs text-gray-600 font-medium mb-1 block">
-      Từ ngày
-    </label>
-    <input
-      type="date"
-      onClick={() => setDateFilter("")}
-      value={startDate}
-      max={endDate || new Date().toISOString().split("T")[0]} // Không cho chọn sau endDate
-      onChange={(e) => setStartDate(e.target.value)}
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
-    />
-  </div>
-  <div>
-    <label className="text-xs text-gray-600 font-medium mb-1 block">
-      Đến ngày
-    </label>
-    <input
-      type="date"
-      value={endDate}
-      min={startDate || undefined} // Không cho chọn trước startDate
-       max={new Date().toISOString().split("T")[0]}
-      onChange={(e) => {
-        setEndDate(e.target.value);
-        setDateFilter("");
-      }}
-      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
-    />
-  </div>
-</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-600 font-medium mb-1 block">
+                    Từ ngày
+                  </label>
+                  <input
+                    type="date"
+                    onClick={() => setDateFilter("")}
+                    value={startDate}
+                    max={
+                      endDate &&
+                      endDate < new Date().toISOString().split("T")[0]
+                        ? endDate
+                        : new Date().toISOString().split("T")[0]
+                    } // Không cho chọn sau endDate hoặc quá hôm nay
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 font-medium mb-1 block">
+                    Đến ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined} // Không cho chọn trước startDate
+                    max={new Date().toISOString().split("T")[0]} // Không cho chọn quá hôm nay
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setDateFilter("");
+                    }}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Right Column - Status & Search */}

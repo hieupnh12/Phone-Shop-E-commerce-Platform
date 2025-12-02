@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import orderService from "../../../services/orderService";
-import { Eye, X, RefreshCw, Search, Calendar, CheckCircle, Store, Plus } from "lucide-react";
+import { Eye, X, RefreshCw, Search, Calendar, CheckCircle, Store, Plus, MessageSquare } from "lucide-react";
 import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
 import api from "../../../services/api";
 import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
 import Pagination from "../../../components/common/Pagination";
+import ManageReviewsModal from "../../../components/admin/ManageReviewsModal";
 
 const STATUS_CONFIG = {
   PENDING: {
@@ -68,6 +69,7 @@ export default function Orders() {
   const [pageSize] = useState(20); // 15-20 orders per page
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
 
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
@@ -233,15 +235,24 @@ export default function Orders() {
       {/* Title with Create Button */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Order Management</h1>
-        {hasPermission(PERMISSIONS.ORDER_CREATE_ALL) && (
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("/admin/orders/create-in-store")}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            onClick={() => setIsReviewsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium"
           >
-            <Store size={18} />
-            Tạo đơn tại cửa hàng
+            <MessageSquare size={18} />
+            Quản lý đánh giá
           </button>
-        )}
+          {hasPermission(PERMISSIONS.ORDER_CREATE_ALL) && (
+            <button
+              onClick={() => navigate("/admin/orders/create-in-store")}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              <Store size={18} />
+              Tạo đơn tại cửa hàng
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search + Filter */}
@@ -466,6 +477,12 @@ export default function Orders() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Manage Reviews Modal */}
+      <ManageReviewsModal
+        isOpen={isReviewsModalOpen}
+        onClose={() => setIsReviewsModalOpen(false)}
+      />
 
       {/* Confirmation Modal for Complete Order */}
       {confirmComplete && (

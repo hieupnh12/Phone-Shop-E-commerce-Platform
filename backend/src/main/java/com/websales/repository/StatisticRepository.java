@@ -190,7 +190,7 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
             value = """
         SELECT 
             o.order_id,
-            DATE_FORMAT(o.end_datetime, '%d/%m/%Y') AS createDate,
+            DATE_FORMAT(o.create_datetime, '%d/%m/%Y %H:%i:%s') AS createDate,
             CONCAT(p.product_name, ' ', pv.color_id, ' ', pv.ram_id, '/', pv.rom_id) AS productName,
             od.quantity,
             pv.import_price AS importPrice,

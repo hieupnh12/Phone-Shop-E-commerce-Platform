@@ -19,6 +19,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,6 +54,8 @@ public class ReturnWarrantyRequestController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "requestId,desc") String sort,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             @AuthenticationPrincipal Jwt jwt) {
         try {
             // Check if user has WARRANTY_VIEW_ALL permission
@@ -95,24 +100,68 @@ public class ReturnWarrantyRequestController {
             Sort sortObj = Sort.by(direction, sortField);
             Pageable pageable = PageRequest.of(page, size, sortObj);
             
+            // Parse date filters
+            LocalDateTime startDateTime = null;
+            LocalDateTime endDateTime = null;
+            DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+            
+            try {
+                if (startDate != null && !startDate.trim().isEmpty()) {
+                    // If only date (YYYY-MM-DD), add time 00:00:00
+                    if (startDate.length() == 10) {
+                        startDateTime = LocalDateTime.parse(startDate + "T00:00:00", formatter);
+                    } else {
+                        startDateTime = LocalDateTime.parse(startDate, formatter);
+                    }
+                }
+                if (endDate != null && !endDate.trim().isEmpty()) {
+                    // If only date (YYYY-MM-DD), add time 23:59:59
+                    if (endDate.length() == 10) {
+                        endDateTime = LocalDateTime.parse(endDate + "T23:59:59", formatter);
+                    } else {
+                        endDateTime = LocalDateTime.parse(endDate, formatter);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error parsing date filters: " + e.getMessage());
+                // Continue without date filters if parsing fails
+            }
+            
             Page<ReturnWarrantyRequestResponse> requests;
             
             // If has WARRANTY_VIEW_ALL, show all requests
             if (hasViewAllPermission) {
+                // Check if we have date filters
+                boolean hasDateFilter = startDateTime != null || endDateTime != null;
+                
                 // Parse status từ string sang enum, chỉ khi status không null và không empty
                 if (status != null && !status.trim().isEmpty()) {
                     try {
                         RequestStatus statusEnum = RequestStatus.valueOf(status.toUpperCase());
-                        requests = requestService.getRequestsByStatus(statusEnum, pageable);
-                        System.out.println("Found " + requests.getTotalElements() + " requests with status: " + statusEnum);
+                        if (hasDateFilter) {
+                            requests = requestService.getRequestsByStatusWithDateRange(statusEnum, startDateTime, endDateTime, pageable);
+                            System.out.println("Found " + requests.getTotalElements() + " requests with status: " + statusEnum + " and date range");
+                        } else {
+                            requests = requestService.getRequestsByStatus(statusEnum, pageable);
+                            System.out.println("Found " + requests.getTotalElements() + " requests with status: " + statusEnum);
+                        }
                     } catch (IllegalArgumentException e) {
                         // Nếu status không hợp lệ, trả về tất cả requests
                         System.out.println("Invalid status: " + status + ", returning all requests");
-                        requests = requestService.getAllRequests(pageable);
+                        if (hasDateFilter) {
+                            requests = requestService.getAllRequestsWithDateRange(startDateTime, endDateTime, pageable);
+                        } else {
+                            requests = requestService.getAllRequests(pageable);
+                        }
                     }
                 } else {
-                    requests = requestService.getAllRequests(pageable);
-                    System.out.println("Found " + requests.getTotalElements() + " total requests");
+                    if (hasDateFilter) {
+                        requests = requestService.getAllRequestsWithDateRange(startDateTime, endDateTime, pageable);
+                        System.out.println("Found " + requests.getTotalElements() + " total requests with date range");
+                    } else {
+                        requests = requestService.getAllRequests(pageable);
+                        System.out.println("Found " + requests.getTotalElements() + " total requests");
+                    }
                 }
             } else {
                 // If no WARRANTY_VIEW_ALL but is employee, show only assigned requests
