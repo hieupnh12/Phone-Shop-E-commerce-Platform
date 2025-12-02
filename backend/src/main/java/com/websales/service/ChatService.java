@@ -216,25 +216,32 @@ public class ChatService {
 
     private RagResponse chatSale(String q) {
 
-        return new RagResponse("sale", null, null, null);
+        return new RagResponse("Tôi không cho bạn biết đâu!", null, null, null);
     }
 
 
     private RagResponse chatGeneral(String message) {
         SystemMessage systemMessage = new SystemMessage("""
+                    QUY TẮC NGÔN NGỮ (ƯU TIÊN CAO NHẤT):
+                    - Tự động phát hiện ngôn ngữ của người dùng trong mỗi tin nhắn.
+                    - Luôn trả lời đúng 100% bằng ngôn ngữ mà người dùng đang sử dụng.
+                    - Nếu người dùng dùng tiếng Hàn, phải trả lời hoàn toàn bằng tiếng Hàn, văn phong tự nhiên.
+                    - Tuyệt đối không được trả lời tiếng Việt nếu tin nhắn không phải tiếng Việt.
+                
+                    Vai trò:
                     Bạn là trợ lý AI của hệ thống quản lý bán điện thoại FShop.
                 
-                    Mục tiêu của bạn:
-                    - Hỗ trợ người dùng tra cứu thông tin về sản phẩm, giá, và tồn kho.
-                    - Gợi ý điện thoại phù hợp với nhu cầu khách hàng (dựa trên dữ liệu được cung cấp).
-                    - Hỗ trợ nhân viên trong quy trình bán hàng và chăm sóc khách hàng.
+                    Mục tiêu:
+                    - Hỗ trợ tra cứu sản phẩm, giá, tồn kho.
+                    - Gợi ý điện thoại phù hợp với nhu cầu khách hàng.
+                    - Hỗ trợ nhân viên bán hàng và CSKH.
                     - Trả lời ngắn gọn, chuyên nghiệp, thân thiện.
                 
-                    Dữ liệu hệ thống được lấy từ cơ sở dữ liệu FShop (qua API backend).
-                    Bạn chỉ sử dụng dữ liệu được cung cấp trong ngữ cảnh truy vấn — 
-                    không tự tạo dữ liệu mới hoặc giả định ngoài dữ liệu có sẵn.
+                    Dữ liệu:
+                    - Chỉ sử dụng dữ liệu được backend FShop cung cấp.
+                    - Không tự tạo dữ liệu khi không có trong ngữ cảnh.
                 
-                    Khi không có thông tin hoặc dữ liệu không đủ, hãy trả lời: 
+                    Khi không có dữ liệu, hãy trả lời:
                     "Xin lỗi, hiện tôi chưa có dữ liệu cho nội dung này."
                 """);
 
@@ -307,7 +314,7 @@ public class ChatService {
                                              Trả về duy nhất JSON theo đúng format:
                         
                                              {
-                                               "message": "tư vấn ngắn gọn về điện thoại trong ảnh (không quá 2 câu)",
+                                               "message": "tư vấn ngắn gọn về điện thoại trong ảnh (không quá 3 câu) và cuối câu có thể gợi ý mua sản phẩm Samsung, iPhone, Xiaomi từ cửa hàng của Fshop",
                                                "nameProduct": "tên hãng điện thoại nhận diện được từ ảnh (Samsung, iPhone, Xiaomi, Oppo, Vivo, Realme, Nokia...)"
                                              }
                         
