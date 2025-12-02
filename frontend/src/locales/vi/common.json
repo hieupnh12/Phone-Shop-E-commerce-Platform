@@ -367,6 +367,7 @@
   },
   "admin": {
     "dashboard": "Dashboard",
+    "dashboardTitle": "Admin Dashboard",
     "statistic": "Thống kê",
     "roles": "Phân quyền",
     "customers": "Khách hàng",
@@ -381,6 +382,7 @@
     "screenResolution": "Độ Phân Giải Màn Hình",
     "products": "Sản phẩm",
     "orders": "Đặt hàng",
+    "warrantyRequests": "Yêu cầu bảo hành",
     "clearFilters": "Xóa Lọc",
     "addEmployee": "Thêm Tài khoản Nhân viên Mới",
     "editEmployee": "Chỉnh sửa nhân viên",

@@ -378,6 +378,7 @@
   },
   "admin": {
     "dashboard": "ダッシュボード",
+    "dashboardTitle": "管理者ダッシュボード",
     "statistic": "統計",
     "roles": "ロールと権限",
     "customers": "顧客",
@@ -392,6 +393,7 @@
     "screenResolution": "画面解像度",
     "products": "製品",
     "orders": "注文",
+    "warrantyRequests": "保証リクエスト",
     "clearFilters": "フィルターをクリア",
     "addEmployee": "新しい従業員アカウントを追加",
     "editEmployee": "従業員を編集",

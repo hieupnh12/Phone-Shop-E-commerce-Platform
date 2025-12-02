@@ -378,6 +378,7 @@
   },
   "admin": {
     "dashboard": "Dashboard",
+    "dashboardTitle": "Admin Dashboard",
     "statistic": "Statistics",
     "roles": "Roles & Permissions",
     "customers": "Customers",
@@ -392,6 +393,7 @@
     "screenResolution": "Screen Resolution",
     "products": "Products",
     "orders": "Orders",
+    "warrantyRequests": "Warranty Requests",
     "clearFilters": "Clear Filters",
     "addEmployee": "Add New Employee Account",
     "editEmployee": "Edit Employee",
