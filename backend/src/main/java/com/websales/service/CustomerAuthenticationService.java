@@ -220,7 +220,6 @@ public class CustomerAuthenticationService {
         );
         String normalizedPhone = PhoneUtils.normalize(request.getPhoneNumber());
 
-        // Kiểm tra số điện thoại đã tồn tại chưa
         var existingCustomerWithPhone = customerRepo.getCustomerByPhoneNumber(normalizedPhone);
         
         Long targetCustomerId = customerId; // Customer ID cuối cùng sẽ được sử dụng
@@ -229,76 +228,55 @@ public class CustomerAuthenticationService {
         if (existingCustomerWithPhone.isPresent()) {
             Customer existingCustomer = existingCustomerWithPhone.get();
             
-            // Nếu số điện thoại thuộc về chính customer này -> OK, cập nhật bình thường
             if (existingCustomer.getCustomerId().equals(customerId)) {
-                // Cập nhật bình thường - sẽ xử lý ở cuối
-            } 
-            // Nếu số điện thoại thuộc customer khác
+            }
             else {
-                // Kiểm tra customer đó đã có Google auth chưa?
                 boolean hasGoogleAuth = authRepo.existsByCustomerIdAndProvider(
                     existingCustomer.getCustomerId(), "google");
                 
                 if (hasGoogleAuth) {
-                    // Customer khác đã liên kết Google -> Báo lỗi
                     throw new AppException(ErrorCode.PHONE_ALREADY_LINKED_TO_GOOGLE);
                 } else {
-                    // Customer khác CHƯA liên kết Google -> Merge accounts
-                    // Lấy Google auth từ customer hiện tại
                     var googleAuthOptional = authRepo.findByCustomerIdAndProvider(customerId, "google");
                     
                     if (googleAuthOptional.isPresent()) {
                         CustomerAuth googleAuth = googleAuthOptional.get();
                         
-                        // Chuyển Google auth sang customer có số điện thoại
                         googleAuth.setCustomerId(existingCustomer.getCustomerId());
                         authRepo.save(googleAuth);
                         
-                        // Cập nhật thông tin từ Google vào customer có số điện thoại
                         if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
                             existingCustomer.setFullName(request.getFullName());
                         }
-                        // Nếu customer có số điện thoại chưa có email, cập nhật email từ request (Google OAuth)
-                        // Kiểm tra email trước khi cập nhật để tránh duplicate
                         if (request.getEmail() != null && !request.getEmail().trim().isEmpty() &&
                             (existingCustomer.getEmail() == null || existingCustomer.getEmail().isEmpty())) {
-                            // Kiểm tra email có đang được sử dụng bởi customer khác không (trừ customer hiện tại)
                             var emailOwner = customerRepo.findCustomerByEmail(request.getEmail().trim().toLowerCase());
                             if (emailOwner.isEmpty() || emailOwner.get().getCustomerId().equals(customerId)) {
-                                // Email chưa tồn tại hoặc chỉ thuộc về customer Google hiện tại -> OK để cập nhật
                                 existingCustomer.setEmail(request.getEmail().trim().toLowerCase());
                             }
-                            // Nếu email thuộc customer khác, không cập nhật để tránh duplicate
                         }
                         if (request.getBirthDate() != null) {
                             existingCustomer.setBirthDate(request.getBirthDate());
                         }
                         
-                        // Lưu customer có số điện thoại (đã được merge)
                         customerRepo.save(existingCustomer);
                         
-                        // Xóa customer Google cũ vì đã merge vào customer có số điện thoại
-                        // Kiểm tra xem customer Google còn auth nào khác không
                         var otherAuths = authRepo.findByCustomerIdAndProvider(customerId, "phone");
                         if (otherAuths.isEmpty()) {
-                            // Không còn auth nào khác, có thể xóa customer Google
                             customerRepo.deleteById(customerId);
                             log.info("Deleted Google customer (customerId: {}) after merging with phone account", customerId);
                         }
                         
-                        // Sử dụng customer ID của customer có số điện thoại
                         targetCustomerId = existingCustomer.getCustomerId();
                         isMerged = true;
                         
                         log.info("Merged Google account (customerId: {}) with phone account (customerId: {})", 
                                 customerId, existingCustomer.getCustomerId());
                     } else {
-                        // Không tìm thấy Google auth -> Cập nhật bình thường
                         customer.setPhoneNumber(normalizedPhone);
                         if (request.getFullName() != null) {
                             customer.setFullName(request.getFullName());
                         }
-                        // Cập nhật email từ request nếu customer chưa có email
                         if (request.getEmail() != null && !request.getEmail().trim().isEmpty() &&
                             (customer.getEmail() == null || customer.getEmail().isEmpty())) {
                             var emailOwner = customerRepo.findCustomerByEmail(request.getEmail().trim().toLowerCase());
@@ -316,22 +294,17 @@ public class CustomerAuthenticationService {
             }
         }
         
-        // Nếu chưa merge và số điện thoại chưa tồn tại hoặc thuộc chính customer này -> Cập nhật bình thường
         if (!isMerged) {
             customer.setPhoneNumber(normalizedPhone);
             if (request.getFullName() != null) {
                 customer.setFullName(request.getFullName());
             }
-            // Cập nhật email từ request nếu customer chưa có email
             if (request.getEmail() != null && !request.getEmail().trim().isEmpty() &&
                 (customer.getEmail() == null || customer.getEmail().isEmpty())) {
-                // Kiểm tra email có đang được sử dụng bởi customer khác không
                 var emailOwner = customerRepo.findCustomerByEmail(request.getEmail().trim().toLowerCase());
                 if (emailOwner.isEmpty()) {
-                    // Email chưa tồn tại -> OK để cập nhật
                     customer.setEmail(request.getEmail().trim().toLowerCase());
                 }
-                // Nếu email đã tồn tại, không cập nhật để tránh duplicate
             }
             if (request.getBirthDate() != null) {
                 customer.setBirthDate(request.getBirthDate());
@@ -339,7 +312,6 @@ public class CustomerAuthenticationService {
             customerRepo.save(customer);
         }
         
-        // Lấy customer cuối cùng để trả về
         Customer finalCustomer = customerRepo.findById(targetCustomerId).orElseThrow(
                 () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
         );
