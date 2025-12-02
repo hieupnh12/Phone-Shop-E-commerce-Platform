@@ -125,10 +125,6 @@ const AddProduct = () => {
       const payload = {
         idProduct: productId,
         ...formDataWithImage.payload,
-        products: {
-          ...formDataWithImage.payload.products,
-          status: false, // Ensure status is false for new product
-        },
       };
       
       const createResponse = await productService.createProduct(payload, null);

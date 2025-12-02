@@ -5,8 +5,10 @@ import Loading from '../../../components/common/Loading';
 import Button from '../../../components/common/Button';
 import cartService from '../../../services/cartService';
 import productWorker from '../../../services/productWorker';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const ProductDetail = () => {
+  const { t } = useLanguage();
   const { productId } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
@@ -30,7 +32,7 @@ const ProductDetail = () => {
         }
       } catch (err) {
         console.error('Failed to fetch product:', err);
-        setError('Failed to load product details.');
+        setError(t('productDetailPage.failedToLoad'));
       } finally {
         setLoading(false);
       }
@@ -62,8 +64,8 @@ const ProductDetail = () => {
       <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white mb-4">{error || 'Product not found'}</h1>
-            <Button onClick={() => navigate('/products')}>Back to Products</Button>
+            <h1 className="text-2xl font-bold text-white mb-4">{error || t('productDetailPage.notFound')}</h1>
+            <Button onClick={() => navigate('/products')}>{t('productDetailPage.backToProducts')}</Button>
           </div>
         </div>
       </div>
@@ -97,18 +99,18 @@ const ProductDetail = () => {
       // Sử dụng selectedVersion nếu có, nếu không thì dùng version đầu tiên
       const versionToAdd = selectedVersion || product?.versions?.[0];
       if (!versionToAdd?.id) {
-        alert('Không tìm thấy phiên bản sản phẩm hợp lệ');
+        alert(t('productDetailPage.noValidVersion'));
         return;
       }
 
       for (let i = 0; i < quantity; i++) {
         await cartService.addToCart(versionToAdd.id, 1);
       }
-      alert(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
+      alert(t('productDetailPage.addedToCart', { quantity }));
       setQuantity(1);
     } catch (err) {
       console.error('Failed to add to cart:', err);
-      alert('Không thể thêm vào giỏ hàng. Vui lòng thử lại.');
+      alert(t('productDetailPage.cannotAddToCart'));
     }
   };
 
@@ -118,7 +120,7 @@ const ProductDetail = () => {
       // Sử dụng selectedVersion nếu có, nếu không thì dùng version đầu tiên
       const versionToAdd = selectedVersion || product?.versions?.[0];
       if (!versionToAdd?.id) {
-        alert('Không tìm thấy phiên bản sản phẩm hợp lệ');
+        alert(t('productDetailPage.noValidVersion'));
         return;
       }
 
@@ -133,7 +135,7 @@ const ProductDetail = () => {
       });
     } catch (err) {
       console.error('Failed to buy now:', err);
-      alert('Không thể thêm vào giỏ hàng. Vui lòng thử lại.');
+      alert(t('productDetailPage.cannotAddToCart'));
     }
   };
 
@@ -158,7 +160,7 @@ const ProductDetail = () => {
           className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-8 transition-colors"
         >
           <ChevronLeft size={20} />
-          Back to Products
+          {t('productDetailPage.backToProducts')}
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -209,7 +211,7 @@ const ProductDetail = () => {
               <div className="flex items-center gap-4">
                 {renderStars(product.rating || 0)}
                 <span className="text-gray-300">
-                  {product.rating || 0} ({product.reviewCount || 0} reviews)
+                  {product.rating || 0} ({product.reviewCount || 0} {t('productDetailPage.reviews')})
                 </span>
               </div>
             </div>
@@ -229,7 +231,7 @@ const ProductDetail = () => {
               </div>
               {product.discount && (
                 <p className="text-green-400 text-sm">
-                  Save ${(product.price - discountedPrice).toFixed(2)}
+                  {t('productDetailPage.save')} ${(product.price - discountedPrice).toFixed(2)}
                 </p>
               )}
             </div>
@@ -240,14 +242,14 @@ const ProductDetail = () => {
                 className={`w-3 h-3 rounded-full ${product.inStock ? 'bg-green-500' : 'bg-red-500'}`}
               />
               <span className={product.inStock ? 'text-green-400' : 'text-red-400'}>
-                {product.inStock ? 'In Stock' : 'Out of Stock'}
+                {product.inStock ? t('productDetailPage.inStock') : t('productDetailPage.outOfStock')}
               </span>
             </div>
 
             {/* Description */}
             {product.description && (
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Description</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">{t('productDetailPage.description')}</h3>
                 <p className="text-gray-300 leading-relaxed">{product.description}</p>
               </div>
             )}
@@ -255,7 +257,7 @@ const ProductDetail = () => {
             {/* Specifications */}
             {product.specifications && Object.keys(product.specifications).length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-white mb-3">Specifications</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">{t('productDetailPage.specifications')}</h3>
                 <div className="space-y-2">
                   {Object.entries(product.specifications).map(([key, value]) => (
                     <div key={key} className="flex justify-between text-gray-300">
@@ -271,7 +273,7 @@ const ProductDetail = () => {
             <div className="space-y-4">
               {/* Quantity Selector */}
               <div className="flex items-center gap-4">
-                <label className="text-white font-semibold">Quantity:</label>
+                <label className="text-white font-semibold">{t('productDetailPage.quantity')}:</label>
                 <div className="flex items-center border border-gray-300 rounded-lg">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -306,7 +308,7 @@ const ProductDetail = () => {
                   onClick={handleAddToCart}
                   icon={ShoppingCart}
                 >
-                  Add to Cart
+                  {t('productDetailPage.addToCart')}
                 </Button>
                 <Button
                   fullWidth
@@ -315,7 +317,7 @@ const ProductDetail = () => {
                   onClick={handleBuyNow}
                   icon={Zap}
                 >
-                  Mua ngay
+                  {t('productDetailPage.buyNow')}
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -325,10 +327,10 @@ const ProductDetail = () => {
                   onClick={handleToggleFavorite}
                   icon={Heart}
                 >
-                  {isFavorite ? 'Saved' : 'Save'}
+                  {isFavorite ? t('productDetailPage.saved') : t('productDetailPage.save')}
                 </Button>
                 <Button fullWidth variant="secondary" icon={Share2}>
-                  Share
+                  {t('productDetailPage.share')}
                 </Button>
               </div>
             </div>
@@ -336,7 +338,7 @@ const ProductDetail = () => {
             {/* Additional Info */}
             {!product.inStock && (
               <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
-                <p className="text-red-200">This product is currently out of stock.</p>
+                <p className="text-red-200">{t('productDetailPage.currentlyOutOfStock')}</p>
               </div>
             )}
           </div>
@@ -345,7 +347,7 @@ const ProductDetail = () => {
         {/* Related Products Section (optional) */}
         {product.relatedProducts && product.relatedProducts.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold text-white mb-6">Related Products</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">{t('productDetailPage.relatedProducts')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
               {/* Related product cards would go here */}
               <p className="text-gray-300">Related products to be displayed here</p>

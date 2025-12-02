@@ -78,54 +78,56 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
     );
 
 
-    // 2. Chart theo ngày
+    // 2. Chart theo ngày - dùng end_datetime để đồng bộ với order details
+    // Tính revenue từ order_details giống như order details query để đồng bộ
     @Query(value = """
         SELECT
             t.groupKey AS date,
-            SUM(t.total_amount) AS revenue,
+            SUM(t.revenue) AS revenue,
             COUNT(DISTINCT t.order_id) AS orders
         FROM (
             SELECT 
                 o.order_id,
-                o.total_amount,
+                od.unit_price_after * od.quantity AS revenue,
 
-                -- BUILD GROUP KEY
+                -- BUILD GROUP KEY theo end_datetime (khi order được giao)
                 CASE
                     WHEN :rangeType = 'hour'    
-                        THEN LPAD(HOUR(o.create_datetime), 2, '0')
+                        THEN CONCAT(DATE_FORMAT(o.end_datetime, '%Y-%m-%d'), ' ', LPAD(HOUR(o.end_datetime), 2, '0'), ':00')
 
                     WHEN :rangeType = 'day'     
-                        THEN DATE_FORMAT(o.create_datetime, '%Y-%m-%d')
+                        THEN DATE_FORMAT(o.end_datetime, '%Y-%m-%d')
 
                     WHEN :rangeType = 'week'    
                         THEN CONCAT(
-                                YEAR(o.create_datetime),
+                                YEAR(o.end_datetime),
                                 '-W',
-                                LPAD(WEEK(o.create_datetime, 3), 2, '0')
+                                LPAD(WEEK(o.end_datetime, 3), 2, '0')
                              )
 
                     WHEN :rangeType = 'month'   
-                        THEN DATE_FORMAT(o.create_datetime, '%Y-%m')
+                        THEN DATE_FORMAT(o.end_datetime, '%Y-%m')
 
                     WHEN :rangeType = 'quarter' 
                         THEN CONCAT(
-                                YEAR(o.create_datetime),
+                                YEAR(o.end_datetime),
                                 '-Q',
-                                FLOOR((MONTH(o.create_datetime)-1)/3)+1
+                                FLOOR((MONTH(o.end_datetime)-1)/3)+1
                              )
 
                     WHEN :rangeType = 'year'    
-                        THEN CAST(YEAR(o.create_datetime) AS CHAR)
+                        THEN CAST(YEAR(o.end_datetime) AS CHAR)
 
-                    ELSE DATE_FORMAT(o.create_datetime, '%Y-%m-%d')
+                    ELSE DATE_FORMAT(o.end_datetime, '%Y-%m-%d')
                 END AS groupKey
 
             FROM orders o
+            JOIN order_details od ON o.order_id = od.order_id
 
             WHERE o.status = 'DELIVERED'
 
-              AND (:start IS NULL OR :start = '' OR o.create_datetime >= :start)
-              AND (:end   IS NULL OR :end   = '' OR o.create_datetime <  :end)
+              AND (:start IS NULL OR :start = '' OR o.end_datetime >= :start)
+              AND (:end   IS NULL OR :end   = '' OR o.end_datetime < :end)
 
               AND (
                     :search IS NULL OR :search = '' OR
@@ -188,61 +190,72 @@ public interface StatisticRepository extends JpaRepository<StatsProcedureConfig.
             value = """
         SELECT 
             o.order_id,
-            DATE_FORMAT(o.create_datetime, '%d/%m/%Y') AS createDate,
+            DATE_FORMAT(o.end_datetime, '%d/%m/%Y') AS createDate,
             CONCAT(p.product_name, ' ', pv.color_id, ' ', pv.ram_id, '/', pv.rom_id) AS productName,
             od.quantity,
-            pv.import_price,
+            pv.import_price AS importPrice,
+            od.unit_price_after AS unitPrice,
             od.unit_price_after * od.quantity AS totalPrice,
             (od.unit_price_after - pv.import_price) * od.quantity AS profit,
             o.status,
-            c.full_name AS customerName,
-            c.phone_number AS customerPhone,
-            c.email AS customerEmail,
+            COALESCE(
+                (SELECT pm2.payment_method_type 
+                 FROM payment_transactions pt2 
+                 JOIN payment_methods pm2 ON pt2.payment_method_id = pm2.payment_method_id 
+                 WHERE pt2.order_id = o.order_id 
+                   AND (pt2.payment_status = 'SUCCESS' OR pt2.payment_status = 'PENDING')
+                 ORDER BY 
+                   CASE WHEN pt2.payment_status = 'SUCCESS' THEN 1 ELSE 2 END,
+                   pt2.payment_time DESC
+                 LIMIT 1),
+                'N/A'
+            ) AS paymentMethodType,
 
             CASE 
-                WHEN LOWER(:rangeType) = 'day'   THEN DATE(o.end_datetime)
-                WHEN LOWER(:rangeType) = 'week'  THEN CONCAT(YEAR(o.end_datetime), '-W', LPAD(WEEK(o.end_datetime, 3), 2, '0'))
-                WHEN LOWER(:rangeType) = 'month' THEN DATE_FORMAT(o.end_datetime, '%Y-%m')
-                WHEN LOWER(:rangeType) = 'year'  THEN CAST(YEAR(o.end_datetime) AS CHAR)
-                ELSE DATE(o.end_datetime)
+                WHEN LOWER(:rangeType) = 'hour'   THEN CONCAT(DATE_FORMAT(o.end_datetime, '%Y-%m-%d'), ' ', LPAD(HOUR(o.end_datetime), 2, '0'), ':00')
+                WHEN LOWER(:rangeType) = 'day'    THEN DATE_FORMAT(o.end_datetime, '%Y-%m-%d')
+                WHEN LOWER(:rangeType) = 'week'   THEN CONCAT(YEAR(o.end_datetime), '-W', LPAD(WEEK(o.end_datetime, 3), 2, '0'))
+                WHEN LOWER(:rangeType) = 'month'  THEN DATE_FORMAT(o.end_datetime, '%Y-%m')
+                WHEN LOWER(:rangeType) = 'year'   THEN CAST(YEAR(o.end_datetime) AS CHAR)
+                ELSE DATE_FORMAT(o.end_datetime, '%Y-%m-%d')
             END AS groupKey
 
         FROM orders o
         JOIN order_details od ON o.order_id = od.order_id
         JOIN product_versions pv ON od.product_version_id = pv.product_version_id
         JOIN products p ON pv.product_id = p.product_id
-        JOIN customers c ON o.customer_id = c.customer_id
+        LEFT JOIN customers c ON o.customer_id = c.customer_id
 
         WHERE o.status = 'DELIVERED'
-          AND (:start IS NULL OR :start = '' OR DATE(o.end_datetime) >= :start)
-          AND (:end   IS NULL OR :end   = '' OR DATE(o.end_datetime) < :end)
+          AND (:start IS NULL OR :start = '' OR o.end_datetime >= :start)
+          AND (:end   IS NULL OR :end   = '' OR o.end_datetime < :end)
           AND (
                 :search IS NULL OR :search = '' OR
                 CAST(o.order_id AS CHAR) LIKE CONCAT('%', :search, '%') OR
                 p.product_name LIKE CONCAT('%', :search, '%') OR
-                c.email LIKE CONCAT('%', :search, '%') OR
-                c.phone_number LIKE CONCAT('%', :search, '%')
+                (c.email IS NOT NULL AND c.email LIKE CONCAT('%', :search, '%')) OR
+                (c.phone_number IS NOT NULL AND c.phone_number LIKE CONCAT('%', :search, '%'))
               )
 
         ORDER BY o.end_datetime DESC
         """,
             countQuery = """
-        SELECT COUNT(DISTINCT o.order_id)
+        SELECT COUNT(DISTINCT CONCAT(o.order_id, '-', od.product_version_id))
         FROM orders o
         JOIN order_details od ON o.order_id = od.order_id
         JOIN product_versions pv ON od.product_version_id = pv.product_version_id
         JOIN products p ON pv.product_id = p.product_id
-        JOIN customers c ON o.customer_id = c.customer_id
+        LEFT JOIN customers c ON o.customer_id = c.customer_id
 
         WHERE o.status = 'DELIVERED'
-          AND (:start IS NULL OR :start = '' OR DATE(o.end_datetime) >= :start)
-          AND (:end   IS NULL OR :end   = '' OR DATE(o.end_datetime) < :end)
+          AND (:start IS NULL OR :start = '' OR o.end_datetime >= :start)
+          AND (:end   IS NULL OR :end   = '' OR o.end_datetime < :end)
           AND (
                 :search IS NULL OR :search = '' OR
                 CAST(o.order_id AS CHAR) LIKE CONCAT('%', :search, '%') OR
                 p.product_name LIKE CONCAT('%', :search, '%') OR
-                c.email LIKE CONCAT('%', :search, '%') OR
-                c.phone_number LIKE CONCAT('%', :search, '%')
+                (c.email IS NOT NULL AND c.email LIKE CONCAT('%', :search, '%')) OR
+                (c.phone_number IS NOT NULL AND c.phone_number LIKE CONCAT('%', :search, '%'))
               )
         """,
             nativeQuery = true

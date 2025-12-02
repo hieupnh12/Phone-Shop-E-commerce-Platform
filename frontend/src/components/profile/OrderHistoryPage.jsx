@@ -56,7 +56,7 @@ const OrderHistoryPage = () => {
                 setError(null);
             } catch (err) {
                 console.error("Lỗi khi tải dữ liệu:", err);
-                const errorMsg = "Không thể tải lịch sử đơn hàng.";
+                const errorMsg = t('orders.cannotLoadOrderHistory');
                 setError(errorMsg);
                 setOrders([]);
                 setToast({
@@ -129,11 +129,11 @@ const OrderHistoryPage = () => {
     // Hiển thị badge trạng thái yêu cầu bảo hành
     const getWarrantyStatusBadge = (status) => {
         const statusMap = {
-            'PENDING': { label: 'Đang chờ', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-            'ACCEPTED': { label: 'Đã chấp nhận', color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
-            'REJECTED': { label: 'Đã từ chối', color: 'bg-red-100 text-red-800', icon: XCircle },
-            'IN_PROGRESS': { label: 'Đang xử lý', color: 'bg-purple-100 text-purple-800', icon: RefreshCw },
-            'COMPLETED': { label: 'Đã hoàn thành', color: 'bg-green-100 text-green-800', icon: CheckCircle }
+            'PENDING': { label: t('profile.warrantyRequests.status.pending'), color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+            'ACCEPTED': { label: t('profile.warrantyRequests.status.accepted'), color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
+            'REJECTED': { label: t('profile.warrantyRequests.status.rejected'), color: 'bg-red-100 text-red-800', icon: XCircle },
+            'IN_PROGRESS': { label: t('profile.warrantyRequests.status.inProgress'), color: 'bg-purple-100 text-purple-800', icon: RefreshCw },
+            'COMPLETED': { label: t('profile.warrantyRequests.status.completed'), color: 'bg-green-100 text-green-800', icon: CheckCircle }
         };
         const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
         const Icon = statusInfo.icon;
@@ -151,17 +151,17 @@ const OrderHistoryPage = () => {
         
         // Map các giá trị có thể có
         const statusMap = {
-            'PENDING': { label: 'Đang xử lý', className: 'text-yellow-600 bg-yellow-100' },
-            'PAID': { label: 'Đã thanh toán', className: 'text-blue-600 bg-blue-100' },
-            'SHIPPED': { label: 'Đang vận chuyển', className: 'text-blue-600 bg-blue-100' },
-            'SHIPPING': { label: 'Đang vận chuyển', className: 'text-blue-600 bg-blue-100' },
-            'DELIVERED': { label: 'Đã giao hàng', className: 'text-green-600 bg-green-100' },
-            'CANCELED': { label: 'Đã hủy', className: 'text-red-600 bg-red-100' },
-            'CANCELLED': { label: 'Đã hủy', className: 'text-red-600 bg-red-100' },
-            'RETURNED': { label: 'Hoàn trả', className: 'text-gray-600 bg-gray-100' },
+            'PENDING': { label: t('profile.processing'), className: 'text-yellow-600 bg-yellow-100' },
+            'PAID': { label: t('profile.paid'), className: 'text-blue-600 bg-blue-100' },
+            'SHIPPED': { label: t('profile.shipping'), className: 'text-blue-600 bg-blue-100' },
+            'SHIPPING': { label: t('profile.shipping'), className: 'text-blue-600 bg-blue-100' },
+            'DELIVERED': { label: t('profile.delivered'), className: 'text-green-600 bg-green-100' },
+            'CANCELED': { label: t('profile.cancelled'), className: 'text-red-600 bg-red-100' },
+            'CANCELLED': { label: t('profile.cancelled'), className: 'text-red-600 bg-red-100' },
+            'RETURNED': { label: t('profile.returned'), className: 'text-gray-600 bg-gray-100' },
         };
         
-        const statusInfo = statusMap[normalizedStatus] || { label: 'Đang xử lý', className: 'text-yellow-600 bg-yellow-100' };
+        const statusInfo = statusMap[normalizedStatus] || { label: t('profile.processing'), className: 'text-yellow-600 bg-yellow-100' };
         
         return (
             <span className={`${statusInfo.className} px-3 py-1 rounded-full text-xs font-medium`}>
@@ -210,21 +210,21 @@ const OrderHistoryPage = () => {
         setCurrentPage(1);
     }, [activeTab, searchTerm]);
     if (loading) {
-        return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] flex justify-center items-center">Đang tải đơn hàng...</div>;
+        return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] flex justify-center items-center">{t('orders.loadingOrders')}</div>;
     }
 
     if (error) {
-        return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] text-red-500 flex justify-center items-center">Lỗi: {error}</div>;
+        return <div className="bg-white p-6 shadow-lg rounded-xl min-h-[500px] text-red-500 flex justify-center items-center">{t('common.error')}: {error}</div>;
     }
     return (
         <div className="bg-white p-6 shadow-lg rounded-xl">
             {/* Header của phần Đơn hàng của tôi (Mẫu 2) */}
             <div className="flex flex-col md:flex-row items-center justify-between mb-6 pb-4 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Đơn hàng của tôi</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">{t('orders.myOrders')}</h2>
                 <div className="relative w-full md:w-auto md:min-w-[300px]">
                     <input
                         type="text"
-                        placeholder="Tìm theo tên đơn, mã đơn hoặc tên sản phẩm"
+                        placeholder={t('orders.searchPlaceholder')}
                         className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -266,7 +266,7 @@ const OrderHistoryPage = () => {
             {/* Thông tin số lượng đơn hàng */}
             {filteredOrders.length > 0 && (
                 <div className="mb-4 text-sm text-gray-600">
-                    tổng số {filteredOrders.length} đơn hàng
+                    {t('orders.totalOrders', { count: filteredOrders.length })}
                 </div>
             )}
 
@@ -278,9 +278,9 @@ const OrderHistoryPage = () => {
                         <div key={order.id} className="border border-gray-200 rounded-lg p-4 bg-white">
                             <div className="flex items-center justify-between mb-3 border-b pb-3">
                                 <div className="flex items-center gap-3 text-sm">
-                                    <span className="font-semibold text-gray-800">Đơn hàng: {order.id}</span>
+                                    <span className="font-semibold text-gray-800">{t('orders.orderDetail.order')}: {order.id}</span>
                                     <span className="text-gray-500">•</span>
-                                    <span className="text-gray-500">Ngày đặt hàng: {order.date}</span>
+                                    <span className="text-gray-500">{t('orders.orderDetail.orderDate')}: {order.date}</span>
                                     {/* Hiển thị indicator yêu cầu bảo hành nếu có */}
                                     {(() => {
                                         const warrantyStatus = getOrderWarrantyStatus(order.orderId);
@@ -307,7 +307,7 @@ const OrderHistoryPage = () => {
                                         <p className="text-gray-600 text-sm">{formatCurrency(product.price)}</p>
                                         { product.quantity > 0 &&
                                             (<div className="font-medium text-gray-700 text-base">
-                                                Cùng {product.quantity} sản phẩm khác
+                                                {t('orders.otherProducts', { count: product.quantity })}
                                             </div>)
                                         }
                                     </div>
@@ -327,7 +327,7 @@ const OrderHistoryPage = () => {
                                                 }}
                                                 className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
                                             >
-                                                Xem chi tiết
+                                                {t('orders.viewDetails')}
                                                 <ChevronRight size={14} className="ml-1"/>
                                             </Link>
                                             {/* Hiển thị nút bảo hành hoặc trạng thái cho đơn hàng đã giao */}
@@ -354,7 +354,7 @@ const OrderHistoryPage = () => {
                                                             className="flex items-center gap-1 text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-colors"
                                                         >
                                                             <Shield size={14} />
-                                                            Bảo hành
+                                                            {t('orders.orderDetail.warranty')}
                                                         </Link>
                                                     );
                                                 }
@@ -387,10 +387,10 @@ const OrderHistoryPage = () => {
                         alt="Bạn chưa có đơn hàng nào"
                         className="w-auto h-auto scale-200 object-contain"
                     />
-                    <p className="text-lg mb-3">Bạn chưa có đơn hàng nào</p>
-                    <p className="text-sm mb-6">Cùng khám phá hàng ngàn sản phẩm tại FShop nhé!</p>
+                    <p className="text-lg mb-3">{t('orders.orderHistoryEmpty.noOrders')}</p>
+                    <p className="text-sm mb-6">{t('orders.orderHistoryEmpty.exploreProducts')}</p>
                     <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors">
-                        Khám phá ngay
+                        {t('orders.exploreNow')}
                     </button>
                 </div>
             )}

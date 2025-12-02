@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import loginService from "../../services/loginService";
 import Cookies from "js-cookie";
 import constants from "../../constants";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
+import Toast from "../../components/common/Toast";
 
 export default function RegistrationForm() {
     const location = useLocation();
@@ -14,6 +15,15 @@ export default function RegistrationForm() {
 
     const { handleCustomerLoginSuccess, setUser, user } = useAuthFullOptions();
     console.log("uss", user);
+    
+    // Ref cho input số điện thoại
+    const phoneInputRef = useRef(null);
+    
+    // Ref để lưu timeout ID
+    const timeoutRef = useRef(null);
+    
+    // State cho toast
+    const [toast, setToast] = useState(null);
     
     // 1. Loại bỏ Email khỏi state
     const [formData, setFormData] = useState({
@@ -34,6 +44,123 @@ export default function RegistrationForm() {
         setIsLoading(false);
     }, [location, navigate]);
 
+    // Timeout 3 phút: tự động chuyển về login nếu không hoàn tất đăng ký
+    useEffect(() => {
+        // Chỉ chạy khi đã load xong và có tempToken
+        if (isLoading || !tempToken) {
+            return;
+        }
+
+        // Clear timeout cũ nếu có
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+
+        const timeoutDuration = 3 * 60 * 1000; // 3 phút = 180000ms
+        const startTime = Date.now();
+        
+        console.log('⏰ Bắt đầu đếm ngược 3 phút cho phiên đăng ký...', new Date().toLocaleTimeString());
+        
+        timeoutRef.current = setTimeout(() => {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            console.log(`⏰ Đã hết ${elapsed} giây (3 phút), chuyển về trang login`);
+            setToast({
+                message: 'Phiên đăng ký đã hết hạn (3 phút). Vui lòng đăng nhập lại',
+                type: 'error'
+            });
+            setTimeout(() => {
+                navigate('/login', { replace: true });
+            }, 2000);
+        }, timeoutDuration);
+
+        // Cleanup timeout khi component unmount hoặc dependencies thay đổi
+        return () => {
+            if (timeoutRef.current) {
+                console.log('🧹 Clear timeout');
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+        };
+    }, [tempToken, isLoading, navigate]); // Depend vào cả isLoading để đảm bảo chỉ chạy khi đã load xong
+
+
+    // Validate ngày sinh theo nghiệp vụ thực tế
+    const validateBirthDate = (birthDate) => {
+        if (!birthDate || birthDate.trim() === '') {
+            return { valid: true, message: '' }; // Ngày sinh là optional
+        }
+        
+        // Kiểm tra format yyyy-MM-dd
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (!datePattern.test(birthDate)) {
+            return { valid: false, message: 'Ngày sinh phải có định dạng yyyy-MM-dd (ví dụ: 2000-01-15)' };
+        }
+        
+        // Parse ngày sinh
+        const birth = new Date(birthDate + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Kiểm tra ngày hợp lệ
+        if (isNaN(birth.getTime())) {
+            return { valid: false, message: 'Ngày sinh không hợp lệ' };
+        }
+        
+        // Kiểm tra ngày sinh không được là tương lai
+        if (birth > today) {
+            return { valid: false, message: 'Ngày sinh không được là ngày trong tương lai' };
+        }
+        
+        // Kiểm tra tuổi hợp lý (không quá 150 tuổi, không quá nhỏ - ví dụ: ít nhất 5 tuổi)
+        const age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        const dayDiff = today.getDate() - birth.getDate();
+        const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        
+        if (actualAge > 150) {
+            return { valid: false, message: 'Ngày sinh không hợp lệ (quá cũ)' };
+        }
+        
+        if (actualAge < 5) {
+            return { valid: false, message: 'Ngày sinh không hợp lệ (quá nhỏ)' };
+        }
+        
+        return { valid: true, message: '', normalized: birthDate };
+    };
+
+    // Validate số điện thoại theo pattern backend: ^(0)[0-9]{9}$
+    // Phải bắt đầu bằng 0 và có đúng 10 chữ số
+    const validatePhoneNumber = (phone) => {
+        if (!phone || phone.trim() === '') {
+            return { valid: false, message: 'Vui lòng nhập số điện thoại' };
+        }
+        
+        // Loại bỏ khoảng trắng và ký tự đặc biệt
+        const cleanedPhone = phone.replace(/\s+/g, '').replace(/[-\+()]/g, '');
+        
+        // Kiểm tra pattern: bắt đầu bằng 0 và có đúng 10 chữ số
+        const phonePattern = /^(0)[0-9]{9}$/;
+        
+        if (!phonePattern.test(cleanedPhone)) {
+            // Kiểm tra các trường hợp cụ thể để đưa ra message rõ ràng hơn
+            if (cleanedPhone.length === 0) {
+                return { valid: false, message: 'Vui lòng nhập số điện thoại' };
+            }
+            if (!cleanedPhone.startsWith('0')) {
+                return { valid: false, message: 'Số điện thoại phải bắt đầu bằng 0' };
+            }
+            if (cleanedPhone.length !== 10) {
+                return { valid: false, message: 'Số điện thoại phải có đúng 10 chữ số' };
+            }
+            if (!/^\d+$/.test(cleanedPhone)) {
+                return { valid: false, message: 'Số điện thoại chỉ được chứa chữ số' };
+            }
+            return { valid: false, message: 'Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng (0xxxxxxxxx)' };
+        }
+        
+        return { valid: true, message: '', normalized: cleanedPhone };
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -44,22 +171,66 @@ export default function RegistrationForm() {
     };
 
     const handleSubmit = async () => {
-        if (!formData.fullName || !formData.phone) {
-            console.error('Lỗi: Vui lòng điền đầy đủ thông tin bắt buộc!');
-            alert('Vui lòng điền đầy đủ Họ và tên, Số điện thoại!');
+        // Kiểm tra họ và tên
+        if (!formData.fullName || formData.fullName.trim() === '') {
+            setToast({
+                message: 'Vui lòng nhập họ và tên',
+                type: 'error'
+            });
+            return;
+        }
+        
+        // Validate số điện thoại
+        const phoneValidation = validatePhoneNumber(formData.phone);
+        if (!phoneValidation.valid) {
+            setToast({
+                message: phoneValidation.message,
+                type: 'error'
+            });
+            if (phoneInputRef.current) {
+                phoneInputRef.current.focus();
+                phoneInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
+        // Validate ngày sinh (nếu có)
+        if (formData.birthDate) {
+            const birthDateValidation = validateBirthDate(formData.birthDate);
+            if (!birthDateValidation.valid) {
+                setToast({
+                    message: birthDateValidation.message,
+                    type: 'error'
+                });
+                return;
+            }
+        }
+
         if (!tempToken) {
-            navigate('/login', { replace: true });
+            setToast({
+                message: 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại',
+                type: 'error'
+            });
+            setTimeout(() => {
+                navigate('/login', { replace: true });
+            }, 2000);
             return;
         }
 
         try {
+            // Validate và normalize ngày sinh nếu có
+            let normalizedBirthDate = null;
+            if (formData.birthDate) {
+                const birthDateValidation = validateBirthDate(formData.birthDate);
+                if (birthDateValidation.valid && birthDateValidation.normalized) {
+                    normalizedBirthDate = birthDateValidation.normalized;
+                }
+            }
+
             const requestData = {
-                fullName: formData.fullName,
-                phoneNumber: formData.phone,
-                birthDate: formData.birthDate || null,
+                fullName: formData.fullName.trim(),
+                phoneNumber: phoneValidation.normalized,
+                birthDate: normalizedBirthDate,
             };
 
             const response = await loginService.postCompleteProfile(requestData, tempToken);
@@ -67,25 +238,40 @@ export default function RegistrationForm() {
 
             const finalJwt = response.result.token;
             
-           // localStorage.setItem('jwtToken', finalJwt)
-
-            //  Cookies.set(constants.ACCESS_TOKEN_KEY, finalJwt);
-            // console.log(finalJwt + "")
+            // Clear timeout khi submit thành công
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+            
             handleCustomerLoginSuccess(finalJwt);
-            navigate('/', { replace: true });
+            
+            // Clear tempToken để cleanup timeout
+            setTempToken(null);
+            
+            setToast({
+                message: 'Đăng ký thành công! Đang chuyển hướng...',
+                type: 'success'
+            });
+            
+            setTimeout(() => {
+                navigate('/', { replace: true });
+            }, 1500);
 
         } catch (error) {
-
-            let errorMessage = 'Lỗi không xác định.';
+            let errorMessage = 'Cập nhật thất bại. Vui lòng thử lại sau.';
 
             if (error.response && error.response.data) {
-                errorMessage = error.response.data.message || error.response.data.error || 'Lỗi xử lý nghiệp vụ.';
+                errorMessage = error.response.data.message || error.response.data.error || errorMessage;
             } else if (error.message) {
                 errorMessage = error.message;
             }
 
             console.error('Lỗi cập nhật hồ sơ:', error);
-            alert('Cập nhật thất bại: Số điện thoại đã tồn tại');
+            setToast({
+                message: errorMessage,
+                type: 'error'
+            });
         }
     };
 
@@ -164,12 +350,14 @@ export default function RegistrationForm() {
                                     Số điện thoại <span className="text-red-500">*</span>
                                 </label>
                                 <input
+                                    ref={phoneInputRef}
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
                                     placeholder="Nhập số điện thoại"
                                     className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-200"
+                                    required
                                 />
                             </div>
 
@@ -200,6 +388,15 @@ export default function RegistrationForm() {
                     </div>
                 </div>
             </div>
+            
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 }

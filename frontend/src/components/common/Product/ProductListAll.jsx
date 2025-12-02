@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProductAll, fetchSearchAll } from '../../../services/productWorker';
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -11,8 +11,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [favorites, setFavorites] = useState(new Set());
+  // const [favorites, setFavorites] = useState(new Set()); // Đang được comment trong code
   const [noResults, setNoResults] = useState(false); // Không tìm thấy sản phẩm
   const [productRatings, setProductRatings] = useState({}); // Map productId -> rating
 
@@ -50,12 +49,11 @@ const loadAllProducts = async () => {
   setError(null);
   try {
     const data = await fetchProductAll(0, 1000);
-    const list = data.products || [];
-    setAllProducts(list);
-    setFilteredProducts(list);
-    const count = data.total || list.length;
-    setTotalCount(count);
-    props.onProductsCountChange?.(count);
+        const list = data.products || [];
+        setAllProducts(list);
+        setFilteredProducts(list);
+        const count = data.total || list.length;
+        props.onProductsCountChange?.(count);
 
     // Fetch ratings cho tất cả products
     const ratingsMap = {};
@@ -76,7 +74,6 @@ const loadAllProducts = async () => {
     setError(t('common.loadingProductsError'));
     setAllProducts([]);
     setFilteredProducts([]);
-    setTotalCount(0);
     props.onProductsCountChange?.(0);
   } finally {
     setLoading(false);
@@ -104,7 +101,6 @@ useEffect(() => {
 
 if (!hasFilters) {
     setFilteredProducts(allProducts);
-    setTotalCount(allProducts.length);
     props.onProductsCountChange?.(allProducts.length);
     setError(null);
     setLoading(false);
@@ -121,7 +117,6 @@ if (!hasFilters) {
 
     setFilteredProducts(matches);
     const count = matches.length;
-    setTotalCount(count);
     props.onProductsCountChange?.(count);
 
     // Fetch ratings cho các products tìm được
@@ -144,9 +139,8 @@ if (!hasFilters) {
     }
   } catch (err) {
     console.error('Lỗi tìm kiếm sản phẩm:', err);
-    setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
+    setError(t('productList.searchError'));
     setFilteredProducts([]);
-    setTotalCount(0);
     props.onProductsCountChange?.(0);
   } finally {
     setLoading(false);
@@ -187,18 +181,18 @@ if (!hasFilters) {
 
 
 
-  // ← GIỮ: toggleFavorite, nhưng dùng product.id sau transform
-  const toggleFavorite = (id) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(id)) {
-        newFavorites.delete(id);
-      } else {
-        newFavorites.add(id);
-      }
-      return newFavorites;
-    });
-  };
+  // ← GIỮ: toggleFavorite, nhưng dùng product.id sau transform (đang được comment trong code)
+  // const toggleFavorite = (id) => {
+  //   setFavorites(prev => {
+  //     const newFavorites = new Set(prev);
+  //     if (newFavorites.has(id)) {
+  //       newFavorites.delete(id);
+  //     } else {
+  //       newFavorites.add(id);
+  //     }
+  //     return newFavorites;
+  //   });
+  // };
 
 
 
@@ -262,7 +256,7 @@ if (!hasFilters) {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-400 mx-auto mb-4"></div>
-          <p className="text-cyan-100 text-lg">Đang tải sản phẩm...</p>
+          <p className="text-cyan-100 text-lg">{t('productList.loading')}</p>
         </div>
       </div>
     );
@@ -278,7 +272,7 @@ if (error) {
           onClick={loadAllProducts}
           className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
         >
-          Thử lại
+          {t('productList.retry')}
         </button>
       </div>
     </div>
@@ -291,7 +285,7 @@ if (!error && noResults && hasFilters) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
       <div className="text-center">
         <p className="text-yellow-400 text-lg mb-4">
-          Không tìm thấy sản phẩm phù hợp với bộ lọc
+          {t('productList.noResults')}
         </p>
         {/* Không có nút Thử lại */}
       </div>
@@ -325,10 +319,8 @@ if (!error && noResults && hasFilters) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start min-h-[1050px]">
             {paginatedProducts.map((product) => {
               const version = product.versions?.[0];
-              const isFavorite = favorites.has(product.id);
               const discount = product.discount || 0;
               const screenSize = product.specifications?.['Screen Size'];
-              const ram = version?.ram || 'null';
               const storage = version?.rom || 'null';
 
               return (
@@ -339,7 +331,7 @@ if (!error && noResults && hasFilters) {
                   {/* Discount Badge */}
                   {discount > 0 && (
                     <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-red-600 to-pink-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-lg">
-                      Giảm {discount}%
+                      {t('productList.discount', { discount })}
                     </div>
                   )}
 
@@ -372,14 +364,14 @@ if (!error && noResults && hasFilters) {
                       }}
                       className="text-base font-semibold text-gray-800 mb-2 line-clamp-2 min-h-[40px] hover:text-cyan-600 transition-colors text-left"
                     >
-                      {product.name} | Chính hãng                 
+                      {product.name} | {t('productList.authentic')}                 
                     </button>
 
                     {/* Price */}
                     <div className="mb-3">
                       <div className="flex items-baseline gap-2">
                         <p className="text-xl font-bold text-cyan-600">
-                          {product.price ? formatPrice(product.price) : 'Liên hệ'}
+                          {product.price ? formatPrice(product.price) : t('productList.contact')}
                         </p>
                         {discount > 0 && (
                           <p className="text-xs text-gray-400 line-through">
@@ -402,13 +394,13 @@ if (!error && noResults && hasFilters) {
                     {/* Smember Promotion */}
                       {product.discount > 0 && (
                       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 text-xs px-3 py-2 rounded-lg mb-3 border border-cyan-200 font-medium">
-                        Smember giảm đến {Math.round(product.price * 0.01)}.000đ
+                        {t('productList.smemberDiscount', { amount: Math.round(product.price * 0.01) })}
                       </div>
                     )}
 
                     {/* Installment Info */}
                     <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                      sản phẩm uy tín  - chất lượng cao - giá cả phải chăng - hỗ trợ bảo hành  đến 12 tháng
+                      {t('productList.productFeatures')}
                     </p>
 
                     {/* Rating & Favorite */}
@@ -421,15 +413,15 @@ if (!error && noResults && hasFilters) {
                             : (product.rating || '0.0')}
                         </span>
                       </div>
-                      <button 
+                      {/* <button 
                         onClick={() => toggleFavorite(product.id)}
                         className="flex items-center gap-1 text-cyan-600 hover:text-cyan-700 transition-colors"
                       >
                         <Heart 
                           className={`w-5 h-5 transition-all ${isFavorite ? 'fill-red-500 text-red-500 scale-110' : 'text-cyan-600'}`}
                         />
-                        <span className="text-sm font-medium">Yêu thích</span>
-                      </button>
+                        <span className="text-sm font-medium">{t('productList.favorite')}</span>
+                      </button> */}
                     </div>
                   </div>
                 </div>
@@ -448,7 +440,7 @@ if (!error && noResults && hasFilters) {
             </button>
             
             <span className="px-6 py-3 bg-white rounded-full shadow-lg font-semibold text-gray-800 border border-gray-200">
-              Trang {Math.min(currentPage + 1, totalPages)} / {totalPages}
+              {t('productList.page', { current: Math.min(currentPage + 1, totalPages), total: totalPages })}
             </span>
             
             <button 
