@@ -49,14 +49,37 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // If API returns 401, remove token and redirect to login
-      //localStorage.removeItem('token');
-      // If API returns 401, remove token from both Cookies and localStorage
+    const status = error.response?.status;
+    
+    // Helper function to determine if admin or customer and redirect
+    const handleUnauthorized = () => {
+      // Remove token from both Cookies and localStorage
       Cookies.remove('token');
-      // optionally you might want to only redirect for certain endpoints
-      window.location.href = '/login';
+      localStorage.removeItem('token');
+      
+      // Determine if this is an admin request
+      const isAdminRequest = error.config?.url && error.config.url.includes('/admin');
+      const isAdminPath = window.location.pathname.includes('/admin');
+      
+      if (isAdminRequest || isAdminPath) {
+        // Admin: redirect to admin-login
+        window.location.href = '/admin-login';
+      } else {
+        // Customer: redirect to login
+        window.location.href = '/login';
+      }
+    };
+    
+    // Handle 401 Unauthorized
+    if (status === 401) {
+      handleUnauthorized();
     }
+    
+    // Handle 500 Internal Server Error
+    if (status === 500) {
+      handleUnauthorized();
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -229,7 +252,12 @@ export const profileService = {
 
   updateCustomer: (id, requestData) =>
       api
-          .put(`/customer/update/${id}`, requestData) // Gọi endpoint PUT /customer/update/{id}
+          .put(`/customer/update/${id}`, requestData) // Gọi endpoint PUT /customer/update/{id} (cho admin)
+          .then(res => res.data.result),
+
+  updateMyProfile: (requestData) =>
+      api
+          .put(`/customer/me`, requestData) // Gọi endpoint PUT /customer/me (cho customer update profile của chính mình)
           .then(res => res.data.result),
 
   getCustomerInfo: () =>

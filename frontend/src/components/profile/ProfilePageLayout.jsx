@@ -9,8 +9,12 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 
 const ProfilePageLayout = () => {
+<<<<<<< HEAD
     const { t } = useLanguage();
     const { customerInfo, isLoading, error } = useCustomerInfo();
+=======
+    const { customerInfo, isLoading, error, refetch } = useCustomerInfo();
+>>>>>>> origin/sinh2
 
     if (isLoading) {
         return <div className="min-h-screen bg-gray-50 flex items-center justify-center">{t('common.loading')}</div>;
@@ -38,7 +42,7 @@ const ProfilePageLayout = () => {
 
                     {/* Cột 2: Nội dung Chính - CHÍNH LÀ children */}
                     <div className="md:col-span-3 lg:col-span-4">
-                        <Outlet context={{ customerInfo }} />
+                        <Outlet context={{ customerInfo, refetchCustomerInfo: refetch }} />
                     </div>
                 </div>
             </div>

@@ -11,10 +11,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,15 +45,33 @@ public class AuditLogService {
         return logPage.map(auditLogMapper::toResponse);
     }
 
+    public Page<AuditLogResponse> getAllLogsWithFilters(
+            int page, 
+            int size, 
+            Long employeeId,
+            String employeeName,
+            String tableName,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<AuditLog> logPage = auditLogRepository.findByFilters(
+                employeeId,
+                employeeName,
+                tableName,
+                startDate,
+                endDate,
+                pageable);
+
+        return logPage.map(auditLogMapper::toResponse);
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveAuditLog(AuditLog log) {
         auditLogRepository.save(log);
     }
 
-    /**
-     * Reload entity old state from database in a new transaction
-     * This is safe to call after the main transaction commits
-     */
+
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public String reloadOldStateFromDatabase(String entityClassName, Long recordId) {
         try {
@@ -127,5 +147,12 @@ public class AuditLogService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    public void cleanOldData() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(10);
+        int rows = auditLogRepository.deleteOld(threshold);
+        System.out.println("Đã xóa " + rows + " dòng.");
     }
 }

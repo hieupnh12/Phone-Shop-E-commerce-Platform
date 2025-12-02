@@ -28,6 +28,22 @@ public interface AuditLogRepo extends JpaRepository<AuditLog, Long> {
     Page<AuditLog> findBySearchTerm(@Param("search") String search, Pageable pageable);
     
     @EntityGraph(attributePaths = {"employee"})
+    @Query(value = "SELECT a FROM AuditLog a " +
+           "LEFT JOIN a.employee e " +
+           "WHERE (:employeeId IS NULL OR a.employeeId = :employeeId) " +
+           "AND (:employeeName IS NULL OR :employeeName = '' OR LOWER(e.fullName) LIKE LOWER(CONCAT('%', :employeeName, '%'))) " +
+           "AND (:tableName IS NULL OR :tableName = '' OR LOWER(a.tableName) = LOWER(:tableName)) " +
+           "AND (:startDate IS NULL OR a.createdAt >= :startDate) " +
+           "AND (:endDate IS NULL OR a.createdAt <= :endDate)")
+    Page<AuditLog> findByFilters(
+            @Param("employeeId") Long employeeId,
+            @Param("employeeName") String employeeName,
+            @Param("tableName") String tableName,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable);
+    
+    @EntityGraph(attributePaths = {"employee"})
     @Override
     Page<AuditLog> findAll(Pageable pageable);
 

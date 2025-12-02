@@ -93,7 +93,8 @@ export default function AdminLayout() {
       icon: RefreshCw, 
       label: "Yêu cầu bảo hành", 
       path: "/admin/warranty-requests",
-      permission: [PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL],
+      // Hiển thị nếu có quyền xem tất cả HOẶC quyền cập nhật (để xem yêu cầu của mình)
+      permission: [PERMISSIONS.WARRANTY_VIEW_ALL, PERMISSIONS.WARRANTY_UPDATE_BASIC],
     },
     { 
       id: "roles", 

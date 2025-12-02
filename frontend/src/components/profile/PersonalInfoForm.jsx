@@ -2,28 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Edit, Plus, Save, X } from 'lucide-react';
 import InputField  from "../common/InputField";
 import AddressBook  from "./AddressBook";
-import {  useOutletContext, useNavigate } from 'react-router-dom';
+import {  useOutletContext } from 'react-router-dom';
 import { profileService} from "../../services/api";
 import { useAuthFullOptions } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatPhoneNumber } from "../../utils/phoneUtils";
-import { hasPermission, PERMISSIONS } from "../../utils/permissionUtils";
-import Toast from "../common/Toast";
 
 
 
 
 const PersonalInfoForm = () => {
     const { t } = useLanguage();
-    const { getCurrentUser, logoutCustomer } = useAuthFullOptions();
-    const { customerInfo } = useOutletContext();
-    const navigate = useNavigate();
+    const { getCurrentUser } = useAuthFullOptions();
+    const { customerInfo, refetchCustomerInfo } = useOutletContext();
 
     const [formData, setFormData] = useState({});
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [updateError, setUpdateError] = useState(null);
-    const [toast, setToast] = useState(null);
 
 
 
@@ -74,139 +70,38 @@ const PersonalInfoForm = () => {
         setIsEditing(false);
     };
 
-    // Validate form data trước khi submit
-    const validateFormData = () => {
-        const errors = [];
-
-        // Validate fullName
-        if (!formData.fullName || formData.fullName.trim() === '') {
-            errors.push('Họ và tên không được để trống');
-        } else if (formData.fullName.trim().length < 2) {
-            errors.push('Họ và tên phải có ít nhất 2 ký tự');
-        } else if (formData.fullName.trim().length > 100) {
-            errors.push('Họ và tên không được vượt quá 100 ký tự');
-        }
-
-        // Validate email (nếu có)
-        if (formData.email && formData.email.trim() !== '') {
-            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailPattern.test(formData.email.trim())) {
-                errors.push('Email không hợp lệ');
-            }
-        }
-
-        // Validate birthDate (nếu có)
-        if (formData.dateOfBirth) {
-            const birthDate = new Date(formData.dateOfBirth + 'T00:00:00');
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (isNaN(birthDate.getTime())) {
-                errors.push('Ngày sinh không hợp lệ');
-            } else if (birthDate > today) {
-                errors.push('Ngày sinh không được là ngày trong tương lai');
-            }
-        }
-
-        return errors;
-    };
-
     const handleSaveClick = async (e) => {
         e.preventDefault();
         setIsSaving(true);
         setUpdateError(null);
-        setToast(null);
-
-        // Validate form data
-        const validationErrors = validateFormData();
-        if (validationErrors.length > 0) {
-            setToast({
-                message: validationErrors[0],
-                type: 'error'
-            });
-            setIsSaving(false);
-            return;
-        }
-
-        // Kiểm tra scope trước khi submit (chỉ check, không logout ngay)
-        // Nếu không có scope, vẫn thử gọi API để backend trả lỗi rõ ràng
-        const hasScope = hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC);
-        if (!hasScope) {
-            console.warn("⚠️ Token không có scope CUSTOMER_UPDATE_BASIC. Vẫn thử gọi API...");
-        }
 
         // Tạo request body khớp với CustomerUpdateRequest (Spring Boot)
         const requestBody = {
-            fullName: formData.fullName.trim(),
-            email: formData.email?.trim() || null, // Gửi null nếu empty
+            fullName: formData.fullName,
+            email: formData.email,
             // Chuyển đổi lại giới tính từ string sang boolean
             gender: formData.gender === 'male' ? true : (formData.gender === 'female' ? false : null),
-            birthDate: formData.dateOfBirth || null, // Gửi null nếu empty, Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
-            address: formData.address?.trim() || null, // Gửi null nếu empty
+            birthDate: formData.dateOfBirth, // Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
+            address: formData.address || '', // Gửi địa chỉ từ form
         };
 
-        // Log request body để debug
-        console.log("📤 Request body:", requestBody);
-
-        const customerId = formData.customerId;
-
         try {
-            const response = await profileService.updateCustomer(customerId, requestBody);
+            // Sử dụng endpoint mới /customer/me - không cần truyền customerId
+            const response = await profileService.updateMyProfile(requestBody);
 
             console.log("Saving data successful:", response);
 
+            // Refresh customer info để cập nhật ngay lập tức
             await getCurrentUser();
+            if (refetchCustomerInfo) {
+                await refetchCustomerInfo();
+            }
 
             setIsEditing(false);
-            setToast({
-                message: 'Cập nhật thông tin thành công!',
-                type: 'success'
-            });
 
         } catch (error) {
             console.error("Lỗi khi lưu thông tin:", error);
-            console.error("Error response:", error.response?.data);
-
-            let errorMessage = 'Lỗi: Không thể cập nhật thông tin. Vui lòng thử lại.';
-
-            // Kiểm tra nếu lỗi là Authorization Denied (403)
-            if (error.response?.status === 403 ||
-                error.response?.data?.message?.includes('Access Denied') ||
-                error.response?.data?.message?.includes('AuthorizationDeniedException')) {
-                errorMessage = 'Token không có quyền cập nhật. Vui lòng đăng xuất và đăng nhập lại để nhận token mới.';
-            }
-            // Kiểm tra validation errors (400)
-            else if (error.response?.status === 400) {
-                // Backend có thể trả về validation errors trong nhiều format
-                const responseData = error.response?.data;
-
-                if (responseData?.message) {
-                    errorMessage = responseData.message;
-                } else if (responseData?.error) {
-                    errorMessage = responseData.error;
-                } else if (responseData?.errors && Array.isArray(responseData.errors)) {
-                    // Spring Boot validation errors format
-                    errorMessage = responseData.errors.map(err => err.defaultMessage || err.message).join(', ');
-                } else if (typeof responseData === 'string') {
-                    errorMessage = responseData;
-                } else {
-                    errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đã nhập.';
-                }
-            }
-            // Các lỗi khác
-            else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.response?.data?.error) {
-                errorMessage = error.response.data.error;
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
-            setUpdateError(errorMessage);
-            setToast({
-                message: errorMessage,
-                type: 'error'
-            });
+            setUpdateError("Lỗi: Không thể cập nhật thông tin. Vui lòng thử lại.");
         } finally {
             setIsSaving(false);
         }
@@ -228,9 +123,9 @@ const PersonalInfoForm = () => {
         </div>
     );
     const displayGender = (gender) => {
-        if (gender === 'male' || gender === true) return t('profile.personalInfo.gender.male');
-        if (gender === 'female' || gender === false) return t('profile.personalInfo.gender.female');
-        return t('profile.personalInfo.gender.other');
+        if (gender === 'male' || gender === true) return 'Nam';
+        if (gender === 'female' || gender === false) return 'Nữ';
+        return 'Khác';
     }
 
     return (
@@ -239,7 +134,7 @@ const PersonalInfoForm = () => {
                 {/* Phần Thông tin cá nhân */}
                 <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                     <div className="flex items-center justify-between border-b pb-4 mb-6">
-                        <h3 className="text-xl font-bold text-gray-800">{t('profile.personalInfo.title')}</h3>
+                        <h3 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h3>
                         {isEditing ? (
                             <div className="flex space-x-3">
                                 <button
@@ -247,7 +142,7 @@ const PersonalInfoForm = () => {
                                     className="flex items-center text-white bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors"
                                 >
                                     <Save size={18} className="mr-2" />
-                                    {t('profile.personalInfo.saveChanges')}
+                                    Lưu thay đổi
                                 </button>
                                 <button
                                     type="button"
@@ -265,7 +160,7 @@ const PersonalInfoForm = () => {
                                 className="flex items-center text-red-500 hover:text-red-600 transition-colors"
                             >
                                 <Edit size={18} className="mr-2" />
-                                {t('common.update')}
+                                Cập nhật
                             </button>
                         )}
                     </div>
@@ -276,7 +171,7 @@ const PersonalInfoForm = () => {
                             <>
                                 {/* 1. Họ và tên */}
                                 <InputField
-                                    label={t('profile.personalInfo.fullName')}
+                                    label="Họ và tên"
                                     name="fullName"
                                     value={formData.fullName}
                                     onChange={handleInputChange}
@@ -288,21 +183,21 @@ const PersonalInfoForm = () => {
                                     name="phone"
                                     value={formData.phone}
                                     disabled
-                                    helperText={t('profile.personalInfo.contactToChangePhone')}
+                                    helperText="Liên hệ CSKH để đổi số điện thoại"
                                 />
                                 {/* 3. Email */}
                                 <InputField
-                                    label={t('profile.personalInfo.email')}
+                                    label="Email"
                                     name="email"
                                     type="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     required
-                                    placeholder={t('profile.personalInfo.emailPlaceholder')}
+                                    placeholder="Nhập địa chỉ email"
                                 />
                                 {/* 4. Ngày sinh */}
                                 <InputField
-                                    label={t('profile.personalInfo.dateOfBirth')}
+                                    label="Ngày sinh"
                                     name="dateOfBirth"
                                     type="date"
                                     value={formData.dateOfBirth}
@@ -310,17 +205,17 @@ const PersonalInfoForm = () => {
                                 />
                                 {/* 5. Giới tính (Select - Chiếm 1 cột) */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.personalInfo.gender.label')}</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Giới tính</label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
                                         onChange={handleInputChange}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors"
                                     >
-                                        <option value="">{t('profile.personalInfo.gender.select')}</option>
-                                        <option value="male">{t('profile.personalInfo.gender.male')}</option>
-                                        <option value="female">{t('profile.personalInfo.gender.female')}</option>
-                                        <option value="other">{t('profile.personalInfo.gender.other')}</option>
+                                        <option value="">Chọn giới tính</option>
+                                        <option value="male">Nam</option>
+                                        <option value="female">Nữ</option>
+                                        <option value="other">Khác</option>
                                     </select>
                                 </div>
                                 {/* 6. Địa chỉ (Chiếm 1 cột) */}
@@ -329,19 +224,19 @@ const PersonalInfoForm = () => {
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
-                                    placeholder={t('profile.personalInfo.addressPlaceholder')}
+                                    placeholder="Nhập địa chỉ"
                                 />
                             </>
                         ) : (
                             <>
-                                <InfoDisplayItem label={t('profile.personalInfo.fullName')} value={formData.fullName} />
+                                <InfoDisplayItem label="Họ và tên" value={formData.fullName} />
                                 <InfoDisplayItem label={t('common.phone')} value={formatPhoneNumber(formData.phone)} />
-                                <InfoDisplayItem label={t('profile.personalInfo.email')} value={formData.email} />
+                                <InfoDisplayItem label="Email" value={formData.email} />
                                 <InfoDisplayItem
-                                    label={t('profile.personalInfo.dateOfBirth')}
+                                    label="Ngày sinh"
                                     value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toLocaleDateString('vi-VN') : '-'}
                                 />
-                                <InfoDisplayItem label={t('profile.personalInfo.gender.label')} value={displayGender(formData.gender)} />
+                                <InfoDisplayItem label="Giới tính" value={displayGender(formData.gender)} />
                                 <InfoDisplayItem label={t('profile.defaultAddress')} value={customerInfo.address || t('profile.noAddress')} />
                             </>
                         )}
@@ -351,15 +246,6 @@ const PersonalInfoForm = () => {
 
             {/* Phần Sổ địa chỉ - Đặt ra ngoài form để tránh form nesting */}
             <AddressBook />
-
-            {/* Toast Notification */}
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
-                />
-            )}
         </div>
     );
 };
