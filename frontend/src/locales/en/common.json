@@ -706,7 +706,7 @@
     },
     "cancelled": "Cancelled",
     "orderSuccess": "Order Successful",
-    "defaultAddress": "Default Address",
+    "defaultAddress": "Address",
     "noAddress": "Not available",
     "updating": "Updating",
     "detailedAddress": "Detailed Address (House Number, Street)",
