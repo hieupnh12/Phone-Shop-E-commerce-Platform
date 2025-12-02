@@ -26,7 +26,7 @@ const ProductDetailPage = () => {
   const { t, currentLanguage } = useLanguage();
   const authContext = useAuthFullOptions();
   const user = authContext?.user;
-  
+
   // Debug: Test translation
   useEffect(() => {
     console.log('[ProductDetail] Current language:', currentLanguage);
@@ -36,7 +36,7 @@ const ProductDetailPage = () => {
     console.log('[ProductDetail] productDetail object:', translations[currentLanguage]?.common?.productDetail);
     console.log('[ProductDetail] Test translation features:', t('productDetail.features'));
     console.log('[ProductDetail] Test translation phone:', t('productDetail.phone'));
-  }, [currentLanguage, t]); 
+  }, [currentLanguage, t]);
   const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
@@ -662,17 +662,17 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 ({reviewCount > 0 ? reviewCount : (product.reviewCount || 0)} {t('productDetail.reviews')})
               </span>
             </div>
-            <button
-              onClick={() => setIsFavorite(!isFavorite)}
-              className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              <Heart
-                className={`w-5 h-5 transition-all ${
-                  isFavorite ? "fill-red-500 text-red-500 scale-110" : ""
-                }`}
-              />
-              <span>{t('productDetail.favorite')}</span>
-            </button>
+            {/*<button*/}
+            {/*  onClick={() => setIsFavorite(!isFavorite)}*/}
+            {/*  className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"*/}
+            {/*>*/}
+            {/*  <Heart*/}
+            {/*    className={`w-5 h-5 transition-all ${*/}
+            {/*      isFavorite ? "fill-red-500 text-red-500 scale-110" : ""*/}
+            {/*    }`}*/}
+            {/*  />*/}
+            {/*  <span>Yêu thích</span>*/}
+            {/*</button> *!/*/}
             {/* <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
               <svg
                 className="w-5 h-5"
@@ -971,7 +971,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                         </div> */}
 
                         <div>
-                          <div className="text-sm text-gray-600 mb-2">{t('productDetail.rom')}</div>
+                          <div className="text-sm text-gray-600 mb-2">ROM</div>
                           <div className="flex flex-wrap gap-2">
                             {allRoms.map((r) => {
                               const isSelected = selectedRom === r;

@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
@@ -166,7 +167,7 @@ public class CustomerAuthenticationService {
                 .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(jwtId)
                 .claim("role", "USER")
-                .claim("scopes", scopes)
+                .claim("scopes", Arrays.asList("CUSTOMER_UPDATE_BASIC")) // Thêm scope để có quyền update thông tin
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());

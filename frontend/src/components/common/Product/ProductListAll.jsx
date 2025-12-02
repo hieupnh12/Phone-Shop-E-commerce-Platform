@@ -421,7 +421,7 @@ if (!error && noResults && hasFilters) {
                             : (product.rating || '0.0')}
                         </span>
                       </div>
-                      <button 
+                      {/* <button 
                         onClick={() => toggleFavorite(product.id)}
                         className="flex items-center gap-1 text-cyan-600 hover:text-cyan-700 transition-colors"
                       >
@@ -429,7 +429,7 @@ if (!error && noResults && hasFilters) {
                           className={`w-5 h-5 transition-all ${isFavorite ? 'fill-red-500 text-red-500 scale-110' : 'text-cyan-600'}`}
                         />
                         <span className="text-sm font-medium">Yêu thích</span>
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

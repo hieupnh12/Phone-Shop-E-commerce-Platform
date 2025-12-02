@@ -292,6 +292,7 @@ const AddressBook = () => {
             {showForm && (
                 <AddressForm
                     addressToEdit={addressToEdit}
+                    customerInfo={customerInfo}
                     onClose={() => {
                         setShowForm(false);
                         setAddressToEdit(null);
