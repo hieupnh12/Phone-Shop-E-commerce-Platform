@@ -71,7 +71,7 @@ export default function TableRevenue({
                 SL
               </th>
               <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Giá bán
+                Giá nhập
               </th>
               <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Doanh thu
@@ -113,7 +113,7 @@ export default function TableRevenue({
                 </td>
                 <td className="px-6 py-4 text-right">
                   <span className="text-sm text-gray-700">
-                    {formatCurrency(order.price)}
+                    {formatCurrency(order.importPrice)}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
@@ -128,7 +128,7 @@ export default function TableRevenue({
                 </td>
                 <td className="px-6 py-4 text-center">
                   <span className="text-xs font-medium text-gray-600">
-                    {order.channel}
+                    {order.paymentMethod || "N/A"}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-center">

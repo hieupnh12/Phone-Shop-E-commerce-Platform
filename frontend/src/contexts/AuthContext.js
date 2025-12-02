@@ -37,6 +37,7 @@ export const AuthProvider = ({ children }) => {
   const getCurrentUser = async () => {
     try {
       const role = getUserRole(); // Lấy vai trò (ROLE_SALE, USER,...)
+      console.log("🔍 getUserRole returned:", role);
       let response;
 
       const isEmployeeRole = role && role !== 'USER' && role.startsWith('ROLE_');
@@ -44,12 +45,19 @@ export const AuthProvider = ({ children }) => {
       if (isEmployeeRole) {
         response = await loginApi.getInfo();
       } else if (role === 'USER') {
-
         response = await profileService.getCustomerInfo();
-   
       } else {
-        setLoading(false);
-        return;
+        // Nếu không có role, có thể là customer token mới (chỉ có scopes)
+        // Thử gọi getCustomerInfo() để xem có phải customer không
+        console.log("⚠️ No role found, trying to get customer info...");
+        try {
+          response = await profileService.getCustomerInfo();
+          console.log("✅ Successfully got customer info without role");
+        } catch (err) {
+          console.log("❌ Failed to get customer info:", err);
+          setLoading(false);
+          return;
+        }
       }
 
       // Backend trả {customerId, fullName, ...} hoặc {result: {...}}
@@ -58,9 +66,15 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
 
     } catch (error) {
-
-      Cookies.remove(constants.ACCESS_TOKEN_KEY);
-      setUser(null);
+      console.error("❌ Error in getCurrentUser:", error);
+      // Chỉ remove token nếu lỗi là 401 (Unauthorized)
+      if (error.response?.status === 401) {
+        Cookies.remove(constants.ACCESS_TOKEN_KEY);
+        setUser(null);
+      } else {
+        // Với các lỗi khác, giữ nguyên token và user
+        console.warn("⚠️ Non-401 error, keeping token and user state");
+      }
     } finally {
       setLoading(false);
     }
@@ -139,11 +153,23 @@ export const getUserRole = () => {
   try {
     const decoded = jwtDecode(token);
 
-    if (decoded.scopes && decoded.scopes.length > 0) {
-      return decoded.scopes[0];
+    // Ưu tiên lấy role từ claim "role"
+    if (decoded.role) {
+      return decoded.role;
     }
 
-    return decoded.role || null;
+    // Nếu không có role claim, tìm ROLE_ trong scopes
+    if (decoded.scopes && decoded.scopes.length > 0) {
+      const roleScope = decoded.scopes.find(scope => scope.startsWith('ROLE_'));
+      if (roleScope) {
+        return roleScope;
+      }
+      // Nếu không có ROLE_ scope nhưng có scopes, có thể là customer token
+      // Return "USER" để đảm bảo getCurrentUser() chạy đúng
+      return "USER";
+    }
+
+    return null;
 
   } catch (e) {
     console.error("Lỗi khi giải mã token:", e);

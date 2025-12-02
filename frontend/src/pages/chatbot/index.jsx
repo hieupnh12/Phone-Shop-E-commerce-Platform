@@ -332,7 +332,7 @@ export default function Chatbot() {
                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
               </div>
               <div>
-                <h2 className="font-bold text-lg">AI Assistant</h2>
+                <h2 className="font-bold text-lg">Fshop 36</h2>
                 <p className="text-xs text-purple-100">Đang hoạt động</p>
               </div>
             </div>

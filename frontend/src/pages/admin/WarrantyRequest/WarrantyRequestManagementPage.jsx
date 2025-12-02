@@ -206,10 +206,14 @@ const WarrantyRequestManagementPage = () => {
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+    // Reset về trang đầu khi search
+    setCurrentPage(0);
   };
 
+  // Client-side filtering chỉ cho search (tùy chọn, không ảnh hưởng pagination)
+  // Note: Phân trang dựa trên dữ liệu từ backend, không dựa trên filtered data
   const filteredRequests = requests.filter((request) => {
-    if (!searchTerm) return true;
+    if (!searchTerm || searchTerm.trim() === "") return true;
     const searchLower = searchTerm.toLowerCase();
     return (
       request.requestId?.toString().includes(searchLower) ||
@@ -219,6 +223,11 @@ const WarrantyRequestManagementPage = () => {
       request.productVersionId?.toLowerCase().includes(searchLower)
     );
   });
+
+  // Use requests from backend for pagination, not filteredRequests
+  // FilteredRequests chỉ để hiển thị kết quả tìm kiếm client-side (nếu có)
+  const displayRequests =
+    searchTerm && searchTerm.trim() !== "" ? filteredRequests : requests;
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -544,7 +553,7 @@ const WarrantyRequestManagementPage = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <Shield className="w-8 h-8 text-blue-600" />
@@ -603,186 +612,260 @@ const WarrantyRequestManagementPage = () => {
 
       {/* All Requests Table (Common) */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
             Danh sách yêu cầu chung
           </h2>
           <p className="text-sm text-gray-500 mt-1">Chọn yêu cầu để xử lý</p>
+          {totalElements > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              Hiển thị{" "}
+              <span className="font-semibold">
+                {requests.length > 0 ? currentPage * pageSize + 1 : 0}
+              </span>{" "}
+              -{" "}
+              <span className="font-semibold">
+                {Math.min((currentPage + 1) * pageSize, totalElements)}
+              </span>{" "}
+              trong tổng số{" "}
+              <span className="font-semibold">{totalElements}</span> yêu cầu
+              {searchTerm && searchTerm.trim() !== "" && (
+                <span className="ml-2 text-blue-600">
+                  (Đang lọc: "{searchTerm}")
+                </span>
+              )}
+            </p>
+          )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mã yêu cầu
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đơn hàng
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Khách hàng
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sản phẩm
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thời hạn bảo hành
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Người xử lý
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ngày tạo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredRequests.length === 0 ? (
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td
-                    colSpan="9"
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    {loading ? "Đang tải..." : "Không có yêu cầu nào"}
-                  </td>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mã yêu cầu
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                    Đơn hàng
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Khách hàng
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                    Sản phẩm
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    Thời hạn bảo hành
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                    Người xử lý
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                    Ngày tạo
+                  </th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
                 </tr>
-              ) : (
-                filteredRequests.map((request) => {
-                  const canEdit = canEditRequest(request);
-                  const isAssigned =
-                    request.employeeId &&
-                    request.employeeId !== currentEmployeeId;
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requestsLoading ? (
+                  <tr>
+                    <td
+                      colSpan="9"
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      Đang tải...
+                    </td>
+                  </tr>
+                ) : displayRequests.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="9"
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      {searchTerm && searchTerm.trim() !== ""
+                        ? "Không tìm thấy yêu cầu nào phù hợp"
+                        : "Không có yêu cầu nào"}
+                    </td>
+                  </tr>
+                ) : (
+                  displayRequests.map((request) => {
+                    const canEdit = canEditRequest(request);
+                    const isAssigned =
+                      request.employeeId &&
+                      request.employeeId !== currentEmployeeId;
 
-                  return (
-                    <tr key={request.requestId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{request.requestId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        #{request.orderId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {request.customerName || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <div>
-                          <div className="font-medium">
-                            {request.productName || "N/A"}
+                    return (
+                      <tr key={request.requestId} className="hover:bg-gray-50">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <div className="flex flex-col">
+                            <span>#{request.requestId}</span>
+                            <span className="text-xs text-gray-500 sm:hidden">
+                              ĐH: #{request.orderId}
+                            </span>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {request.productVersionId}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
+                          #{request.orderId}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <div className="flex flex-col">
+                            <span>{request.customerName || "N/A"}</span>
+                            <span
+                              className="text-xs text-gray-500 md:hidden truncate max-w-[150px]"
+                              title={request.productName || "N/A"}
+                            >
+                              {request.productName || "N/A"}
+                            </span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {request.warrantyExpiryDate ? (
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
                           <div>
-                            <div className="font-medium">
-                              {formatDateOnly(request.warrantyExpiryDate)}
+                            <div
+                              className="font-medium max-w-xs truncate"
+                              title={request.productName || "N/A"}
+                            >
+                              {request.productName || "N/A"}
                             </div>
-                            {request.warrantyPeriod && (
-                              <div className="text-xs text-gray-500">
-                                ({request.warrantyPeriod} tháng)
+                            <div className="text-xs text-gray-500">
+                              {request.productVersionId}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                          {request.warrantyExpiryDate ? (
+                            <div>
+                              <div className="font-medium">
+                                {formatDateOnly(request.warrantyExpiryDate)}
                               </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">
-                            {request.warrantyPeriod
-                              ? `N/A (${request.warrantyPeriod} tháng)`
-                              : "N/A"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(request.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {request.employeeName ? (
-                          <div className="flex items-center gap-2">
-                            <UserCheck className="w-4 h-4 text-blue-600" />
-                            <span>{request.employeeName}</span>
-                            {isAssigned && (
-                              <Lock className="w-4 h-4 text-red-500" />
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">Chưa có</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(request.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-2">
-                          {!request.employeeId ? (
-                            hasUpdatePermission ? (
-                              <button
-                                onClick={() => handleAssignRequest(request)}
-                                className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium"
-                              >
-                                <UserCheck className="w-4 h-4" />
-                                Chọn xử lý
-                              </button>
-                            ) : (
-                              <span className="text-gray-400 text-sm">
-                                Không có quyền
-                              </span>
-                            )
-                          ) : canEdit &&
-                            hasUpdatePermission &&
-                            canEditRequestStatus(request) ? (
-                            <button
-                              onClick={() => handleOpenUpdateModal(request)}
-                              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
-                            >
-                              <Edit className="w-4 h-4" />
-                              Cập nhật
-                            </button>
-                          ) : isAdmin &&
-                            hasUpdatePermission &&
-                            !isFinalStatus(request.status) ? (
-                            <button
-                              onClick={() => handleUnassignRequest(request)}
-                              className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-medium"
-                              title="Admin: Hủy xử lý từ nhân viên khác"
-                            >
-                              <X className="w-4 h-4" />
-                              Hủy xử lý
-                            </button>
+                              {request.warrantyPeriod && (
+                                <div className="text-xs text-gray-500">
+                                  ({request.warrantyPeriod} tháng)
+                                </div>
+                              )}
+                            </div>
                           ) : (
-                            <span className="text-gray-400 text-sm">
-                              {isFinalStatus(request.status)
-                                ? "Đã kết thúc"
-                                : "Đã khóa"}
+                            <span className="text-gray-400">
+                              {request.warrantyPeriod
+                                ? `N/A (${request.warrantyPeriod} tháng)`
+                                : "N/A"}
                             </span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(request.status)}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                          {request.employeeName ? (
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="w-4 h-4 text-blue-600" />
+                              <span>{request.employeeName}</span>
+                              {isAssigned && (
+                                <Lock className="w-4 h-4 text-red-500" />
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">Chưa có</span>
+                          )}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden xl:table-cell">
+                          {formatDate(request.createdAt)}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                            {!request.employeeId ? (
+                              hasUpdatePermission ? (
+                                <button
+                                  onClick={() => handleAssignRequest(request)}
+                                  className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium text-xs sm:text-sm"
+                                >
+                                  <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span className="hidden sm:inline">
+                                    Chọn xử lý
+                                  </span>
+                                  <span className="sm:hidden">Chọn</span>
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-xs sm:text-sm">
+                                  Không có quyền
+                                </span>
+                              )
+                            ) : canEdit &&
+                              hasUpdatePermission &&
+                              canEditRequestStatus(request) ? (
+                              <button
+                                onClick={() => handleOpenUpdateModal(request)}
+                                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-xs sm:text-sm"
+                              >
+                                <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">
+                                  Cập nhật
+                                </span>
+                                <span className="sm:hidden">Sửa</span>
+                              </button>
+                            ) : isAdmin &&
+                              hasUpdatePermission &&
+                              !isFinalStatus(request.status) ? (
+                              <button
+                                onClick={() => handleUnassignRequest(request)}
+                                className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-medium text-xs sm:text-sm"
+                                title="Admin: Hủy xử lý từ nhân viên khác"
+                              >
+                                <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">
+                                  Hủy xử lý
+                                </span>
+                                <span className="sm:hidden">Hủy</span>
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-xs sm:text-sm">
+                                {isFinalStatus(request.status)
+                                  ? "Đã kết thúc"
+                                  : "Đã khóa"}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-200">
-            <Pagination
-              currentPage={currentPage + 1}
-              totalPages={totalPages}
-              onPageChange={(page) => setCurrentPage(page - 1)}
-              maxVisiblePages={5}
-              size="md"
-            />
+          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-gray-600">
+                Hiển thị{" "}
+                <span className="font-semibold">
+                  {requests.length > 0 ? currentPage * pageSize + 1 : 0}
+                </span>{" "}
+                -{" "}
+                <span className="font-semibold">
+                  {Math.min((currentPage + 1) * pageSize, totalElements)}
+                </span>{" "}
+                trong tổng số{" "}
+                <span className="font-semibold">{totalElements}</span>{" "}
+                {searchTerm && searchTerm.trim() !== ""
+                  ? "kết quả tìm kiếm"
+                  : "yêu cầu"}
+              </div>
+              <Pagination
+                currentPage={currentPage + 1}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page - 1)}
+                maxVisiblePages={5}
+                size="md"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -790,160 +873,218 @@ const WarrantyRequestManagementPage = () => {
       {/* My Assigned Requests Table */}
       {currentEmployeeId && (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
               Yêu cầu của tôi
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               Tổng số: {myAssignedTotalElements}
             </p>
+            {myAssignedTotalElements > 0 && (
+              <p className="text-xs text-gray-400 mt-1">
+                Hiển thị {myAssignedCurrentPage * pageSize + 1} -{" "}
+                {Math.min(
+                  (myAssignedCurrentPage + 1) * pageSize,
+                  myAssignedTotalElements
+                )}{" "}
+                trong tổng số {myAssignedTotalElements} yêu cầu
+              </p>
+            )}
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mã yêu cầu
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Đơn hàng
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Khách hàng
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sản phẩm
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thời hạn bảo hành
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ngày tạo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {myAssignedLoading ? (
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td
-                      colSpan="8"
-                      className="px-6 py-12 text-center text-gray-500"
-                    >
-                      Đang tải...
-                    </td>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mã yêu cầu
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                      Đơn hàng
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Khách hàng
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Sản phẩm
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      Thời hạn bảo hành
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Trạng thái
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                      Ngày tạo
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thao tác
+                    </th>
                   </tr>
-                ) : myAssignedRequests.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan="8"
-                      className="px-6 py-12 text-center text-gray-500"
-                    >
-                      Bạn chưa có yêu cầu nào được giao
-                    </td>
-                  </tr>
-                ) : (
-                  myAssignedRequests.map((request) => (
-                    <tr key={request.requestId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{request.requestId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        #{request.orderId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {request.customerName || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <div>
-                          <div className="font-medium">
-                            {request.productName || "N/A"}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {request.productVersionId}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {request.warrantyExpiryDate ? (
-                          <div>
-                            <div className="font-medium">
-                              {formatDateOnly(request.warrantyExpiryDate)}
-                            </div>
-                            {request.warrantyPeriod && (
-                              <div className="text-xs text-gray-500">
-                                ({request.warrantyPeriod} tháng)
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">
-                            {request.warrantyPeriod
-                              ? `N/A (${request.warrantyPeriod} tháng)`
-                              : "N/A"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(request.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(request.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-2">
-                          {hasUpdatePermission &&
-                          canEditRequestStatus(request) ? (
-                            <>
-                              <button
-                                onClick={() => handleOpenUpdateModal(request)}
-                                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
-                              >
-                                <Edit className="w-4 h-4" />
-                                Cập nhật
-                              </button>
-                              {!isFinalStatus(request.status) && (
-                                <button
-                                  onClick={() => handleUnassignRequest(request)}
-                                  className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium"
-                                  title="Hủy xử lý yêu cầu này"
-                                >
-                                  <X className="w-4 h-4" />
-                                  Hủy xử lý
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-gray-400 text-sm">
-                              {isFinalStatus(request.status)
-                                ? "Đã kết thúc"
-                                : "Không có quyền cập nhật"}
-                            </span>
-                          )}
-                        </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {myAssignedLoading ? (
+                    <tr>
+                      <td
+                        colSpan="8"
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        Đang tải...
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : myAssignedRequests.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="8"
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        Bạn chưa có yêu cầu nào được giao
+                      </td>
+                    </tr>
+                  ) : (
+                    myAssignedRequests.map((request) => (
+                      <tr key={request.requestId} className="hover:bg-gray-50">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <div className="flex flex-col">
+                            <span>#{request.requestId}</span>
+                            <span className="text-xs text-gray-500 sm:hidden">
+                              ĐH: #{request.orderId}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
+                          #{request.orderId}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <div className="flex flex-col">
+                            <span>{request.customerName || "N/A"}</span>
+                            <span
+                              className="text-xs text-gray-500 md:hidden truncate max-w-[150px]"
+                              title={request.productName || "N/A"}
+                            >
+                              {request.productName || "N/A"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
+                          <div>
+                            <div
+                              className="font-medium max-w-xs truncate"
+                              title={request.productName || "N/A"}
+                            >
+                              {request.productName || "N/A"}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {request.productVersionId}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                          {request.warrantyExpiryDate ? (
+                            <div>
+                              <div className="font-medium">
+                                {formatDateOnly(request.warrantyExpiryDate)}
+                              </div>
+                              {request.warrantyPeriod && (
+                                <div className="text-xs text-gray-500">
+                                  ({request.warrantyPeriod} tháng)
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">
+                              {request.warrantyPeriod
+                                ? `N/A (${request.warrantyPeriod} tháng)`
+                                : "N/A"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(request.status)}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden xl:table-cell">
+                          {formatDate(request.createdAt)}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                            {hasUpdatePermission &&
+                            canEditRequestStatus(request) ? (
+                              <>
+                                <button
+                                  onClick={() => handleOpenUpdateModal(request)}
+                                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-xs sm:text-sm"
+                                >
+                                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span className="hidden sm:inline">
+                                    Cập nhật
+                                  </span>
+                                  <span className="sm:hidden">Sửa</span>
+                                </button>
+                                {!isFinalStatus(request.status) && (
+                                  <button
+                                    onClick={() =>
+                                      handleUnassignRequest(request)
+                                    }
+                                    className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium text-xs sm:text-sm"
+                                    title="Hủy xử lý yêu cầu này"
+                                  >
+                                    <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <span className="hidden sm:inline">
+                                      Hủy xử lý
+                                    </span>
+                                    <span className="sm:hidden">Hủy</span>
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-gray-400 text-xs sm:text-sm">
+                                {isFinalStatus(request.status)
+                                  ? "Đã kết thúc"
+                                  : "Không có quyền cập nhật"}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Pagination */}
           {myAssignedTotalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200">
-              <Pagination
-                currentPage={myAssignedCurrentPage + 1}
-                totalPages={myAssignedTotalPages}
-                onPageChange={(page) => setMyAssignedCurrentPage(page - 1)}
-                maxVisiblePages={5}
-                size="md"
-              />
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600">
+                  Hiển thị{" "}
+                  <span className="font-semibold">
+                    {myAssignedRequests.length > 0
+                      ? myAssignedCurrentPage * pageSize + 1
+                      : 0}
+                  </span>{" "}
+                  -{" "}
+                  <span className="font-semibold">
+                    {Math.min(
+                      (myAssignedCurrentPage + 1) * pageSize,
+                      myAssignedTotalElements
+                    )}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-semibold">
+                    {myAssignedTotalElements}
+                  </span>{" "}
+                  yêu cầu
+                </div>
+                <Pagination
+                  currentPage={myAssignedCurrentPage + 1}
+                  totalPages={myAssignedTotalPages}
+                  onPageChange={(page) => setMyAssignedCurrentPage(page - 1)}
+                  maxVisiblePages={5}
+                  size="md"
+                />
+              </div>
             </div>
           )}
         </div>

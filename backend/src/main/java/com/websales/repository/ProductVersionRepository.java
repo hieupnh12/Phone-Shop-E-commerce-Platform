@@ -128,9 +128,13 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
 
 
     /**
-     * Lấy top 5 sản phẩm có số lượng đã bán nhiều nhất
+     * Lấy top sản phẩm có số lượng đã bán nhiều nhất trong tuần (7 ngày gần nhất)
      * Tính tổng số lượng từ order_details (SUM quantity)
+     * Chỉ lấy orders có status DELIVERED và endDatetime trong 7 ngày gần nhất
+     * Chỉ lấy sản phẩm có số lượng bán > 0
      *
+     * @param status Trạng thái order (DELIVERED)
+     * @param weekStartDate Ngày bắt đầu tuần (7 ngày trước)
      * @return List<Object[]> với [0]: Product, [1]: Long (tổng số lượng đã bán)
      */
     @Query("SELECT p, COALESCE(SUM(od.quantity), 0) as soldQuantity " +
@@ -139,9 +143,14 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
             "JOIN OrderDetail od ON od.productVersion = pv " +
             "JOIN od.order o " +
             "WHERE o.status = :status " +
+            "AND o.endDatetime >= :weekStartDate " +
+            "AND o.endDatetime IS NOT NULL " +
             "GROUP BY p.idProduct " +
+            "HAVING COALESCE(SUM(od.quantity), 0) > 0 " +
             "ORDER BY soldQuantity DESC")
-    List<Object[]> findTop5ProductsByOrderDetailCount(@Param("status") com.websales.enums.OrderStatus status);
+    List<Object[]> findTopProductsByOrderDetailCountInWeek(
+            @Param("status") com.websales.enums.OrderStatus status,
+            @Param("weekStartDate") java.time.LocalDateTime weekStartDate);
 
 
 

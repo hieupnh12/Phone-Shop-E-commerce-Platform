@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Heart, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProductAll, fetchSearchAll } from '../../../services/productWorker';
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -11,8 +11,7 @@ const PhoneShopList = (props) => { // ← THAY ĐỔI: Sử dụng fetchAllProdu
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [favorites, setFavorites] = useState(new Set());
+  // const [favorites, setFavorites] = useState(new Set()); // Đang được comment trong code
   const [noResults, setNoResults] = useState(false); // Không tìm thấy sản phẩm
   const [productRatings, setProductRatings] = useState({}); // Map productId -> rating
 
@@ -50,12 +49,11 @@ const loadAllProducts = async () => {
   setError(null);
   try {
     const data = await fetchProductAll(0, 1000);
-    const list = data.products || [];
-    setAllProducts(list);
-    setFilteredProducts(list);
-    const count = data.total || list.length;
-    setTotalCount(count);
-    props.onProductsCountChange?.(count);
+        const list = data.products || [];
+        setAllProducts(list);
+        setFilteredProducts(list);
+        const count = data.total || list.length;
+        props.onProductsCountChange?.(count);
 
     // Fetch ratings cho tất cả products
     const ratingsMap = {};
@@ -76,7 +74,6 @@ const loadAllProducts = async () => {
     setError(t('common.loadingProductsError'));
     setAllProducts([]);
     setFilteredProducts([]);
-    setTotalCount(0);
     props.onProductsCountChange?.(0);
   } finally {
     setLoading(false);
@@ -104,7 +101,6 @@ useEffect(() => {
 
 if (!hasFilters) {
     setFilteredProducts(allProducts);
-    setTotalCount(allProducts.length);
     props.onProductsCountChange?.(allProducts.length);
     setError(null);
     setLoading(false);
@@ -121,7 +117,6 @@ if (!hasFilters) {
 
     setFilteredProducts(matches);
     const count = matches.length;
-    setTotalCount(count);
     props.onProductsCountChange?.(count);
 
     // Fetch ratings cho các products tìm được
@@ -146,7 +141,6 @@ if (!hasFilters) {
     console.error('Lỗi tìm kiếm sản phẩm:', err);
     setError(t('productList.searchError'));
     setFilteredProducts([]);
-    setTotalCount(0);
     props.onProductsCountChange?.(0);
   } finally {
     setLoading(false);
@@ -187,18 +181,18 @@ if (!hasFilters) {
 
 
 
-  // ← GIỮ: toggleFavorite, nhưng dùng product.id sau transform
-  const toggleFavorite = (id) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(id)) {
-        newFavorites.delete(id);
-      } else {
-        newFavorites.add(id);
-      }
-      return newFavorites;
-    });
-  };
+  // ← GIỮ: toggleFavorite, nhưng dùng product.id sau transform (đang được comment trong code)
+  // const toggleFavorite = (id) => {
+  //   setFavorites(prev => {
+  //     const newFavorites = new Set(prev);
+  //     if (newFavorites.has(id)) {
+  //       newFavorites.delete(id);
+  //     } else {
+  //       newFavorites.add(id);
+  //     }
+  //     return newFavorites;
+  //   });
+  // };
 
 
 
@@ -325,10 +319,8 @@ if (!error && noResults && hasFilters) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start min-h-[1050px]">
             {paginatedProducts.map((product) => {
               const version = product.versions?.[0];
-              const isFavorite = favorites.has(product.id);
               const discount = product.discount || 0;
               const screenSize = product.specifications?.['Screen Size'];
-              const ram = version?.ram || 'null';
               const storage = version?.rom || 'null';
 
               return (
@@ -421,7 +413,7 @@ if (!error && noResults && hasFilters) {
                             : (product.rating || '0.0')}
                         </span>
                       </div>
-                      <button 
+                      {/* <button 
                         onClick={() => toggleFavorite(product.id)}
                         className="flex items-center gap-1 text-cyan-600 hover:text-cyan-700 transition-colors"
                       >
@@ -429,7 +421,7 @@ if (!error && noResults && hasFilters) {
                           className={`w-5 h-5 transition-all ${isFavorite ? 'fill-red-500 text-red-500 scale-110' : 'text-cyan-600'}`}
                         />
                         <span className="text-sm font-medium">{t('productList.favorite')}</span>
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

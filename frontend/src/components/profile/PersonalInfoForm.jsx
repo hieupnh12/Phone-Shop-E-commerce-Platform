@@ -2,24 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Edit, Plus, Save, X } from 'lucide-react';
 import InputField  from "../common/InputField";
 import AddressBook  from "./AddressBook";
-import {  useOutletContext } from 'react-router-dom';
+import {  useOutletContext, useNavigate } from 'react-router-dom';
 import { profileService} from "../../services/api";
 import { useAuthFullOptions } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatPhoneNumber } from "../../utils/phoneUtils";
+import { hasPermission, PERMISSIONS } from "../../utils/permissionUtils";
+import Toast from "../common/Toast";
 
 
 
 
 const PersonalInfoForm = () => {
     const { t } = useLanguage();
-    const { getCurrentUser } = useAuthFullOptions();
+    const { getCurrentUser, logoutCustomer } = useAuthFullOptions();
     const { customerInfo } = useOutletContext();
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({});
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [updateError, setUpdateError] = useState(null);
+    const [toast, setToast] = useState(null);
 
 
 
@@ -70,21 +74,79 @@ const PersonalInfoForm = () => {
         setIsEditing(false);
     };
 
+    // Validate form data trước khi submit
+    const validateFormData = () => {
+        const errors = [];
+
+        // Validate fullName
+        if (!formData.fullName || formData.fullName.trim() === '') {
+            errors.push('Họ và tên không được để trống');
+        } else if (formData.fullName.trim().length < 2) {
+            errors.push('Họ và tên phải có ít nhất 2 ký tự');
+        } else if (formData.fullName.trim().length > 100) {
+            errors.push('Họ và tên không được vượt quá 100 ký tự');
+        }
+
+        // Validate email (nếu có)
+        if (formData.email && formData.email.trim() !== '') {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailPattern.test(formData.email.trim())) {
+                errors.push('Email không hợp lệ');
+            }
+        }
+
+        // Validate birthDate (nếu có)
+        if (formData.dateOfBirth) {
+            const birthDate = new Date(formData.dateOfBirth + 'T00:00:00');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (isNaN(birthDate.getTime())) {
+                errors.push('Ngày sinh không hợp lệ');
+            } else if (birthDate > today) {
+                errors.push('Ngày sinh không được là ngày trong tương lai');
+            }
+        }
+
+        return errors;
+    };
+
     const handleSaveClick = async (e) => {
         e.preventDefault();
         setIsSaving(true);
         setUpdateError(null);
+        setToast(null);
+
+        // Validate form data
+        const validationErrors = validateFormData();
+        if (validationErrors.length > 0) {
+            setToast({
+                message: validationErrors[0],
+                type: 'error'
+            });
+            setIsSaving(false);
+            return;
+        }
+
+        // Kiểm tra scope trước khi submit (chỉ check, không logout ngay)
+        // Nếu không có scope, vẫn thử gọi API để backend trả lỗi rõ ràng
+        const hasScope = hasPermission(PERMISSIONS.CUSTOMER_UPDATE_BASIC);
+        if (!hasScope) {
+            console.warn("⚠️ Token không có scope CUSTOMER_UPDATE_BASIC. Vẫn thử gọi API...");
+        }
 
         // Tạo request body khớp với CustomerUpdateRequest (Spring Boot)
         const requestBody = {
-            fullName: formData.fullName,
-            // Chỉ gửi email nếu có giá trị (không rỗng)
-            ...(formData.email && formData.email.trim() !== '' && { email: formData.email.trim() }),
+            fullName: formData.fullName.trim(),
+            email: formData.email?.trim() || null, // Gửi null nếu empty
             // Chuyển đổi lại giới tính từ string sang boolean
             gender: formData.gender === 'male' ? true : (formData.gender === 'female' ? false : null),
-            birthDate: formData.dateOfBirth, // Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
-            address: formData.address || '', // Gửi địa chỉ từ form
+            birthDate: formData.dateOfBirth || null, // Gửi null nếu empty, Spring Boot sẽ xử lý chuỗi yyyy-MM-dd
+            address: formData.address?.trim() || null, // Gửi null nếu empty
         };
+
+        // Log request body để debug
+        console.log("📤 Request body:", requestBody);
 
         const customerId = formData.customerId;
 
@@ -96,10 +158,55 @@ const PersonalInfoForm = () => {
             await getCurrentUser();
 
             setIsEditing(false);
+            setToast({
+                message: 'Cập nhật thông tin thành công!',
+                type: 'success'
+            });
 
         } catch (error) {
             console.error("Lỗi khi lưu thông tin:", error);
-            setUpdateError(t('profile.personalInfo.updateError'));
+            console.error("Error response:", error.response?.data);
+
+            let errorMessage = 'Lỗi: Không thể cập nhật thông tin. Vui lòng thử lại.';
+
+            // Kiểm tra nếu lỗi là Authorization Denied (403)
+            if (error.response?.status === 403 ||
+                error.response?.data?.message?.includes('Access Denied') ||
+                error.response?.data?.message?.includes('AuthorizationDeniedException')) {
+                errorMessage = 'Token không có quyền cập nhật. Vui lòng đăng xuất và đăng nhập lại để nhận token mới.';
+            }
+            // Kiểm tra validation errors (400)
+            else if (error.response?.status === 400) {
+                // Backend có thể trả về validation errors trong nhiều format
+                const responseData = error.response?.data;
+
+                if (responseData?.message) {
+                    errorMessage = responseData.message;
+                } else if (responseData?.error) {
+                    errorMessage = responseData.error;
+                } else if (responseData?.errors && Array.isArray(responseData.errors)) {
+                    // Spring Boot validation errors format
+                    errorMessage = responseData.errors.map(err => err.defaultMessage || err.message).join(', ');
+                } else if (typeof responseData === 'string') {
+                    errorMessage = responseData;
+                } else {
+                    errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin đã nhập.';
+                }
+            }
+            // Các lỗi khác
+            else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            setUpdateError(errorMessage);
+            setToast({
+                message: errorMessage,
+                type: 'error'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -148,7 +255,7 @@ const PersonalInfoForm = () => {
                                     className="flex items-center text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors"
                                 >
                                     <X size={18} className="mr-2" />
-                                    {t('common.cancel')}
+                                    Hủy
                                 </button>
                             </div>
                         ) : (
@@ -244,6 +351,15 @@ const PersonalInfoForm = () => {
 
             {/* Phần Sổ địa chỉ - Đặt ra ngoài form để tránh form nesting */}
             <AddressBook />
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

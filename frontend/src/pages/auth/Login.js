@@ -13,11 +13,13 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../../contexts/AuthContext";
+import { useNavigate, Navigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import { AuthContext, getUserRole } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import Toast from "../../components/common/Toast";
+import constants from "../../constants/index.js";
 
 // Constants
 const PHONE_PATTERN = /^84(3|5|7|8|9)[0-9]{8}$/;
@@ -80,6 +82,21 @@ const Login = () => {
   const { t } = useLanguage();
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
+
+  // Check if user is already logged in and redirect
+  useEffect(() => {
+    const token = Cookies.get(constants.ACCESS_TOKEN_KEY);
+    if (token) {
+      const role = getUserRole();
+      // If has employee role, redirect to admin
+      if (role && role.startsWith("ROLE_")) {
+        navigate("/admin", { replace: true });
+      } else if (role === "USER" || !role) {
+        // If has customer role or no role, redirect to home
+        navigate("/", { replace: true });
+      }
+    }
+  }, [navigate]);
 
   // Reset OTP state helper
   const resetOtpState = useCallback(() => {

@@ -14,7 +14,7 @@ export default function HomeAdmin() {
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-3">Sản phẩm chính hãng 100%</h3>
             <p className="text-gray-600 leading-relaxed mb-3">
-              Cam kết bằng văn bản, hoàn tiền 200% nếu phát hiện hàng nhái. Có tem chống hàng giả điện tử.
+              Cam kết bằng văn bản, hoàn tiền 200% nếu phát hiện hàng nhái.
             </p>
             <div className="text-sm text-blue-600 font-semibold">✓ Có hóa đơn VAT đầy đủ</div>
           </div>
@@ -25,7 +25,7 @@ export default function HomeAdmin() {
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-3">Giá niêm yết minh bạch</h3>
             <p className="text-gray-600 leading-relaxed mb-3">
-              Giá trên website = giá tại cửa hàng. Không phát sinh phí. Giảm thêm 2% khi thanh toán chuyển khoản.
+              Giá trên website = giá tại cửa hàng. Không phát sinh phí.
             </p>
             <div className="text-sm text-purple-600 font-semibold">✓ Hoàn tiền chênh lệch nếu thấy rẻ hơn</div>
           </div>
@@ -48,7 +48,7 @@ export default function HomeAdmin() {
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-10 shadow-lg">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Thông tin liên hệ chính thức</h2>
-            <p className="text-gray-600">Mọi giao dịch ngoài các kênh dưới đây không được PhoneStore chịu trách nhiệm</p>
+            <p className="text-gray-600">Mọi giao dịch ngoài các kênh dưới đây không được FPhone chịu trách nhiệm</p>
           </div>
             <div className="text-center p-6 bg-gradient-to-br from-teal-50 to-white rounded-xl border-2 border-teal-100">
               <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -56,7 +56,7 @@ export default function HomeAdmin() {
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Hotline chính thức</h3>
               <p className="text-gray-600 text-sm leading-relaxed">
-                <strong className="text-lg text-teal-600">1900 2468</strong><br/>
+                <strong className="text-lg text-teal-600">36-37 6969</strong><br/>
                 Hỗ trợ 24/7<br/>
                 <span className="text-xs text-gray-500">Cước phí: 1,000đ/phút</span>
               </p>
@@ -68,9 +68,9 @@ export default function HomeAdmin() {
               </div>
               <h3 className="font-semibold text-gray-800 mb-2">Email chính thức</h3>
               <p className="text-gray-600 text-sm leading-relaxed">
-                support@phonestore.vn<br/>
+                69-69@Fphonephone.vn<br/>
                 Phản hồi trong 24h làm việc<br/>
-                <span className="text-xs text-gray-500">(T2-T7, 8h-18h)</span>
+                <span className="text-xs text-gray-500">(T2-T7, 8h-20h)</span>
               </p>
             </div>
           </div>
@@ -78,7 +78,7 @@ export default function HomeAdmin() {
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
             <p className="text-sm text-gray-700 text-center">
               <strong>⚠️ Lưu ý:</strong> PhoneStore không có đại lý, cộng tác viên hay bán hàng qua Facebook cá nhân. 
-              Mọi giao dịch vui lòng thực hiện tại cửa hàng hoặc website chính thức <strong>phonestore.vn</strong>
+              Mọi giao dịch vui lòng thực hiện tại cửa hàng hoặc website chính thức <strong>http://localhost:3000/.vn</strong>
             </p>
           </div>
         </div>

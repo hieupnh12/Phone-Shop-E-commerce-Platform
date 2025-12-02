@@ -192,15 +192,15 @@ public class ReturnWarrantyRequestService {
                         productName = product.getNameProduct();
                         warrantyPeriod = product.getWarrantyPeriod();
 
-                        // Calculate warranty expiry date: order creation date + warranty period (months)
-                        LocalDateTime orderCreateDate = request.getOrder().getCreateDatetime();
-                        if (warrantyPeriod != null && orderCreateDate != null) {
-                            warrantyExpiryDate = orderCreateDate.plusMonths(warrantyPeriod);
-                            log.debug("Calculated warranty expiry date: {} (order date: {}, warranty period: {} months)", 
-                                    warrantyExpiryDate, orderCreateDate, warrantyPeriod);
+                        // Calculate warranty expiry date: order end_datetime (when DELIVERED) + warranty period (months)
+                        LocalDateTime orderEndDate = request.getOrder().getEndDatetime();
+                        if (warrantyPeriod != null && orderEndDate != null) {
+                            warrantyExpiryDate = orderEndDate.plusMonths(warrantyPeriod);
+                            log.debug("Calculated warranty expiry date: {} (order end_datetime: {}, warranty period: {} months)", 
+                                    warrantyExpiryDate, orderEndDate, warrantyPeriod);
                         } else {
-                            log.warn("Cannot calculate warranty expiry date for request {}: warrantyPeriod={}, orderCreateDate={}", 
-                                    request.getRequestId(), warrantyPeriod, orderCreateDate);
+                            log.warn("Cannot calculate warranty expiry date for request {}: warrantyPeriod={}, orderEndDatetime={}", 
+                                    request.getRequestId(), warrantyPeriod, orderEndDate);
                         }
                     }
                 }
