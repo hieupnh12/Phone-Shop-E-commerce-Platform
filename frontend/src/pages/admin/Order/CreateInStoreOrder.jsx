@@ -12,6 +12,9 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowLeft,
+  Filter,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import customerService from "../../../services/customerService";
 import orderService from "../../../services/orderService";
@@ -72,6 +75,24 @@ export default function CreateInStoreOrder() {
   const [productResults, setProductResults] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const debouncedProductSearch = useDebounce(productSearch, 500);
+
+  // Product filters state
+  const [productFilters, setProductFilters] = useState({
+    ramName: "",
+    romName: "",
+    colorName: "",
+    priceRange: "all",
+    customMinPrice: "",
+    customMaxPrice: "",
+    stockStatus: "all", // "all", "inStock", "outOfStock"
+  });
+  const [filterOptions, setFilterOptions] = useState({
+    rams: [],
+    roms: [],
+    colors: [],
+  });
+  const [loadingFilters, setLoadingFilters] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Cart state
   const [cartItems, setCartItems] = useState([]);
@@ -135,49 +156,155 @@ export default function CreateInStoreOrder() {
   const fetchProductSuggestions = useCallback(async () => {
     const searchValue = productSearch.trim();
     
-    if (searchValue.length >= 1) {
+    // Chỉ hiển thị suggestions khi đang gõ (1 ký tự) và chưa có kết quả search
+    // Khi có 2+ ký tự, sẽ chạy search thay vì suggestions
+    if (searchValue.length >= 1 && searchValue.length < 2 && productResults.length === 0) {
       try {
         setLoadingProductSuggestions(true);
         const suggestions = await orderService.getProductSuggestions(searchValue);
+        // Chỉ set suggestions nếu vẫn đang ở trạng thái gõ (length < 2)
+        if (productSearch.trim().length < 2 && productResults.length === 0) {
         setProductSuggestions(suggestions);
+        }
       } catch (error) {
         setProductSuggestions([]);
       } finally {
         setLoadingProductSuggestions(false);
       }
-    } else {
+    } else if (searchValue.length === 0) {
       setProductSuggestions([]);
     }
-  }, [productSearch]);
+  }, [productSearch, productResults.length]);
 
   // Auto-fetch product suggestions when typing
   useEffect(() => {
     fetchProductSuggestions();
   }, [fetchProductSuggestions]);
 
-  // Search products (full search khi có 2+ ký tự)
+  // Fetch filter options (RAM, ROM, Color)
   useEffect(() => {
-    if (debouncedProductSearch.trim().length >= 2) {
-      searchProducts(debouncedProductSearch);
+    const fetchFilterOptions = async () => {
+      try {
+        setLoadingFilters(true);
+        const [ramsRes, romsRes, colorsRes] = await Promise.all([
+          api.get("/ram"),
+          api.get("/rom"),
+          api.get("/color"),
+        ]);
+
+        const mapRams = (res) => {
+          const rams = ((res?.data?.result ?? res?.data) || []).map((r) => ({
+            idRam: r.idRam ?? r.id,
+            nameRam: r.nameRam ?? r.name,
+          }));
+          // Loại bỏ duplicate và sort
+          const unique = rams.filter((r, index, self) => 
+            index === self.findIndex((t) => t.nameRam === r.nameRam)
+          );
+          return unique.sort((a, b) => {
+            const numA = parseInt(a.nameRam.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.nameRam.replace(/\D/g, '')) || 0;
+            return numB - numA; // Sort descending
+          });
+        };
+        const mapRoms = (res) => {
+          const roms = ((res?.data?.result ?? res?.data) || []).map((r) => ({
+            idRom: r.idRom ?? r.id,
+            nameRom: r.nameRom ?? r.name,
+          }));
+          // Loại bỏ duplicate và sort
+          const unique = roms.filter((r, index, self) => 
+            index === self.findIndex((t) => t.nameRom === r.nameRom)
+          );
+          return unique.sort((a, b) => {
+            const numA = parseInt(a.nameRom.replace(/\D/g, '')) || 0;
+            const numB = parseInt(b.nameRom.replace(/\D/g, '')) || 0;
+            return numB - numA; // Sort descending
+          });
+        };
+        const mapColors = (res) =>
+          ((res?.data?.result ?? res?.data) || []).map((c) => ({
+            idColor: c.idColor ?? c.id,
+            nameColor: c.nameColor ?? c.name,
+          }));
+
+        setFilterOptions({
+          rams: mapRams(ramsRes),
+          roms: mapRoms(romsRes),
+          colors: mapColors(colorsRes),
+        });
+      } catch (error) {
+        console.error("Error fetching filter options:", error);
+      } finally {
+        setLoadingFilters(false);
+      }
+    };
+
+    fetchFilterOptions();
+  }, []);
+
+  // Search products (full search khi có 2+ ký tự hoặc có filters)
+  useEffect(() => {
+    const searchTerm = debouncedProductSearch.trim();
+    const hasBasicFilters = productFilters.ramName || productFilters.romName || 
+                           productFilters.colorName;
+    const hasPriceFilter = productFilters.priceRange !== "all" || 
+                          (productFilters.priceRange === "custom" && (productFilters.customMinPrice || productFilters.customMaxPrice));
+    const hasStockFilter = productFilters.stockStatus !== "all";
+    const hasFilters = hasBasicFilters || hasPriceFilter || hasStockFilter;
+    
+    // Tìm kiếm nếu có ít nhất 2 ký tự hoặc có filters
+    if (searchTerm.length >= 2 || hasFilters) {
+      searchProducts(searchTerm);
     } else {
       setProductResults([]);
+      // Không clear suggestions khi không tìm kiếm
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedProductSearch]);
+  }, [debouncedProductSearch, productFilters]);
 
   const searchProducts = async (searchTerm = null) => {
     const term = searchTerm || debouncedProductSearch;
-    if (!term || term.trim().length < 2) {
+    const hasBasicFilters = productFilters.ramName || productFilters.romName || 
+                           productFilters.colorName;
+    const hasPriceFilter = productFilters.priceRange !== "all" || 
+                          (productFilters.priceRange === "custom" && (productFilters.customMinPrice || productFilters.customMaxPrice));
+    const hasStockFilter = productFilters.stockStatus !== "all";
+    const hasFilters = hasBasicFilters || hasPriceFilter || hasStockFilter;
+    
+    // Nếu không có term và không có filters, không search
+    if ((!term || term.trim().length < 2) && !hasFilters) {
       setProductResults([]);
       return;
     }
 
     try {
       setLoadingProducts(true);
-      const results = await orderService.searchProducts(term.trim(), 0, 20);
+      let results = await orderService.searchProducts(
+        term ? term.trim() : "", 
+        0, 
+        20,
+        productFilters
+      );
+      
+      // Filter by stock status ở frontend nếu cần
+      if (productFilters.stockStatus !== "all" && results) {
+        results = results.filter(product => {
+          const stockQuantity = product.stockQuantity || 0;
+          if (productFilters.stockStatus === "inStock") {
+            return stockQuantity > 0;
+          } else if (productFilters.stockStatus === "outOfStock") {
+            return stockQuantity === 0;
+          }
+          return true;
+        });
+      }
+      
       setProductResults(results);
-      // Clear suggestions khi có kết quả
+      // Clear suggestions khi đã search (length >= 2)
+      if (term && term.trim().length >= 2) {
       setProductSuggestions([]);
+      }
     } catch (error) {
       setProductResults([]);
     } finally {
@@ -814,7 +941,7 @@ export default function CreateInStoreOrder() {
                   setProductResults([]); // Clear results when typing
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && productSearch.trim().length >= 2) {
+                  if (e.key === "Enter" && (productSearch.trim().length >= 2 || Object.values(productFilters).some(val => val && val.trim()))) {
                     searchProducts();
                   }
                 }}
@@ -823,7 +950,215 @@ export default function CreateInStoreOrder() {
               />
             </div>
 
-            {/* Product Suggestions khi gõ (hiển thị khi chưa có kết quả tìm kiếm) */}
+            {/* Product Filters */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Filter size={18} className="text-green-600" />
+                  <h3 className="text-sm font-semibold text-gray-700">Bộ lọc sản phẩm</h3>
+                </div>
+                <button
+                  onClick={() => setFiltersExpanded(!filtersExpanded)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all"
+                >
+                  {filtersExpanded ? (
+                    <>
+                      <ChevronUp size={16} />
+                      <span>Thu gọn</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={16} />
+                      <span>Mở rộng</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              {filtersExpanded && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* RAM Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      RAM
+                    </label>
+                    <select
+                      value={productFilters.ramName}
+                      onChange={(e) => {
+                        setProductFilters({ ...productFilters, ramName: e.target.value });
+                        setProductResults([]);
+                      }}
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <option value="">Tất cả RAM</option>
+                      {filterOptions.rams.map((ram) => (
+                        <option key={ram.idRam} value={ram.nameRam}>
+                          {ram.nameRam}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* ROM Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      ROM
+                    </label>
+                    <select
+                      value={productFilters.romName}
+                      onChange={(e) => {
+                        setProductFilters({ ...productFilters, romName: e.target.value });
+                        setProductResults([]);
+                      }}
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <option value="">Tất cả ROM</option>
+                      {filterOptions.roms.map((rom) => (
+                        <option key={rom.idRom} value={rom.nameRom}>
+                          {rom.nameRom}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Color Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Màu sắc
+                    </label>
+                    <select
+                      value={productFilters.colorName}
+                      onChange={(e) => {
+                        setProductFilters({ ...productFilters, colorName: e.target.value });
+                        setProductResults([]);
+                      }}
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <option value="">Tất cả màu</option>
+                      {filterOptions.colors.map((color) => (
+                        <option key={color.idColor} value={color.nameColor}>
+                          {color.nameColor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Price Range and Stock Status Filters */}
+              {filtersExpanded && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                {/* Price Range Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Khoảng giá
+                  </label>
+                  <select
+                    value={productFilters.priceRange}
+                    onChange={(e) => {
+                      setProductFilters({ ...productFilters, priceRange: e.target.value, customMinPrice: "", customMaxPrice: "" });
+                      setProductResults([]);
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <option value="all">Tất cả giá</option>
+                    <option value="under2">Dưới 2 triệu</option>
+                    <option value="2-4">2 - 4 triệu</option>
+                    <option value="4-7">4 - 7 triệu</option>
+                    <option value="7-13">7 - 13 triệu</option>
+                    <option value="13-20">13 - 20 triệu</option>
+                    <option value="20+">Trên 20 triệu</option>
+                    <option value="custom">Tùy chỉnh</option>
+                  </select>
+                </div>
+
+                {/* Custom Min Price */}
+                {productFilters.priceRange === "custom" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Giá tối thiểu (VNĐ)
+                    </label>
+                    <input
+                      type="number"
+                      value={productFilters.customMinPrice}
+                      onChange={(e) => {
+                        setProductFilters({ ...productFilters, customMinPrice: e.target.value });
+                        setProductResults([]);
+                      }}
+                      placeholder="VD: 2000000"
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                    />
+                  </div>
+                )}
+
+                {/* Custom Max Price */}
+                {productFilters.priceRange === "custom" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Giá tối đa (VNĐ)
+                    </label>
+                    <input
+                      type="number"
+                      value={productFilters.customMaxPrice}
+                      onChange={(e) => {
+                        setProductFilters({ ...productFilters, customMaxPrice: e.target.value });
+                        setProductResults([]);
+                      }}
+                      placeholder="VD: 5000000"
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                    />
+                  </div>
+                )}
+
+                {/* Stock Status Filter */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Tình trạng
+                  </label>
+                  <select
+                    value={productFilters.stockStatus}
+                    onChange={(e) => {
+                      setProductFilters({ ...productFilters, stockStatus: e.target.value });
+                      setProductResults([]);
+                    }}
+                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="inStock">Còn hàng</option>
+                    <option value="outOfStock">Hết hàng</option>
+                  </select>
+                </div>
+              </div>
+              )}
+            </div>
+
+            {/* Clear Filters Button */}
+            {(productFilters.ramName || productFilters.romName || productFilters.colorName || 
+              productFilters.priceRange !== "all" || 
+              productFilters.customMinPrice || productFilters.customMaxPrice || 
+              productFilters.stockStatus !== "all") && (
+              <div className="mb-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setProductFilters({ 
+                      ramName: "", 
+                      romName: "", 
+                      colorName: "", 
+                      priceRange: "all",
+                      customMinPrice: "",
+                      customMaxPrice: "",
+                      stockStatus: "all"
+                    });
+                    setProductResults([]);
+                  }}
+                  className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all font-medium flex items-center gap-2 border border-red-300"
+                >
+                  <X size={16} />
+                  Xóa bộ lọc
+                </button>
+              </div>
+            )}
+
+            {/* Product Suggestions khi gõ (hiển thị khi đang gõ hoặc không có kết quả) */}
             {!loadingProducts && 
              !loadingProductSuggestions &&
              productSuggestions.length > 0 && 
@@ -841,6 +1176,12 @@ export default function CreateInStoreOrder() {
                   const ram = product.ramName || "";
                   const rom = product.romName || "";
                   const color = product.colorName || "";
+
+                  // Format specs với label rõ ràng
+                  const specs = [];
+                  if (ram) specs.push(`RAM: ${ram}`);
+                  if (rom) specs.push(`ROM: ${rom}`);
+                  if (color) specs.push(`Màu: ${color}`);
 
                   return (
                     <button
@@ -866,7 +1207,7 @@ export default function CreateInStoreOrder() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{productName}</p>
                           <p className="text-xs text-gray-600">
-                            {[ram, rom, color].filter(Boolean).join(" • ") || "N/A"}
+                            {specs.length > 0 ? specs.join(" • ") : "N/A"}
                           </p>
                           <p className="text-xs font-semibold text-blue-600 mt-1">
                             {vnd(price)} {stockQuantity > 0 && `• Còn ${stockQuantity}`}
@@ -912,6 +1253,12 @@ export default function CreateInStoreOrder() {
                   const rom = product.romName || "";
                   const color = product.colorName || "";
 
+                  // Format specs với label rõ ràng
+                  const specs = [];
+                  if (ram) specs.push(`RAM: ${ram}`);
+                  if (rom) specs.push(`ROM: ${rom}`);
+                  if (color) specs.push(`Màu: ${color}`);
+
                   return (
                     <div
                       key={product.idVersion}
@@ -936,8 +1283,7 @@ export default function CreateInStoreOrder() {
                             {productName}
                           </p>
                           <p className="text-xs text-gray-600">
-                            {[ram, rom, color].filter(Boolean).join(" • ") ||
-                              "N/A"}
+                            {specs.length > 0 ? specs.join(" • ") : "N/A"}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-sm font-semibold text-blue-600">
@@ -969,11 +1315,18 @@ export default function CreateInStoreOrder() {
               </div>
             )}
 
-            {productSearch &&
-              !loadingProducts &&
-              productResults.length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  Không tìm thấy sản phẩm
+            {!loadingProducts &&
+              productResults.length === 0 &&
+              (productSearch.trim().length >= 2 || 
+               productFilters.ramName || productFilters.romName || productFilters.colorName ||
+               productFilters.priceRange !== "all" || 
+               (productFilters.priceRange === "custom" && (productFilters.customMinPrice || productFilters.customMaxPrice)) ||
+               productFilters.stockStatus !== "all") && (
+                <div className="text-center py-4 text-gray-500 border rounded-lg bg-gray-50">
+                  <p className="font-medium">Không tìm thấy sản phẩm</p>
+                  <p className="text-xs mt-1 text-gray-400">
+                    Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc
+                  </p>
                 </div>
               )}
           </div>
