@@ -81,6 +81,7 @@ export default function CreateInStoreOrder() {
     ramName: "",
     romName: "",
     colorName: "",
+    brandName: "",
     priceRange: "all",
     customMinPrice: "",
     customMaxPrice: "",
@@ -90,6 +91,7 @@ export default function CreateInStoreOrder() {
     rams: [],
     roms: [],
     colors: [],
+    brands: [],
   });
   const [loadingFilters, setLoadingFilters] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -181,15 +183,16 @@ export default function CreateInStoreOrder() {
     fetchProductSuggestions();
   }, [fetchProductSuggestions]);
 
-  // Fetch filter options (RAM, ROM, Color)
+  // Fetch filter options (RAM, ROM, Color, Brand)
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
         setLoadingFilters(true);
-        const [ramsRes, romsRes, colorsRes] = await Promise.all([
+        const [ramsRes, romsRes, colorsRes, brandsRes] = await Promise.all([
           api.get("/ram"),
           api.get("/rom"),
           api.get("/color"),
+          api.get("/brand"),
         ]);
 
         const mapRams = (res) => {
@@ -227,11 +230,17 @@ export default function CreateInStoreOrder() {
             idColor: c.idColor ?? c.id,
             nameColor: c.nameColor ?? c.name,
           }));
+        const mapBrands = (res) =>
+          ((res?.data?.result ?? res?.data) || []).map((b) => ({
+            idBrand: b.idBrand ?? b.id,
+            nameBrand: b.nameBrand ?? b.brandName ?? b.name,
+          }));
 
         setFilterOptions({
           rams: mapRams(ramsRes),
           roms: mapRoms(romsRes),
           colors: mapColors(colorsRes),
+          brands: mapBrands(brandsRes),
         });
       } catch (error) {
         console.error("Error fetching filter options:", error);
@@ -247,7 +256,7 @@ export default function CreateInStoreOrder() {
   useEffect(() => {
     const searchTerm = debouncedProductSearch.trim();
     const hasBasicFilters = productFilters.ramName || productFilters.romName || 
-                           productFilters.colorName;
+                           productFilters.colorName || productFilters.brandName;
     const hasPriceFilter = productFilters.priceRange !== "all" || 
                           (productFilters.priceRange === "custom" && (productFilters.customMinPrice || productFilters.customMaxPrice));
     const hasStockFilter = productFilters.stockStatus !== "all";
@@ -266,7 +275,7 @@ export default function CreateInStoreOrder() {
   const searchProducts = async (searchTerm = null) => {
     const term = searchTerm || debouncedProductSearch;
     const hasBasicFilters = productFilters.ramName || productFilters.romName || 
-                           productFilters.colorName;
+                           productFilters.colorName || productFilters.brandName;
     const hasPriceFilter = productFilters.priceRange !== "all" || 
                           (productFilters.priceRange === "custom" && (productFilters.customMinPrice || productFilters.customMaxPrice));
     const hasStockFilter = productFilters.stockStatus !== "all";
@@ -297,6 +306,17 @@ export default function CreateInStoreOrder() {
             return stockQuantity === 0;
           }
           return true;
+        });
+      }
+
+      // Filter chính xác hơn khi có productName search
+      // Đảm bảo tên sản phẩm phải chứa tất cả các từ trong search term
+      if (term && term.trim().length >= 2 && results) {
+        const searchWords = term.trim().toLowerCase().split(/\s+/);
+        results = results.filter(product => {
+          const productName = (product.productName || "").toLowerCase();
+          // Tất cả các từ trong search term phải có trong tên sản phẩm
+          return searchWords.every(word => productName.includes(word));
         });
       }
       
@@ -975,7 +995,7 @@ export default function CreateInStoreOrder() {
                 </button>
               </div>
               {filtersExpanded && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {/* RAM Filter */}
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -1037,6 +1057,28 @@ export default function CreateInStoreOrder() {
                       {filterOptions.colors.map((color) => (
                         <option key={color.idColor} value={color.nameColor}>
                           {color.nameColor}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Brand Filter */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Thương hiệu
+                    </label>
+                    <select
+                      value={productFilters.brandName}
+                      onChange={(e) => {
+                        setProductFilters({ ...productFilters, brandName: e.target.value });
+                        setProductResults([]);
+                      }}
+                      className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <option value="">Tất cả thương hiệu</option>
+                      {filterOptions.brands.map((brand) => (
+                        <option key={brand.idBrand} value={brand.nameBrand}>
+                          {brand.nameBrand}
                         </option>
                       ))}
                     </select>
@@ -1133,7 +1175,7 @@ export default function CreateInStoreOrder() {
 
             {/* Clear Filters Button */}
             {(productFilters.ramName || productFilters.romName || productFilters.colorName || 
-              productFilters.priceRange !== "all" || 
+              productFilters.brandName || productFilters.priceRange !== "all" || 
               productFilters.customMinPrice || productFilters.customMaxPrice || 
               productFilters.stockStatus !== "all") && (
               <div className="mb-4 flex justify-end">
@@ -1142,7 +1184,8 @@ export default function CreateInStoreOrder() {
                     setProductFilters({ 
                       ramName: "", 
                       romName: "", 
-                      colorName: "", 
+                      colorName: "",
+                      brandName: "",
                       priceRange: "all",
                       customMinPrice: "",
                       customMaxPrice: "",
@@ -1318,7 +1361,7 @@ export default function CreateInStoreOrder() {
             {!loadingProducts &&
               productResults.length === 0 &&
               (productSearch.trim().length >= 2 || 
-               productFilters.ramName || productFilters.romName || productFilters.colorName ||
+               productFilters.ramName || productFilters.romName || productFilters.colorName || productFilters.brandName ||
                productFilters.priceRange !== "all" || 
                (productFilters.priceRange === "custom" && (productFilters.customMinPrice || productFilters.customMaxPrice)) ||
                productFilters.stockStatus !== "all") && (

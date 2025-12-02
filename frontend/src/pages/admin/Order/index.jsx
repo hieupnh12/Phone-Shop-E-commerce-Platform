@@ -6,6 +6,7 @@ import Toast from "../../../components/common/Toast";
 import useDebounce from "../../../contexts/useDebounce";
 import api from "../../../services/api";
 import { usePermission, PERMISSIONS } from "../../../hooks/usePermission";
+import Pagination from "../../../components/common/Pagination";
 
 const STATUS_CONFIG = {
   PENDING: {
@@ -438,62 +439,13 @@ export default function Orders() {
           <div className="text-sm text-gray-600">
             Hiển thị {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, totalElements)} trong tổng số {totalElements} đơn hàng
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                if (currentPage > 0) {
-                  setCurrentPage(currentPage - 1);
-                }
-              }}
-              disabled={currentPage === 0 || loadingOrders}
-              className="px-3 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Trước
-            </button>
-            
-            {/* Page numbers */}
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i;
-                } else if (currentPage < 3) {
-                  pageNum = i;
-                } else if (currentPage > totalPages - 4) {
-                  pageNum = totalPages - 5 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    disabled={loadingOrders}
-                    className={`px-3 py-2 border rounded-lg text-sm font-medium ${
-                      currentPage === pageNum
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "text-gray-700 hover:bg-gray-50"
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {pageNum + 1}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              onClick={() => {
-                if (currentPage < totalPages - 1) {
-                  setCurrentPage(currentPage + 1);
-                }
-              }}
-              disabled={currentPage >= totalPages - 1 || loadingOrders}
-              className="px-3 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Sau
-            </button>
-          </div>
+          <Pagination
+            currentPage={currentPage + 1}
+            totalPages={totalPages}
+            onPageChange={(page) => {
+              setCurrentPage(page - 1);
+            }}
+          />
         </div>
       )}
 

@@ -174,7 +174,8 @@ const orderService = {
         const hasBasicFilters = filters && (
             (filters.ramName && filters.ramName.trim()) ||
             (filters.romName && filters.romName.trim()) ||
-            (filters.colorName && filters.colorName.trim())
+            (filters.colorName && filters.colorName.trim()) ||
+            (filters.brandName && filters.brandName.trim())
         );
         const hasPriceFilter = filters && (
             (filters.priceRange && filters.priceRange !== "all") ||
@@ -217,6 +218,9 @@ const orderService = {
             }
             if (filters.colorName && filters.colorName.trim()) {
                 params.colorName = filters.colorName.trim();
+            }
+            if (filters.brandName && filters.brandName.trim()) {
+                params.brandName = filters.brandName.trim();
             }
 
             // Thêm price range filters
