@@ -72,10 +72,10 @@ const ClientLayout = ({ children, showHero = true }) => {
     }
   };
 
-  // Fetch ratings cho danh sách sản phẩm
+  // Fetch ratings cho danh sách sản phẩm - KHÔNG yêu cầu đăng nhập
   const fetchProductRatings = async (products) => {
     try {
-      console.log("📊 Fetching ratings for products:", products.map(p => ({ id: p.id, name: p.name })));
+      console.log("📊 Fetching ratings for products (public access):", products.map(p => ({ id: p.id, name: p.name })));
       
       const ratingPromises = products.map(async (product) => {
         // Sử dụng product.id hoặc product.idProduct (tùy format)
@@ -91,41 +91,53 @@ const ClientLayout = ({ children, showHero = true }) => {
         }
         
         try {
-          const [avgRatingResponse, statsResponse] = await Promise.all([
+          // Gọi API rating - endpoint này KHÔNG yêu cầu authentication
+          // Sử dụng Promise.allSettled để đảm bảo không bị fail nếu một request lỗi
+          const [avgRatingResult, statsResult] = await Promise.allSettled([
             feedbackService.getAverageRating(productId),
             feedbackService.getRatingStats(productId),
           ]);
           
-          console.log(`📊 Rating response for product ${productId}:`, {
-            avgRatingResponse,
-            statsResponse,
-            productName: product.name
-          });
-          
-          // Handle different response formats
-          // Backend có thể trả về Double trực tiếp hoặc object
+          // Xử lý average rating response
           let averageRating = 0;
-          if (typeof avgRatingResponse === 'number') {
-            averageRating = avgRatingResponse;
-          } else if (avgRatingResponse?.average_rating !== undefined) {
-            averageRating = avgRatingResponse.average_rating;
-          } else if (avgRatingResponse?.averageRating !== undefined) {
-            averageRating = avgRatingResponse.averageRating;
-          } else if (avgRatingResponse?.result !== undefined) {
-            // Nếu có wrapper result
-            const result = avgRatingResponse.result;
-            averageRating = typeof result === 'number' ? result : (result?.average_rating || result?.averageRating || 0);
+          if (avgRatingResult.status === 'fulfilled') {
+            const avgRatingResponse = avgRatingResult.value;
+            console.log(`📊 Rating response for product ${productId}:`, {
+              avgRatingResponse,
+              productName: product.name
+            });
+            
+            // Handle different response formats
+            // Backend có thể trả về Double trực tiếp hoặc object
+            if (typeof avgRatingResponse === 'number') {
+              averageRating = avgRatingResponse;
+            } else if (avgRatingResponse?.average_rating !== undefined) {
+              averageRating = avgRatingResponse.average_rating;
+            } else if (avgRatingResponse?.averageRating !== undefined) {
+              averageRating = avgRatingResponse.averageRating;
+            } else if (avgRatingResponse?.result !== undefined) {
+              // Nếu có wrapper result
+              const result = avgRatingResponse.result;
+              averageRating = typeof result === 'number' ? result : (result?.average_rating || result?.averageRating || 0);
+            }
+          } else {
+            console.warn(`⚠️ Failed to fetch average rating for product ${productId}:`, avgRatingResult.reason);
           }
           
-          // Handle stats response
+          // Xử lý stats response
           let totalReviews = 0;
-          if (statsResponse?.total_reviews !== undefined) {
-            totalReviews = statsResponse.total_reviews;
-          } else if (statsResponse?.totalReviews !== undefined) {
-            totalReviews = statsResponse.totalReviews;
-          } else if (statsResponse?.result) {
-            const result = statsResponse.result;
-            totalReviews = result?.total_reviews || result?.totalReviews || 0;
+          if (statsResult.status === 'fulfilled') {
+            const statsResponse = statsResult.value;
+            if (statsResponse?.total_reviews !== undefined) {
+              totalReviews = statsResponse.total_reviews;
+            } else if (statsResponse?.totalReviews !== undefined) {
+              totalReviews = statsResponse.totalReviews;
+            } else if (statsResponse?.result) {
+              const result = statsResponse.result;
+              totalReviews = result?.total_reviews || result?.totalReviews || 0;
+            }
+          } else {
+            console.warn(`⚠️ Failed to fetch rating stats for product ${productId}:`, statsResult.reason);
           }
           
           console.log(`✅ Parsed rating for product ${productId}:`, {
@@ -140,7 +152,8 @@ const ClientLayout = ({ children, showHero = true }) => {
             totalReviews: Number(totalReviews) || 0,
           };
         } catch (err) {
-          console.error(`❌ Error fetching rating for product ${productId}:`, err);
+          // Xử lý lỗi một cách graceful - không throw để không làm crash component
+          console.warn(`⚠️ Error fetching rating for product ${productId} (non-blocking):`, err?.message || err);
           return {
             productId: productId,
             averageRating: 0,
@@ -149,10 +162,13 @@ const ClientLayout = ({ children, showHero = true }) => {
         }
       });
       
-      const ratings = await Promise.all(ratingPromises);
+      // Sử dụng allSettled để đảm bảo tất cả promises được resolve, kể cả khi có lỗi
+      const ratingResults = await Promise.allSettled(ratingPromises);
       const ratingsMap = {};
-      ratings.forEach((rating) => {
-        if (rating.productId) {
+      
+      ratingResults.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value?.productId) {
+          const rating = result.value;
           ratingsMap[rating.productId] = {
             averageRating: rating.averageRating,
             totalReviews: rating.totalReviews,
@@ -164,7 +180,10 @@ const ClientLayout = ({ children, showHero = true }) => {
       console.log("📊 Product IDs in hotProduct:", products.map(p => p.id || p.idProduct));
       setProductRatings(ratingsMap);
     } catch (err) {
-      console.error("❌ Error fetching product ratings:", err);
+      // Xử lý lỗi tổng thể - không làm crash component, chỉ log
+      console.warn("⚠️ Error fetching product ratings (non-blocking):", err?.message || err);
+      // Vẫn set empty map để component vẫn render được với default ratings
+      setProductRatings({});
     }
   };
 
