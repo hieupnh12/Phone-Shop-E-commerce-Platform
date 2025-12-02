@@ -62,9 +62,13 @@ public class GoogleAuthService extends DefaultOAuth2UserService {
                     .build());
 
         } else {
+            // Không tạo customer với email nếu chưa có phoneNumber
+            // Để tránh duplicate email khi merge với customer có số điện thoại
+            // Chỉ tạo customer tạm thời với fullName, email sẽ được lưu khi complete profile
             customer = customerRepo.save(Customer.builder()
-                    .email(email)
                     .fullName(name)
+                    // KHÔNG lưu email ở đây để tránh duplicate khi merge
+                    // Email sẽ được lưu trong cusAuthUpdate() sau khi complete profile
                     .build());
 
             authRepo.save(CustomerAuth.builder()

@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Repository
 public interface CustomerRepo extends JpaRepository<Customer, Long> {
-
+    boolean existsByPhoneNumberAndCustomerIdIsNot(String phoneNumber, Long customerId);
 
     @Query(value = """
     select * from customers where phone_number = ?
