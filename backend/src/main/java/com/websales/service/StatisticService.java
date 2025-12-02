@@ -110,15 +110,16 @@ public class StatisticService {
 
         Page<RevenueStatisticResponse.OrderDetailDto> orders =
                 orderPage.map(row -> new RevenueStatisticResponse.OrderDetailDto(
-                        String.valueOf(row[0]),
-                        (String) row[1],
-                        (String) row[2],
-                        (Integer) row[3],
-                        (BigDecimal) row[4],
-                        (BigDecimal) row[5],
-                        (BigDecimal) row[6],
-                        (String) row[7],
-                        (String) row[8]
+                        String.valueOf(row[0]),      // orderId
+                        (String) row[1],             // date (end_datetime formatted)
+                        (String) row[2],             // product
+                        (Integer) row[3],            // quantity
+                        (BigDecimal) row[4],         // importPrice
+                        (BigDecimal) row[5],         // unitPrice (unit_price_after)
+                        (BigDecimal) row[6],         // revenue (totalPrice)
+                        (BigDecimal) row[7],         // profit
+                        (String) row[8],             // status
+                        row[9] != null ? (String) row[9] : "N/A"  // paymentMethodType
                 ));
 
         return new RevenueStatisticResponse(chartData, paymentMethods, orders);

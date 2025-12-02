@@ -19,6 +19,7 @@ public record RevenueStatisticResponse(
             String date,
             String product,
             Integer quantity,
+            BigDecimal importPrice,
             BigDecimal price,
             BigDecimal revenue,
             BigDecimal profit,
