@@ -94,7 +94,8 @@ public enum ErrorCode {
     EMAIL_NEW(1040,"Email chua dang ki",HttpStatus.CONTINUE),
     CONSTRAINT_VIOLATION(1041, "Role đang được sử dụng", HttpStatus.BAD_REQUEST),
     CUSTOMER_EXIST(1027, "Customer  exist.",HttpStatus.BAD_REQUEST),
-
+    VALIDATION_ERROR(1028, "Số điện thoại đã được sử dụng bởi tài khoản khác.", HttpStatus.BAD_REQUEST),
+    PHONE_ALREADY_LINKED_TO_GOOGLE(1042, "Số điện thoại này đã được liên kết với tài khoản Google khác.", HttpStatus.CONFLICT)
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
