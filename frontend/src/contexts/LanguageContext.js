@@ -21,7 +21,7 @@ export const LanguageProvider = ({ children }) => {
     document.documentElement.lang = currentLanguage;
   }, [currentLanguage]);
 
-  const t = (key) => {
+  const t = (key, params = {}) => {
     if (!key) return '';
     const keys = key.split('.');
     let value = translations[currentLanguage]?.common;
@@ -55,6 +55,13 @@ export const LanguageProvider = ({ children }) => {
     if (value === undefined || value === null) {
       console.warn(`[LanguageContext] Translation key not found: ${key}`);
       return key;
+    }
+    
+    // Support interpolation: replace {{key}} with params[key]
+    if (typeof value === 'string' && Object.keys(params).length > 0) {
+      return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+        return params[paramKey] !== undefined ? String(params[paramKey]) : match;
+      });
     }
     
     return value;
