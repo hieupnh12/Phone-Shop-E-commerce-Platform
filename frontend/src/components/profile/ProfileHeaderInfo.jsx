@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { ShoppingCart, DollarSign } from 'lucide-react';
 import useFetchTotalInfo from "../../hooks/useFetchTotalInfo";
 import { formatPhoneNumber } from "../../utils/phoneUtils";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const MOCK_CUSTOMER_ID = 11;
 
 const ProfileHeaderInfo = ({ customer }) => {
-
-
+    const { t } = useLanguage();
     const { data: customerStats, loading } = useFetchTotalInfo(customer?.customerId || MOCK_CUSTOMER_ID)
 
     const defaultData = {
@@ -72,7 +72,7 @@ const ProfileHeaderInfo = ({ customer }) => {
                         <StatItem
                             icon={ShoppingCart}
                             value={data.totalOrders}
-                            label="Tổng số đơn hàng đã mua"
+                            label={t('orders.profileHeader.totalOrders')}
                             iconBgColor="bg-red-100"
                             valueColor="text-gray-800"
                         />
@@ -86,13 +86,9 @@ const ProfileHeaderInfo = ({ customer }) => {
                                 </div>
                                 <div>
                                     <p className="text-xl font-bold text-gray-800">{formatCurrency(data.totalSavings)}</p>
-                                    <p className="text-sm text-gray-500">Tổng tiền tích lũy</p>
+                                    <p className="text-sm text-gray-500">{t('orders.profileHeader.totalSavings')}</p>
                                 </div>
                             </div>
-                            <p className="text-sm text-gray-600 ml-12">
-                                Từ 01/01/2024
-                                <br/>
-                            </p>
                         </div>
                     </div>
                 </div>

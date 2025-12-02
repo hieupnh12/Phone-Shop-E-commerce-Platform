@@ -22,11 +22,15 @@ const customerService = {
 
     const urlParams = new URLSearchParams();
     for (const [key, value] of Object.entries(paramsObj)) {
-      if (value !== undefined && value !== null && value !== "") {
+      // Luôn gửi keyword, kể cả khi rỗng (để backend xử lý)
+      if (key === "keyword") {
+        urlParams.append(key, value);
+      } else if (value !== undefined && value !== null && value !== "") {
         urlParams.append(key, value);
       }
     }
 
+    console.log(">>> Frontend search - keyword:", keyword, "URL:", `/customer/search?${urlParams.toString()}`);
     return axiosClient.get(`/customer/search?${urlParams.toString()}`);
   },
 

@@ -15,17 +15,34 @@ import { useParams } from "react-router-dom"; // Import useParams
 import cartService from "../../../services/cartService";
 import Toast from "../../../components/common/Toast";
 import { useLanguage } from "../../../contexts/LanguageContext";
+import { translations } from "../../../locales/index.js";
+import { useAuthFullOptions } from "../../../contexts/AuthContext";
 import { X, Smartphone, Camera, Cpu, Battery, Monitor, Zap, Shield, HardDrive, Palette } from 'lucide-react';
 import ProductFeedback from "../../../components/common/Product/feedBackProduct";
 import feedbackService from "../../../services/feedbackService";
+import Modal from "../Modal";
 
 const ProductDetailPage = () => {
-  const { t } = useLanguage();
+  const { t, currentLanguage } = useLanguage();
+  const authContext = useAuthFullOptions();
+  const user = authContext?.user;
+
+  // Debug: Test translation
+  useEffect(() => {
+    console.log('[ProductDetail] Current language:', currentLanguage);
+    console.log('[ProductDetail] Translations object:', translations[currentLanguage]?.common);
+    console.log('[ProductDetail] Available keys:', Object.keys(translations[currentLanguage]?.common || {}));
+    console.log('[ProductDetail] productDetail exists?', 'productDetail' in (translations[currentLanguage]?.common || {}));
+    console.log('[ProductDetail] productDetail object:', translations[currentLanguage]?.common?.productDetail);
+    console.log('[ProductDetail] Test translation features:', t('productDetail.features'));
+    console.log('[ProductDetail] Test translation phone:', t('productDetail.phone'));
+  }, [currentLanguage, t]);
   const [toast, setToast] = useState(null);
   const [product, setProduct] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState(null);
   const [selectedRam, setSelectedRam] = useState(null);
   const [selectedRom, setSelectedRom] = useState(null);
+
   const [selectedColor, setSelectedColor] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,6 +50,8 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   // THÊM MỚI: State cho popup specs
   const [isOpen, setIsOpen] = useState(false);
+  // State cho modal đăng nhập
+  const [showLoginModal, setShowLoginModal] = useState(false);
   // State cho rating từ API
   const [productRating, setProductRating] = useState(null);
   const [reviewCount, setReviewCount] = useState(0);
@@ -270,11 +289,16 @@ const ProductDetailPage = () => {
   };
   // === ADD TO CART ===
   const handleAddToCart = async () => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+      navigate('/login');
+      return;
+    }
     try {
       if (!selectedVersion?.id) {
         setToast({
           type: "error",
-          message: "Không tìm thấy phiên bản hợp lệ",
+          message: t('productDetail.noValidVersion'),
         });
         return;
       }
@@ -356,7 +380,7 @@ const ProductDetailPage = () => {
         // Step 3: Still no match - toast and revert
         setToast({
           type: "error",
-          message: "Phiên bản không có sẵn! Vui lòng thử lựa chọn khác.",
+          message: t('productDetail.versionNotAvailable'),
         });
         console.log("Reverted: No match even after reset");
         return;
@@ -626,7 +650,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
         {/* Product Title & Rating */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-3">
-            Điện thoại {product.name}
+            {t('productDetail.phone')} {product.name}
           </h1>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1">
@@ -635,20 +659,20 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 {productRating !== null ? productRating.toFixed(1) : (product.rating || '0.0')}
               </span>
               <span className="text-cyan-200/70">
-                ({reviewCount > 0 ? reviewCount : (product.reviewCount || 0)} đánh giá)
+                ({reviewCount > 0 ? reviewCount : (product.reviewCount || 0)} {t('productDetail.reviews')})
               </span>
             </div>
-            <button
-              onClick={() => setIsFavorite(!isFavorite)}
-              className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              <Heart
-                className={`w-5 h-5 transition-all ${
-                  isFavorite ? "fill-red-500 text-red-500 scale-110" : ""
-                }`}
-              />
-              <span>Yêu thích</span>
-            </button>
+            {/*<button*/}
+            {/*  onClick={() => setIsFavorite(!isFavorite)}*/}
+            {/*  className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 transition-colors"*/}
+            {/*>*/}
+            {/*  <Heart*/}
+            {/*    className={`w-5 h-5 transition-all ${*/}
+            {/*      isFavorite ? "fill-red-500 text-red-500 scale-110" : ""*/}
+            {/*    }`}*/}
+            {/*  />*/}
+            {/*  <span>Yêu thích</span>*/}
+            {/*</button> *!/*/}
             {/* <button className="flex items-center gap-1 text-blue-600 hover:text-blue-700">
               <svg
                 className="w-5 h-5"
@@ -686,7 +710,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 />
               </svg>
 
-              <span>Thông số</span>
+              <span>{t('productDetail.specifications')}</span>
             </button>
 
 
@@ -735,29 +759,25 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 {/* Feature Highlights (only on first image) */}
                 <div className="text-white text-l">
                   <h3 className="text-sm font-semibold mb-2">
-                    TÍNH NĂNG NỔI BẬT
+                    {t('productDetail.features')}
                   </h3>
                   <ul className="space-y-1 text-[10px]">
                     <li className="flex items-start gap-2">
                       <span className="text-white">●</span>
                       <span>
-                        {product.name} có thiết kế titan nhẹ và bền bỉ, với màn
-                        hình Super Retina XDR{" "}
-                        {product.specifications?.["Screen Size"]} lớn hơn.
+                        {product.name} {t('productDetail.designDescription')} {product.specifications?.["Screen Size"]} {t('productDetail.larger')}.
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-white">●</span>
                       <span>
-                        Tính năng Điều Khiển Camera cho phép truy cập nhanh các
-                        công cụ như thu phóng, giúp chụp ảnh dễ dàng.
+                        {t('productDetail.cameraControl')}
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-white">●</span>
                       <span>
-                        Camera Ultra Wide 48MP ghi lại chi tiết sắc nét, trong
-                        khi camera Telephoto 5x chụp xa ấn tượng.
+                        {t('productDetail.cameraFeatures')}
                       </span>
                     </li>
                   </ul>
@@ -868,22 +888,21 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
 
             {/* Cam kết sản phẩm */}
             <div className="mt-6 bg-white rounded-xl p-4 shadow-lg">
-              <h3 className="font-bold text-gray-900 mb-3">Cam kết sản phẩm</h3>
+              <h3 className="font-bold text-gray-900 mb-3">{t('productDetail.productCommitment')}</h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-600" />
                   <span>
-                    Bảo hành chính hãng{" "}
-                    {product.specifications?.["Warranty Period"]}
+                    {t('productDetail.officialWarranty')} {product.specifications?.["Warranty Period"]} {t('productDetail.months')}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-600" />
-                  <span>Hỗ trợ 1 đổi 1 trong 30 ngày</span>
+                  <span>{t('productDetail.exchangeSupport')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-600" />
-                  <span>Miễn phí vận chuyển với đơn hàng  từ 300 000đ trở lên  </span>
+                  <span>{t('productDetail.freeShipping')}</span>
                 </div>
               </div>
             </div>
@@ -895,7 +914,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
   {/* Price Box */}
   <div className="bg-gradient-to-br from-gray-50 to-cyan-50 rounded-xl p-8 mb-6 border border-gray-200">
     <div className="text-center">
-      <p className="text-sm text-gray-600 mb-2 font-medium">Giá sản phẩm</p>
+      <p className="text-sm text-gray-600 mb-2 font-medium">{t('productDetail.productPrice')}</p>
       <p className="text-4xl font-bold text-cyan-600 mb-2">
         {formatPrice(currentDiscountedPrice)}
       </p>
@@ -909,7 +928,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
 
               {/* Versions */}
               <div className="mb-6">
-                <h3 className="font-bold text-gray-900 mb-3">Phiên bản</h3>
+                <h3 className="font-bold text-gray-900 mb-3">{t('productDetail.version')}</h3>
 
                 {product.versions &&
                   product.versions.length > 0 &&
@@ -975,7 +994,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
 
                         <div>
                           <div className="font-bold text-gray-900 mb-3">
-                            Màu sắc
+                            {t('productDetail.color')}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {allColors.map((c) => {
@@ -1035,7 +1054,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                 <div className="flex items-center gap-2 mb-3">
                   <Gift className="w-5 h-5 text-blue-600" />
                   <h3 className="font-bold text-gray-900">
-                    Khuyến mãi hấp dẫn
+                    {t('productDetail.attractivePromotions')}
                   </h3>
                 </div>
                 <div className="space-y-2">
@@ -1044,7 +1063,7 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                       1
                     </div>
                     <div className="text-sm text-gray-700 flex-1">
-                      Giúp hỗ trợ vẫn chuyển miễn phí trong phạm vi 20km {" "}
+                      {t('productDetail.freeShippingWithin20km')} {" "}
                       {/* <button className="text-blue-600 font-medium ml-1 hover:text-blue-700">
                         Xem chi tiết
                       </button> */}
@@ -1088,27 +1107,41 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
                       alert("Không tìm thấy phiên bản hợp lệ!");
                       return;
                     }
-
-                    await cartService.addToCart(selectedVersion.id, 1);
-                    // Chuyển đến cart và tự động chọn sản phẩm vừa thêm
-                    navigate('/user/cart', {
-                      state: {
-                        autoSelectProductVersionId: selectedVersion.id
-                      }
-                    });
+                    if (!user) {
+                      setShowLoginModal(true);
+                      return;
+                    }
+                    try {
+                      await cartService.addToCart(selectedVersion.id, 1);
+                      // Chuyển đến cart và tự động chọn sản phẩm vừa thêm
+                      navigate('/user/cart', {
+                        state: {
+                          autoSelectProductVersionId: selectedVersion.id
+                        }
+                      });
+                    } catch (error) {
+                      console.error("Lỗi khi thêm vào giỏ hàng:", error);
+                      alert("Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng!");
+                    }
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
                 >
-                  MUA NGAY
-                  <span className="text-sm font-normal">(Giao tận nơi)</span>
+                  {t('productDetail.buyNow')}
+                  <span className="text-sm font-normal">({t('productDetail.deliveryToDoor')})</span>
                 </button>
 
                 <button
                   className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2"
-                  onClick={handleAddToCart}
+                  onClick={async () => {
+                    if (!user) {
+                      setShowLoginModal(true);
+                      return;
+                    }
+                    await handleAddToCart();
+                   } }
                 >
                   <ShoppingCart className="w-6 h-6" />
-                  THÊM VÀO GIỎ
+                  {t('productDetail.addToCart')}
                 </button>
 
 
@@ -1148,6 +1181,37 @@ const ProductSpecsPopup = ({ product, isOpen, onClose }) => {
               productName={product?.nameProduct}
               productImage={product?.image}
             />
+
+      {/* Modal đăng nhập */}
+      <Modal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title={t('auth.login')}
+        size="sm"
+      >
+        <div className="text-center ">
+          <p className="text-gray-700 mb-6">
+            {t('productDetail.pleaseLoginToContinue')}
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                navigate('/login');
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              {t('auth.login')}
+            </button>
+            <button
+              onClick={() => setShowLoginModal(false)}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
 

@@ -69,20 +69,19 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
             "AND (:warrantyPeriod IS NULL OR p.warrantyPeriod = :warrantyPeriod)" +
 //        "AND (:stockQuantity IS NULL OR p.stockQuantity = :stockQuantity OR pv.stockQuantity = :stockQuantity)" +
 //        "AND (:status IS NULL OR p.status = :status OR pv.status = :status)" +
-            "AND (:romName IS NULL OR LOWER(r.nameRom) LIKE LOWER(CONCAT('%', :romName, '%')))" +
-            "AND (:ramName IS NULL OR LOWER(ra.nameRam) LIKE LOWER(CONCAT('%', :ramName, '%')))" +
+            "AND (:romName IS NULL OR r.nameRom LIKE CONCAT(:romName, 'GB') OR r.nameRom LIKE CONCAT(:romName, ' GB'))" +            "AND (:ramName IS NULL OR LOWER(ra.nameRam) LIKE LOWER(CONCAT('%', :ramName, '%')))" +
             "AND (:colorName IS NULL OR LOWER(col.nameColor) LIKE LOWER(CONCAT('%', :colorName, '%')))" +
             "AND (:importPrice IS NULL OR pv.importPrice = :importPrice)" +
             "AND (:exportPrice IS NULL OR pv.exportPrice = :exportPrice)" +
             // Thêm range conditions cho price (exportPrice)
             "AND (:minExportPrice IS NULL OR pv.exportPrice >= :minExportPrice)" +
             "AND (:maxExportPrice IS NULL OR pv.exportPrice <= :maxExportPrice)" +
-            // Thêm range cho battery (extract số từ String "3500 mAh" → CAST(SUBSTRING(p.battery, 1, LOCATE(' ', p.battery)-1) AS INTEGER))
-            "AND (:minBattery IS NULL OR CAST(SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) AS INTEGER) >= :minBattery)" +
-            "AND (:maxBattery IS NULL OR CAST(SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) AS INTEGER) <= :maxBattery)" +
-            // Thêm range cho screenSize (extract số từ "6.2 inch" → CAST(REPLACE(SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1), '.', '.') AS DOUBLE) – adjust nếu cần
-            "AND (:minScreenSize IS NULL OR CAST(REPLACE(SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1), ',', '.') AS DOUBLE) >= :minScreenSize)" +
-            "AND (:maxScreenSize IS NULL OR CAST(REPLACE(SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1), ',', '.') AS DOUBLE) <= :maxScreenSize)" +
+            // Thêm range cho battery (extract số từ String "3500 mAh" hoặc "3200mAh" → CAST với xử lý cả 2 trường hợp
+            "AND (:minBattery IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) WHEN LOCATE('mAh', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE('mAh', p.battery) - 1) ELSE p.battery END, ',', '') AS INTEGER) >= :minBattery)" +
+            "AND (:maxBattery IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) WHEN LOCATE('mAh', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE('mAh', p.battery) - 1) ELSE p.battery END, ',', '') AS INTEGER) <= :maxBattery)" +
+            // Thêm range cho screenSize (extract số từ "6.2 inch" hoặc "6.2" → CAST với xử lý cả 2 trường hợp
+            "AND (:minScreenSize IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.screenSize) > 0 THEN SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1) ELSE p.screenSize END, ',', '.') AS DOUBLE) >= :minScreenSize)" +
+            "AND (:maxScreenSize IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.screenSize) > 0 THEN SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1) ELSE p.screenSize END, ',', '.') AS DOUBLE) <= :maxScreenSize)" +
             "ORDER BY p.idProduct DESC ")
     Page<ProductVersion> findProductVersionsWithCombinedFilters(
             // Params cũ giữ nguyên
@@ -129,9 +128,13 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
 
 
     /**
-     * Lấy top 5 sản phẩm có số lượng đã bán nhiều nhất
+     * Lấy top sản phẩm có số lượng đã bán nhiều nhất trong tuần (7 ngày gần nhất)
      * Tính tổng số lượng từ order_details (SUM quantity)
+     * Chỉ lấy orders có status DELIVERED và endDatetime trong 7 ngày gần nhất
+     * Chỉ lấy sản phẩm có số lượng bán > 0
      *
+     * @param status Trạng thái order (DELIVERED)
+     * @param weekStartDate Ngày bắt đầu tuần (7 ngày trước)
      * @return List<Object[]> với [0]: Product, [1]: Long (tổng số lượng đã bán)
      */
     @Query("SELECT p, COALESCE(SUM(od.quantity), 0) as soldQuantity " +
@@ -140,9 +143,14 @@ public interface ProductVersionRepository extends JpaRepository<ProductVersion, 
             "JOIN OrderDetail od ON od.productVersion = pv " +
             "JOIN od.order o " +
             "WHERE o.status = :status " +
+            "AND o.endDatetime >= :weekStartDate " +
+            "AND o.endDatetime IS NOT NULL " +
             "GROUP BY p.idProduct " +
+            "HAVING COALESCE(SUM(od.quantity), 0) > 0 " +
             "ORDER BY soldQuantity DESC")
-    List<Object[]> findTop5ProductsByOrderDetailCount(@Param("status") com.websales.enums.OrderStatus status);
+    List<Object[]> findTopProductsByOrderDetailCountInWeek(
+            @Param("status") com.websales.enums.OrderStatus status,
+            @Param("weekStartDate") java.time.LocalDateTime weekStartDate);
 
 
 

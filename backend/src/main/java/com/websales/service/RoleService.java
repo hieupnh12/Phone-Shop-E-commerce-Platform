@@ -3,24 +3,29 @@ package com.websales.service;
 import com.websales.dto.request.CreateRoleRequest;
 import com.websales.dto.request.UpdateRoleRequest;
 import com.websales.dto.response.RoleResponse;
+import com.websales.entity.Employee;
+import com.websales.entity.InvalidToken;
 import com.websales.entity.Permission;
 import com.websales.entity.Role;
 import com.websales.exception.AppException;
 import com.websales.exception.ErrorCode;
 import com.websales.mapper.RoleMapper;
 import com.websales.repository.EmployeeRepo;
+import com.websales.repository.InvalidTokenRepository;
 import com.websales.repository.PermissionRepo;
 import com.websales.repository.RoleRepo;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +36,12 @@ public class RoleService {
     PermissionRepo permissionRepo;
     RoleMapper roleMapper;
     EmployeeRepo employeeRepo;
+    InvalidTokenRepository invalidTokenRepo;
+    RedisTemplate<String, String> redisTemplate;
+
+    @NonFinal
+    @Value("${jwt.expiration}")
+    protected Long VALID_DURATION;
 
     public RoleResponse createRole(CreateRoleRequest request) {
        if (roleRepo.existsRoleByName(request.getRoleName())){
@@ -77,6 +88,20 @@ public class RoleService {
                 .stream()
                 .collect(Collectors.toSet());
         role.setRolePermissions(newPermissions);
+        List<Employee> employees = employeeRepo.findByRoleId(roleId);
+        for (Employee employee : employees) {
+            String jwtId = redisTemplate.opsForValue().get("jwt:" + employee.getFullName());
+            if (jwtId != null) {
+                InvalidToken invalidToken = InvalidToken.builder()
+                        .id(jwtId)
+                        .expiryTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli())) // Sử dụng VALID_DURATION từ cấu hình
+                        .build();
+                invalidTokenRepo.save(invalidToken);
+                redisTemplate.delete("jwt:" + employee.getFullName());
+                redisTemplate.delete("permissions:" + employee.getFullName());
+            }
+        }
+
         roleRepo.save(role);
     }
 

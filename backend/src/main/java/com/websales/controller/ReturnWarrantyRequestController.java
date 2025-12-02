@@ -45,13 +45,36 @@ public class ReturnWarrantyRequestController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('SCOPE_ORDER_VIEW_ALL') or hasAuthority('SCOPE_ORDER_VIEW_DETAIL')")
+    @PreAuthorize("hasAuthority('SCOPE_WARRANTY_VIEW_ALL') or hasAuthority('SCOPE_WARRANTY_UPDATE_BASIC')")
     public ApiResponse<Page<ReturnWarrantyRequestResponse>> getAllRequests(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "requestId,desc") String sort,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @AuthenticationPrincipal Jwt jwt) {
         try {
+            // Check if user has WARRANTY_VIEW_ALL permission
+            boolean hasViewAllPermission = jwt.getClaims().containsKey("scopes") && 
+                jwt.getClaims().get("scopes") != null &&
+                ((List<?>) jwt.getClaims().get("scopes")).stream()
+                    .anyMatch(s -> s.toString().equals("WARRANTY_VIEW_ALL"));
+            
+            // Get employeeId if user is an employee
+            Long employeeId = null;
+            try {
+                employeeId = ContextUtils.getEmployeeId();
+            } catch (Exception e) {
+                // If not employee, employeeId will be null
+            }
+            
+            // If not employee and no WARRANTY_VIEW_ALL, return 403
+            if (!hasViewAllPermission && employeeId == null) {
+                return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                        .code(403)
+                        .message("Bạn không có quyền xem danh sách yêu cầu bảo hành")
+                        .build();
+            }
+            
             String[] sortParts = sort.split(",");
             String sortField = sortParts[0].trim();
             Sort.Direction direction = sortParts.length > 1 && sortParts[1].trim().equalsIgnoreCase("asc")
@@ -73,20 +96,34 @@ public class ReturnWarrantyRequestController {
             Pageable pageable = PageRequest.of(page, size, sortObj);
             
             Page<ReturnWarrantyRequestResponse> requests;
-            // Parse status từ string sang enum, chỉ khi status không null và không empty
-            if (status != null && !status.trim().isEmpty()) {
-                try {
-                    RequestStatus statusEnum = RequestStatus.valueOf(status.toUpperCase());
-                    requests = requestService.getRequestsByStatus(statusEnum, pageable);
-                    System.out.println("Found " + requests.getTotalElements() + " requests with status: " + statusEnum);
-                } catch (IllegalArgumentException e) {
-                    // Nếu status không hợp lệ, trả về tất cả requests
-                    System.out.println("Invalid status: " + status + ", returning all requests");
+            
+            // If has WARRANTY_VIEW_ALL, show all requests
+            if (hasViewAllPermission) {
+                // Parse status từ string sang enum, chỉ khi status không null và không empty
+                if (status != null && !status.trim().isEmpty()) {
+                    try {
+                        RequestStatus statusEnum = RequestStatus.valueOf(status.toUpperCase());
+                        requests = requestService.getRequestsByStatus(statusEnum, pageable);
+                        System.out.println("Found " + requests.getTotalElements() + " requests with status: " + statusEnum);
+                    } catch (IllegalArgumentException e) {
+                        // Nếu status không hợp lệ, trả về tất cả requests
+                        System.out.println("Invalid status: " + status + ", returning all requests");
+                        requests = requestService.getAllRequests(pageable);
+                    }
+                } else {
                     requests = requestService.getAllRequests(pageable);
+                    System.out.println("Found " + requests.getTotalElements() + " total requests");
                 }
             } else {
-                requests = requestService.getAllRequests(pageable);
-                System.out.println("Found " + requests.getTotalElements() + " total requests");
+                // If no WARRANTY_VIEW_ALL but is employee, show only assigned requests
+                if (employeeId == null) {
+                    return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                            .code(403)
+                            .message("Bạn không có quyền xem danh sách yêu cầu bảo hành")
+                            .build();
+                }
+                requests = requestService.getRequestsByEmployee(employeeId, pageable);
+                System.out.println("Found " + requests.getTotalElements() + " requests assigned to employee: " + employeeId);
             }
             
             System.out.println("Returning page with " + requests.getContent().size() + " items, total: " + requests.getTotalElements());
@@ -136,6 +173,52 @@ public class ReturnWarrantyRequestController {
                 .build();
     }
 
+    @GetMapping("/my-assigned")
+    public ApiResponse<Page<ReturnWarrantyRequestResponse>> getMyAssignedRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "requestId,desc") String sort) {
+        try {
+            Long employeeId = ContextUtils.getEmployeeId();
+            if (employeeId == null) {
+                return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                        .code(403)
+                        .message("Chỉ nhân viên mới có thể xem danh sách yêu cầu được giao")
+                        .build();
+            }
+
+            String[] sortParts = sort.split(",");
+            String sortField = sortParts[0].trim();
+            Sort.Direction direction = sortParts.length > 1 && sortParts[1].trim().equalsIgnoreCase("asc")
+                    ? Sort.Direction.ASC
+                    : Sort.Direction.DESC;
+            
+            if (sortField.equalsIgnoreCase("createdAt") || sortField.equalsIgnoreCase("created_at")) {
+                sortField = "createdAt";
+            } else if (sortField.equalsIgnoreCase("updatedAt") || sortField.equalsIgnoreCase("updated_at")) {
+                sortField = "updatedAt";
+            } else {
+                sortField = "requestId";
+            }
+            
+            Sort sortObj = Sort.by(direction, sortField);
+            Pageable pageable = PageRequest.of(page, size, sortObj);
+            
+            Page<ReturnWarrantyRequestResponse> requests = requestService.getRequestsByEmployee(employeeId, pageable);
+            
+            return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                    .result(requests)
+                    .build();
+        } catch (Exception e) {
+            System.err.println("Error in getMyAssignedRequests: " + e.getMessage());
+            e.printStackTrace();
+            return ApiResponse.<Page<ReturnWarrantyRequestResponse>>builder()
+                    .code(400)
+                    .message("Lỗi khi lấy danh sách yêu cầu được giao: " + e.getMessage())
+                    .build();
+        }
+    }
+
     @GetMapping("/{requestId}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<ReturnWarrantyRequestResponse> getRequestById(@PathVariable Integer requestId) {
@@ -150,7 +233,7 @@ public class ReturnWarrantyRequestController {
     }
 
     @PutMapping("/{requestId}/status")
-    @PreAuthorize("hasAuthority('SCOPE_ORDER_UPDATE_STATUS')")
+    @PreAuthorize("hasAuthority('SCOPE_WARRANTY_UPDATE_BASIC')")
     public ApiResponse<ReturnWarrantyRequestResponse> updateRequestStatus(
             @PathVariable Integer requestId,
             @RequestBody @Valid UpdateWarrantyRequestStatusRequest updateRequest,
@@ -167,6 +250,27 @@ public class ReturnWarrantyRequestController {
         return ApiResponse.<ReturnWarrantyRequestResponse>builder()
                 .result(response)
                 .message("Trạng thái yêu cầu đã được cập nhật thành công")
+                .build();
+    }
+
+    @PutMapping("/{requestId}/unassign")
+    @PreAuthorize("hasAuthority('SCOPE_WARRANTY_UPDATE_BASIC')")
+    public ApiResponse<ReturnWarrantyRequestResponse> unassignRequest(
+            @PathVariable Integer requestId) {
+        Long employeeId = null;
+        try {
+            employeeId = ContextUtils.getEmployeeId();
+        } catch (Exception e) {
+            return ApiResponse.<ReturnWarrantyRequestResponse>builder()
+                    .code(403)
+                    .message("Chỉ nhân viên mới có thể thực hiện thao tác này")
+                    .build();
+        }
+        
+        ReturnWarrantyRequestResponse response = requestService.unassignRequest(requestId, employeeId);
+        return ApiResponse.<ReturnWarrantyRequestResponse>builder()
+                .result(response)
+                .message("Đã hủy xử lý yêu cầu thành công")
                 .build();
     }
 }

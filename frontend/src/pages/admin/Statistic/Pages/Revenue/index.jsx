@@ -41,7 +41,7 @@ export default function RevenueStatistic() {
     categoryId: "all",
     paymentMethodId: "all",
     page: 0,
-    size: 2,
+    size: 7,
     search: "",
     sort: "create_datetime,desc",
     rangeType: "none",
@@ -86,49 +86,48 @@ export default function RevenueStatistic() {
 
   // Dữ liệu biểu đồ doanh thu theo thời gian
   const revenueTimeData = data?.result?.chartData ?? [];
-  
 
- const handleTimeRangeChange = (range) => {
-  const today = new Date();
-  let start, end;
+  const handleTimeRangeChange = (range) => {
+    const today = new Date();
+    let start, end;
 
-  if (range === "day") {
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
+    if (range === "day") {
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
 
-    start = `${yyyy}-${mm}-${dd}T00:00:00`;
-    end   = `${yyyy}-${mm}-${dd}T23:59:59`;
+      start = `${yyyy}-${mm}-${dd}T00:00:00`;
+      end = `${yyyy}-${mm}-${dd}T23:59:59`;
+    } else if (range === "month") {
+      const year = today.getFullYear();
+      const month = today.getMonth(); // 0-11
+      const lastDay = new Date(year, month + 1, 0).getDate();
 
-  } else if (range === "month") {
-    const year = today.getFullYear();
-    const month = today.getMonth(); // 0-11
-    const lastDay = new Date(year, month + 1, 0).getDate();
+      start = `${year}-${String(month + 1).padStart(2, "0")}-01T00:00:00`;
+      end = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+        lastDay
+      ).padStart(2, "0")}T23:59:59`;
+    } else if (range === "year") {
+      const year = today.getFullYear();
+      start = `${year}-01-01T00:00:00`;
+      end = `${year}-12-31T23:59:59`;
+    }
 
-    start = `${year}-${String(month + 1).padStart(2, "0")}-01T00:00:00`;
-    end   = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}T23:59:59`;
-
-  } else if (range === "year") {
-    const year = today.getFullYear();
-    start = `${year}-01-01T00:00:00`;
-    end   = `${year}-12-31T23:59:59`;
-  }
-
-  setTimeRange(range);
-  setFilters((prev) => ({
-    ...prev,
-    startDate: start,
-    endDate: end,
-    page: 0,
-  }));
-};
+    setTimeRange(range);
+    setFilters((prev) => ({
+      ...prev,
+      startDate: start,
+      endDate: end,
+      page: 0,
+    }));
+  };
 
   const handleExportExcel = async () => {
     try {
       // Clone filters và set page = 0, size = max
       const exportFilters = { ...filters, page: 0, size: 10000 }; // 10000 tuỳ số lượng max
       const res = await statisticApi.getRevenue(exportFilters);
-      
+
       const exportData = res?.result.orders.content || [];
       if (exportData.length === 0) {
         alert("Không có dữ liệu để xuất Excel!");
@@ -142,12 +141,12 @@ export default function RevenueStatistic() {
       const wsData = exportData.map((item) => ({
         "Mã đơn hàng": item.orderId,
         "Ngày hoàn thành": item.date,
-        "Khách hàng": item.paymentMethod,
-        Giá: item.price,
         "Sản phẩm": item.product,
-        "Lợi nhuận": item.profit,
         "Số lượng": item.quantity,
+        "Giá nhập": item.importPrice,
         "Doanh thu": item.revenue,
+        "Lợi nhuận": item.profit,
+        Kênh: item.paymentMethod || "N/A",
         "Trạng thái": item.status,
       }));
 
@@ -267,7 +266,7 @@ export default function RevenueStatistic() {
                 type="date"
                 onClick={() => setTimeRange("")}
                 value={filters.startDate}
-                max={filters.endDate || new Date().toISOString().split("T")[0]}  // không cho chọn sau endDate
+                max={filters.endDate || new Date().toISOString().split("T")[0]} // không cho chọn sau endDate
                 onChange={(e) =>
                   setFilters((prev) => ({
                     ...prev,

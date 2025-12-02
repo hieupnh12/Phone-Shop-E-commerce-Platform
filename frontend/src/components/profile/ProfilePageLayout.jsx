@@ -5,17 +5,19 @@ import ProfileHeaderInfo from './ProfileHeaderInfo';
 import useCustomerInfo from "../../hooks/useCustomerInfo";
 
 import { Outlet } from 'react-router-dom';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 const ProfilePageLayout = () => {
-    const { customerInfo, isLoading, error } = useCustomerInfo();
+    const { t } = useLanguage();
+    const { customerInfo, isLoading, error, refetch } = useCustomerInfo();
 
     if (isLoading) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Đang tải ...</div>;
+        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">{t('common.loading')}</div>;
     }
 
     if (error) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-500">Lỗi tải dữ liệu: {error}</div>;
+        return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-500">{t('common.error')}: {error}</div>;
     }
 
     return (
@@ -36,7 +38,7 @@ const ProfilePageLayout = () => {
 
                     {/* Cột 2: Nội dung Chính - CHÍNH LÀ children */}
                     <div className="md:col-span-3 lg:col-span-4">
-                        <Outlet context={{ customerInfo }} />
+                        <Outlet context={{ customerInfo, refetchCustomerInfo: refetch }} />
                     </div>
                 </div>
             </div>

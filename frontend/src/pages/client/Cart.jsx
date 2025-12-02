@@ -158,7 +158,7 @@ export default function ShoppingCart() {
     // Kiểm tra giới hạn tối thiểu và tối đa
     if (newQuantity < 1) return;
     if (newQuantity > MAX_QUANTITY) {
-      const errorMsg = `Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`;
+      const errorMsg = t('cart.maxQuantityExceeded', { max: MAX_QUANTITY });
       setErr(errorMsg);
       setToast({
         type: 'error',
@@ -169,7 +169,11 @@ export default function ShoppingCart() {
 
     // Kiểm tra số lượng tồn kho
     if (item.stockQuantity !== undefined && newQuantity > item.stockQuantity) {
-      const errorMessage = `Sản phẩm "${item.productName}" chỉ còn ${item.stockQuantity} sản phẩm trong kho. Không thể tăng số lượng lên ${newQuantity}.`;
+      const errorMessage = t('cart.insufficientStockMessage', { 
+        productName: item.productName, 
+        stockQuantity: item.stockQuantity, 
+        requestedQuantity: newQuantity 
+      });
       console.warn('⚠️ Số lượng sản phẩm không đủ:', {
         productName: item.productName,
         requestedQuantity: newQuantity,
@@ -249,7 +253,7 @@ export default function ShoppingCart() {
         );
         setToast({
           type: 'success',
-          message: `Đã xóa "${item?.productName || 'sản phẩm'}" khỏi giỏ hàng`
+          message: t('cart.itemRemoved', { productName: item?.productName || t('cart.product') })
         });
       } else {
         const errorMsg = res?.message || t('cart.failedDelete');
@@ -303,7 +307,7 @@ export default function ShoppingCart() {
     if (!hasSelectedItems) {
       setToast({
         type: 'warning',
-        message: 'Vui lòng chọn ít nhất một sản phẩm để thanh toán'
+        message: t('cart.selectAtLeastOne')
       });
       return;
     }
@@ -325,10 +329,10 @@ export default function ShoppingCart() {
               <span className="text-red-600 font-bold text-xl">⚠️</span>
               <div className="flex-1">
                 <h3 className="font-semibold text-red-800 mb-1">
-                  Có sản phẩm không đủ hàng trong giỏ của bạn
+                  {t('cart.outOfStockWarning')}
                 </h3>
                 <p className="text-sm text-red-700">
-                  Vui lòng điều chỉnh số lượng hoặc xóa sản phẩm hết hàng trước khi thanh toán
+                  {t('cart.adjustQuantityBeforePayment')}
                 </p>
               </div>
             </div>
@@ -415,7 +419,7 @@ export default function ShoppingCart() {
                     <Square className="w-5 h-5 text-slate-400" />
                   )}
                   <span className="font-semibold text-slate-900">
-                    Chọn tất cả ({selectedItems.size}/{items.length})
+                    {t('cart.selectAll', { selected: selectedItems.size, total: items.length })}
                   </span>
                 </button>
               </div>
@@ -477,9 +481,9 @@ export default function ShoppingCart() {
                           title={
                             canSelect
                               ? isSelected
-                                ? "Bỏ chọn sản phẩm"
-                                : "Chọn sản phẩm để thanh toán"
-                              : "Sản phẩm không đủ hàng, không thể chọn"
+                                ? t('cart.unselectProduct')
+                                : t('cart.selectProduct')
+                              : t('cart.insufficientStock')
                           }
                         >
                           {isSelected && canSelect ? (
@@ -523,8 +527,8 @@ export default function ShoppingCart() {
                                 : "bg-red-50 text-red-700"
                             }`}>
                               {item.stockQuantity > 0 
-                                ? `Còn ${item.stockQuantity} sản phẩm`
-                                : "Hết hàng"}
+                                ? t('cart.stockRemaining', { count: item.stockQuantity })
+                                : t('cart.outOfStock')}
                             </span>
                           )}
                         </div>
@@ -536,12 +540,12 @@ export default function ShoppingCart() {
                               <span className="text-red-600 font-semibold text-sm">⚠️</span>
                               <div className="flex-1">
                                 <p className="text-sm font-semibold text-red-700">
-                                  Sản phẩm không đủ hàng
+                                  {t('cart.insufficientStock')}
                                 </p>
                                 <p className="text-xs text-red-600 mt-1">
-                                  Số lượng trong giỏ: <span className="font-semibold">{item.quantity}</span>
+                                  {t('cart.cartQuantity')}: <span className="font-semibold">{item.quantity}</span>
                                   {" • "}
-                                  Số lượng tồn kho: <span className="font-semibold">{item.stockQuantity}</span>
+                                  {t('cart.stockQuantity')}: <span className="font-semibold">{item.stockQuantity}</span>
                                 </p>
                               </div>
                             </div>
@@ -594,8 +598,8 @@ export default function ShoppingCart() {
                                 className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                                 title={
                                   (item.quantity || 1) >= MAX_QUANTITY
-                                    ? `Số lượng tối đa là ${MAX_QUANTITY}`
-                                    : "Tăng số lượng"
+                                    ? t('cart.maxQuantity', { max: MAX_QUANTITY })
+                                    : t('cart.increaseQuantity')
                                 }
                               >
                                 <Plus className="w-4 h-4" />
@@ -667,7 +671,7 @@ export default function ShoppingCart() {
               >
                 <CreditCard className="w-5 h-5" />
                 {hasSelectedItems
-                  ? `${t('cart.paymentNow')} (${selectedItems.size} sản phẩm)`
+                  ? t('cart.paymentNowWithItems', { count: selectedItems.size })
                   : t('cart.paymentNow')}
               </button>
 

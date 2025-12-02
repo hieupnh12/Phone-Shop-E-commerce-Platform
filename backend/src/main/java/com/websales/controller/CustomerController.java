@@ -9,6 +9,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -42,7 +44,7 @@ public class CustomerController {
                  .build();
      }
     @PutMapping("/update/{id}")
-    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_UPDATE_BASIC') or hasAuthority('SCOPE_CUSTOMER_MANAGE_ACCOUNT')")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_UPDATE_BASIC') or hasRole('SCOPE_CUSTOMER_MANAGE_ACCOUNT')")
     public ApiResponse<CustomerResponse> updateCustomer(
             @PathVariable Long id, 
             @Valid @RequestBody CustomerUpdateRequest request,
@@ -80,6 +82,18 @@ public class CustomerController {
                 .build();
      }
 
+     @PutMapping("/me")
+     public ApiResponse<CustomerResponse> updateMyProfile(
+             @Valid @RequestBody CustomerUpdateRequest request,
+             @AuthenticationPrincipal Jwt jwt) {
+        // Customer chỉ có thể update profile của chính mình
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.updateCustomer(customerId, request))
+                .build();
+     }
+
      @PutMapping("/complete-profile")
     public ApiResponse<CompleteProfileResponse> cusAuthUpdate(@RequestBody @Valid CusAuthUpdateRequest request) {
         return ApiResponse.<CompleteProfileResponse>builder()
@@ -114,7 +128,8 @@ public class CustomerController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<CustomerResponse> result = customerService.searchCustomers(keyword, page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CustomerResponse> result = customerService.searchCustomers(keyword,pageable);
 
         return ApiResponse.<Page<CustomerResponse>>builder()
                 .message("Search successfully")

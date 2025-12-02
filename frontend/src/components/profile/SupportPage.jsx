@@ -17,7 +17,7 @@ const SupportPage = () => {
                             <Phone size={20} className="text-red-500 mr-3 mt-1 flex-shrink-0" />
                             <div>
                                 <p className="font-medium text-gray-800">Số điện thoại</p>
-                                <p className="text-gray-700 text-lg font-semibold">0909696999</p>
+                                <p className="text-gray-700 text-lg font-semibold">0705432115</p>
                                 <p className="text-sm text-gray-500 mt-1">Hỗ trợ 24/7</p>
                             </div>
                         </div>
@@ -26,16 +26,12 @@ const SupportPage = () => {
                             <Home size={20} className="text-red-500 mr-3 mt-1 flex-shrink-0" />
                             <div>
                                 <p className="font-medium text-gray-800">Địa chỉ cửa hàng</p>
-                                <p className="text-gray-700">244 Nam Kì khởi Nghĩa, P. Hoà Quí, Q. Ngữ Hành Sơn, Đà Nẵng</p>
+                                <p className="text-gray-700">FShop, FPT City, Ngũ Hành Sơn, Đà Nẵng</p>
                             </div>
                         </div>
 
                         <div className="flex items-start">
                             <Clock size={20} className="text-red-500 mr-3 mt-1 flex-shrink-0" />
-                            <div>
-                                <p className="font-medium text-gray-800">Thời gian làm việc</p>
-                                <p className="text-gray-700">8:00 - 20:00 (Tất cả các ngày trong tuần)</p>
-                            </div>
                         </div>
                     </div>
                 </div>

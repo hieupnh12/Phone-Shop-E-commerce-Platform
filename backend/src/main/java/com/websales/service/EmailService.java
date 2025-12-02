@@ -162,10 +162,20 @@ public class EmailService   {
                 "<th>ID</th><th>Loại</th><th>RAM</th><th>ROM</th><th>Màu</th><th>Tồn kho</th></tr>";
 
         String rows = products.stream()
-                .map(p -> String.format(
-                        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
-                        p.getIdVersion(), p.getImportPrice(), p.getRam(), p.getRom(), p.getColor(), p.getStockQuantity()
-                ))
+                .map(p -> {
+                    String ramName = (p.getRam() != null) ? p.getRam().getNameRam() : "N/A";
+                    String romName = (p.getRom() != null) ? p.getRom().getNameRom() : "N/A";
+                    String colorName = (p.getColor() != null) ? p.getColor().getNameColor() : "N/A";
+                    return String.format(
+                            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
+                            p.getIdVersion() != null ? p.getIdVersion() : "N/A",
+                            p.getImportPrice() != null ? p.getImportPrice() : "N/A",
+                            ramName,
+                            romName,
+                            colorName,
+                            p.getStockQuantity() != null ? p.getStockQuantity() : 0
+                    );
+                })
                 .collect(Collectors.joining());
 
         String content = String.format(

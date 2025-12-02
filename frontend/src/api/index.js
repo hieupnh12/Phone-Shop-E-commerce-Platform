@@ -25,7 +25,28 @@ axiosClient.interceptors.response.use(
     (response) => response.data,
     async (error) => {
         const originalRequest = error.config;
-        if (error.response && error.response.status === 401 && !originalRequest._retry) {
+        const status = error.response?.status;
+        
+        // Helper function to determine if admin or customer and redirect
+        const handleUnauthorized = () => {
+            Cookie.remove("token");
+            Cookie.remove("refreshToken");
+            
+            // Check if this is an admin request
+            const isAdminRequest = originalRequest?.url && originalRequest.url.includes('/admin');
+            const isAdminPath = window.location.pathname.includes('/admin');
+            
+            if (isAdminRequest || isAdminPath) {
+                // Admin: redirect to admin-login
+                window.location.href = "/admin-login";
+            } else {
+                // Customer: redirect to login
+                window.location.href = "/login";
+            }
+        };
+        
+        // Handle 401 Unauthorized
+        if (status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             const refreshToken = Cookie.get("refreshToken");
             if (refreshToken) {
@@ -35,11 +56,20 @@ axiosClient.interceptors.response.use(
                     originalRequest.headers["Authorization"] = `Bearer ${res.data.accessToken}`;
                     return axiosClient(originalRequest);
                 } catch (err) {
-                    Cookie.remove("token");
-                    window.location.href = "/login";
+                    // Refresh token failed - redirect based on admin/customer
+                    handleUnauthorized();
                 }
+            } else {
+                // No refresh token - redirect based on admin/customer
+                handleUnauthorized();
             }
         }
+        
+        // Handle 500 Internal Server Error
+        if (status === 500) {
+            handleUnauthorized();
+        }
+        
         return Promise.reject(error);
     }
 )

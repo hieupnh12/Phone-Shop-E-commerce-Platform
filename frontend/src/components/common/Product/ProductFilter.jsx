@@ -78,6 +78,8 @@ const ProductFilter = ({
   onRefreshRateChange = () => {},
   minRating = 0,
   onMinRatingChange = () => {},
+  sortOrder = "none",
+  onSortOrderChange = () => {},
   onResetFilters = () => {},
 }) => {
   const { t } = useLanguage();
@@ -130,7 +132,7 @@ const ProductFilter = ({
     <div className="w-full lg:w-72 bg-white shadow-lg rounded-2xl p-5 sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <Filter size={18} /> Bộ lọc tìm kiếm
+          <Filter size={18} /> {t('productFilter.title')}
         </h2>
         <button
           type="button"
@@ -138,25 +140,25 @@ const ProductFilter = ({
           disabled={!hasAnyFilter}
           className="text-sm text-blue-600 hover:text-blue-700 disabled:text-slate-300 disabled:cursor-not-allowed"
         >
-          Đặt lại
+          {t('productFilter.reset')}
         </button>
       </div>
 
-      <Section title="Từ khóa">
+      <Section title={t('productFilter.keywords')}>
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={onSearchChange}
-            placeholder="Tên sản phẩm, mã..."
+            placeholder={t('productFilter.searchPlaceholder')}
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 text-sm"
           />
         </div>
       </Section>
 
       {brands.length > 0 && (
-        <Section title="Hãng sản xuất">
+        <Section title={t('productFilter.manufacturer')}>
           <div className="grid grid-cols-2 gap-3">
             {brands.map((b) => (
               <button
@@ -175,17 +177,17 @@ const ProductFilter = ({
         </Section>
       )}
 
-      <Section title="Mức giá">
-        <Checkbox label="Tất cả" checked={isPriceRangeSelected("all")} onChange={() => onPriceChange("all")} />
-        <Checkbox label="Dưới 2 triệu" checked={isPriceRangeSelected("under2")} onChange={() => onPriceChange("under2")} />
-        <Checkbox label="Từ 2 - 4 triệu" checked={isPriceRangeSelected("2-4")} onChange={() => onPriceChange("2-4")} />
-        <Checkbox label="Từ 4 - 7 triệu" checked={isPriceRangeSelected("4-7")} onChange={() => onPriceChange("4-7")} />
-        <Checkbox label="Từ 7 - 13 triệu" checked={isPriceRangeSelected("7-13")} onChange={() => onPriceChange("7-13")} />
-        <Checkbox label="Từ 13 - 20 triệu" checked={isPriceRangeSelected("13-20")} onChange={() => onPriceChange("13-20")} />
-        <Checkbox label="Trên 20 triệu" checked={isPriceRangeSelected("20+")} onChange={() => onPriceChange("20+")} />
+      <Section title={t('productFilter.priceRange')}>
+        <Checkbox label={t('common.all')} checked={isPriceRangeSelected("all")} onChange={() => onPriceChange("all")} />
+        <Checkbox label={t('productFilter.price.under2M')} checked={isPriceRangeSelected("under2")} onChange={() => onPriceChange("under2")} />
+        <Checkbox label={t('productFilter.price.2to4M')} checked={isPriceRangeSelected("2-4")} onChange={() => onPriceChange("2-4")} />
+        <Checkbox label={t('productFilter.price.4to7M')} checked={isPriceRangeSelected("4-7")} onChange={() => onPriceChange("4-7")} />
+        <Checkbox label={t('productFilter.price.7to13M')} checked={isPriceRangeSelected("7-13")} onChange={() => onPriceChange("7-13")} />
+        <Checkbox label={t('productFilter.price.13to20M')} checked={isPriceRangeSelected("13-20")} onChange={() => onPriceChange("13-20")} />
+        <Checkbox label={t('productFilter.price.over20M')} checked={isPriceRangeSelected("20+")} onChange={() => onPriceChange("20+")} />
 
-        <p className="text-xs text-slate-500 mt-2">Hoặc nhập khoảng giá (VND):</p>
-        <div className="flex items-center gap-2 mt-2">
+        {/* <p className="text-xs text-slate-500 mt-2">Hoặc nhập khoảng giá (VND):</p> */}
+        {/* <div className="flex items-center gap-2 mt-2">
           <input
             type="number"
             placeholder="Từ"
@@ -200,10 +202,26 @@ const ProductFilter = ({
             onChange={(e) => onCustomMaxPriceChange(e.target.value)}
             className="w-1/2 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
+        </div> */}
+        
+        {/* Sắp xếp theo giá */}
+        <div className="mt-4 pt-3 border-t border-slate-200">
+          <label className="block text-xs font-semibold text-slate-700 mb-2">
+            {t('productFilter.sortByPrice')}
+          </label>
+          <select
+            value={sortOrder}
+            onChange={(e) => onSortOrderChange(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white"
+          >
+            <option value="none">{t('productFilter.sort.default')}</option>
+            <option value="asc">{t('productFilter.sort.lowToHigh')}</option>
+            <option value="desc">{t('productFilter.sort.highToLow')}</option>
+          </select>
         </div>
       </Section>
 
-      <Section title={t('profile.minRating')}>
+      {/* <Section title={t('profile.minRating')}>
         <div className="flex flex-wrap">
           {ratingOptions.map((option) => (
             <Pill
@@ -215,9 +233,9 @@ const ProductFilter = ({
             </Pill>
           ))}
         </div>
-      </Section>
+      </Section> */}
 
-      <Section title="Hệ điều hành">
+      <Section title={t('productFilter.operatingSystem')}>
         <div className="flex flex-wrap">
           <Pill active={os === "ios"} onClick={() => onOsChange(os === "ios" ? "" : "ios")}>
             iOS
@@ -228,7 +246,7 @@ const ProductFilter = ({
         </div>
       </Section>
 
-      <Section title="Chip xử lý">
+      <Section title={t('productFilter.processor')}>
         <div className="flex flex-wrap">
           {["snapdragon", "mediatek", "apple", "exynos", "kirin"].map((chip) => (
             <Pill key={chip} active={cpu === chip} onClick={() => onCpuChange(cpu === chip ? "" : chip)}>
@@ -238,12 +256,12 @@ const ProductFilter = ({
         </div>
       </Section>
 
-      <Section title="Dung lượng pin">
-        <Checkbox label="Tất cả" checked={isBatterySelected("all")} onChange={() => onBatteryChange("all")} />
-        <Checkbox label="Dưới 3000 mAh" checked={isBatterySelected("under3000")} onChange={() => onBatteryChange("under3000")} />
-        <Checkbox label="3000 - 4000 mAh" checked={isBatterySelected("3-4")} onChange={() => onBatteryChange("3-4")} />
-        <Checkbox label="4000 - 5500 mAh" checked={isBatterySelected("4-5.5")} onChange={() => onBatteryChange("4-5.5")} />
-        <Checkbox label="Trên 5500 mAh" checked={isBatterySelected("5500+")} onChange={() => onBatteryChange("5500+")} />
+      <Section title={t('productFilter.batteryCapacity')}>
+        <Checkbox label={t('common.all')} checked={isBatterySelected("all")} onChange={() => onBatteryChange("all")} />
+        <Checkbox label={t('productFilter.battery.under3000')} checked={isBatterySelected("under3000")} onChange={() => onBatteryChange("under3000")} />
+        <Checkbox label={t('productFilter.battery.3000to4000')} checked={isBatterySelected("3-4")} onChange={() => onBatteryChange("3-4")} />
+        <Checkbox label={t('productFilter.battery.4000to5500')} checked={isBatterySelected("4-5.5")} onChange={() => onBatteryChange("4-5.5")} />
+        <Checkbox label={t('productFilter.battery.over5500')} checked={isBatterySelected("5500+")} onChange={() => onBatteryChange("5500+")} />
       </Section>
 
       {/* <Section title="RAM">
@@ -256,7 +274,7 @@ const ProductFilter = ({
         </div>
       </Section> */}
 
-      <Section title="Bộ nhớ trong">
+      <Section title={t('productFilter.internalStorage')}>
         <div className="flex flex-wrap">
           {["64", "128", "256", "512", "1024"].map((s) => (
             <Pill key={s} active={rom === s} onClick={() => onRomChange(rom === s ? "" : s)}>
@@ -266,15 +284,15 @@ const ProductFilter = ({
         </div>
       </Section>
 
-      <Section title="Màn hình">
-        <Checkbox label="Tất cả" checked={isScreenSizeSelected("all")} onChange={() => onScreenSizeChange("all")} />
-        <Checkbox label="Màn hình nhỏ" checked={isScreenSizeSelected("small")} onChange={() => onScreenSizeChange("small")} />
-        <Checkbox label="Từ 5 - 6.5 inch" checked={isScreenSizeSelected("5-6.5")} onChange={() => onScreenSizeChange("5-6.5")} />
-        <Checkbox label="6.5 - 6.8 inch" checked={isScreenSizeSelected("6.5-6.8")} onChange={() => onScreenSizeChange("6.5-6.8")} />
-        <Checkbox label="Trên 6.8 inch" checked={isScreenSizeSelected("6.8+")} onChange={() => onScreenSizeChange("6.8+")} />
+      <Section title={t('productFilter.screenTitle')}>
+        <Checkbox label={t('common.all')} checked={isScreenSizeSelected("all")} onChange={() => onScreenSizeChange("all")} />
+        <Checkbox label={t('productFilter.screen.small')} checked={isScreenSizeSelected("small")} onChange={() => onScreenSizeChange("small")} />
+        <Checkbox label={t('productFilter.screen.5to6_5')} checked={isScreenSizeSelected("5-6.5")} onChange={() => onScreenSizeChange("5-6.5")} />
+        <Checkbox label={t('productFilter.screen.6_5to6_8')} checked={isScreenSizeSelected("6.5-6.8")} onChange={() => onScreenSizeChange("6.5-6.8")} />
+        <Checkbox label={t('productFilter.screen.over6_8')} checked={isScreenSizeSelected("6.8+")} onChange={() => onScreenSizeChange("6.8+")} />
       </Section>
 
-      <Section title="Tần số quét">
+      <Section title={t('productFilter.refreshRate')}>
         <div className="flex flex-wrap">
           {["144", "120", "90", "60"].map((hz) => (
             <Pill key={hz} active={refreshRate === hz} onClick={() => onRefreshRateChange(refreshRate === hz ? "" : hz)}>

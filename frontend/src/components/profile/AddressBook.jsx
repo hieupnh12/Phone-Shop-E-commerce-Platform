@@ -6,8 +6,10 @@ import Button from "../common/Button";
 import Toast from "../common/Toast";
 import { customerService } from '../../services/api';
 import { formatPhoneNumber } from "../../utils/phoneUtils";
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const AddressBook = () => {
+    const { t } = useLanguage();
     const [addresses, setAddresses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -83,14 +85,14 @@ const AddressBook = () => {
             setShowForm(false);
             setAddressToEdit(null);
             setToast({
-                message: isEditMode ? "Cập nhật địa chỉ thành công!" : "Thêm địa chỉ thành công!",
+                message: isEditMode ? t('profile.addressBook.updateSuccess') : t('profile.addressBook.addSuccess'),
                 type: "success"
             });
         } catch (error) {
             console.error("Lỗi khi lưu địa chỉ:", error);
             console.error("Error details:", error.response?.data || error.message);
             setToast({
-                message: "Lỗi: Không thể lưu địa chỉ. " + (error.response?.data?.message || error.message || "Vui lòng thử lại."),
+                message: t('profile.addressBook.saveError') + (error.response?.data?.message || error.message || t('profile.addressBook.pleaseTryAgain')),
                 type: "error"
             });
         } finally {
@@ -116,7 +118,7 @@ const AddressBook = () => {
         // Không cho xóa địa chỉ mặc định nếu còn nhiều địa chỉ
         if (addressToDelete && defaultAddressId === id && addresses.length > 1) {
             setToast({
-                message: "Vui lòng đặt một địa chỉ khác làm mặc định trước khi xóa địa chỉ mặc định hiện tại.",
+                message: t('profile.addressBook.setDefaultBeforeDelete'),
                 type: "warning"
             });
             setDeleteConfirm({ isOpen: false, addressId: null, address: null });
@@ -136,13 +138,13 @@ const AddressBook = () => {
             }
             setDeleteConfirm({ isOpen: false, addressId: null, address: null });
             setToast({
-                message: "Xóa địa chỉ thành công!",
+                message: t('profile.addressBook.deleteSuccess'),
                 type: "success"
             });
         } catch (error) {
             console.error("Lỗi khi xóa địa chỉ:", error);
             setToast({
-                message: "Lỗi: Không thể xóa địa chỉ. Vui lòng thử lại.",
+                message: t('profile.addressBook.deleteError'),
                 type: "error"
             });
         } finally {
@@ -170,7 +172,7 @@ const AddressBook = () => {
             return (
                 <div className="flex flex-col items-center justify-center py-8 text-center text-gray-500">
                     <Loader2 size={24} className="animate-spin text-red-500 mb-3" />
-                    <p>Đang tải dữ liệu địa chỉ...</p>
+                    <p>{t('profile.addressBook.loading')}</p>
                 </div>
             );
         }
@@ -183,7 +185,7 @@ const AddressBook = () => {
                         alt="No Address"
                         className="w-40 h-40 mb-4 object-contain"
                     />
-                    <p>Bạn chưa có địa chỉ nào được tạo</p>
+                    <p>{t('profile.addressBook.noAddresses')}</p>
                 </div>
             );
         }
@@ -215,14 +217,14 @@ const AddressBook = () => {
                                         disabled
                                     >
                                         <Home size={12} />
-                                        Nhà
+                                        {t('profile.addressBook.home')}
                                     </button>
                                     {isDefault && (
                                         <button
                                             className="px-2 py-1 text-xs bg-blue-500 text-white rounded"
                                             disabled
                                         >
-                                            Mặc định
+                                            {t('profile.addressBook.default')}
                                         </button>
                                     )}
                                 </div>
@@ -230,9 +232,9 @@ const AddressBook = () => {
 
                             {/* Thông tin địa chỉ */}
                             <div className="text-sm text-gray-700 space-y-1 mb-3">
-                                <p><span className="font-medium">Người nhận:</span> {customerInfo.fullName || 'N/A'}</p>
-                                <p><span className="font-medium">SĐT:</span> {formatPhoneNumber(customerInfo.phoneNumber) || 'N/A'}</p>
-                                <p><span className="font-medium">Địa chỉ:</span> {addr.address || 'Chưa có'}</p>
+                                <p><span className="font-medium">{t('profile.addressBook.recipient')}:</span> {customerInfo.fullName || 'N/A'}</p>
+                                <p><span className="font-medium">{t('profile.addressBook.phone')}:</span> {formatPhoneNumber(customerInfo.phoneNumber) || 'N/A'}</p>
+                                <p><span className="font-medium">{t('profile.addressBook.address')}:</span> {addr.address || t('profile.addressBook.notAvailable')}</p>
                             </div>
 
                             {/* Actions */}
@@ -243,7 +245,7 @@ const AddressBook = () => {
                                         onClick={() => handleSetDefault(addr.addressBookId)}
                                         className="text-xs text-blue-500 hover:text-blue-600 font-medium"
                                     >
-                                        Đặt làm mặc định
+                                        {t('profile.addressBook.setAsDefault')}
                                     </button>
                                 )}
                                 <button
@@ -251,7 +253,7 @@ const AddressBook = () => {
                                     onClick={() => handleEditAddress(addr)}
                                     className="text-xs text-blue-500 hover:text-blue-600 font-medium"
                                 >
-                                    Cập nhật
+                                    {t('common.update')}
                                 </button>
                                 {!(isDefault && addresses.length === 1) && (
                                     <button
@@ -259,7 +261,7 @@ const AddressBook = () => {
                                         onClick={() => handleDeleteClick(addr.addressBookId)}
                                         className="text-xs text-red-500 hover:text-red-600 font-medium"
                                     >
-                                        Xóa
+                                        {t('common.delete')}
                                     </button>
                                 )}
                             </div>
@@ -273,14 +275,14 @@ const AddressBook = () => {
     return (
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
             <div className="flex items-center justify-between border-b pb-4 mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Sổ địa chỉ</h3>
+                <h3 className="text-xl font-bold text-gray-800">{t('profile.addressBook.title')}</h3>
                 <button
                     onClick={handleAddAddress}
                     className="flex items-center text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
                     disabled={isLoading}
                 >
                     <Plus size={18} className="mr-2" />
-                    Thêm địa chỉ
+                    {t('profile.addressBook.addAddress')}
                 </button>
             </div>
 
@@ -290,6 +292,7 @@ const AddressBook = () => {
             {showForm && (
                 <AddressForm
                     addressToEdit={addressToEdit}
+                    customerInfo={customerInfo}
                     onClose={() => {
                         setShowForm(false);
                         setAddressToEdit(null);
@@ -312,14 +315,14 @@ const AddressBook = () => {
                             <AlertTriangle className="w-8 h-8 text-red-600" />
                         </div>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận xóa địa chỉ</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{t('profile.addressBook.confirmDelete')}</h3>
                     <p className="text-gray-600 mb-6">
-                        Bạn có chắc chắn muốn xóa địa chỉ này?
+                        {t('profile.addressBook.deleteConfirmMessage')}
                     </p>
                     {deleteConfirm.address && (
                         <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
                             <p className="text-sm text-gray-700">
-                                <span className="font-medium">Địa chỉ:</span> {deleteConfirm.address.address || 'Chưa có'}
+                                <span className="font-medium">{t('profile.addressBook.address')}:</span> {deleteConfirm.address.address || t('profile.addressBook.notAvailable')}
                             </p>
                         </div>
                     )}
@@ -329,14 +332,14 @@ const AddressBook = () => {
                             onClick={() => setDeleteConfirm({ isOpen: false, addressId: null, address: null })}
                             disabled={isLoading}
                         >
-                            Hủy
+                            {t('common.cancel')}
                         </Button>
                         <Button
                             variant="danger"
                             onClick={handleDeleteConfirm}
                             loading={isLoading}
                         >
-                            Xóa
+                            {t('common.delete')}
                         </Button>
                     </div>
                 </div>

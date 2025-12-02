@@ -18,6 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
+import java.time.LocalDate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -61,21 +63,60 @@ public class CustomerService {
                 () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
         );
 
-        if (request.getFullName() != null) {
-            customer.setFullName(request.getFullName());
+        // Validate fullName - bắt buộc
+        if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
+            String trimmedName = request.getFullName().trim();
+            if (trimmedName.length() < 2) {
+                throw new AppException(ErrorCode.FULL_NAME_NOT_BLANK);
+            }
+            if (trimmedName.length() > 100) {
+                throw new AppException(ErrorCode.LONG_USER_NAME);
+            }
+            customer.setFullName(trimmedName);
+        } else if (request.getFullName() != null) {
+            throw new AppException(ErrorCode.FULL_NAME_NOT_BLANK);
         }
+
+        // Validate email format nếu có
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            String trimmedEmail = request.getEmail().trim().toLowerCase(); // Normalize to lowercase
+            String emailPattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+            if (!trimmedEmail.matches(emailPattern)) {
+                throw new AppException(ErrorCode.EMAIL_INVALID);
+            }
+            // Kiểm tra email trùng (trừ chính customer hiện tại)
+            // So sánh case-insensitive và handle null
+            String currentEmail = customer.getEmail();
+            boolean isSameEmail = currentEmail != null && 
+                                 currentEmail.trim().toLowerCase().equals(trimmedEmail);
+            
+            // Chỉ check trùng nếu email khác với email hiện tại
+            if (!isSameEmail) {
+                // Check case-insensitive: tìm customer có email giống (case-insensitive)
+                var existingCustomer = customerRepository.findCustomerByEmail(trimmedEmail);
+                if (existingCustomer.isPresent() && !existingCustomer.get().getCustomerId().equals(customer.getCustomerId())) {
+                    throw new AppException(ErrorCode.CUSTOMER_EXIST);
+                }
+            }
+            customer.setEmail(trimmedEmail);
+        }
+
+        // Validate birthDate - phải là ngày trong quá khứ
+        if (request.getBirthDate() != null) {
+            if (request.getBirthDate().isAfter(LocalDate.now())) {
+                throw new AppException(ErrorCode.INVALID_DOB);
+            }
+            customer.setBirthDate(request.getBirthDate());
+        }
+
+        // Gender có thể null
         if (request.getGender() != null) {
             customer.setGender(request.getGender());
         }
-        if (request.getBirthDate() != null) {
-            customer.setBirthDate(request.getBirthDate());
-        }
-        if (request.getEmail() != null) {
-            customer.setEmail(request.getEmail());
-        }
 
+        // Address có thể null hoặc empty
         if (request.getAddress() != null) {
-            customer.setAddress(request.getAddress());
+            customer.setAddress(request.getAddress().trim());
         }
 
         customerRepository.save(customer);
@@ -126,19 +167,68 @@ public class CustomerService {
                 getListOrderDetailByOrderId(orderId);
     }
 
-    public Page<CustomerResponse> searchCustomers(String keyword, int page, int size) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "createAt"); // đúng tên field trong entity
-        Pageable pageable = PageRequest.of(page, size, sort);
+    public Page<CustomerResponse> searchCustomers(String keyword,Pageable pageable) {
+//        Sort sort = Sort.by(Sort.Direction.DESC, "create_at"); // đúng tên field trong entity
+//        Pageable pageable = PageRequest.of(page, size, sort);
+//
+//        Page<Customer> customerPage;
+//        if (keyword != null && !keyword.trim().isEmpty()) {
+//            // Chỉ search theo số điện thoại - loại bỏ khoảng trắng và ký tự đặc biệt
+//            String trimmedKeyword = keyword.trim().replaceAll("[^0-9+]", "");
+//
+//            System.out.println(">>> Search keyword (original): " + keyword);
+//            System.out.println(">>> Search keyword (trimmed): " + trimmedKeyword);
+//
+//            if (trimmedKeyword.isEmpty()) {
+//                // Nếu sau khi loại bỏ chỉ còn rỗng, trả về tất cả
+//                System.out.println(">>> Keyword is empty after trimming, returning all customers");
+//                customerPage = customerRepository.findAll(pageable);
+//            } else {
+//                System.out.println(">>> Searching with keyword: " + trimmedKeyword);
+//                customerPage = customerRepository.searchCustomersByPhoneNumber(trimmedKeyword, pageable);
+//                System.out.println(">>> Found " + customerPage.getContent().size() + " customers");
+//
+//                // Nếu không tìm thấy và keyword là số, thử các format khác
+//                if (customerPage.getContent().isEmpty() && trimmedKeyword.matches("^[0-9+]+$")) {
+//                    // Nếu bắt đầu bằng 0, thử tìm với format 84
+//                    if (trimmedKeyword.startsWith("0") && trimmedKeyword.length() > 1) {
+//                        String keyword84 = "84" + trimmedKeyword.substring(1);
+//                        System.out.println(">>> Trying format 84: " + keyword84);
+//                        customerPage = customerRepository.searchCustomersByPhoneNumber(keyword84, pageable);
+//                        System.out.println(">>> Found " + customerPage.getContent().size() + " customers with format 84");
+//                    }
+//
+//                    // Nếu vẫn không tìm thấy và bắt đầu bằng 84, thử tìm với format 0
+//                    if (customerPage.getContent().isEmpty() && trimmedKeyword.startsWith("84") && trimmedKeyword.length() > 2) {
+//                        String keyword0 = "0" + trimmedKeyword.substring(2);
+//                        System.out.println(">>> Trying format 0: " + keyword0);
+//                        customerPage = customerRepository.searchCustomersByPhoneNumber(keyword0, pageable);
+//                        System.out.println(">>> Found " + customerPage.getContent().size() + " customers with format 0");
+//                    }
+//
+//                    // Nếu vẫn không tìm thấy và bắt đầu bằng +84, thử tìm với format 0 và 84
+//                    if (customerPage.getContent().isEmpty() && trimmedKeyword.startsWith("+84") && trimmedKeyword.length() > 3) {
+//                        String keyword0 = "0" + trimmedKeyword.substring(3);
+//                        System.out.println(">>> Trying format 0 from +84: " + keyword0);
+//                        customerPage = customerRepository.searchCustomersByPhoneNumber(keyword0, pageable);
+//                        if (customerPage.getContent().isEmpty()) {
+//                            String keyword84 = "84" + trimmedKeyword.substring(3);
+//                            System.out.println(">>> Trying format 84 from +84: " + keyword84);
+//                            customerPage = customerRepository.searchCustomersByPhoneNumber(keyword84, pageable);
+//                        }
+//                        System.out.println(">>> Found " + customerPage.getContent().size() + " customers with +84 format");
+//                    }
+//                }
+//            }
+//
+//        } else {
+//            System.out.println(">>> No keyword, returning all customers");
+//            customerPage = customerRepository.findAll(pageable);
+//        }
 
-        Page<Customer> customerPage;
-
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            customerPage = customerRepository.findCustomerByEmail(keyword, pageable);
-        } else {
-            customerPage = customerRepository.findAll(pageable);
-        }
-
-        return customerPage.map(customerMapper::toCustomerResponse);
+//        customerPage = customerRepository.findCustomerByPhoneNumberContainingIgnoreCase(keyword);
+        return customerRepository.searchCustomersByPhoneNumber(keyword,pageable)
+                .map(customerMapper::toCustomerResponse);
     }
 
     // Method mới để tìm kiếm theo số điện thoại hoặc email (KHÔNG ảnh hưởng method cũ)

@@ -1,62 +1,141 @@
-import { Link } from 'lucide-react'
-import React from 'react'
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Phone, MapPin, Mail, Clock, Facebook, MessageCircle } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const FooterV2 = () => {
+  const { t } = useLanguage();
   return (
-    <footer className="bg-gray-800 text-white">
-          <div className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">WebSales</h3>
-                <p className="text-gray-300">
-                  Your trusted online shopping destination for quality products at great prices.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="text-md font-semibold mb-4">Quick Links</h4>
-                <ul className="space-y-2">
-                  <li><Link to="/" className="text-gray-300 hover:text-white">Home</Link></li>
-                  <li><Link to="/products" className="text-gray-300 hover:text-white">Products</Link></li>
-                  <li><Link to="/about" className="text-gray-300 hover:text-white">About Us</Link></li>
-                  <li><Link to="/contact" className="text-gray-300 hover:text-white">Contact</Link></li>
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="text-md font-semibold mb-4">Customer Service</h4>
-                <ul className="space-y-2">
-                  <li><Link to="/help" className="text-gray-300 hover:text-white">Help Center</Link></li>
-                  <li><Link to="/returns" className="text-gray-300 hover:text-white">Returns</Link></li>
-                  <li><Link to="/shipping" className="text-gray-300 hover:text-white">Shipping Info</Link></li>
-                  <li><Link to="/faq" className="text-gray-300 hover:text-white">FAQ</Link></li>
-                </ul>
-              </div>
-              
-              <div>
-                <h4 className="text-md font-semibold mb-4">Connect With Us</h4>
-                <div className="flex space-x-4">
-                  <a href="#" className="text-gray-300 hover:text-white">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-                    </svg>
-                  </a>
-                  <a href="#" className="text-gray-300 hover:text-white">
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
-                    </svg>
-                  </a>
-                </div>
-              </div>
+    <footer className="bg-slate-900 text-white border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* About FShop */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-xl font-bold">FShop</h3>
             </div>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {t('footer.about')}
+            </p>
+          </div>
+          
+          {/* Quick Links */}
+          <div>
+            <h4 className="text-lg font-semibold mb-4 text-white">{t('footer.quickLinks')}</h4>
+            <ul className="space-y-3">
+              <li>
+                <Link to="/" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                  {t('navigation.home')}
+                </Link>
+              </li>
+              <li>
+                <Link to="/user/products" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                  {t('navigation.products')}
+                </Link>
+              </li>
+              <li>
+                <Link to="/user/feedbacks" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                  {t('navigation.feedbacks')}
+                </Link>
+              </li>
+              <li>
+                <Link to="/user/contact" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                  {t('navigation.contact')}
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
+          {/* Contact Info */}
+          <div>
+            <h4 className="text-lg font-semibold mb-4 text-white">{t('footer.contactInfo')}</h4>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <Phone className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <a href="tel:0705432115" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                    0705 432 115
+                  </a>
+                  <p className="text-slate-500 text-xs">{t('footer.supportHotline')}</p>
+                </div>
+              </li>
+              <li className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <a href="mailto:support@fshop.com" className="text-slate-400 hover:text-cyan-400 transition-colors text-sm">
+                  support@fshop.com
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <span className="text-slate-400 text-sm">
+                  FShop, FPT City<br />
+                  Ngũ Hành Sơn, Đà Nẵng
+                </span>
+              </li>
+            </ul>
+          </div>
+          
+          {/* Business Hours */}
+          <div>
+            <h4 className="text-lg font-semibold mb-4 text-white">{t('footer.businessHours')}</h4>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <Clock className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="text-slate-400">
+                    <span className="text-slate-500">{t('footer.weekdays')}:</span> 08:00 - 17:30
+                  </p>
+                  <p className="text-slate-400">
+                    <span className="text-slate-500">{t('footer.weekends')}:</span> 09:00 - 17:00
+                  </p>
+                </div>
+              </li>
+            </ul>
             
-            <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-              <p className="text-gray-300">
-                © 2024 WebSales. All rights reserved.
-              </p>
+            {/* Social Links */}
+            <div className="mt-6">
+              <p className="text-sm text-slate-500 mb-3">{t('footer.connectWithUs')}</p>
+              <div className="flex gap-3">
+                <a 
+                  href="https://facebook.com/minhtran324" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-slate-800 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500/50 rounded-lg flex items-center justify-center transition-all"
+                >
+                  <Facebook className="w-4 h-4 text-slate-400 hover:text-cyan-400" />
+                </a>
+                <a 
+                  href="https://zalo.me/0705432115" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-slate-800 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-500/50 rounded-lg flex items-center justify-center transition-all"
+                >
+                  <MessageCircle className="w-4 h-4 text-slate-400 hover:text-cyan-400" />
+                </a>
+              </div>
             </div>
           </div>
-        </footer>
-  )
-}
+        </div>
+        
+        {/* Bottom Bar */}
+        <div className="border-t border-slate-800 mt-10 pt-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-slate-500 text-sm">
+              {t('footer.copyright')}
+            </p>
+            <div className="flex gap-6 text-sm">
+              <Link to="/user/contact" className="text-slate-500 hover:text-cyan-400 transition-colors">
+                {t('footer.privacyPolicy')}
+              </Link>
+              <Link to="/user/contact" className="text-slate-500 hover:text-cyan-400 transition-colors">
+                {t('footer.termsOfUse')}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
 export default FooterV2;

@@ -5,8 +5,10 @@ import { cartService } from '../../../services/api';
 import { fetchCountProduct } from '../../../services/productWorker';
 import ProductListAll from '../../../components/common/Product/ProductListAll';
 import ProductFilter from './ProductFilter';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 const ProductsContainer = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
 
@@ -24,6 +26,7 @@ const ProductsContainer = () => {
   const [rom, setRom] = useState('');
   const [screenSize, setScreenSize] = useState('all');
   const [refreshRate, setRefreshRate] = useState('');
+  const [sortOrder, setSortOrder] = useState('none');
   const [totalCount, setTotalCount] = useState(0);
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
@@ -93,7 +96,7 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
   { label: 'Samsung', value: 'Samsung', logo: '../image/samsung-swoop-svgrepo-com.svg' },
   { label: 'Xiaomi', value: 'Xiaomi', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg' },
   { label: 'OPPO', value: 'OPPO', logo: '../image/oppo-seeklogo.svg' },
-  { label: 'iPhone', value: 'iPhone', logo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/APPLE_IPHONE_LOGO.svg' },
+  { label: 'Apple', value: 'Apple', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg' },
   { label: 'Sony', value: 'Sony', logo: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Sony_logo.svg' },
   { label: 'Google', value: 'Google', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' }
 ],
@@ -135,6 +138,7 @@ const usePreset = priceRange !== 'all' && !hasCustomRange;
     setRom('');
     setScreenSize('all');
     setRefreshRate('');
+    setSortOrder('none');
   };
 
   const handleProductsCountChange = (count) => {
@@ -201,7 +205,7 @@ useEffect(() => {
 
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className=" mx-auto px-4 sm:px-6 lg:px-8 width-full">
       <div className="flex gap-6">
         {/* ProductFilter */}
         <ProductFilter
@@ -269,6 +273,11 @@ useEffect(() => {
           }}
           minRating={minRating}
           onMinRatingChange={handleRatingChange}
+          sortOrder={sortOrder}
+          onSortOrderChange={(value) => {
+            console.log('[ProductFilter] sortOrder ->', value);
+            setSortOrder(value);
+          }}
           onResetFilters={() => {
             console.log('[ProductFilter] reset invoked');
             handleResetFilters();
@@ -280,8 +289,7 @@ useEffect(() => {
           {/* Results Summary */}
           <div className="mb-6 flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-lg p-4">
           <p className="text-white">
-            Showing <span className="font-bold">{totalCount}</span> products
-            {/* {totalCount === 1 ? ' (1 result)' : ' results'} Improved pluralization for better UX */}
+            {t('productContainer.showingProducts').replace('{{count}}', totalCount)}
           </p>
             {error && <p className="text-red-400 text-sm">{error}</p>}
           </div>
@@ -289,6 +297,7 @@ useEffect(() => {
           {/* Render ProductListAll */}
           <ProductListAll
             filters={filters}
+            sortOrder={sortOrder}
             favorites={favorites}
             onAddToCart={handleAddToCart}
             onFavorite={handleFavorite}

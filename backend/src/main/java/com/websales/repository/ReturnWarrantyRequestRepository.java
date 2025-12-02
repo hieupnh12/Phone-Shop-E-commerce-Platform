@@ -15,5 +15,6 @@ public interface ReturnWarrantyRequestRepository extends JpaRepository<ReturnWar
     Page<ReturnWarrantyRequest> findByCustomer_CustomerId(Long customerId, Pageable pageable);
     Page<ReturnWarrantyRequest> findByStatus(RequestStatus status, Pageable pageable);
     List<ReturnWarrantyRequest> findByOrder_OrderId(Integer orderId);
+    Page<ReturnWarrantyRequest> findByEmployee_Id(Long employeeId, Pageable pageable);
 }
 

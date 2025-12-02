@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { X, AlertCircle, Shield, RefreshCw } from 'lucide-react';
+import { X, AlertCircle, Shield } from 'lucide-react';
 import { warrantyRequestService } from '../../services/api';
 import Toast from './Toast';
 
 const WarrantyRequestModal = ({ isOpen, onClose, orderId, productVersionId, productName }) => {
     const [formData, setFormData] = useState({
-        type: 'WARRANTY', // WARRANTY or EXCHANGE
+        type: 'WARRANTY', // Only WARRANTY
         reason: '',
         appointmentDate: ''
     });
@@ -20,7 +20,7 @@ const WarrantyRequestModal = ({ isOpen, onClose, orderId, productVersionId, prod
         if (!formData.reason.trim()) {
             setToast({
                 type: 'error',
-                message: 'Vui lòng nhập lý do yêu cầu bảo hành/đổi trả'
+                message: 'Vui lòng nhập lý do yêu cầu bảo hành'
             });
             return;
         }
@@ -39,7 +39,7 @@ const WarrantyRequestModal = ({ isOpen, onClose, orderId, productVersionId, prod
             
             setToast({
                 type: 'success',
-                message: 'Yêu cầu bảo hành/đổi trả đã được gửi thành công!'
+                message: 'Yêu cầu bảo hành đã được gửi thành công!'
             });
 
             // Reset form
@@ -85,7 +85,7 @@ const WarrantyRequestModal = ({ isOpen, onClose, orderId, productVersionId, prod
                             <Shield className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">Yêu cầu bảo hành/đổi trả</h2>
+                            <h2 className="text-xl font-bold text-gray-900">Yêu cầu bảo hành</h2>
                             <p className="text-sm text-gray-500 mt-1">{productName}</p>
                         </div>
                     </div>
@@ -99,62 +99,6 @@ const WarrantyRequestModal = ({ isOpen, onClose, orderId, productVersionId, prod
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* Request Type */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Loại yêu cầu <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                formData.type === 'WARRANTY' 
-                                    ? 'border-blue-500 bg-blue-50' 
-                                    : 'border-gray-200 hover:border-gray-300'
-                            }`}>
-                                <input
-                                    type="radio"
-                                    name="type"
-                                    value="WARRANTY"
-                                    checked={formData.type === 'WARRANTY'}
-                                    onChange={handleChange}
-                                    className="sr-only"
-                                />
-                                <div className="flex items-center gap-3">
-                                    <Shield className={`w-5 h-5 ${
-                                        formData.type === 'WARRANTY' ? 'text-blue-600' : 'text-gray-400'
-                                    }`} />
-                                    <div>
-                                        <div className="font-medium text-gray-900">Bảo hành</div>
-                                        <div className="text-xs text-gray-500">Sửa chữa sản phẩm</div>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                formData.type === 'EXCHANGE' 
-                                    ? 'border-blue-500 bg-blue-50' 
-                                    : 'border-gray-200 hover:border-gray-300'
-                            }`}>
-                                <input
-                                    type="radio"
-                                    name="type"
-                                    value="EXCHANGE"
-                                    checked={formData.type === 'EXCHANGE'}
-                                    onChange={handleChange}
-                                    className="sr-only"
-                                />
-                                <div className="flex items-center gap-3">
-                                    <RefreshCw className={`w-5 h-5 ${
-                                        formData.type === 'EXCHANGE' ? 'text-blue-600' : 'text-gray-400'
-                                    }`} />
-                                    <div>
-                                        <div className="font-medium text-gray-900">Đổi trả</div>
-                                        <div className="text-xs text-gray-500">Đổi sản phẩm mới</div>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
                     {/* Reason */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">

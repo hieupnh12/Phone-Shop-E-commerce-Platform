@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Trash2, Plus, Minus } from 'lucide-react';
 
-const CartItem = ({ item, onQuantityChange, onRemove }) => {
+const CartItem = ({ item, onQuantityChange, onRemove, labels = {} }) => {
   const { id, name, price, image, quantity, discount } = item;
   const discountedPrice = discount ? price * (1 - discount / 100) : price;
   const total = (discountedPrice * quantity).toFixed(2);
@@ -31,7 +31,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
       <div className="flex-grow">
         <h3 className="font-semibold text-gray-900">{name}</h3>
         <p className="text-sm text-gray-600 mt-1">
-          {discount && <span className="text-red-500 font-semibold">{discount}% OFF</span>}
+          {discount && <span className="text-red-500 font-semibold">{discount}% {labels.off || 'OFF'}</span>}
           {discount && <span className="mx-2 line-through text-gray-400">${price.toFixed(2)}</span>}
           <span className="font-semibold text-gray-900">${discountedPrice.toFixed(2)}</span>
         </p>
@@ -42,7 +42,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
         <button
           onClick={() => handleQuantityChange(quantity - 1)}
           className="p-1 hover:bg-gray-200 rounded transition-colors"
-          aria-label="Decrease quantity"
+          aria-label={labels.decreaseQuantity || "Decrease quantity"}
         >
           <Minus size={16} className="text-gray-600" />
         </button>
@@ -50,7 +50,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
         <button
           onClick={() => handleQuantityChange(quantity + 1)}
           className="p-1 hover:bg-gray-200 rounded transition-colors"
-          aria-label="Increase quantity"
+          aria-label={labels.increaseQuantity || "Increase quantity"}
         >
           <Plus size={16} className="text-gray-600" />
         </button>
@@ -62,7 +62,7 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => {
         <button
           onClick={() => onRemove(id)}
           className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors self-end"
-          aria-label="Remove item"
+          aria-label={labels.removeItem || "Remove item"}
         >
           <Trash2 size={18} />
         </button>
@@ -82,6 +82,12 @@ CartItem.propTypes = {
   }).isRequired,
   onQuantityChange: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
+  labels: PropTypes.shape({
+    off: PropTypes.string,
+    decreaseQuantity: PropTypes.string,
+    increaseQuantity: PropTypes.string,
+    removeItem: PropTypes.string,
+  }),
 };
 
 export default CartItem;
