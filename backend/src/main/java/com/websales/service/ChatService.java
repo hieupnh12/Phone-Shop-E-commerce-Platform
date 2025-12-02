@@ -2,7 +2,6 @@ package com.websales.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.websales.dto.response.*;
-import com.websales.entity.Product;
 import com.websales.mapper.ProductMapper;
 import com.websales.service.chatbot.RecommendService;
 import lombok.AccessLevel;
@@ -242,7 +241,7 @@ public class ChatService {
                     - Không tự tạo dữ liệu khi không có trong ngữ cảnh.
                 
                     Khi không có dữ liệu, hãy trả lời:
-                    "Xin lỗi, hiện tôi chưa có dữ liệu cho nội dung này."
+                    "Xin lỗi, hiện tôi chưa có dữ liệu cho nội dung này. Và tư vấn không quá 3 câu về mua điện thoại tại FShop"
                 """);
 
         UserMessage userMessage = new UserMessage(message);
@@ -314,7 +313,7 @@ public class ChatService {
                                              Trả về duy nhất JSON theo đúng format:
                         
                                              {
-                                               "message": "tư vấn ngắn gọn về điện thoại trong ảnh (không quá 3 câu) và cuối câu có thể gợi ý mua sản phẩm Samsung, iPhone, Xiaomi từ cửa hàng của Fshop",
+                                               "message": "tư vấn ngắn gọn về điện thoại trong ảnh (nếu xác định chính xác tên điện thoại có thể kèm theo tên) (không quá 3 câu) và cuối câu có thể gợi ý tùy theo mối liên quan của ảnh mà chọn mua 1 trong các sản phẩm ( Samsung, iPhone, Xiaomi ) từ cửa hàng của Fshop",
                                                "nameProduct": "tên hãng điện thoại nhận diện được từ ảnh (Samsung, iPhone, Xiaomi, Oppo, Vivo, Realme, Nokia...)"
                                              }
                         
@@ -352,6 +351,203 @@ public class ChatService {
                     "Xin lỗi, tôi chưa thể nhận diện sản phẩm bạn có thể cung cấp thông tin về điện thoại không.",
                     null
             );
+        }
+    }
+
+    /**
+     * Phân tích ảnh và trả về thông tin sản phẩm ProductFULLResponse
+     * AI sẽ phân tích ảnh, xác định xem có phải điện thoại không,
+     * và nếu là điện thoại sẽ lấy thông tin chi tiết từ mạng
+     * 
+     * @param file Ảnh từ file upload
+     * @param imageUrl URL của ảnh
+     * @param productName Tên sản phẩm (optional) để giúp AI tìm chính xác hơn
+     */
+    public ProductImageAnalysisResponse analyzeProductImage(MultipartFile file, String imageUrl, String productName) {
+        Media media;
+
+        try {
+            if (file != null && !file.isEmpty()) {
+                media = Media.builder()
+                        .mimeType(MimeTypeUtils.parseMimeType(file.getContentType()))
+                        .data(file.getResource())
+                        .build();
+            } else if (imageUrl != null && !imageUrl.isBlank()) {
+                URI uri = new URI(imageUrl);
+                UrlResource resource = new UrlResource(uri.toURL());
+                String mimeType = Files.probeContentType(Path.of(uri.getPath()));
+                if (mimeType == null) {
+                    mimeType = "image/jpeg";
+                }
+                media = Media.builder()
+                        .mimeType(MimeTypeUtils.parseMimeType(mimeType))
+                        .data(resource)
+                        .build();
+            } else {
+                throw new IllegalArgumentException("Phải gửi file hoặc imageUrl");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể tạo media để xử lý ảnh", e);
+        }
+
+        ChatOptions chatOptions = ChatOptions.builder()
+                .temperature(0D)
+                .build();
+
+        // Xây dựng user message với productName nếu có
+        String userMessageText;
+        if (productName != null && !productName.isBlank()) {
+            userMessageText = String.format(
+                "Hãy phân tích ảnh này và trả về thông tin chi tiết về điện thoại. Tên sản phẩm gợi ý: %s. " +
+                "Hãy sử dụng tên này để tìm kiếm thông tin chính xác hơn từ kiến thức của bạn.",
+                productName
+            );
+        } else {
+            userMessageText = "Hãy phân tích ảnh này và trả về thông tin chi tiết về điện thoại nếu có.";
+        }
+
+        String answer = chatClient.prompt()
+                .options(chatOptions)
+                .system("""
+                        Bạn là FShop AI, chuyên gia nhận diện và phân tích điện thoại dựa trên hình ảnh.
+                        
+                        QUY TẮC BẮT BUỘC:
+                        1. Phân tích ảnh để xác định xem có phải điện thoại không.
+                        2. Nếu người dùng cung cấp tên sản phẩm gợi ý, hãy ưu tiên sử dụng tên đó để tìm thông tin chính xác hơn.
+                        3. Nếu là điện thoại, hãy lấy thông tin chi tiết từ kiến thức của bạn (từ mạng/internet).
+                        4. Chỉ được trả về JSON, không được trả về nội dung khác.
+                        5. Nếu không phải điện thoại, trả về isPhone = false và message giải thích.
+                        
+                        YÊU CẦU OUTPUT (BẮT BUỘC):
+                        Trả về duy nhất JSON theo đúng format:
+                        
+                        {
+                          "isPhone": true/false,
+                          "message": "Thông báo về kết quả phân tích",
+                          "nameProduct": "Tên đầy đủ của điện thoại (ví dụ: iPhone 15 Pro Max, Samsung Galaxy S24 Ultra)",
+                          "brandName": "Tên hãng (Samsung, iPhone, Xiaomi, Oppo, Vivo, Realme, Nokia...)",
+                          "originName": "Xuất xứ",
+                          "battery": "Dung lượng pin (ví dụ: 5000 mAh)",
+                          "scanFrequency": "Tần số quét",
+                          "screenSize": "Kích thước màn hình (ví dụ: 6.7 inch)",
+                          "operatingSystemName": "Hệ điều hành (iOS, Android, ...)",
+                          "screenResolution": "Độ phân giải màn hình (ví dụ: 1440 x 3200)",
+                          "screenTech": "Công nghệ màn hình (ví dụ: AMOLED, OLED)",
+                          "chipset": "Chip xử lý (ví dụ: Apple A17 Pro, Snapdragon 8 Gen 3)",
+                          "rearCamera": "Camera sau (ví dụ: 200MP + 50MP + 10MP)",
+                          "frontCamera": "Camera trước (ví dụ: 12MP)",
+                          "warrantyPeriod": 12,
+                          "categoryName": "Điện thoại",
+                          "image": "URL ảnh hoặc mô tả"
+                        }
+                        
+                        LƯU Ý:
+                        - Nếu người dùng cung cấp tên sản phẩm, hãy ưu tiên sử dụng tên đó và tìm thông tin chính xác.
+                        - Nếu không chắc chắn, hãy ước lượng hoặc để null cho các trường không xác định được.
+                        - nameProduct phải là tên đầy đủ và chính xác.
+                        - brandName chỉ chứa tên hãng, không bao gồm model.
+                        - warrantyPeriod tính bằng tháng (thường là 12 hoặc 24).
+                        - KHÔNG được thêm bất cứ text nào ngoài JSON.
+                        """)
+                .user(promptUserSpec -> promptUserSpec.media(media).text(userMessageText))
+                .call()
+                .content();
+
+        YSendChatBot.AiProductDetailResponse aiResponse = parseProductDetailResponse(answer);
+
+        // Nếu không phải điện thoại
+        if (!aiResponse.isPhone()) {
+            return new ProductImageAnalysisResponse(
+                    false,
+                    aiResponse.message(),
+                    null,
+                    List.of()
+            );
+        }
+
+        // Tạo ProductFULLResponse từ AI response
+        ProductFULLResponse productInfo = ProductFULLResponse.builder()
+                .nameProduct(aiResponse.nameProduct())
+                .brandName(aiResponse.brandName())
+                .originName(aiResponse.originName())
+                .battery(aiResponse.battery())
+                .scanFrequency(aiResponse.scanFrequency())
+                .screenSize(aiResponse.screenSize())
+                .operatingSystemName(aiResponse.operatingSystemName())
+                .screenResolution(aiResponse.screenResolution())
+                .screenTech(aiResponse.screenTech())
+                .chipset(aiResponse.chipset())
+                .rearCamera(aiResponse.rearCamera())
+                .frontCamera(aiResponse.frontCamera())
+                .warrantyPeriod(aiResponse.warrantyPeriod())
+                .categoryName(aiResponse.categoryName())
+                .image(aiResponse.image())
+                .build();
+
+        // Tìm sản phẩm tương tự trong database
+        // Ưu tiên sử dụng productName từ tham số đầu vào nếu có, nếu không thì dùng từ AI response
+        String searchProductName = (productName != null && !productName.isBlank()) 
+                ? productName 
+                : aiResponse.nameProduct();
+        List<ProductFULLResponse> similarProducts = findSimilarProducts(aiResponse.brandName(), searchProductName);
+
+        return new ProductImageAnalysisResponse(
+                true,
+                aiResponse.message(),
+                productInfo,
+                similarProducts
+        );
+    }
+
+    private YSendChatBot.AiProductDetailResponse parseProductDetailResponse(String answer) {
+        try {
+            answer = answer.strip();
+            if (answer.startsWith("```")) {
+                answer = answer.substring(answer.indexOf('\n') + 1, answer.lastIndexOf("```"));
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(answer, YSendChatBot.AiProductDetailResponse.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new YSendChatBot.AiProductDetailResponse(
+                    false,
+                    "Xin lỗi, tôi không thể phân tích ảnh này. Vui lòng gửi ảnh rõ ràng hơn.",
+                    null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+            );
+        }
+    }
+
+    private List<ProductFULLResponse> findSimilarProducts(String brandName, String productName) {
+        try {
+            // Nếu không có brandName và productName thì không tìm được
+            if ((brandName == null || brandName.isBlank()) && (productName == null || productName.isBlank())) {
+                return List.of();
+            }
+
+            Page<ProductFULLResponse> products = productService.SearchProduct(
+                    brandName, // brandName
+                    null, // warehouseAreaName
+                    null, // originName
+                    null, // operatingSystemName
+                    productName, // productName - sử dụng để tìm chính xác hơn
+                    null, // battery
+                    null, // scanFrequency
+                    null, // screenSize
+                    null, // screenResolution
+                    null, // screenTech
+                    null, // chipset
+                    null, // rearCamera
+                    null, // frontCamera
+                    null, // warrantyPeriod
+                    true, // status (chỉ lấy sản phẩm đang active)
+                    PageRequest.of(0, 5) // Lấy tối đa 5 sản phẩm
+            );
+
+            return products.getContent();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of();
         }
     }
 

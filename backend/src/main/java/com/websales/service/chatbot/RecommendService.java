@@ -111,7 +111,7 @@ public class RecommendService {
 
         // 2. Prompt hướng dẫn AI
         String prompt = String.format("""
-                Bạn là trợ lý bán điện thoại WarePhone. Nhiệm vụ của bạn:
+                Bạn là trợ lý bán điện thoại với 10 năm kinh nghiệm với FShop. Nhiệm vụ của bạn:
                 - Người dùng muốn gợi ý sản phẩm phù hợp hoặc so sánh sản phẩm.
                 - Luôn trả JSON hợp lệ, định dạng:
                 {
