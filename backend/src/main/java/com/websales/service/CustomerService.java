@@ -79,16 +79,26 @@ public class CustomerService {
 
         // Validate email format nếu có
         if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            String trimmedEmail = request.getEmail().trim().toLowerCase(); // Normalize to lowercase
             String emailPattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
-            if (!request.getEmail().trim().matches(emailPattern)) {
+            if (!trimmedEmail.matches(emailPattern)) {
                 throw new AppException(ErrorCode.EMAIL_INVALID);
             }
             // Kiểm tra email trùng (trừ chính customer hiện tại)
-            if (customerRepository.existsByEmail(request.getEmail().trim()) && 
-                !customer.getEmail().equals(request.getEmail().trim())) {
-                throw new AppException(ErrorCode.CUSTOMER_EXIST);
+            // So sánh case-insensitive và handle null
+            String currentEmail = customer.getEmail();
+            boolean isSameEmail = currentEmail != null && 
+                                 currentEmail.trim().toLowerCase().equals(trimmedEmail);
+            
+            // Chỉ check trùng nếu email khác với email hiện tại
+            if (!isSameEmail) {
+                // Check case-insensitive: tìm customer có email giống (case-insensitive)
+                var existingCustomer = customerRepository.findCustomerByEmail(trimmedEmail);
+                if (existingCustomer.isPresent() && !existingCustomer.get().getCustomerId().equals(customer.getCustomerId())) {
+                    throw new AppException(ErrorCode.CUSTOMER_EXIST);
+                }
             }
-            customer.setEmail(request.getEmail().trim());
+            customer.setEmail(trimmedEmail);
         }
 
         // Validate birthDate - phải là ngày trong quá khứ

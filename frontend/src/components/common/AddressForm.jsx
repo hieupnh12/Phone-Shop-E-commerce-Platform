@@ -4,7 +4,7 @@ import InputField from '../common/InputField';
 import { customerService } from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-const AddressForm = ({ addressToEdit, onClose, onSave }) => {
+const AddressForm = ({ addressToEdit, onClose, onSave, customerInfo: propCustomerInfo }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = useState({
         city: '',
@@ -20,24 +20,54 @@ const AddressForm = ({ addressToEdit, onClose, onSave }) => {
     const [error, setError] = useState(null);
 
     // Load customer info để lấy tên và số điện thoại
+    // Ưu tiên sử dụng propCustomerInfo nếu có, nếu không thì load từ API
     useEffect(() => {
         const loadCustomerInfo = async () => {
             try {
                 setIsLoadingCustomer(true);
+                
+                // Nếu có propCustomerInfo, sử dụng nó
+                if (propCustomerInfo && (propCustomerInfo.fullName || propCustomerInfo.phoneNumber)) {
+                    console.log("✅ Using customerInfo from props:", propCustomerInfo);
+                    setCustomerInfo({
+                        fullName: propCustomerInfo.fullName || '',
+                        phoneNumber: propCustomerInfo.phoneNumber || ''
+                    });
+                    setIsLoadingCustomer(false);
+                    return;
+                }
+                
+                // Nếu không có prop, load từ API
                 const response = await customerService.getMyCustomerInfo();
-                const customer = response?.result || response;
+                console.log("📥 Customer info response:", response);
+                
+                // Handle different response formats
+                const customer = response?.result || response?.data?.result || response;
+                console.log("📥 Parsed customer:", customer);
+                
                 setCustomerInfo({
-                    fullName: customer.fullName || '',
-                    phoneNumber: customer.phoneNumber || ''
+                    fullName: customer?.fullName || customer?.full_name || '',
+                    phoneNumber: customer?.phoneNumber || customer?.phone_number || ''
+                });
+                
+                console.log("✅ Set customerInfo:", {
+                    fullName: customer?.fullName || customer?.full_name || '',
+                    phoneNumber: customer?.phoneNumber || customer?.phone_number || ''
                 });
             } catch (err) {
-                console.error("Lỗi khi tải thông tin khách hàng:", err);
+                console.error("❌ Lỗi khi tải thông tin khách hàng:", err);
+                console.error("Error details:", err.response?.data || err.message);
+                // Set empty values on error
+                setCustomerInfo({
+                    fullName: '',
+                    phoneNumber: ''
+                });
             } finally {
                 setIsLoadingCustomer(false);
             }
         };
         loadCustomerInfo();
-    }, []);
+    }, [propCustomerInfo]);
 
     useEffect(() => {
         if (addressToEdit) {

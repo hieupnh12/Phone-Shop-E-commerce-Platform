@@ -28,6 +28,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.orm.hibernate5.HibernateOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -517,7 +519,14 @@ public class ProductVersionService {
 
 
     public List<ProductFULLResponse> Top5Product(){
-         List<Object[]> results = pvr.findTop5ProductsByOrderDetailCount(com.websales.enums.OrderStatus.DELIVERED);
+         // Tính ngày bắt đầu tuần (7 ngày gần nhất)
+         java.time.LocalDateTime weekStartDate = java.time.LocalDateTime.now().minusDays(7);
+         
+         List<Object[]> results = pvr.findTopProductsByOrderDetailCountInWeek(
+                 com.websales.enums.OrderStatus.DELIVERED,
+                 weekStartDate
+         );
+         
          return results.stream()
                  .map(result -> {
                      Product product = (Product) result[0];
@@ -527,7 +536,7 @@ public class ProductVersionService {
                      response.setSoldQuantity(soldQuantity);
                      return response;
                  })
-                 .limit(5) // Giới hạn top 5
+                 .limit(5) // Giới hạn tối đa 5 sản phẩm (min = 0, max = 5)
                  .collect(Collectors.toList());
     }
 
