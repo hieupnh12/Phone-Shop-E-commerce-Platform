@@ -5,21 +5,17 @@ import com.websales.entity.AuditLog;
 import com.websales.entity.Customer;
 import com.websales.entity.Employee;
 import com.websales.entity.Order;
+import com.websales.entity.Permission;
 import com.websales.entity.Product;
 import com.websales.entity.Role;
 import com.websales.handler.ContextUtils;
-import com.websales.repository.CustomerRepo;
-import com.websales.repository.EmployeeRepo;
-import com.websales.repository.OrderRepository;
-import com.websales.repository.ProductRepository;
-import com.websales.repository.RoleRepo;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -32,11 +28,12 @@ import java.util.*;
 public class AuditLogListener {
 
     // ThreadLocal to store old entity state before update
+    // Key format: "EntityClassName:recordId" to avoid conflicts
     private static final ThreadLocal<Map<String, String>> oldEntityState = new ThreadLocal<>();
     
-    // ThreadLocal to track if audit log is already scheduled for this entity in current transaction
-    // Key: entityClassName_recordId_action, Value: true if scheduled
-    private static final ThreadLocal<Set<String>> scheduledAuditLogs = new ThreadLocal<>();
+    // ThreadLocal to store entity snapshots when loaded (via @PostLoad)
+    // This allows us to get old state even after entity is modified
+    private static final ThreadLocal<Map<String, String>> entitySnapshots = new ThreadLocal<>();
 
     private Long getCurrentEmployeeId() {
         return ContextUtils.getEmployeeId();
@@ -71,49 +68,43 @@ public class AuditLogListener {
 
     private String serializeRole(Object entity) {
         try {
-            Map<String, Object> data = new HashMap<>();
-
-            if (entity instanceof Role role) {
-                data.put("id", getFieldValue(role, "id"));
-                data.put("name", getFieldValue(role, "name"));
-                data.put("description", getFieldValue(role, "description"));
-                data.put("isDeleted", getFieldValue(role, "isDeleted"));
-
-                // Serialize permissions with full details
-                Set<?> rolePermissions = (Set<?>) getFieldValue(role, "rolePermissions");
-                if (rolePermissions != null && !rolePermissions.isEmpty()) {
-                    List<Map<String, Object>> permissionDetails = rolePermissions.stream()
-                            .map(permission -> {
-                                Map<String, Object> permData = new HashMap<>();
-                                permData.put("id", getFieldValue(permission, "id"));
-                                permData.put("module", getFieldValue(permission, "module"));
-                                permData.put("action", getFieldValue(permission, "action"));
-                                permData.put("resource", getFieldValue(permission, "resource"));
-                                return permData;
-                            })
-                            .filter(permData -> permData.get("id") != null) // Only include valid permissions
-                            .sorted(Comparator.comparing(p -> {
-                                Object id = p.get("id");
-                                return id instanceof Integer ? (Integer) id : 0;
-                            }))
-                            .toList();
-                    data.put("permissions", permissionDetails);
-                } else {
-                    data.put("permissions", new ArrayList<>());
-                }
+            if (!(entity instanceof Role role)) {
+                log.warn("serializeRole called with non-Role entity: {}", entity.getClass().getSimpleName());
+                return "{}";
             }
-            else if (entity instanceof Employee emp) {
-                data.put("id", getFieldValue(emp, "id"));
-                data.put("email", getFieldValue(emp, "email"));
-                data.put("fullName", getFieldValue(emp, "fullName"));
-                data.put("isActive", getFieldValue(emp, "isActive"));
-                data.put("createdAt", getFieldValue(emp, "createdAt"));
-                data.put("updatedAt", getFieldValue(emp, "updatedAt"));
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", getFieldValue(role, "id"));
+            data.put("name", getFieldValue(role, "name"));
+            data.put("description", getFieldValue(role, "description"));
+            data.put("isDeleted", getFieldValue(role, "isDeleted"));
+
+            // Serialize permissions with full details
+            Set<?> rolePermissions = (Set<?>) getFieldValue(role, "rolePermissions");
+            if (rolePermissions != null && !rolePermissions.isEmpty()) {
+                List<Map<String, Object>> permissionDetails = rolePermissions.stream()
+                        .map(permission -> {
+                            Map<String, Object> permData = new HashMap<>();
+                            permData.put("id", getFieldValue(permission, "id"));
+                            permData.put("module", getFieldValue(permission, "module"));
+                            permData.put("action", getFieldValue(permission, "action"));
+                            permData.put("resource", getFieldValue(permission, "resource"));
+                            return permData;
+                        })
+                        .filter(permData -> permData.get("id") != null) // Only include valid permissions
+                        .sorted(Comparator.comparing(p -> {
+                            Object id = p.get("id");
+                            return id instanceof Integer ? (Integer) id : 0;
+                        }))
+                        .toList();
+                data.put("permissions", permissionDetails);
+            } else {
+                data.put("permissions", new ArrayList<>());
             }
 
             return ContextUtils.getObjectMapper().writeValueAsString(data);
         } catch (Exception e) {
-            log.error("Error serializing entity for audit log", e);
+            log.error("Error serializing Role for audit log", e);
             return "{\"error\": \"serialization failed\"}";
         }
     }
@@ -216,30 +207,60 @@ public class AuditLogListener {
             data.put("isPaid", getFieldValue(order, "isPaid"));
             
             // Serialize relationships safely - only IDs to avoid lazy loading
-            Object customerId = getFieldValue(order, "customerId");
-            if (customerId != null) {
-                Object customerIdValue = getFieldValue(customerId, "customerId");
-                data.put("customerId", customerIdValue);
+            // Wrap in try-catch to handle LazyInitializationException if persistence context is closed
+            try {
+                Object customerId = getFieldValue(order, "customerId");
+                if (customerId != null) {
+                    Object customerIdValue = getFieldValue(customerId, "customerId");
+                    data.put("customerId", customerIdValue);
+                }
+            } catch (org.hibernate.LazyInitializationException e) {
+                log.debug("Could not serialize customerId for Order (lazy loading issue): {}", e.getMessage());
+                // Skip customerId if lazy loading fails - this is OK, we have orderId
+            } catch (Exception e) {
+                log.debug("Could not serialize customerId for Order: {}", e.getMessage());
             }
             
-            Object employeeId = getFieldValue(order, "employeeId");
-            if (employeeId != null) {
-                Object employeeIdValue = getFieldValue(employeeId, "id");
-                data.put("employeeId", employeeIdValue);
+            try {
+                Object employeeId = getFieldValue(order, "employeeId");
+                if (employeeId != null) {
+                    Object employeeIdValue = getFieldValue(employeeId, "id");
+                    data.put("employeeId", employeeIdValue);
+                }
+            } catch (org.hibernate.LazyInitializationException e) {
+                log.debug("Could not serialize employeeId for Order (lazy loading issue): {}", e.getMessage());
+                // Skip employeeId if lazy loading fails - this is OK
+            } catch (Exception e) {
+                log.debug("Could not serialize employeeId for Order: {}", e.getMessage());
             }
             
             // Don't serialize orderDetails list to avoid lazy loading issues
-            // Only include count if available
-            List<?> orderDetails = (List<?>) getFieldValue(order, "orderDetails");
-            if (orderDetails != null) {
-                data.put("orderDetailsCount", orderDetails.size());
+            // Only include count if available (and safe to access)
+            try {
+                List<?> orderDetails = (List<?>) getFieldValue(order, "orderDetails");
+                if (orderDetails != null) {
+                    data.put("orderDetailsCount", orderDetails.size());
+                }
+            } catch (org.hibernate.LazyInitializationException e) {
+                log.debug("Could not serialize orderDetails for Order (lazy loading issue): {}", e.getMessage());
+                // Skip orderDetails if lazy loading fails - this is OK
+            } catch (Exception e) {
+                log.debug("Could not serialize orderDetails for Order: {}", e.getMessage());
             }
             
             ObjectMapper mapper = ContextUtils.getObjectMapper();
             return mapper.writeValueAsString(data);
         } catch (Exception e) {
             log.error("Error serializing Order", e);
-            return "{}";
+            // Return minimal data instead of empty object
+            try {
+                Map<String, Object> minimalData = new HashMap<>();
+                minimalData.put("orderId", getFieldValue(order, "orderId"));
+                ObjectMapper mapper = ContextUtils.getObjectMapper();
+                return mapper.writeValueAsString(minimalData);
+            } catch (Exception ex) {
+                return "{}";
+            }
         }
     }
     
@@ -297,59 +318,156 @@ public class AuditLogListener {
 
     @PostPersist
     public void postPersist(Object entity) {
+        // IMPORTANT: This method must NEVER throw exceptions or fail the transaction
+        // All errors must be caught and logged, but the transaction must continue
         try {
             log.debug("PostPersist called for entity: {}", entity.getClass().getSimpleName());
             if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
                     || entity instanceof Order || entity instanceof Customer) {
-                log.debug("Entity is tracked for audit log, scheduling audit log creation...");
-                // Delay building audit log until after transaction commit to avoid Hibernate session issues
-                scheduleAuditLogCreation(entity, "CREATE");
+                try {
+                    log.debug("Entity is tracked for audit log, scheduling audit log creation...");
+                    // Delay building audit log until after transaction commit to avoid Hibernate session issues
+                    scheduleAuditLogCreation(entity, "CREATE");
+                } catch (Exception e) {
+                    log.error("Error scheduling audit log creation in postPersist for entity: {}. This error will NOT fail the transaction.", 
+                        entity.getClass().getSimpleName(), e);
+                    // Continue - don't fail transaction
+                }
             } else {
                 log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
             }
         } catch (Exception e) {
-            log.error("Error in postPersist audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
+            // Catch ALL exceptions to prevent transaction failure
+            log.error("Unexpected error in postPersist audit log listener for entity: {}. This error will NOT fail the transaction.", 
+                entity.getClass().getSimpleName(), e);
+        }
+    }
+
+    @PostLoad
+    public void postLoad(Object entity) {
+        try {
+            if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
+                    || entity instanceof Order || entity instanceof Customer) {
+                Long recordId = getRecordIdUsingReflection(entity);
+                if (recordId != null) {
+                    String entityClassName = entity.getClass().getSimpleName();
+                    String key = entityClassName + ":" + recordId;
+                    
+                    // Save snapshot of entity when it's loaded
+                    // This will be used in preUpdate to get old state
+                    // Only update snapshot if it doesn't exist or if this is a fresh load
+                    String snapshot = serializeObject(entity);
+                    
+                    Map<String, String> snapshots = entitySnapshots.get();
+                    if (snapshots == null) {
+                        snapshots = new HashMap<>();
+                        entitySnapshots.set(snapshots);
+                    }
+                    
+                    // Only save snapshot if it doesn't exist (first load)
+                    // This prevents overwriting snapshot that was saved before modification
+                    if (!snapshots.containsKey(key)) {
+                        snapshots.put(key, snapshot);
+                        log.debug("Saved snapshot for entity: {} with ID: {} (first load)", entityClassName, recordId);
+                    } else {
+                        log.debug("Snapshot already exists for entity: {} with ID: {}, keeping old snapshot", 
+                            entityClassName, recordId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error in postLoad audit log listener", e);
         }
     }
 
     @PreUpdate
     public void preUpdate(Object entity) {
+        // IMPORTANT: This method must NEVER throw exceptions or fail the transaction
+        // All errors must be caught and logged, but the transaction must continue
         try {
-            log.debug("PreUpdate called for entity: {}", entity.getClass().getSimpleName());
+            Long recordId = getRecordIdUsingReflection(entity);
+            if (recordId == null) {
+                log.debug("PreUpdate called for entity: {} but recordId is null, skipping audit log", 
+                    entity.getClass().getSimpleName());
+                return;
+            }
+            
+            log.debug("PreUpdate called for entity: {} with ID: {}", entity.getClass().getSimpleName(), recordId);
+            
             if (entity instanceof Employee || entity instanceof Role || entity instanceof Product 
                     || entity instanceof Order || entity instanceof Customer) {
-                
-                Long recordId = getRecordIdUsingReflection(entity);
-                if (recordId == null) {
-                    log.warn("Cannot create audit log: recordId is null in preUpdate for entity {}", entity.getClass().getSimpleName());
-                    return;
+                try {
+                    log.debug("Entity is tracked for audit log, getting snapshot for old state...");
+                    
+                    String entityClassName = entity.getClass().getSimpleName();
+                    String key = entityClassName + ":" + recordId;
+                    
+                    // Get snapshot saved in @PostLoad (this is the old state before modification)
+                    Map<String, String> snapshots = entitySnapshots.get();
+                    String oldStateJson = null;
+                    if (snapshots != null) {
+                        oldStateJson = snapshots.get(key);
+                    }
+                    
+                    if (oldStateJson != null) {
+                        // Save old state from snapshot
+                        try {
+                            saveOldEntityStateFromJson(oldStateJson, entityClassName, recordId);
+                            log.debug("Old state saved from snapshot for entity: {} with ID: {}", entityClassName, recordId);
+                        } catch (Exception e) {
+                            log.error("Error saving old state from snapshot for entity: {} with ID: {}", 
+                                entityClassName, recordId, e);
+                            // Continue - don't fail transaction
+                        }
+                        
+                        // DON'T update snapshot here - keep the old snapshot until after commit
+                        // This ensures if there are multiple updates in the same transaction, we always have the original state
+                    } else {
+                        log.debug("No snapshot found for entity: {} with ID: {}. This may indicate the entity was created and updated in the same transaction.", 
+                            entityClassName, recordId);
+                        
+                        // If no snapshot exists, it means the entity was likely created in this transaction
+                        // and hasn't been loaded from the database yet. In this case, we can't get the "old" state
+                        // because there isn't one - the entity is new. We'll serialize the current state as "old"
+                        // (which will be the same as "new" for the first update after creation)
+                        // This is acceptable because for newly created entities, there is no "old" state to compare.
+                        try {
+                            saveOldEntityState(entity);
+                            log.debug("Serialized current state as old state for newly created entity: {} with ID: {}", 
+                                entityClassName, recordId);
+                        } catch (Exception e) {
+                            log.error("Error serializing current state as old state for entity: {} with ID: {}", 
+                                entityClassName, recordId, e);
+                            // Continue - don't fail transaction
+                        }
+                    }
+                    
+                    // Delay building audit log until after transaction commit to avoid Hibernate session issues
+                    try {
+                        scheduleAuditLogCreation(entity, "UPDATE");
+                    } catch (Exception e) {
+                        log.error("Error scheduling audit log creation for entity: {} with ID: {}", 
+                            entityClassName, recordId, e);
+                        // Continue - don't fail transaction
+                    }
+                } catch (Exception e) {
+                    log.error("Error processing preUpdate for tracked entity: {} with ID: {}", 
+                        entity.getClass().getSimpleName(), recordId, e);
+                    // Continue - don't fail transaction
                 }
-                
-                // Check if audit log is already scheduled for this entity
-                String auditKey = entity.getClass().getSimpleName() + "_" + recordId + "_UPDATE";
-                Set<String> scheduled = scheduledAuditLogs.get();
-                if (scheduled != null && scheduled.contains(auditKey)) {
-                    log.debug("Audit log already scheduled for entity: {}, skipping duplicate", auditKey);
-                    return;
-                }
-                
-                log.debug("Entity is tracked for audit log, saving old state and scheduling audit log creation...");
-                // Save old state before update for comparison (reload from database)
-                saveOldEntityState(entity);
-                // Delay building audit log until after transaction commit to avoid Hibernate session issues
-                scheduleAuditLogCreation(entity, "UPDATE");
-                
-                // Mark as scheduled
-                if (scheduled == null) {
-                    scheduled = new HashSet<>();
-                    scheduledAuditLogs.set(scheduled);
-                }
-                scheduled.add(auditKey);
             } else {
                 log.debug("Entity {} is not tracked for audit log", entity.getClass().getSimpleName());
             }
         } catch (Exception e) {
-            log.error("Error in preUpdate audit log listener for entity: {}", entity.getClass().getSimpleName(), e);
+            // Catch ALL exceptions to prevent transaction failure
+            log.error("Unexpected error in preUpdate audit log listener for entity: {}. This error will NOT fail the transaction.", 
+                entity.getClass().getSimpleName(), e);
+            // Ensure cleanup even on error
+            try {
+                oldEntityState.remove();
+            } catch (Exception cleanupEx) {
+                log.error("Error cleaning up ThreadLocal", cleanupEx);
+            }
         }
     }
     
@@ -373,88 +491,430 @@ public class AuditLogListener {
     }
     
     /**
-     * Save old entity state before update for comparison
-     * Reloads entity from database to get the actual old state before changes
+     * Reload and serialize old state from database safely using native query
+     * This is called in preUpdate when snapshot is not available
+     * Uses native query to avoid Hibernate entity creation conflicts
      */
-    private void saveOldEntityState(Object entity) {
+    private String reloadAndSerializeOldStateFromDatabaseSafe(String entityClassName, Long recordId) {
         try {
+            EntityManager entityManager = ContextUtils.getBean(EntityManager.class);
+            if (entityManager == null) {
+                return null;
+            }
+
+            ObjectMapper mapper = ContextUtils.getObjectMapper();
+            
+            // Use native query to get raw data - this is safe and doesn't create entity objects
+            if ("Role".equals(entityClassName)) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT id, name, description, is_deleted FROM roles WHERE id = ? AND is_deleted = 0")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> roleData = new HashMap<>();
+                roleData.put("id", row[0]);
+                roleData.put("name", row[1]);
+                roleData.put("description", row[2]);
+                roleData.put("isDeleted", ((Number) row[3]).byteValue() == 1);
+                
+                @SuppressWarnings("unchecked")
+                List<Object[]> permResults = entityManager.createNativeQuery(
+                    "SELECT p.id, p.module, p.action, p.resource " +
+                    "FROM role_permissions rp " +
+                    "JOIN permissions p ON rp.permission_id = p.id " +
+                    "WHERE rp.role_id = ? " +
+                    "ORDER BY p.id")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                List<Map<String, Object>> permissions = new ArrayList<>();
+                for (Object[] permRow : permResults) {
+                    Map<String, Object> permData = new HashMap<>();
+                    permData.put("id", permRow[0]);
+                    permData.put("module", permRow[1]);
+                    permData.put("action", permRow[2]);
+                    permData.put("resource", permRow[3]);
+                    permissions.add(permData);
+                }
+                roleData.put("permissions", permissions);
+                
+                return mapper.writeValueAsString(roleData);
+            } else if ("Order".equals(entityClassName)) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT order_id, customer_id, employee_id, create_datetime, end_datetime, " +
+                    "note, total_amount, status, is_paid FROM orders WHERE order_id = ?")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> orderData = new HashMap<>();
+                orderData.put("orderId", ((Number) row[0]).intValue());
+                orderData.put("customerId", row[1] != null ? ((Number) row[1]).longValue() : null);
+                orderData.put("employeeId", row[2] != null ? ((Number) row[2]).longValue() : null);
+                orderData.put("createDatetime", row[3] != null ? ((java.sql.Timestamp) row[3]).toLocalDateTime().toString() : null);
+                orderData.put("endDatetime", row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime().toString() : null);
+                orderData.put("note", row[5]);
+                orderData.put("totalAmount", row[6] != null ? row[6].toString() : null);
+                orderData.put("status", row[7] != null ? row[7].toString() : null);
+                orderData.put("isPaid", row[8] != null && ((Number) row[8]).byteValue() == 1);
+                
+                return mapper.writeValueAsString(orderData);
+            }
+            // Add other entity types as needed
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Error reloading entity from database safely: {}", entityClassName, e);
+            return null;
+        }
+    }
+    
+    /**
+     * Reload and serialize old state from database in a NEW transaction
+     * This is called AFTER the main transaction commits, so it doesn't interfere with Hibernate
+     * DEPRECATED: Use reloadAndSerializeOldStateFromDatabaseSafe instead
+     */
+    @Deprecated
+    private String reloadAndSerializeOldStateFromDatabaseInNewTransaction(String entityClassName, Long recordId) {
+        try {
+            // Use AuditLogService which has REQUIRES_NEW transaction to reload safely
+            EntityManager entityManager = ContextUtils.getBean(EntityManager.class);
+            if (entityManager == null) {
+                log.warn("EntityManager not available");
+                return null;
+            }
+
+            ObjectMapper mapper = ContextUtils.getObjectMapper();
+            
+            // Use native query to get raw data from database
+            if ("Role".equals(entityClassName)) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT id, name, description, is_deleted FROM roles WHERE id = ? AND is_deleted = 0")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    log.warn("Role not found in database with ID: {}", recordId);
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> roleData = new HashMap<>();
+                roleData.put("id", row[0]);
+                roleData.put("name", row[1]);
+                roleData.put("description", row[2]);
+                roleData.put("isDeleted", ((Number) row[3]).byteValue() == 1);
+                
+                // Load permissions
+                @SuppressWarnings("unchecked")
+                List<Object[]> permResults = entityManager.createNativeQuery(
+                    "SELECT p.id, p.module, p.action, p.resource " +
+                    "FROM role_permissions rp " +
+                    "JOIN permissions p ON rp.permission_id = p.id " +
+                    "WHERE rp.role_id = ? " +
+                    "ORDER BY p.id")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                List<Map<String, Object>> permissions = new ArrayList<>();
+                for (Object[] permRow : permResults) {
+                    Map<String, Object> permData = new HashMap<>();
+                    permData.put("id", permRow[0]);
+                    permData.put("module", permRow[1]);
+                    permData.put("action", permRow[2]);
+                    permData.put("resource", permRow[3]);
+                    permissions.add(permData);
+                }
+                roleData.put("permissions", permissions);
+                
+                return mapper.writeValueAsString(roleData);
+            }
+            // Similar for other entity types...
+            
+            log.warn("Unsupported entity type: {}", entityClassName);
+            return null;
+        } catch (Exception e) {
+            log.error("Error reloading entity from database in new transaction: {}", entityClassName, e);
+            return null;
+        }
+    }
+    
+    /**
+     * Serialize old entity state directly from database using native query
+     * This bypasses Hibernate's persistence context and avoids entity creation issues
+     * Returns serialized JSON string directly, not an entity object
+     * DEPRECATED: Use reloadAndSerializeOldStateFromDatabaseInNewTransaction instead
+     */
+    @Deprecated
+    private String reloadAndSerializeOldStateFromDatabase(Object entity) {
+        try {
+            EntityManager entityManager = ContextUtils.getBean(EntityManager.class);
+            if (entityManager == null) {
+                log.warn("EntityManager not available, cannot reload entity");
+                return null;
+            }
+
             Long recordId = getRecordIdUsingReflection(entity);
             if (recordId == null) {
-                log.warn("Cannot save old state: recordId is null");
-                return;
+                log.warn("Cannot reload entity: recordId is null");
+                return null;
             }
 
-            // Reload entity from database to get the actual old state
-            Object oldEntity = reloadEntityFromDatabase(entity, recordId);
-            if (oldEntity == null) {
-                log.warn("Cannot reload entity from database for ID: {}, entity type: {}", 
-                        recordId, entity.getClass().getSimpleName());
-                return;
+            Class<?> entityClass = entity.getClass();
+            ObjectMapper mapper = ContextUtils.getObjectMapper();
+            
+            // Use native query to get raw data from database and serialize directly to JSON
+            // This avoids creating entity objects that could conflict with Hibernate
+            if (entity instanceof Role) {
+                // Get Role basic fields
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT id, name, description, is_deleted FROM roles WHERE id = ? AND is_deleted = 0")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    log.warn("Role not found in database with ID: {}", recordId);
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> roleData = new HashMap<>();
+                roleData.put("id", row[0]);
+                roleData.put("name", row[1]);
+                roleData.put("description", row[2]);
+                roleData.put("isDeleted", ((Number) row[3]).byteValue() == 1);
+                
+                // Load permissions separately and add as list of maps (not entity objects)
+                @SuppressWarnings("unchecked")
+                List<Object[]> permResults = entityManager.createNativeQuery(
+                    "SELECT p.id, p.module, p.action, p.resource " +
+                    "FROM role_permissions rp " +
+                    "JOIN permissions p ON rp.permission_id = p.id " +
+                    "WHERE rp.role_id = ? " +
+                    "ORDER BY p.id")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                List<Map<String, Object>> permissions = new ArrayList<>();
+                for (Object[] permRow : permResults) {
+                    Map<String, Object> permData = new HashMap<>();
+                    permData.put("id", permRow[0]);
+                    permData.put("module", permRow[1]);
+                    permData.put("action", permRow[2]);
+                    permData.put("resource", permRow[3]);
+                    permissions.add(permData);
+                }
+                roleData.put("permissions", permissions);
+                
+                String json = mapper.writeValueAsString(roleData);
+                log.debug("Successfully reloaded and serialized Role from database: ID: {}, Permissions: {}", 
+                    recordId, permissions.size());
+                return json;
+                
+            } else if (entity instanceof Employee) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT id, email, full_name, is_active, created_at, updated_at FROM employees WHERE id = ?")
+                    .setParameter(1, recordId)
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> empData = new HashMap<>();
+                empData.put("id", ((Number) row[0]).longValue());
+                empData.put("email", row[1]);
+                empData.put("fullName", row[2]);
+                empData.put("isActive", ((Number) row[3]).byteValue() == 1);
+                empData.put("createdAt", row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime().toString() : null);
+                empData.put("updatedAt", row[5] != null ? ((java.sql.Timestamp) row[5]).toLocalDateTime().toString() : null);
+                
+                return mapper.writeValueAsString(empData);
+                    
+            } else if (entity instanceof Order) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT order_id, customer_id, employee_id, create_datetime, end_datetime, " +
+                    "note, total_amount, status, is_paid FROM orders WHERE order_id = ?")
+                    .setParameter(1, recordId.intValue())
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> orderData = new HashMap<>();
+                orderData.put("orderId", ((Number) row[0]).intValue());
+                orderData.put("customerId", row[1] != null ? ((Number) row[1]).longValue() : null);
+                orderData.put("employeeId", row[2] != null ? ((Number) row[2]).longValue() : null);
+                orderData.put("createDatetime", row[3] != null ? ((java.sql.Timestamp) row[3]).toLocalDateTime().toString() : null);
+                orderData.put("endDatetime", row[4] != null ? ((java.sql.Timestamp) row[4]).toLocalDateTime().toString() : null);
+                orderData.put("note", row[5]);
+                orderData.put("totalAmount", row[6] != null ? row[6].toString() : null);
+                orderData.put("status", row[7] != null ? row[7].toString() : null);
+                orderData.put("isPaid", row[8] != null && ((Number) row[8]).byteValue() == 1);
+                
+                return mapper.writeValueAsString(orderData);
+                
+            } else if (entity instanceof Product) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT product_id, product_name, picture, battery, scan_frequency, screen_size, " +
+                    "screen_resolution, screen_tech, chipset, rear_camera, front_camera, warranty_period, " +
+                    "stock_quantity, status, origin_id, brand_id, category_id, operating_system_id, warehouse_area_id " +
+                    "FROM products WHERE product_id = ?")
+                    .setParameter(1, recordId)
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> productData = new HashMap<>();
+                productData.put("idProduct", ((Number) row[0]).longValue());
+                productData.put("nameProduct", row[1]);
+                productData.put("image", row[2]);
+                productData.put("battery", row[3]);
+                productData.put("scanFrequency", row[4]);
+                productData.put("screenSize", row[5]);
+                productData.put("screenResolution", row[6]);
+                productData.put("screenTech", row[7]);
+                productData.put("chipset", row[8]);
+                productData.put("rearCamera", row[9]);
+                productData.put("frontCamera", row[10]);
+                productData.put("warrantyPeriod", row[11] != null ? ((Number) row[11]).intValue() : null);
+                productData.put("stockQuantity", row[12] != null ? ((Number) row[12]).intValue() : null);
+                productData.put("status", row[13] != null && ((Number) row[13]).byteValue() == 1);
+                productData.put("originId", row[14] != null ? ((Number) row[14]).longValue() : null);
+                productData.put("brandId", row[15] != null ? ((Number) row[15]).longValue() : null);
+                productData.put("categoryId", row[16] != null ? ((Number) row[16]).longValue() : null);
+                productData.put("operatingSystemId", row[17] != null ? ((Number) row[17]).longValue() : null);
+                productData.put("warehouseAreaId", row[18] != null ? ((Number) row[18]).longValue() : null);
+                
+                return mapper.writeValueAsString(productData);
+                
+            } else if (entity instanceof Customer) {
+                @SuppressWarnings("unchecked")
+                List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT customer_id, full_name, phone_number, email, gender, birth_date, address, " +
+                    "create_at, update_at FROM customers WHERE customer_id = ?")
+                    .setParameter(1, recordId)
+                    .getResultList();
+                
+                if (results.isEmpty()) {
+                    return null;
+                }
+                
+                Object[] row = results.get(0);
+                Map<String, Object> customerData = new HashMap<>();
+                customerData.put("customerId", ((Number) row[0]).longValue());
+                customerData.put("fullName", row[1]);
+                customerData.put("phoneNumber", row[2]);
+                customerData.put("email", row[3]);
+                customerData.put("gender", row[4] != null && ((Number) row[4]).byteValue() == 1);
+                customerData.put("birthDate", row[5] != null ? ((java.sql.Date) row[5]).toLocalDate().toString() : null);
+                customerData.put("address", row[6]);
+                customerData.put("createAt", row[7] != null ? ((java.sql.Timestamp) row[7]).toLocalDateTime().toString() : null);
+                customerData.put("updateAt", row[8] != null ? ((java.sql.Timestamp) row[8]).toLocalDateTime().toString() : null);
+                
+                return mapper.writeValueAsString(customerData);
             }
 
-            // Serialize the old entity from database
-            String oldState = serializeObject(oldEntity);
-            Map<String, String> stateMap = new HashMap<>();
-            stateMap.put(recordId.toString(), oldState);
-            oldEntityState.set(stateMap);
-            log.debug("Saved old state for entity with ID: {} (reloaded from database)", recordId);
+            log.warn("Unsupported entity type for native query reload: {}", entityClass.getSimpleName());
+            return null;
         } catch (Exception e) {
-            log.error("Error saving old entity state", e);
+            log.error("Error reloading entity from database using native query: {}", entity.getClass().getSimpleName(), e);
+            return null;
         }
     }
 
     /**
-     * Reload entity from database to get the actual old state before update
-     * Uses repository to reload from database. Since entity hasn't been flushed yet,
-     * repository will get the old state from database.
-     * IMPORTANT: Do NOT evict or modify the entity being updated as it will break the update process.
+     * Save old entity state before update for comparison
+     * Uses composite key "EntityClassName:recordId" to avoid conflicts
+     * Can accept either an entity object or a JSON string
      */
-    private Object reloadEntityFromDatabase(Object entity, Long recordId) {
+    private void saveOldEntityState(Object entity) {
         try {
-            // Use repository to reload entity from database
-            // Since the update hasn't been flushed yet, this will get the old state
-            Object oldEntity = null;
-            
-            if (entity instanceof Employee) {
-                EmployeeRepo repo = ContextUtils.getBean(EmployeeRepo.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId).orElse(null);
-                }
-            } else if (entity instanceof Role) {
-                RoleRepo repo = ContextUtils.getBean(RoleRepo.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId.intValue()).orElse(null);
-                }
-            } else if (entity instanceof Product) {
-                ProductRepository repo = ContextUtils.getBean(ProductRepository.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId).orElse(null);
-                }
-            } else if (entity instanceof Order) {
-                OrderRepository repo = ContextUtils.getBean(OrderRepository.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId.intValue()).orElse(null);
-                }
-            } else if (entity instanceof Customer) {
-                CustomerRepo repo = ContextUtils.getBean(CustomerRepo.class);
-                if (repo != null) {
-                    oldEntity = repo.findById(recordId).orElse(null);
-                }
-            }
-
-            if (oldEntity != null) {
-                log.debug("Successfully reloaded entity from database: {} with ID: {}", 
-                        entity.getClass().getSimpleName(), recordId);
+            String oldState;
+            // If entity is already a String (JSON), use it directly
+            if (entity instanceof String) {
+                oldState = (String) entity;
             } else {
-                log.warn("Entity not found in database: {} with ID: {}", 
-                        entity.getClass().getSimpleName(), recordId);
+                // Otherwise serialize the entity
+                oldState = serializeObject(entity);
             }
-
-            return oldEntity;
+            
+            Long recordId = getRecordIdUsingReflection(entity instanceof String ? null : entity);
+            if (recordId == null && entity instanceof String) {
+                // If we have JSON but no entity, try to extract ID from JSON
+                try {
+                    ObjectMapper mapper = ContextUtils.getObjectMapper();
+                    Map<String, Object> data = mapper.readValue((String) entity, Map.class);
+                    Object id = data.get("id") != null ? data.get("id") : 
+                                data.get("orderId") != null ? data.get("orderId") :
+                                data.get("customerId") != null ? data.get("customerId") :
+                                data.get("idProduct") != null ? data.get("idProduct") : null;
+                    if (id != null) {
+                        recordId = id instanceof Number ? ((Number) id).longValue() : null;
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not extract ID from JSON string", e);
+                }
+            }
+            
+            if (recordId != null) {
+                // Get entity class name from current entity being updated (passed separately)
+                String entityClassName = entity instanceof String ? "Unknown" : entity.getClass().getSimpleName();
+                String key = entityClassName + ":" + recordId;
+                
+                Map<String, String> stateMap = oldEntityState.get();
+                if (stateMap == null) {
+                    stateMap = new HashMap<>();
+                    oldEntityState.set(stateMap);
+                }
+                stateMap.put(key, oldState);
+                log.debug("Saved old state for entity: {} with ID: {}", entityClassName, recordId);
+            }
         } catch (Exception e) {
-            log.error("Error reloading entity from database for entity: {} with ID: {}", 
-                    entity.getClass().getSimpleName(), recordId, e);
-            return null;
+            log.error("Error saving old entity state", e);
+        }
+    }
+    
+    /**
+     * Save old entity state from JSON string (from native query)
+     */
+    private void saveOldEntityStateFromJson(String oldStateJson, String entityClassName, Long recordId) {
+        try {
+            if (oldStateJson != null && recordId != null) {
+                String key = entityClassName + ":" + recordId;
+                
+                Map<String, String> stateMap = oldEntityState.get();
+                if (stateMap == null) {
+                    stateMap = new HashMap<>();
+                    oldEntityState.set(stateMap);
+                }
+                stateMap.put(key, oldStateJson);
+                log.debug("Saved old state (from JSON) for entity: {} with ID: {}", entityClassName, recordId);
+            }
+        } catch (Exception e) {
+            log.error("Error saving old entity state from JSON", e);
         }
     }
 
@@ -529,14 +989,17 @@ public class AuditLogListener {
 
                             String changes;
                             if ("UPDATE".equals(action)) {
-                                // For UPDATE, create diff object with old and new values
-                                changes = createUpdateDiff(entityRef, recordId);
+                                // For UPDATE, get old state from ThreadLocal (saved in preUpdate)
+                                // Then create diff with old and new states
+                                changes = createUpdateDiff(entityRef, recordId, entityClassName);
+                                log.debug("Created update diff for entity: {} with ID: {}", entityClassName, recordId);
                             } else if ("DELETE".equals(action)) {
                                 // For DELETE, only save old state (entity is being deleted)
                                 Map<String, String> oldStateMap = oldEntityState.get();
+                                String key = entityClassName + ":" + recordId;
                                 String oldStateJson = null;
-                                if (oldStateMap != null && recordId != null) {
-                                    oldStateJson = oldStateMap.get(recordId.toString());
+                                if (oldStateMap != null) {
+                                    oldStateJson = oldStateMap.get(key);
                                 }
                                 if (oldStateJson != null) {
                                     changes = oldStateJson;
@@ -564,9 +1027,39 @@ public class AuditLogListener {
                         } catch (Exception e) {
                             log.error("Error creating audit log after commit", e);
                         } finally {
-                            // Clean up old state and scheduled tracking after processing
-                            oldEntityState.remove();
-                            scheduledAuditLogs.remove();
+                            // Clean up old state and snapshot after processing
+                            try {
+                                Map<String, String> stateMap = oldEntityState.get();
+                                if (stateMap != null) {
+                                    String key = entityClassName + ":" + recordId;
+                                    stateMap.remove(key);
+                                    // Only remove ThreadLocal if map is empty
+                                    if (stateMap.isEmpty()) {
+                                        oldEntityState.remove();
+                                    }
+                                } else {
+                                    oldEntityState.remove();
+                                }
+                                
+                                // Also cleanup snapshot after using it
+                                Map<String, String> snapshots = entitySnapshots.get();
+                                if (snapshots != null) {
+                                    String key = entityClassName + ":" + recordId;
+                                    snapshots.remove(key);
+                                    // Update snapshot with new state for next update cycle
+                                    String newStateJson = serializeObject(entityRef);
+                                    snapshots.put(key, newStateJson);
+                                    
+                                    if (snapshots.isEmpty()) {
+                                        entitySnapshots.remove();
+                                    }
+                                }
+                            } catch (Exception cleanupEx) {
+                                log.error("Error cleaning up ThreadLocal", cleanupEx);
+                                // Force cleanup on error
+                                oldEntityState.remove();
+                                entitySnapshots.remove();
+                            }
                         }
                     }
                 });
@@ -586,16 +1079,18 @@ public class AuditLogListener {
                     return;
                 }
                 
+                String entityClassName = entity.getClass().getSimpleName();
                 String changes;
                 if ("UPDATE".equals(action)) {
                     // For UPDATE, create diff object with old and new values
-                    changes = createUpdateDiff(entity, recordId);
+                    changes = createUpdateDiff(entity, recordId, entityClassName);
                 } else if ("DELETE".equals(action)) {
                     // For DELETE, only save old state (entity is being deleted)
                     Map<String, String> oldStateMap = oldEntityState.get();
+                    String key = entityClassName + ":" + recordId;
                     String oldStateJson = null;
-                    if (oldStateMap != null && recordId != null) {
-                        oldStateJson = oldStateMap.get(recordId.toString());
+                    if (oldStateMap != null) {
+                        oldStateJson = oldStateMap.get(key);
                     }
                     if (oldStateJson != null) {
                         changes = oldStateJson;
@@ -623,13 +1118,35 @@ public class AuditLogListener {
                     log.debug("Audit log saved successfully");
                 }
                 
-                // Clean up old state and scheduled tracking after processing
+                // Clean up old state after processing
                 if ("UPDATE".equals(action) || "DELETE".equals(action)) {
-                    oldEntityState.remove();
-                    scheduledAuditLogs.remove();
+                    try {
+                        Map<String, String> stateMap = oldEntityState.get();
+                        if (stateMap != null) {
+                            String key = entity.getClass().getSimpleName() + ":" + recordId;
+                            stateMap.remove(key);
+                            // Only remove ThreadLocal if map is empty
+                            if (stateMap.isEmpty()) {
+                                oldEntityState.remove();
+                            }
+                        } else {
+                            oldEntityState.remove();
+                        }
+                    } catch (Exception cleanupEx) {
+                        log.error("Error cleaning up ThreadLocal", cleanupEx);
+                        // Force cleanup on error
+                        oldEntityState.remove();
+                    }
                 }
-            }        } catch (Exception e) {
+            }
+        } catch (Exception e) {
             log.error("Error in scheduleAuditLogCreation", e);
+            // Ensure cleanup even on error
+            try {
+                oldEntityState.remove();
+            } catch (Exception cleanupEx) {
+                log.error("Error cleaning up ThreadLocal on exception", cleanupEx);
+            }
         }
     }
 
@@ -744,15 +1261,28 @@ public class AuditLogListener {
     /**
      * Create diff object showing changes between old and new entity state
      */
-    private String createUpdateDiff(Object newEntity, Long recordId) {
+    private String createUpdateDiff(Object newEntity, Long recordId, String entityClassName) {
         try {
             Map<String, Object> diff = new HashMap<>();
             
-            // Get old state from ThreadLocal
+            // Get old state from ThreadLocal using composite key
             Map<String, String> oldStateMap = oldEntityState.get();
+            String key = entityClassName + ":" + recordId;
             String oldStateJson = null;
-            if (oldStateMap != null && recordId != null) {
-                oldStateJson = oldStateMap.get(recordId.toString());
+            if (oldStateMap != null) {
+                oldStateJson = oldStateMap.get(key);
+            }
+            
+            if (oldStateJson == null) {
+                log.warn("Old state not found for entity: {} with ID: {}, using new state only", entityClassName, recordId);
+                // Fallback: create diff with empty old state
+                String newStateJson = serializeObject(newEntity);
+                ObjectMapper mapper = ContextUtils.getObjectMapper();
+                Map<String, Object> newState = mapper.readValue(newStateJson, Map.class);
+                diff.put("old", new HashMap<>());
+                diff.put("new", newState);
+                diff.put("changes", newState);
+                return mapper.writeValueAsString(diff);
             }
             
             // Serialize new state
@@ -770,15 +1300,15 @@ public class AuditLogListener {
             allKeys.addAll(oldState.keySet());
             allKeys.addAll(newState.keySet());
             
-            for (String key : allKeys) {
-                Object oldValue = oldState.get(key);
-                Object newValue = newState.get(key);
+            for (String fieldKey : allKeys) {
+                Object oldValue = oldState.get(fieldKey);
+                Object newValue = newState.get(fieldKey);
                 
                 if (!Objects.equals(oldValue, newValue)) {
                     Map<String, Object> change = new HashMap<>();
                     change.put("old", oldValue);
                     change.put("new", newValue);
-                    changes.put(key, change);
+                    changes.put(fieldKey, change);
                 }
             }
             

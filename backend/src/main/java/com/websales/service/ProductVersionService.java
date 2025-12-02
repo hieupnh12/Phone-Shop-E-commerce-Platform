@@ -195,6 +195,11 @@ public class ProductVersionService {
        public ProductVersionResponse UpdateProductVersion(ProductVersionUpdateRequest request, String id) {
            ProductVersion pr = pvr.findById(id).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_VERSION_NOT_FOUND));
 
+           // Load images để tránh mất khi update
+           if (pr.getImages() != null) {
+               pr.getImages().size(); // Force load images collection
+           }
+
            Ram ram = ramservice.getRamById(request.getIdRam());
            Rom rom = romservice.getRomById(request.getIdRom());
            Color color = colorservice.getColorById(request.getIdColor());

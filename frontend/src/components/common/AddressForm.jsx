@@ -105,7 +105,7 @@ const AddressForm = ({ addressToEdit, onClose, onSave, customerInfo: propCustome
             const fullAddress = `${formData.street}, ${formData.ward}, ${formData.city}`.trim();
             
             if (!formData.street || !formData.ward || !formData.city) {
-                setError("Vui lòng điền đầy đủ thông tin địa chỉ");
+                setError(t('addressForm.fillAllFields'));
                 setIsLoading(false);
                 return;
             }

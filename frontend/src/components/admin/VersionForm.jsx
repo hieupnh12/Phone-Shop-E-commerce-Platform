@@ -89,69 +89,69 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
   const validateForm = () => {
     if (!formData.idRam) {
-      setToast({ type: 'error', message: 'Vui lòng chọn RAM' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.ramRequired') });
       return false;
     }
 
     const ramId = parseInt(formData.idRam);
     if (isNaN(ramId) || ramId <= 0) {
-      setToast({ type: 'error', message: 'RAM không hợp lệ' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.ramInvalid') });
       return false;
     }
 
     if (!formData.idRom) {
-      setToast({ type: 'error', message: 'Vui lòng chọn ROM' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.romRequired') });
       return false;
     }
 
     const romId = parseInt(formData.idRom);
     if (isNaN(romId) || romId <= 0) {
-      setToast({ type: 'error', message: 'ROM không hợp lệ' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.romInvalid') });
       return false;
     }
 
     if (!formData.idColor) {
-      setToast({ type: 'error', message: 'Vui lòng chọn màu sắc' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.colorRequired') });
       return false;
     }
 
     const colorId = parseInt(formData.idColor);
     if (isNaN(colorId) || colorId <= 0) {
-      setToast({ type: 'error', message: 'Màu sắc không hợp lệ' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.colorInvalid') });
       return false;
     }
 
     if (!formData.importPrice || formData.importPrice.toString().trim() === '') {
-      setToast({ type: 'error', message: 'Giá nhập không được để trống' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.importPriceRequired') });
       return false;
     }
 
     const importPriceNum = parseFloat(formData.importPrice);
     if (isNaN(importPriceNum) || importPriceNum < 0) {
-      setToast({ type: 'error', message: 'Giá nhập phải là số không âm' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.importPriceInvalid') });
       return false;
     }
 
     if (!formData.exportPrice || formData.exportPrice.toString().trim() === '') {
-      setToast({ type: 'error', message: 'Giá bán không được để trống' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.exportPriceRequired') });
       return false;
     }
 
     const exportPriceNum = parseFloat(formData.exportPrice);
     if (isNaN(exportPriceNum) || exportPriceNum < 0) {
-      setToast({ type: 'error', message: 'Giá bán phải là số không âm' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.exportPriceInvalid') });
       return false;
     }
 
     if (exportPriceNum < importPriceNum) {
-      setToast({ type: 'error', message: 'Giá bán phải lớn hơn hoặc bằng giá nhập' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.exportPriceTooLow') });
       return false;
     }
 
     if (formData.stockQuantity && formData.stockQuantity.toString().trim() !== '') {
       const stockQty = parseInt(formData.stockQuantity);
       if (isNaN(stockQty) || stockQty < 0) {
-        setToast({ type: 'error', message: 'Số lượng tồn kho phải là số nguyên không âm' });
+        setToast({ type: 'error', message: t('admin.versionForm.errors.stockInvalid') });
         return false;
       }
     }
@@ -174,7 +174,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       );
 
       if (isDuplicate) {
-        setToast({ type: 'error', message: 'Phiên bản với RAM, ROM, Màu sắc này đã tồn tại' });
+        setToast({ type: 'error', message: t('admin.versionForm.errors.duplicateVersion') });
         return;
       }
     } else {
@@ -186,7 +186,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       );
 
       if (isDuplicate) {
-        setToast({ type: 'error', message: 'Phiên bản với RAM, ROM, Màu sắc này đã tồn tại' });
+        setToast({ type: 'error', message: t('admin.versionForm.errors.duplicateVersion') });
         return;
       }
     }
@@ -227,7 +227,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
       handleCloseModal();
     } catch (error) {
-      setToast({ type: 'error', message: 'Lỗi cập nhật phiên bản' });
+      setToast({ type: 'error', message: t('admin.versionForm.errors.updateError') });
     }
   };
 
@@ -260,7 +260,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
         const errorMessage = error.response?.data?.message 
           || error.response?.data?.error 
           || error.message 
-          || 'Lỗi xóa phiên bản';
+          || t('admin.versionForm.errors.deleteError');
         setToast({ type: 'error', message: errorMessage });
         setDeleteModal({ isOpen: false, index: null, versionInfo: null });
         return;
@@ -292,20 +292,20 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Phiên Bản Sản Phẩm</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('admin.versionForm.title')}</h3>
         <Button
           variant="primary"
           size="sm"
           icon={Plus}
           onClick={() => handleOpenModal()}
         >
-          Thêm Phiên Bản
+          {t('admin.versionForm.addVersion')}
         </Button>
       </div>
 
       {versions.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <p className="text-gray-500">Chưa có phiên bản nào. Nhấp "Thêm Phiên Bản" để bắt đầu</p>
+          <p className="text-gray-500">{t('admin.versionForm.noVersions')}</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -319,15 +319,15 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                   {getRamName(version.idRam)} - {getRomName(version.idRom)} - {getColorName(version.idColor)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Giá nhập: {version.importPrice.toLocaleString()} VND | Giá bán: {version.exportPrice.toLocaleString()} VND | Số lượng: {version.stockQuantity}
+                  {t('admin.versionForm.importPriceLabel')}: {version.importPrice.toLocaleString()} VND | {t('admin.versionForm.exportPriceLabel')}: {version.exportPrice.toLocaleString()} VND | {t('admin.versionForm.quantityLabel')}: {version.stockQuantity}
                 </p>
                 {version.images && version.images.length > 0 && (
                   <p className="text-xs text-blue-600">
-                    📷 {version.images.length} ảnh
+                    📷 {version.images.length} {t('admin.versionForm.imagesCount')}
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Trạng thái: {version.status ? '✅ Hoạt động' : '❌ Tắt'}
+                  {t('common.status')}: {version.status ? t('admin.versionForm.statusActive') : t('admin.versionForm.statusInactive')}
                 </p>
               </div>
 
@@ -337,7 +337,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                   size="sm"
                   onClick={() => handleOpenModal(index)}
                 >
-                  Sửa
+                  {t('admin.versionForm.edit')}
                 </Button>
                 <Button
                   variant="danger"
@@ -355,18 +355,18 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingIndex !== null ? 'Sửa Phiên Bản' : 'Thêm Phiên Bản'}
+        title={editingIndex !== null ? t('admin.versionForm.editVersion') : t('admin.versionForm.addVersion')}
         size="lg"
       >
         <div className="space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
-            <h4 className="font-medium text-gray-900">Thông Tin Cơ Bản</h4>
+            <h4 className="font-medium text-gray-900">{t('admin.versionForm.basicInfo')}</h4>
             
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  RAM <span className="text-red-500">*</span>
+                  {t('admin.versionForm.ram')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="idRam"
@@ -374,7 +374,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Chọn RAM</option>
+                  <option value="">{t('admin.versionForm.selectRam')}</option>
                   {ramList.map(ram => (
                     <option key={ram.idRam} value={ram.idRam}>
                       {ram.nameRam}
@@ -385,7 +385,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  ROM <span className="text-red-500">*</span>
+                  {t('admin.versionForm.rom')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="idRom"
@@ -393,7 +393,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Chọn ROM</option>
+                  <option value="">{t('admin.versionForm.selectRom')}</option>
                   {romList.map(rom => (
                     <option key={rom.idRom} value={rom.idRom}>
                       {rom.nameRom}
@@ -404,7 +404,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Màu Sắc <span className="text-red-500">*</span>
+                  {t('admin.versionForm.color')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="idColor"
@@ -412,7 +412,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Chọn Màu</option>
+                  <option value="">{t('admin.versionForm.selectColor')}</option>
                   {colorList.map(color => (
                     <option key={color.idColor} value={color.idColor}>
                       {color.nameColor}
@@ -424,7 +424,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
             <div className="grid grid-cols-3 gap-4">
               <InputField
-                label="Giá Nhập (VND)"
+                label={t('admin.versionForm.importPrice')}
                 name="importPrice"
                 type="number"
                 placeholder="0"
@@ -434,7 +434,7 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
               />
 
               <InputField
-                label="Giá Bán (VND)"
+                label={t('admin.versionForm.exportPrice')}
                 name="exportPrice"
                 type="number"
                 placeholder="0"
@@ -464,14 +464,14 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
                 className="w-4 h-4 cursor-pointer"
               />
               <label htmlFor="versionStatus" className="text-sm font-medium text-gray-700 cursor-pointer">
-                Phiên bản này hoạt động
+                {t('admin.versionForm.versionActive')}
               </label>
             </div>
           </div>
 
           {/* Image Upload */}
           <div className="border-t pt-4 space-y-4">
-            <h4 className="font-medium text-gray-900">Hình Ảnh Phiên Bản (Tối đa 5 ảnh)</h4>
+            <h4 className="font-medium text-gray-900">{t('admin.versionForm.versionImages')}</h4>
             <VersionImageUpload
               images={formData.images}
               onImagesChange={handleImagesChange}
@@ -484,10 +484,10 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
 
         <div className="flex justify-end gap-3 mt-6 border-t pt-4">
           <Button variant="secondary" onClick={handleCloseModal}>
-            Hủy
+            {t('admin.versionForm.cancel')}
           </Button>
           <Button variant="primary" onClick={handleAddOrUpdate} disabled={isUploadingImages}>
-            {isUploadingImages ? 'Đang xử lý...' : (editingIndex !== null ? 'Cập Nhật' : 'Thêm')}
+            {isUploadingImages ? t('admin.versionForm.processing') : (editingIndex !== null ? t('admin.versionForm.update') : t('admin.versionForm.add'))}
           </Button>
         </div>
       </Modal>
@@ -496,19 +496,19 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, index: null, versionInfo: null })}
-        title="Xóa Phiên Bản"
+        title={t('admin.versionForm.deleteTitle')}
         size="md"
       >
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-sm text-red-800">
-              <strong>Cảnh báo:</strong> Bạn sắp xóa phiên bản "<strong>{deleteModal.versionInfo}</strong>". 
-              {' '}Hành động này không thể hoàn tác. Nếu phiên bản đã được bán, bạn sẽ không thể xóa nó.
+              <strong>{t('common.warning')}:</strong> {t('admin.versionForm.deleteWarning')} "<strong>{deleteModal.versionInfo}</strong>". 
+              {' '}{t('admin.noUndo')} {t('admin.cannotDelete')}
             </p>
           </div>
 
           <p className="text-gray-700">
-            Bạn có chắc chắn muốn xóa phiên bản này không?
+            {t('admin.versionForm.deleteConfirm')}
           </p>
         </div>
 
@@ -517,13 +517,13 @@ const VersionForm = ({ versions = [], onVersionsChange, ramList = [], romList = 
             variant="secondary"
             onClick={() => setDeleteModal({ isOpen: false, index: null, versionInfo: null })}
           >
-            Hủy
+            {t('admin.versionForm.cancel')}
           </Button>
           <Button
             variant="danger"
             onClick={handleConfirmDeleteVersion}
           >
-            Xóa
+            {t('admin.versionForm.delete')}
           </Button>
         </div>
       </Modal>

@@ -47,7 +47,7 @@ const ProfileSidebar = () => {
                     onClick={handleLogout}
                 >
                     <LogOut className="mr-3 h-5 w-5" />
-                    <span>Đăng xuất</span>
+                    <span>{t('auth.logout')}</span>
                 </button>
             </div>
         </div>

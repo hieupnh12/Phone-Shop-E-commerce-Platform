@@ -8,70 +8,73 @@ import {
   AlertCircle,
   Package,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { warrantyRequestService } from "../../services/api";
 import Toast from "../common/Toast";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 const WarrantyPage = () => {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { t } = useLanguage();
   const [toast, setToast] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    fetchMyRequests();
-  }, []);
-
-  const fetchMyRequests = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Use useQuery for automatic refetching with staleTime = 0
+  const {
+    data: requestsData,
+    isLoading: loading,
+    isError: error,
+    refetch: refetchMyRequests,
+  } = useQuery({
+    queryKey: ["my-warranty-requests"],
+    queryFn: async () => {
       const response = await warrantyRequestService.getMyRequests();
       console.log("My warranty requests:", response);
 
       if (Array.isArray(response)) {
-        setRequests(response);
+        return response;
       } else if (response?.result && Array.isArray(response.result)) {
-        setRequests(response.result);
+        return response.result;
       } else {
-        setRequests([]);
+        return [];
       }
-    } catch (err) {
+    },
+    staleTime: 0, // Always refetch
+    refetchInterval: 2000, // Refetch every 5 seconds
+    onError: (err) => {
       console.error("Error fetching warranty requests:", err);
-      setError("Không thể tải danh sách yêu cầu bảo hành");
       setToast({
         type: "error",
-        message: "Không thể tải danh sách yêu cầu bảo hành",
+        message: t('profile.warrantyRequests.cannotLoadRequests'),
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
+
+  const requests = requestsData || [];
 
   const getStatusBadge = (status) => {
     const statusMap = {
       PENDING: {
-        label: "Đang chờ xử lý",
+        label: t('profile.warrantyRequests.status.pending'),
         color: "bg-yellow-100 text-yellow-800",
         icon: Clock,
       },
       ACCEPTED: {
-        label: "Đã chấp nhận",
+        label: t('profile.warrantyRequests.status.accepted'),
         color: "bg-blue-100 text-blue-800",
         icon: CheckCircle,
       },
       REJECTED: {
-        label: "Đã từ chối",
+        label: t('profile.warrantyRequests.status.rejected'),
         color: "bg-red-100 text-red-800",
         icon: XCircle,
       },
       IN_PROGRESS: {
-        label: "Đang xử lý",
+        label: t('profile.warrantyRequests.status.inProgress'),
         color: "bg-purple-100 text-purple-800",
         icon: RefreshCw,
       },
       COMPLETED: {
-        label: "Đã hoàn thành",
+        label: t('profile.warrantyRequests.status.completed'),
         color: "bg-green-100 text-green-800",
         icon: CheckCircle,
       },
@@ -95,11 +98,11 @@ const WarrantyPage = () => {
   const getTypeBadge = (type) => {
     return type === "WARRANTY" ? (
       <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-        Bảo hành
+        {t('profile.warrantyRequests.type.warranty')}
       </span>
     ) : (
       <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-        Đổi trả
+        {t('profile.warrantyRequests.type.exchange')}
       </span>
     );
   };
@@ -139,7 +142,7 @@ const WarrantyPage = () => {
     const statuses = [
       {
         key: "PENDING",
-        label: "Đang chờ",
+        label: t('profile.warrantyRequests.timeline.pending'),
         date: request.createdAt,
         completed: [
           "PENDING",
@@ -151,7 +154,7 @@ const WarrantyPage = () => {
       },
       {
         key: "ACCEPTED",
-        label: "Đã chấp nhận",
+        label: t('profile.warrantyRequests.timeline.accepted'),
         date:
           request.status === "ACCEPTED" ||
           request.status === "IN_PROGRESS" ||
@@ -164,7 +167,7 @@ const WarrantyPage = () => {
       },
       {
         key: "IN_PROGRESS",
-        label: "Đang xử lý",
+        label: t('profile.warrantyRequests.timeline.inProgress'),
         date:
           request.status === "IN_PROGRESS" || request.status === "COMPLETED"
             ? request.updatedAt
@@ -173,7 +176,7 @@ const WarrantyPage = () => {
       },
       {
         key: "COMPLETED",
-        label: "Đã hoàn thành",
+        label: t('profile.warrantyRequests.timeline.completed'),
         date: request.status === "COMPLETED" ? request.updatedAt : null,
         completed: request.status === "COMPLETED",
       },
@@ -184,13 +187,13 @@ const WarrantyPage = () => {
       return [
         {
           key: "PENDING",
-          label: "Đang chờ",
+          label: t('profile.warrantyRequests.timeline.pending'),
           date: request.createdAt,
           completed: true,
         },
         {
           key: "REJECTED",
-          label: "Đã từ chối",
+          label: t('profile.warrantyRequests.timeline.rejected'),
           date: request.updatedAt,
           completed: true,
           isRejected: true,
@@ -223,33 +226,33 @@ const WarrantyPage = () => {
         <div className="flex items-center mb-6">
           <Shield size={24} className="text-red-500 mr-3" />
           <h2 className="text-2xl font-bold text-gray-800">
-            Yêu cầu bảo hành của tôi
+            {t('profile.warrantyRequests.myRequests')}
           </h2>
         </div>
 
         {/* Filter */}
         <div className="flex items-center gap-3 mb-6">
           <span className="text-sm font-medium text-gray-700">
-            Lọc theo trạng thái:
+            {t('profile.warrantyRequests.filterByStatus')}:
           </span>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="all">Tất cả</option>
-            <option value="PENDING">Đang chờ</option>
-            <option value="ACCEPTED">Đã chấp nhận</option>
-            <option value="IN_PROGRESS">Đang xử lý</option>
-            <option value="COMPLETED">Đã hoàn thành</option>
-            <option value="REJECTED">Đã từ chối</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="PENDING">{t('profile.warrantyRequests.status.pending')}</option>
+            <option value="ACCEPTED">{t('profile.warrantyRequests.status.accepted')}</option>
+            <option value="IN_PROGRESS">{t('profile.warrantyRequests.status.inProgress')}</option>
+            <option value="COMPLETED">{t('profile.warrantyRequests.status.completed')}</option>
+            <option value="REJECTED">{t('profile.warrantyRequests.status.rejected')}</option>
           </select>
           <button
-            onClick={fetchMyRequests}
+            onClick={() => refetchMyRequests()}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <RefreshCw size={16} />
-            Làm mới
+            {t('profile.warrantyRequests.refresh')}
           </button>
         </div>
 
@@ -259,8 +262,8 @@ const WarrantyPage = () => {
             <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 text-lg">
               {requests.length === 0
-                ? "Bạn chưa có yêu cầu bảo hành nào"
-                : "Không có yêu cầu nào với trạng thái đã chọn"}
+                ? t('profile.warrantyRequests.noRequests')
+                : t('profile.warrantyRequests.noRequestsWithStatus')}
             </p>
           </div>
         ) : (
@@ -277,18 +280,18 @@ const WarrantyPage = () => {
                     <div>
                       <div className="flex items-center gap-3 mb-2">
                         <span className="font-semibold text-gray-900">
-                          Yêu cầu #{request.requestId}
+                          {t('profile.warrantyRequests.request')} #{request.requestId}
                         </span>
                         {getTypeBadge(request.type)}
                         {getStatusBadge(request.status)}
                       </div>
                       <p className="text-sm text-gray-600">
-                        Đơn hàng:{" "}
+                        {t('orderDetail.order')}:{" "}
                         <span className="font-medium">#{request.orderId}</span>
                       </p>
                       {request.productName && (
                         <p className="text-sm text-gray-600 mt-1">
-                          Sản phẩm:{" "}
+                          {t('common.products')}:{" "}
                           <span className="font-medium">
                             {request.productName}
                           </span>
@@ -296,7 +299,7 @@ const WarrantyPage = () => {
                       )}
                     </div>
                     <div className="text-right text-sm text-gray-500">
-                      <p>Ngày tạo:</p>
+                      <p>{t('profile.warrantyRequests.createdDate')}:</p>
                       <p className="font-medium">
                         {formatDate(request.createdAt)}
                       </p>
@@ -306,7 +309,7 @@ const WarrantyPage = () => {
                   {/* Status Timeline */}
                   <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                     <h4 className="text-sm font-semibold text-gray-700 mb-4">
-                      Tiến trình yêu cầu
+                      {t('profile.warrantyRequests.requestProgress')}
                     </h4>
                     <div className="relative">
                       {/* Timeline line */}
@@ -365,7 +368,7 @@ const WarrantyPage = () => {
                   {request.reason && (
                     <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                       <p className="text-sm font-medium text-gray-700 mb-1">
-                        Lý do:
+                        {t('profile.warrantyRequests.reason')}:
                       </p>
                       <p className="text-sm text-gray-600">{request.reason}</p>
                     </div>
@@ -374,7 +377,7 @@ const WarrantyPage = () => {
                   {request.adminNote && (
                     <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm font-medium text-blue-800 mb-1">
-                        Ghi chú từ nhân viên:
+                        {t('profile.warrantyRequests.adminNote')}:
                       </p>
                       <p className="text-sm text-blue-700">
                         {request.adminNote}
@@ -386,7 +389,7 @@ const WarrantyPage = () => {
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Clock size={16} />
                       <span>
-                        Ngày hẹn:{" "}
+                        {t('profile.warrantyRequests.appointmentDate')}:{" "}
                         <span className="font-medium">
                           {formatDate(request.appointmentDate)}
                         </span>
@@ -396,7 +399,7 @@ const WarrantyPage = () => {
 
                   {request.employeeName && (
                     <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600">
-                      Được xử lý bởi:{" "}
+                      {t('profile.warrantyRequests.processedBy')}:{" "}
                       <span className="font-medium">
                         {request.employeeName}
                       </span>
@@ -412,22 +415,19 @@ const WarrantyPage = () => {
       {/* Warranty Policy Info */}
       <div className="bg-white p-6 shadow-lg rounded-xl">
         <h3 className="text-xl font-bold text-gray-800 mb-4">
-          Chính sách bảo hành
+          {t('profile.warrantyRequests.policy.title')}
         </h3>
         <div className="space-y-4">
           <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
             <h4 className="font-semibold text-gray-800 mb-3">
-              Thông tin chung
+              {t('profile.warrantyRequests.policy.generalInfo')}
             </h4>
             <div className="text-sm text-gray-700 leading-relaxed space-y-2">
               <p>
-                <strong>Thời gian bảo hành:</strong> Bảo hành sản phẩm trong
-                vòng 1 năm kể từ khi mua hàng.
+                <strong>{t('profile.warrantyRequests.policy.warrantyPeriod')}:</strong> {t('profile.warrantyRequests.policy.warrantyPeriodDesc')}
               </p>
               <p>
-                <strong>Điều kiện bảo hành:</strong> Trong thời gian bảo hành,
-                sản phẩm sẽ được sửa chữa hoặc thay thế miễn phí nếu có lỗi do
-                nhà sản xuất.
+                <strong>{t('profile.warrantyRequests.policy.warrantyConditions')}:</strong> {t('profile.warrantyRequests.policy.warrantyConditionsDesc')}
               </p>
             </div>
           </div>

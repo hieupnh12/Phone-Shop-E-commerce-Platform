@@ -162,14 +162,14 @@ useEffect(() => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        setToast({ type: "error", message: "Vui lòng chọn file hình ảnh" });
+        setToast({ type: "error", message: t('admin.productForm.errors.selectImageFile') });
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
         setToast({
           type: "error",
-          message: "Kích thước hình ảnh không vượt quá 5MB",
+          message: t('admin.productForm.errors.imageTooLarge'),
         });
         return;
       }
@@ -185,32 +185,32 @@ useEffect(() => {
 
   const validateForm = () => {
     if (!formData.nameProduct || formData.nameProduct.trim() === "") {
-      setToast({ type: "error", message: "Tên sản phẩm không được để trống" });
+      setToast({ type: "error", message: t('admin.productForm.errors.productNameRequired') });
       return false;
     }
 
     if (formData.nameProduct.length > 255) {
-      setToast({ type: "error", message: "Tên sản phẩm không được vượt quá 255 ký tự" });
+      setToast({ type: "error", message: t('admin.productForm.errors.productNameTooLong') });
       return false;
     }
 
     if (!formData.brandId) {
-      setToast({ type: "error", message: "Vui lòng chọn nhãn hiệu" });
+      setToast({ type: "error", message: t('admin.productForm.errors.brandRequired') });
       return false;
     }
 
     if (!formData.originId) {
-      setToast({ type: "error", message: "Vui lòng chọn xuất xứ" });
+      setToast({ type: "error", message: t('admin.productForm.errors.originRequired') });
       return false;
     }
 
     if (!formData.operatingSystemId) {
-      setToast({ type: "error", message: "Vui lòng chọn hệ điều hành" });
+      setToast({ type: "error", message: t('admin.productForm.errors.osRequired') });
       return false;
     }
 
     if (!formData.warehouseAreaId) {
-      setToast({ type: "error", message: "Vui lòng chọn khu vực kho" });
+      setToast({ type: "error", message: t('admin.productForm.errors.warehouseRequired') });
       return false;
     }
 
@@ -219,7 +219,7 @@ useEffect(() => {
       if (batteryStr !== "") {
         const batteryNum = parseInt(batteryStr);
         if (isNaN(batteryNum) || batteryNum <= 0) {
-          setToast({ type: "error", message: "Dung lượng pin phải là số nguyên dương" });
+          setToast({ type: "error", message: t('admin.productForm.errors.batteryInvalid') });
           return false;
         }
       }
@@ -230,7 +230,7 @@ useEffect(() => {
       if (scanFreqStr !== "") {
         const scanFreq = parseInt(scanFreqStr);
         if (isNaN(scanFreq) || scanFreq <= 0) {
-          setToast({ type: "error", message: "Tần số quét phải là số nguyên dương" });
+          setToast({ type: "error", message: t('admin.productForm.errors.scanFreqInvalid') });
           return false;
         }
       }
@@ -241,34 +241,34 @@ useEffect(() => {
       if (screenSizeStr !== "") {
         const screenSizeNum = parseFloat(screenSizeStr);
         if (isNaN(screenSizeNum) || screenSizeNum <= 0) {
-          setToast({ type: "error", message: "Kích thước màn hình phải là số dương" });
+          setToast({ type: "error", message: t('admin.productForm.errors.screenSizeInvalid') });
           return false;
         }
       }
     }
 
     if (formData.screenResolution && formData.screenResolution.length > 100) {
-      setToast({ type: "error", message: "Độ phân giải màn hình không được vượt quá 100 ký tự" });
+      setToast({ type: "error", message: t('admin.productForm.errors.screenResTooLong') });
       return false;
     }
 
     if (formData.screenTech && formData.screenTech.length > 100) {
-      setToast({ type: "error", message: "Công nghệ màn hình không được vượt quá 100 ký tự" });
+      setToast({ type: "error", message: t('admin.productForm.errors.screenTechTooLong') });
       return false;
     }
 
     if (formData.chipset && formData.chipset.length > 255) {
-      setToast({ type: "error", message: "Chipset không được vượt quá 255 ký tự" });
+      setToast({ type: "error", message: t('admin.productForm.errors.chipsetTooLong') });
       return false;
     }
 
     if (formData.rearCamera && formData.rearCamera.length > 255) {
-      setToast({ type: "error", message: "Thông tin camera sau không được vượt quá 255 ký tự" });
+      setToast({ type: "error", message: t('admin.productForm.errors.rearCameraTooLong') });
       return false;
     }
 
     if (formData.frontCamera && formData.frontCamera.length > 255) {
-      setToast({ type: "error", message: "Thông tin camera trước không được vượt quá 255 ký tự" });
+      setToast({ type: "error", message: t('admin.productForm.errors.frontCameraTooLong') });
       return false;
     }
 
@@ -277,20 +277,20 @@ useEffect(() => {
       if (warrantyStr !== "") {
         const warrantyNum = parseInt(warrantyStr);
         if (isNaN(warrantyNum) || warrantyNum < 0) {
-          setToast({ type: "error", message: "Thời hạn bảo hành phải là số nguyên không âm" });
+          setToast({ type: "error", message: t('admin.productForm.errors.warrantyInvalid') });
           return false;
         }
       }
     }
 
     if (versions.length === 0) {
-      setToast({ type: "error", message: "Vui lòng thêm ít nhất 1 phiên bản" });
+      setToast({ type: "error", message: t('admin.productForm.errors.versionRequired') });
       return false;
     }
 
     const hasActiveVersion = versions.some(v => v.status === true);
     if (!hasActiveVersion) {
-      setToast({ type: "error", message: "Phải có ít nhất 1 phiên bản đang hoạt động" });
+      setToast({ type: "error", message: t('admin.productForm.errors.activeVersionRequired') });
       return false;
     }
 
@@ -346,11 +346,13 @@ useEffect(() => {
         warehouseAreaId: formData.warehouseAreaId,
         categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
         stockQuantity: 0,
-        status: false,
+        status: formData.status, // Sử dụng giá trị từ form
       },
       versions: versionsForBackend,
     };
 
+    console.log("📝 ProductForm - formData.status:", formData.status);
+    console.log("📝 ProductForm - productPayload.products.status:", productPayload.products.status);
     console.log("📝 ProductForm - versionsForBackend:", versionsForBackend);
     console.log("📝 ProductForm - productPayload:", productPayload);
     console.log("📝 ProductForm - versionsWithImages:", versions);
@@ -368,7 +370,7 @@ useEffect(() => {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang khởi tạo sản phẩm...</p>
+          <p className="text-gray-600">{t('admin.productForm.initializing')}</p>
         </div>
       </div>
     );
@@ -379,12 +381,12 @@ useEffect(() => {
       {/* Thông Tin Cơ Bản */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Thông Tin Cơ Bản
+          {t('admin.productForm.basicInfo')}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
-            label="Tên Sản Phẩm"
+            label={t('admin.productForm.productName')}
             name="nameProduct"
             value={formData.nameProduct}
             onChange={handleInputChange}
@@ -394,7 +396,7 @@ useEffect(() => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Nhãn Hiệu <span className="text-red-500">*</span>
+              {t('admin.productForm.brand')} <span className="text-red-500">*</span>
             </label>
             <select
               name="brandId"
@@ -403,7 +405,7 @@ useEffect(() => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Chọn Nhãn Hiệu</option>
+              <option value="">{t('admin.productForm.selectBrand')}</option>
               {brandList.map((brand) => (
                 <option
                   key={String(brand.idBrand)}
@@ -417,7 +419,7 @@ useEffect(() => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Xuất Xứ <span className="text-red-500">*</span>
+              {t('admin.productForm.origin')} <span className="text-red-500">*</span>
             </label>
             <select
               name="originId"
@@ -426,7 +428,7 @@ useEffect(() => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Chọn Xuất Xứ</option>
+              <option value="">{t('admin.productForm.selectOrigin')}</option>
               {originList.map((origin) => (
                 <option
                   key={String(origin.idOrigin)}
@@ -440,7 +442,7 @@ useEffect(() => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Hệ Điều Hành <span className="text-red-500">*</span>
+              {t('admin.productForm.operatingSystem')} <span className="text-red-500">*</span>
             </label>
             <select
               name="operatingSystemId"
@@ -449,7 +451,7 @@ useEffect(() => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Chọn Hệ Điều Hành</option>
+              <option value="">{t('admin.productForm.selectOS')}</option>
               {operatingSystemList.map((os) => (
                 <option key={String(os.idOS)} value={String(os.idOS)}>
                   {os.nameOS}
@@ -460,7 +462,7 @@ useEffect(() => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Khu Vực Kho <span className="text-red-500">*</span>
+              {t('admin.productForm.warehouseArea')} <span className="text-red-500">*</span>
             </label>
             <select
               name="warehouseAreaId"
@@ -469,7 +471,7 @@ useEffect(() => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Chọn Khu Vực Kho</option>
+              <option value="">{t('admin.productForm.selectWarehouse')}</option>
           {warehouseList.map((warehouse) => {
   console.log("Warehouse ID:", warehouse.idWarehouse, "Name:", warehouse.nameWarehouse);
   return (
@@ -487,7 +489,7 @@ useEffect(() => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Danh Mục
+              {t('admin.productForm.category')}
             </label>
             <select
               name="categoryId"
@@ -495,7 +497,7 @@ useEffect(() => {
               onChange={handleInputChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Chọn Danh Mục</option>
+              <option value="">{t('admin.productForm.selectCategory')}</option>
               {categoryList.map((category) => (
                 <option
                   key={String(category.idCategory)}
@@ -512,12 +514,12 @@ useEffect(() => {
       {/* Thông Tin Kỹ Thuật */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Thông Tin Kỹ Thuật
+          {t('admin.productForm.technicalInfo')}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
-            label="Dung Lượng Pin (mAh)"
+            label={t('admin.productForm.battery')}
             name="battery"
             value={formData.battery}
             onChange={handleInputChange}
@@ -525,7 +527,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Tần Số Quét (Hz)"
+            label={t('admin.productForm.scanFrequency')}
             name="scanFrequency"
             value={formData.scanFrequency}
             onChange={handleInputChange}
@@ -533,7 +535,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Kích Thước Màn Hình (inch)"
+            label={t('admin.productForm.screenSize')}
             name="screenSize"
             value={formData.screenSize}
             onChange={handleInputChange}
@@ -549,7 +551,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Công Nghệ Màn Hình"
+            label={t('admin.productForm.screenTech')}
             name="screenTech"
             value={formData.screenTech}
             onChange={handleInputChange}
@@ -557,7 +559,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Chipset"
+            label={t('admin.productForm.chipset')}
             name="chipset"
             value={formData.chipset}
             onChange={handleInputChange}
@@ -565,7 +567,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Camera Sau (MP)"
+            label={t('admin.productForm.rearCamera')}
             name="rearCamera"
             value={formData.rearCamera}
             onChange={handleInputChange}
@@ -573,7 +575,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Camera Trước (MP)"
+            label={t('admin.productForm.frontCamera')}
             name="frontCamera"
             value={formData.frontCamera}
             onChange={handleInputChange}
@@ -581,7 +583,7 @@ useEffect(() => {
           />
 
           <InputField
-            label="Thời Hạn Bảo Hành (tháng)"
+            label={t('admin.productForm.warrantyPeriod')}
             name="warrantyPeriod"
             type="number"
             value={formData.warrantyPeriod}
@@ -594,7 +596,7 @@ useEffect(() => {
       {/* Hình Ảnh */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Hình Ảnh Sản Phẩm
+          {t('admin.productForm.productImage')}
         </h3>
 
         <div className="flex gap-6">
@@ -603,10 +605,10 @@ useEffect(() => {
               <div className="text-center">
                 <Upload className="mx-auto mb-2 text-gray-400" size={32} />
                 <p className="text-sm text-gray-600">
-                  Nhấp để chọn hình ảnh hoặc kéo thả
+                  {t('admin.productForm.uploadImage')}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  PNG, JPG (Tối đa 5MB)
+                  {t('admin.productForm.imageFormat')}
                 </p>
               </div>
               <input
@@ -658,7 +660,7 @@ useEffect(() => {
             htmlFor="productStatus"
             className="text-sm font-medium text-gray-700 cursor-pointer"
           >
-            Sản phẩm này đang hoạt động
+            {t('admin.productForm.productActive')}
           </label>
         </div>
       </div>
@@ -666,10 +668,10 @@ useEffect(() => {
       {/* Nút Hành Động */}
       <div className="flex gap-3 justify-end">
         <Button variant="secondary" onClick={onCancel}>
-          Hủy
+          {t('admin.productForm.cancel')}
         </Button>
         <Button variant="primary" type="submit" loading={isLoading}>
-          {product ? "Cập Nhật" : "Tạo Sản Phẩm"}
+          {product ? t('admin.productForm.update') : t('admin.productForm.createProduct')}
         </Button>
       </div>
 

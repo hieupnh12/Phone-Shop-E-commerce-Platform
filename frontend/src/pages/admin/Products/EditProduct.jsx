@@ -145,10 +145,40 @@ const EditProduct = () => {
     try {
       setIsLoading(true);
 
+      console.log("📝 EditProduct - Full payload:", formDataWithImage.payload);
+      console.log("📝 EditProduct - Products data:", formDataWithImage.payload.products);
+      console.log("📝 EditProduct - Status value:", formDataWithImage.payload.products.status);
+
       // Step 1 - Update product data + product image
+      // Map field names from frontend to backend format
+      // KHÔNG gửi field image để tránh mất ảnh cũ
+      const productUpdateData = {
+        nameProduct: formDataWithImage.payload.products.nameProduct,
+        battery: formDataWithImage.payload.products.battery,
+        scanFrequency: formDataWithImage.payload.products.scanFrequency,
+        screenSize: formDataWithImage.payload.products.screenSize,
+        screenResolution: formDataWithImage.payload.products.screenResolution,
+        screenTech: formDataWithImage.payload.products.screenTech,
+        chipset: formDataWithImage.payload.products.chipset,
+        rearCamera: formDataWithImage.payload.products.rearCamera,
+        frontCamera: formDataWithImage.payload.products.frontCamera,
+        warrantyPeriod: formDataWithImage.payload.products.warrantyPeriod,
+        stockQuantity: formDataWithImage.payload.products.stockQuantity,
+        status: formDataWithImage.payload.products.status,
+        // Map to backend field names
+        idBrand: formDataWithImage.payload.products.brandId,
+        idOrigin: formDataWithImage.payload.products.originId,
+        idOperatingSystem: formDataWithImage.payload.products.operatingSystemId,
+        idWarehouseArea: formDataWithImage.payload.products.warehouseAreaId,
+        categoryId: formDataWithImage.payload.products.categoryId,
+        // KHÔNG gửi image field - để backend giữ nguyên ảnh cũ
+      };
+
+      console.log("📝 EditProduct - Mapped update data:", productUpdateData);
+
       await productService.updateProductWithImage(
         id,
-        formDataWithImage.payload.products,
+        productUpdateData,
         formDataWithImage.image
       );
 
