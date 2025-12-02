@@ -31,6 +31,9 @@ public class FeedbackDTO {
     @JsonProperty("customer_name")
     private String customerName;
 
+    @JsonProperty("customer_phone")
+    private String customerPhone;
+
     // Product info for display
     @JsonProperty("product_name")
     private String productName;

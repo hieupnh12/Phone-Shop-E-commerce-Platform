@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, User, ShoppingCart, Menu, X } from "lucide-react";
+import { Search, User, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import cartService from "../../services/cartService";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../common/LanguageSwitcher";
 
-const Header = ({ onToggleSidebar, isSidebarOpen }) => {
+const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -58,18 +58,6 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           <div className="flex items-center gap-4">
-            <button
-              onClick={onToggleSidebar}
-              className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/60 transition-all duration-300 hover:scale-105"
-              aria-label="Toggle sidebar"
-            >
-              {isSidebarOpen ? (
-                <X className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
-              ) : (
-                <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
-              )}
-            </button>
-
             <div
               className="flex items-center gap-1 group cursor-pointer"
               onClick={() => navigate("/")}

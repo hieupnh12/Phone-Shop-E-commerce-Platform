@@ -4,7 +4,6 @@ import { useNavigate, Outlet as RouterOutlet } from "react-router-dom";
 import { getUserRole } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import Header from "./Header";
-import ClientSidebar from "./ClientSidebar";
 import backgroundVideo from "../../video/17series.mp4";
 import { useAuth } from "../../reducers";
 import { fetchTop5Products } from "../../services/productWorker";
@@ -13,7 +12,6 @@ import { Flame, TrendingUp, Star, Zap } from "lucide-react";
 
 const ClientLayout = ({ children, showHero = true }) => {
   const { t } = useLanguage();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -66,7 +64,7 @@ const ClientLayout = ({ children, showHero = true }) => {
         fetchProductRatings(products);
       }
     } catch (err) {
-      setError("Failed to fetch top products.");
+      setError(t('home.failedToFetchHotProducts'));
     } finally {
       setLoading(false);
     }
@@ -218,10 +216,6 @@ const ClientLayout = ({ children, showHero = true }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   // const handleAddToCart = () => {
   //   if (!user) {
   //     navigate("/login");
@@ -253,14 +247,9 @@ const ClientLayout = ({ children, showHero = true }) => {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-gray-950">
-      <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <Header />
 
       <div className="flex pt-0 relative z-10">
-        <ClientSidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-        />
-
         <main className="flex-1 overflow-x-hidden">
           {showHero && (
             <>
@@ -274,7 +263,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                   className="absolute top-0 left-0 w-full h-full object-cover z-0 transition-opacity duration-500"
                 >
                   <source src={backgroundVideo} type="video/mp4" />
-                  Trình duyệt của bạn không hỗ trợ video nền.
+                  {t('home.videoNotSupported')}
                 </video>
 
                 <div className="absolute inset-0 bg-black/40 z-0" />
@@ -352,14 +341,14 @@ const ClientLayout = ({ children, showHero = true }) => {
                       <div className="absolute inset-0 blur-lg bg-orange-500/50"></div>
                     </div>
                     <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-                      Sản Phẩm Hot
+                      {t('home.hotProducts')}
                     </h2>
                   </div>
                   <Zap className="w-6 h-6 text-yellow-400 animate-bounce" />
                 </div>
                 
                 <p className="text-gray-400 text-lg ml-12">
-                  Top sản phẩm bán chạy nhất được yêu thích nhất hiện nay
+                  {t('home.hotProductsDescription')}
                 </p>
               </div>
 
@@ -374,7 +363,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                     onClick={() => window.location.reload()}
                     className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105"
                   >
-                    Thử lại
+                    {t('home.retry')}
                   </button>
                 </div>
               )}
@@ -421,14 +410,14 @@ const ClientLayout = ({ children, showHero = true }) => {
                               <div className="absolute top-3 right-3 z-10">
                                 <span
                                   className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                                    (product.badge || "HOT") === "HOT"
+                                    (product.badge || t('home.badgeHot')) === t('home.badgeHot')
                                       ? "bg-gradient-to-r from-red-500 to-pink-500 text-white"
-                                      : (product.badge || "MỚI") === "MỚI"
+                                      : (product.badge || t('home.badgeNew')) === t('home.badgeNew')
                                       ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white"
                                       : "bg-gradient-to-r from-orange-500 to-red-500 text-white"
                                   }`}
                                 >
-                                  {product.badge || "HOT"}
+                                  {product.badge || t('home.badgeHot')}
                                 </span>
                               </div>
 
@@ -443,11 +432,11 @@ const ClientLayout = ({ children, showHero = true }) => {
                                 </div>
 
                                 {/* Trending indicator */}
-                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-xs px-5 py-1 rounded-full flex items-center gap-1 shadow-lg">
                                   <TrendingUp className="w-3 h-3" />
                                   <span className="font-semibold">
                                     {product.soldQuantity || product.soldCount || 0}{" "}
-                                    đã bán
+                                    {t('home.sold')}
                                   </span>
                                 </div>
                               </div>
@@ -482,7 +471,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                                       <span className="text-gray-400 text-xs ml-1">
                                         {averageRating > 0 ? `(${averageRating.toFixed(1)})` : "(0.0)"}
                                         {totalReviews > 0 && (
-                                          <span className="text-gray-500"> • {totalReviews} đánh giá</span>
+                                          <span className="text-gray-500"> • {totalReviews} {t('home.reviews')}</span>
                                         )}
                                       </span>
                                     </div>
@@ -505,7 +494,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                                     }}
                                     className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/50"
                                   >
-                                    Xem chi tiết
+                                    {t('home.viewDetails')}
                                   </button>
                                 </div>
                               </div>
@@ -532,7 +521,7 @@ const ClientLayout = ({ children, showHero = true }) => {
                     className="group relative px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/50 overflow-hidden"
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      Xem tất cả sản phẩm
+                      {t('home.viewAllProducts')}
                       <TrendingUp className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </span>
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

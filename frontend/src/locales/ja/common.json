@@ -52,7 +52,17 @@
     "hotProductsTitle": "人気商品",
     "hotProductsSubtitle": "最も愛されているスマートフォン",
     "viewAllProducts": "すべての製品を表示",
-    "buyNow": "今すぐ購入"
+    "buyNow": "今すぐ購入",
+    "hotProducts": "ホット製品",
+    "hotProductsDescription": "現在最も売れている、最も愛されているトップ製品",
+    "failedToFetchHotProducts": "トップ製品を取得できませんでした。",
+    "retry": "再試行",
+    "badgeHot": "ホット",
+    "badgeNew": "新着",
+    "sold": "販売済み",
+    "reviews": "レビュー",
+    "viewDetails": "詳細を見る",
+    "videoNotSupported": "お使いのブラウザは背景動画をサポートしていません。"
   },
   "common": {
     "viewDetails": "詳細を表示"
@@ -368,6 +378,7 @@
   },
   "admin": {
     "dashboard": "ダッシュボード",
+    "dashboardTitle": "管理者ダッシュボード",
     "statistic": "統計",
     "roles": "ロールと権限",
     "customers": "顧客",
@@ -382,6 +393,7 @@
     "screenResolution": "画面解像度",
     "products": "製品",
     "orders": "注文",
+    "warrantyRequests": "保証リクエスト",
     "clearFilters": "フィルターをクリア",
     "addEmployee": "新しい従業員アカウントを追加",
     "editEmployee": "従業員を編集",
@@ -735,6 +747,7 @@
       "emailPlaceholder": "メールアドレスを入力",
       "dateOfBirth": "生年月日",
       "saveChanges": "変更を保存",
+      "update": "更新",
       "updateError": "エラー：情報を更新できませんでした。もう一度お試しください。",
       "contactToChangePhone": "電話番号を変更するにはカスタマーサービスにお問い合わせください",
       "addressPlaceholder": "住所を入力",
@@ -748,6 +761,23 @@
     },
     "addressForm": {
       "fillAllFields": "すべての住所情報を入力してください"
+    },
+    "supportPage": {
+      "contactInfo": "連絡先情報",
+      "phone": "電話番号",
+      "support24_7": "24時間365日サポート",
+      "storeAddress": "店舗住所",
+      "businessHours": "営業時間",
+      "businessHoursDesc": "月曜日 - 日曜日: 8:00 - 22:00",
+      "services": "サポートサービス",
+      "servicesDesc": "以下のサービスでお客様をサポートいたします：",
+      "service1": "製品相談と質問への回答",
+      "service2": "技術サポートと修理",
+      "service3": "苦情処理とフィードバック",
+      "service4": "製品使用ガイド",
+      "service5": "アフターサービス",
+      "feedback": "ご意見・ご感想",
+      "feedbackDesc": "サービス品質向上のため、お客様からのご意見・ご感想をお待ちしております。お電話または店舗まで直接お問い合わせください。"
     }
   },
   "productDetail": {

@@ -5,6 +5,8 @@ import com.websales.dto.FeedbackDTO;
 import com.websales.dto.RatingStatsDTO;
 import com.websales.entity.Feedback;
 import com.websales.repository.FeedbackRepository;
+import com.websales.repository.CustomerRepo;
+import com.websales.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -14,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +25,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class FeedbackService {
     private final FeedbackRepository feedbackRepository;
+    private final CustomerRepo customerRepo;
+    private final ProductRepository productRepository;
 
     /**
      * Create a new feedback
@@ -167,8 +173,42 @@ public class FeedbackService {
      */
     public Page<FeedbackDTO> getAllFeedbacks(Pageable pageable) {
         Page<Feedback> page = feedbackRepository.findByStatusTrueOrderByDateDesc(pageable);
-        List<FeedbackDTO> dtos = page.getContent().stream()
-                .map(this::mapToDTO)
+        List<Feedback> feedbacks = page.getContent();
+        
+        // Fetch customer and product info in batch
+        Set<Long> customerIds = feedbacks.stream()
+                .map(Feedback::getCustomerId)
+                .collect(Collectors.toSet());
+        Set<Integer> productIds = feedbacks.stream()
+                .map(Feedback::getProductId)
+                .collect(Collectors.toSet());
+        
+        Map<Long, String> customerNames = customerRepo.findAllById(customerIds).stream()
+                .collect(Collectors.toMap(
+                    customer -> customer.getCustomerId(),
+                    customer -> customer.getFullName() != null ? customer.getFullName() : "N/A"
+                ));
+        
+        Map<Long, String> customerPhones = customerRepo.findAllById(customerIds).stream()
+                .collect(Collectors.toMap(
+                    customer -> customer.getCustomerId(),
+                    customer -> customer.getPhoneNumber() != null ? customer.getPhoneNumber() : "N/A"
+                ));
+        
+        Map<Integer, String> productNames = productRepository.findAllById(
+                productIds.stream().map(Long::valueOf).collect(Collectors.toList())
+        ).stream()
+                .collect(Collectors.toMap(
+                    product -> product.getIdProduct().intValue(),
+                    product -> product.getNameProduct() != null ? product.getNameProduct() : "N/A",
+                    (existing, replacement) -> existing
+                ));
+        
+        List<FeedbackDTO> dtos = feedbacks.stream()
+                .map(feedback -> mapToDTOWithNames(feedback, 
+                    customerNames.getOrDefault(feedback.getCustomerId(), "N/A"),
+                    customerPhones.getOrDefault(feedback.getCustomerId(), "N/A"),
+                    productNames.getOrDefault(feedback.getProductId(), "N/A")))
                 .collect(Collectors.toList());
         return new PageImpl<>(dtos, pageable, page.getTotalElements());
     }
@@ -178,8 +218,42 @@ public class FeedbackService {
      */
     public Page<FeedbackDTO> getAllFeedbacksByRating(Integer rating, Pageable pageable) {
         Page<Feedback> page = feedbackRepository.findByRateAndStatusTrueOrderByDateDesc(rating, pageable);
-        List<FeedbackDTO> dtos = page.getContent().stream()
-                .map(this::mapToDTO)
+        List<Feedback> feedbacks = page.getContent();
+        
+        // Fetch customer and product info in batch
+        Set<Long> customerIds = feedbacks.stream()
+                .map(Feedback::getCustomerId)
+                .collect(Collectors.toSet());
+        Set<Integer> productIds = feedbacks.stream()
+                .map(Feedback::getProductId)
+                .collect(Collectors.toSet());
+        
+        Map<Long, String> customerNames = customerRepo.findAllById(customerIds).stream()
+                .collect(Collectors.toMap(
+                    customer -> customer.getCustomerId(),
+                    customer -> customer.getFullName() != null ? customer.getFullName() : "N/A"
+                ));
+        
+        Map<Long, String> customerPhones = customerRepo.findAllById(customerIds).stream()
+                .collect(Collectors.toMap(
+                    customer -> customer.getCustomerId(),
+                    customer -> customer.getPhoneNumber() != null ? customer.getPhoneNumber() : "N/A"
+                ));
+        
+        Map<Integer, String> productNames = productRepository.findAllById(
+                productIds.stream().map(Long::valueOf).collect(Collectors.toList())
+        ).stream()
+                .collect(Collectors.toMap(
+                    product -> product.getIdProduct().intValue(),
+                    product -> product.getNameProduct() != null ? product.getNameProduct() : "N/A",
+                    (existing, replacement) -> existing
+                ));
+        
+        List<FeedbackDTO> dtos = feedbacks.stream()
+                .map(feedback -> mapToDTOWithNames(feedback, 
+                    customerNames.getOrDefault(feedback.getCustomerId(), "N/A"),
+                    customerPhones.getOrDefault(feedback.getCustomerId(), "N/A"),
+                    productNames.getOrDefault(feedback.getProductId(), "N/A")))
                 .collect(Collectors.toList());
         return new PageImpl<>(dtos, pageable, page.getTotalElements());
     }
@@ -195,6 +269,21 @@ public class FeedbackService {
                 .status(feedback.getStatus())
                 .customerName(feedback.getCustomer() != null ? feedback.getCustomer().getFullName() : null)
                 .productName(feedback.getProduct() != null ? feedback.getProduct().getNameProduct() : null)
+                .build();
+    }
+
+    private FeedbackDTO mapToDTOWithNames(Feedback feedback, String customerName, String customerPhone, String productName) {
+        return FeedbackDTO.builder()
+                .feedbackId(feedback.getFeedbackId())
+                .customerId(feedback.getCustomerId())
+                .productId(feedback.getProductId())
+                .date(feedback.getDate())
+                .rate(feedback.getRate())
+                .content(feedback.getContent())
+                .status(feedback.getStatus())
+                .customerName(customerName)
+                .customerPhone(customerPhone)
+                .productName(productName)
                 .build();
     }
 }

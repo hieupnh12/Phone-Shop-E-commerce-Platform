@@ -367,6 +367,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
               productId={productId} 
               selectedRating={selectedRatingFilter}
               refreshTrigger={refreshTrigger}
+              showActions={false}
             />
           </div>
         </div>
