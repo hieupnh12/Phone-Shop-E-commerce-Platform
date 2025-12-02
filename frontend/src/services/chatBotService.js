@@ -15,6 +15,22 @@ const chatsApi = {
     sendImage: async (formData) => {
         const res = await axiosUpload[POST](`${API}/chat-image`, formData);
          return res?.data;
+    },
+
+    // Phân tích ảnh sản phẩm bằng AI
+    analyzeProductImage: async (file, imageUrl, productName) => {
+        const formData = new FormData();
+        if (file) {
+            formData.append('file', file);
+        }
+        if (imageUrl) {
+            formData.append('imageUrl', imageUrl);
+        }
+        if (productName) {
+            formData.append('productName', productName);
+        }
+        const res = await axiosUpload[POST](`${API}/analyze-product-image`, formData);
+        return res?.data;
     }
 }
 

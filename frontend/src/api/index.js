@@ -26,6 +26,18 @@ axiosClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         const status = error.response?.status;
+        const errorMessage = error.response?.data?.message || error.message || '';
+        
+        // Ignore "No static resource index.html" error silently
+        // This happens in development when frontend runs separately
+        if (status === 404 && (
+            errorMessage.includes('No static resource') ||
+            errorMessage.includes('index.html') ||
+            originalRequest?.url?.includes('/index.html')
+        )) {
+            // Silently ignore this error - it's expected in development mode
+            return Promise.reject(error);
+        }
         
         // Helper function to determine if admin or customer and redirect
         const handleUnauthorized = () => {

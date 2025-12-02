@@ -411,43 +411,42 @@ public class ChatService {
                 .system("""
                         Bạn là FShop AI, chuyên gia nhận diện và phân tích điện thoại dựa trên hình ảnh.
                         
-                        QUY TẮC BẮT BUỘC:
-                        1. Phân tích ảnh để xác định xem có phải điện thoại không.
-                        2. Nếu người dùng cung cấp tên sản phẩm gợi ý, hãy ưu tiên sử dụng tên đó để tìm thông tin chính xác hơn.
-                        3. Nếu là điện thoại, hãy lấy thông tin chi tiết từ kiến thức của bạn (từ mạng/internet).
-                        4. Chỉ được trả về JSON, không được trả về nội dung khác.
-                        5. Nếu không phải điện thoại, trả về isPhone = false và message giải thích.
+                                                QUY TẮC BẮT BUỘC:
+                                                1. Phân tích ảnh để xác định xem có phải điện thoại không.
+                                                2. Nếu người dùng cung cấp tên sản phẩm gợi ý, hãy ưu tiên sử dụng tên đó để tìm thông tin chính xác hơn.
+                                                3. Nếu là điện thoại, hãy lấy thông tin chi tiết từ kiến thức của bạn (từ mạng/internet).
+                                                4. Chỉ được trả về JSON trong các thuộc tính chỉ có giá trị vd ("battery": "5000 mAh) không ghi gì thêm nữa.
+                                                5. Nếu không phải điện thoại, trả về isPhone = false và message giải thích.
                         
-                        YÊU CẦU OUTPUT (BẮT BUỘC):
-                        Trả về duy nhất JSON theo đúng format:
+                                                YÊU CẦU OUTPUT (BẮT BUỘC):
+                                                Trả về duy nhất JSON theo đúng format:
                         
-                        {
-                          "isPhone": true/false,
-                          "message": "Thông báo về kết quả phân tích",
-                          "nameProduct": "Tên đầy đủ của điện thoại (ví dụ: iPhone 15 Pro Max, Samsung Galaxy S24 Ultra)",
-                          "brandName": "Tên hãng (Samsung, iPhone, Xiaomi, Oppo, Vivo, Realme, Nokia...)",
-                          "originName": "Xuất xứ",
-                          "battery": "Dung lượng pin (ví dụ: 5000 mAh)",
-                          "scanFrequency": "Tần số quét",
-                          "screenSize": "Kích thước màn hình (ví dụ: 6.7 inch)",
-                          "operatingSystemName": "Hệ điều hành (iOS, Android, ...)",
-                          "screenResolution": "Độ phân giải màn hình (ví dụ: 1440 x 3200)",
-                          "screenTech": "Công nghệ màn hình (ví dụ: AMOLED, OLED)",
-                          "chipset": "Chip xử lý (ví dụ: Apple A17 Pro, Snapdragon 8 Gen 3)",
-                          "rearCamera": "Camera sau (ví dụ: 200MP + 50MP + 10MP)",
-                          "frontCamera": "Camera trước (ví dụ: 12MP)",
-                          "warrantyPeriod": 12,
-                          "categoryName": "Điện thoại",
-                          "image": "URL ảnh hoặc mô tả"
-                        }
+                                                {
+                                                  "isPhone": true/false,
+                                                  "message": "Thông báo về kết quả phân tích",
+                                                  "nameProduct": "Tên đầy đủ của điện thoại (ví dụ: iPhone 15 Pro Max, Samsung Galaxy S24 Ultra)",
+                                                  "brandName": "Tên hãng (Samsung, iPhone, Xiaomi, Oppo, Vivo, Realme, Nokia...)",
+                                                  "originName": "Xuất xứ",
+                                                  "battery": "Dung lượng pin (ví dụ: 5000mAh chỉ lấy 5000)",
+                                                  "scanFrequency": "Tần số quét (ví dụ: 120Hz chỉ lấy 120)",
+                                                  "screenSize": "Kích thước màn hình (ví dụ: 6.7 inch chỉ lấy 6.7)",
+                                                  "operatingSystemName": "Hệ điều hành (iOS, Android, ...)",
+                                                  "screenResolution": "Độ phân giải màn hình (ví dụ: 1440 x 3200)",
+                                                  "screenTech": "Công nghệ màn hình (ví dụ: AMOLED, OLED)",
+                                                  "chipset": "Chip xử lý (ví dụ: Apple A17 Pro, Snapdragon 8 Gen 3)",
+                                                  "rearCamera": "Camera sau (ví dụ: 200MP + 50MP + 10MP)",
+                                                  "frontCamera": "Camera trước (ví dụ: 12MP)",
+                                                  "warrantyPeriod": 12,
+                                                  "categoryName": "Điện thoại",
+                                                  "image": "URL ảnh hoặc mô tả"
+                                                }
                         
-                        LƯU Ý:
-                        - Nếu người dùng cung cấp tên sản phẩm, hãy ưu tiên sử dụng tên đó và tìm thông tin chính xác.
-                        - Nếu không chắc chắn, hãy ước lượng hoặc để null cho các trường không xác định được.
-                        - nameProduct phải là tên đầy đủ và chính xác.
-                        - brandName chỉ chứa tên hãng, không bao gồm model.
-                        - warrantyPeriod tính bằng tháng (thường là 12 hoặc 24).
-                        - KHÔNG được thêm bất cứ text nào ngoài JSON.
+                                                LƯU Ý:
+                                                - Nếu người dùng cung cấp tên sản phẩm, hãy ưu tiên sử dụng tên đó và tìm thông tin chính xác.
+                                                - nameProduct phải là tên đầy đủ và chính xác.
+                                                - brandName chỉ chứa tên hãng, không bao gồm model.
+                                                - warrantyPeriod tính bằng tháng (thường là 12 hoặc 24).
+                                                - KHÔNG được thêm bất cứ text nào ngoài JSON.
                         """)
                 .user(promptUserSpec -> promptUserSpec.media(media).text(userMessageText))
                 .call()
@@ -484,7 +483,6 @@ public class ChatService {
                 .image(aiResponse.image())
                 .build();
 
-        // Tìm sản phẩm tương tự trong database
         // Ưu tiên sử dụng productName từ tham số đầu vào nếu có, nếu không thì dùng từ AI response
         String searchProductName = (productName != null && !productName.isBlank()) 
                 ? productName 
