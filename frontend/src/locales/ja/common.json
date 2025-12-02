@@ -706,7 +706,7 @@
     },
     "cancelled": "キャンセルされました",
     "orderSuccess": "注文成功",
-    "defaultAddress": "既定の住所",
+    "defaultAddress": "住所",
     "noAddress": "利用不可",
     "updating": "更新中",
     "detailedAddress": "詳細住所（番地、通り）",
