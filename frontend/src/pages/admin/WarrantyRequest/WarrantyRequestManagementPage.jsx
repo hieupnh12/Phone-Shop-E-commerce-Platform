@@ -24,6 +24,7 @@ const WarrantyRequestManagementPage = () => {
   const isAdmin = hasRole("ROLE_ADMIN");
   const { hasPermission } = usePermission();
   const hasUpdatePermission = hasPermission(PERMISSIONS.WARRANTY_UPDATE_BASIC);
+  const hasViewAllPermission = hasPermission(PERMISSIONS.WARRANTY_VIEW_ALL);
 
   // State for all requests (common table)
   const [requests, setRequests] = useState([]);
@@ -55,6 +56,7 @@ const WarrantyRequestManagementPage = () => {
   });
 
   // Use useQuery for automatic refetching with staleTime = 0
+  // Chỉ query khi có quyền VIEW_ALL
   const {
     data: requestsData,
     isLoading: requestsLoading,
@@ -70,8 +72,9 @@ const WarrantyRequestManagementPage = () => {
       );
       return response;
     },
+    enabled: hasViewAllPermission, // Chỉ query khi có quyền VIEW_ALL
     staleTime: 0, // Always refetch
-    refetchInterval: 2000, // Refetch every 5 seconds
+    refetchInterval: hasViewAllPermission ? 2000 : false, // Chỉ refetch nếu có quyền
   });
 
   const {
@@ -541,7 +544,8 @@ const WarrantyRequestManagementPage = () => {
     return status === "COMPLETED" || status === "REJECTED";
   };
 
-  if (requestsLoading && requests.length === 0) {
+  // Chỉ hiển thị loading nếu đang load và có quyền VIEW_ALL
+  if (hasViewAllPermission && requestsLoading && requests.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -561,10 +565,16 @@ const WarrantyRequestManagementPage = () => {
             Quản lý yêu cầu bảo hành
           </h1>
         </div>
-        <p className="text-gray-600">Tổng số yêu cầu: {totalElements}</p>
+        {hasViewAllPermission && (
+          <p className="text-gray-600">Tổng số yêu cầu: {totalElements}</p>
+        )}
+        {!hasViewAllPermission && hasUpdatePermission && (
+          <p className="text-gray-600">Xem yêu cầu được giao cho bạn</p>
+        )}
       </div>
 
-      {/* Filters */}
+      {/* Filters - Chỉ hiển thị nếu có quyền VIEW_ALL */}
+      {hasViewAllPermission && (
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
@@ -609,8 +619,10 @@ const WarrantyRequestManagementPage = () => {
           </button>
         </div>
       </div>
+      )}
 
-      {/* All Requests Table (Common) */}
+      {/* All Requests Table (Common) - Chỉ hiển thị nếu có quyền VIEW_ALL */}
+      {hasViewAllPermission && (
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -869,6 +881,7 @@ const WarrantyRequestManagementPage = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* My Assigned Requests Table */}
       {currentEmployeeId && (

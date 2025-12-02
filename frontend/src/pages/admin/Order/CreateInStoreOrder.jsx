@@ -63,6 +63,7 @@ export default function CreateInStoreOrder() {
   });
   const [phoneError, setPhoneError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [fullNameError, setFullNameError] = useState("");
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const debouncedCustomerSearch = useDebounce(customerSearch, 500);
 
@@ -231,7 +232,7 @@ export default function CreateInStoreOrder() {
         // Validate normalized format
         const phoneRegex = /^0\d{9}$/;
         if (!phoneRegex.test(normalizedInput)) {
-          setPhoneError("Số điện thoại không hợp lệ! Phải bắt đầu bằng 0 và có 10 chữ số.");
+          setPhoneError("Số điện thoại phải bắt đầu từ số 0 và bao gồm 10 số");
           setIsCheckingDuplicate(false);
           return false;
         }
@@ -290,13 +291,11 @@ export default function CreateInStoreOrder() {
     // Reset errors
     setPhoneError("");
     setEmailError("");
+    setFullNameError("");
 
     // Validation: fullName và phoneNumber là bắt buộc
     if (!newCustomer.fullName || newCustomer.fullName.trim() === "") {
-      setToast({
-        message: "Vui lòng nhập họ và tên!",
-        type: "error",
-      });
+      setFullNameError("Họ và tên là bắt buộc!");
       return;
     }
 
@@ -309,7 +308,7 @@ export default function CreateInStoreOrder() {
     // Validate phone number format
     const phoneRegex = /^0\d{9}$/;
     if (!phoneRegex.test(newCustomer.phoneNumber.trim())) {
-      setPhoneError("Số điện thoại không hợp lệ! Phải bắt đầu bằng 0 và có 10 chữ số.");
+      setPhoneError("Số điện thoại phải bắt đầu từ số 0 và bao gồm 10 số");
       return;
     }
 
@@ -337,6 +336,7 @@ export default function CreateInStoreOrder() {
         setNewCustomer({ fullName: "", phoneNumber: "", email: "", address: "" });
         setPhoneError("");
         setEmailError("");
+        setFullNameError("");
         setToast({
           message: "Tạo khách hàng thành công!",
           type: "success",
@@ -587,14 +587,6 @@ export default function CreateInStoreOrder() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-          position="top-right"
-        />
-      )}
 
         {/* Header Section */}
       <div className="mb-6">
@@ -1165,6 +1157,17 @@ export default function CreateInStoreOrder() {
         </div>
       </div>
 
+      {/* Toast Notification - Render outside main container to appear above modal */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          position="top-right"
+          zIndex={9999}
+        />
+      )}
+
       {/* Create Customer Modal */}
       {showCustomerModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1183,12 +1186,23 @@ export default function CreateInStoreOrder() {
                 <input
                   type="text"
                   value={newCustomer.fullName}
-                  onChange={(e) =>
-                    setNewCustomer({ ...newCustomer, fullName: e.target.value })
-                  }
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:shadow-md"
+                  onChange={(e) => {
+                    setNewCustomer({ ...newCustomer, fullName: e.target.value });
+                    setFullNameError(""); // Clear error when typing
+                  }}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all shadow-sm hover:shadow-md ${
+                      fullNameError 
+                        ? "border-red-500 focus:ring-red-500 focus:border-red-500" 
+                        : "border-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                    }`}
                   required
                 />
+                {fullNameError && (
+                  <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    {fullNameError}
+                  </p>
+                )}
               </div>
               <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1267,6 +1281,7 @@ export default function CreateInStoreOrder() {
                   });
                   setPhoneError("");
                   setEmailError("");
+                  setFullNameError("");
                 }}
                   className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
               >

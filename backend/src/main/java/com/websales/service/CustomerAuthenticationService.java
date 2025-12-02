@@ -35,9 +35,11 @@ import java.security.Key;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -92,10 +94,10 @@ public class CustomerAuthenticationService {
 //            throw new AppException(ErrorCode.OTP_SEND_LIMIT);
 //        }
 
-//        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
-//        if(!sent) {
-//            throw new RuntimeException("Gửi OTP thất bại");
-//        }
+        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
+        if(!sent) {
+            throw new RuntimeException("Gửi OTP thất bại");
+        }
         otpReq.setOtpHash(passwordEncoder.encode(otp));
         otpReq.setExpiresAt(LocalDateTime.now().plusMinutes(1));
         otpReq.setLastSentAt(LocalDateTime.now());
@@ -151,7 +153,13 @@ public class CustomerAuthenticationService {
     public String generateCustomerToken(Long customerId) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
 
+
+
         String jwtId = UUID.randomUUID().toString();
+
+        List<String> scopes = new ArrayList<>();
+        scopes.add("CUSTOMER_UPDATE_BASIC");
+        
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(customerId.toString())
                 .issuer("PHONESHOP")

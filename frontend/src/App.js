@@ -182,7 +182,7 @@ const router = createBrowserRouter(
             { 
               path: "warranty-requests", 
               element: (
-                <PermissionRoute requiredPermission={[PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL]}>
+                <PermissionRoute requiredPermission={[PERMISSIONS.WARRANTY_VIEW_ALL, PERMISSIONS.WARRANTY_UPDATE_BASIC]}>
                   <WarrantyRequestManagementPage />
                 </PermissionRoute>
               )

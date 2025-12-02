@@ -44,7 +44,7 @@ public class CustomerController {
                  .build();
      }
     @PutMapping("/update/{id}")
-    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_UPDATE_BASIC') or hasAuthority('SCOPE_CUSTOMER_MANAGE_ACCOUNT')")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_UPDATE_BASIC') or hasRole('SCOPE_CUSTOMER_MANAGE_ACCOUNT')")
     public ApiResponse<CustomerResponse> updateCustomer(
             @PathVariable Long id, 
             @Valid @RequestBody CustomerUpdateRequest request,
@@ -79,6 +79,18 @@ public class CustomerController {
      public ApiResponse<CustomerResponse> getCustomer() {
         return ApiResponse.<CustomerResponse>builder()
                 .result(customerService.getCustomer())
+                .build();
+     }
+
+     @PutMapping("/me")
+     public ApiResponse<CustomerResponse> updateMyProfile(
+             @Valid @RequestBody CustomerUpdateRequest request,
+             @AuthenticationPrincipal Jwt jwt) {
+        // Customer chỉ có thể update profile của chính mình
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.updateCustomer(customerId, request))
                 .build();
      }
 
