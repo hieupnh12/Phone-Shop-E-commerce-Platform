@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import Modal from "../common/Modal";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 export default function Sidebar({
   sidebarOpen,
@@ -10,6 +11,7 @@ export default function Sidebar({
   closeSidebar,
   logOut,
 }) {
+  const { t } = useLanguage();
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
   return (
@@ -74,7 +76,7 @@ export default function Sidebar({
                     : "opacity-100"
                 }`}
               >
-                Đăng xuất
+                {t('auth.logout')}
               </span>
             </button>
           </div>
@@ -85,7 +87,7 @@ export default function Sidebar({
       <Modal
         isOpen={confirmLogoutOpen}
         onClose={() => setConfirmLogoutOpen(false)}
-        title="Xác nhận đăng xuất"
+        title={t('sidebar.confirmLogout')}
         size="sm"
         footer={
           <>
@@ -93,19 +95,19 @@ export default function Sidebar({
               onClick={() => setConfirmLogoutOpen(false)}
               className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
             >
-              Hủy
+              {t('common.cancel')}
             </button>
 
             <button
               onClick={logOut}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
-              Đăng xuất
+              {t('auth.logout')}
             </button>
           </>
         }
       >
-        <p className="text-gray-700">Bạn có chắc chắn muốn đăng xuất?</p>
+        <p className="text-gray-700">{t('sidebar.confirmLogoutMessage')}</p>
       </Modal>
     </>
   );

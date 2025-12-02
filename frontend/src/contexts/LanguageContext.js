@@ -22,14 +22,42 @@ export const LanguageProvider = ({ children }) => {
   }, [currentLanguage]);
 
   const t = (key) => {
+    if (!key) return '';
     const keys = key.split('.');
     let value = translations[currentLanguage]?.common;
     
-    for (const k of keys) {
-      value = value?.[k];
+    if (!value) {
+      console.warn(`[LanguageContext] No translations found for language: ${currentLanguage}`);
+      return key;
     }
     
-    return value || key;
+    for (const k of keys) {
+      if (value && typeof value === 'object' && value !== null) {
+        const prevValue = value;
+        value = value[k];
+        if (value === undefined) {
+          console.warn(`[LanguageContext] Translation key not found: ${key} (stopped at: ${k})`, {
+            availableKeys: Object.keys(prevValue),
+            currentValue: prevValue,
+            lookingFor: k
+          });
+          return key;
+        }
+      } else {
+        console.warn(`[LanguageContext] Translation key not found: ${key} (stopped at: ${k}, value is not an object)`, {
+          valueType: typeof value,
+          value: value
+        });
+        return key;
+      }
+    }
+    
+    if (value === undefined || value === null) {
+      console.warn(`[LanguageContext] Translation key not found: ${key}`);
+      return key;
+    }
+    
+    return value;
   };
 
   const changeLanguage = (langCode) => {

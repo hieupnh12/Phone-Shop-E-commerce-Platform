@@ -164,10 +164,19 @@ public interface ProductMapper {
     @Mapping(target = "operatingSystem", source = "os")
     @Mapping(target = "brand", source = "br")
     @Mapping(target = "warehouseArea", source = "wa")
+    @Mapping(target = "status", source = "request.status") // Chỉ định rõ lấy status từ request
+    @Mapping(target = "category", ignore = true)
+    @Mapping(target = "image", ignore = true) // Image được xử lý riêng trong service
     void toProductUpdate(ProductUpdateRequest request,@MappingTarget Product product, Origin origin, OperatingSystem os, Brand br, WarehouseArea wa);
 
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "category", ignore = true) // categoryId cần xử lý riêng trong service
+    @Mapping(target = "origin", ignore = true)
+    @Mapping(target = "operatingSystem", ignore = true)
+    @Mapping(target = "brand", ignore = true)
+    @Mapping(target = "warehouseArea", ignore = true)
+    @Mapping(target = "image", ignore = true) // Image được xử lý riêng trong service
     void toProductPartUpdate(ProductUpdateRequest request , @MappingTarget Product product);
 
 }

@@ -6,9 +6,11 @@ import {
 import feedbackService from "../../../services/feedbackService";
 import orderService from "../../../services/orderService";
 import { useAuthFullOptions } from "../../../contexts/AuthContext";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import FeedbackList from "../../feedback/FeedbackList";
 
 // Dữ liệu giả định cho phần đánh giá theo trải nghiệm (KHÔNG ĐỤNG VÀO)
+// Note: These labels should be moved to translations if they become dynamic
 const experienceRatingsDisplay = [
   { label: "Hiệu năng", rating: 5, count: 11 },
   { label: "Thời lượng pin", rating: 5, count: 11 },
@@ -55,6 +57,7 @@ const StarRating = ({
 };
 
 const ProductFeedback = ({ productId, productName, productImage }) => {
+  const { t } = useLanguage();
   const authContext = useAuthFullOptions();
   const user = authContext?.user;
 
@@ -168,17 +171,17 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
   // Handle submit feedback
   const handleSubmit = async () => {
     if (!overallRating || reviewText.length < 15) {
-      setError("Vui lòng chọn đánh giá và nhập ít nhất 15 ký tự");
+      setError(t('productFeedback.errors.ratingAndMinChars'));
       return;
     }
 
     if (!hasPurchased) {
-      setError("Bạn chỉ có thể đánh giá sản phẩm đã mua");
+      setError(t('productFeedback.errors.onlyPurchased'));
       return;
     }
 
     if (hasReviewed) {
-      setError("Bạn đã đánh giá sản phẩm này rồi");
+      setError(t('productFeedback.errors.alreadyReviewed'));
       return;
     }
 
@@ -198,7 +201,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
       setHasReviewed(true);
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
-      setError(err.response?.data?.message || "Lỗi khi gửi đánh giá");
+      setError(err.response?.data?.message || t('productFeedback.errors.submitError'));
     } finally {
       setSubmitting(false);
     }
@@ -213,7 +216,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
     return (
       <div className="max-w-6xl mx-auto p-4 bg-gray-50 font-sans">
         <div className="bg-white shadow-xl rounded-xl p-6">
-          <div className="text-center py-8">Đang tải đánh giá...</div>
+          <div className="text-center py-8">{t('feedback.feedBackProduct.loadingReviews')}</div>
         </div>
       </div>
     );
@@ -224,7 +227,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
       <div className="bg-white shadow-xl rounded-xl p-6 md:items-center">
         {/* Phần 1: Giao diện hiển thị đánh giá */}
         <h1 className="text-xl font-bold text-gray-800 mb-6 pb-2">
-          Đánh giá {productName || "Sản phẩm"}
+          {t('feedback.feedBackProduct.productReviews')} {productName || t('feedback.feedBackProduct.product')}
         </h1>
 
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
@@ -255,7 +258,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                     {totalReviews}
                   </span>
                   <span className="text-xs text-gray-600">
-                    lượt đánh giá
+                    {t('feedback.feedBackProduct.reviewsCount')}
                   </span>
                 </div>
 
@@ -265,27 +268,27 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                     onClick={() => setShowReviewPopup(true)}
                     className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-[1.01] text-xs"
                   >
-                    Viết đánh giá
+                    {t('feedback.feedBackProduct.writeReview')}
                   </button>
                 )}
                 {user && !hasPurchased && !checkingPermission && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
                     <p className="text-xs text-blue-700 text-center font-medium">
-                      Mua sản phẩm để đánh giá
+                      {t('feedback.feedBackProduct.buyProductToReview')}
                     </p>
                   </div>
                 )}
                 {user && hasReviewed && !checkingPermission && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-2">
                     <p className="text-xs text-green-700 text-center font-medium">
-                      ✓ Bạn đã đánh giá sản phẩm này
+                      ✓ {t('feedback.feedBackProduct.youHaveReviewed')}
                     </p>
                   </div>
                 )}
                 {!user && (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-2">
                     <p className="text-xs text-gray-600 text-center font-medium">
-                      Đăng nhập để đánh giá
+                      {t('feedback.feedBackProduct.loginToReview')}
                     </p>
                   </div>
                 )}
@@ -297,7 +300,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
           <div className="w-full lg:w-3/5">
             <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <h3 className="text-sm font-bold text-gray-800 mb-2.5">
-                Phân bố đánh giá
+                {t('feedback.feedBackProduct.ratingDistribution')}
               </h3>
               <div className="space-y-2">
                 {ratingDistribution.map((item) => (
@@ -316,7 +319,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                       ></div>
                     </div>
                     <span className="w-20 text-xs font-medium text-gray-600 text-right">
-                      {item.count} đánh giá
+                      {item.count} {t('feedback.feedBackProduct.reviews')}
                     </span>
                   </div>
                 ))}
@@ -328,7 +331,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
         {/* --- Phần Lọc đánh giá và Danh sách đánh giá --- */}
         <div className="border-t border-gray-200 pt-6 mt-6">
           <h2 className="text-lg font-bold text-gray-800 mb-4">
-            Lọc đánh giá theo
+            {t('feedback.feedBackProduct.filterReviewsBy')}
           </h2>
 
           {/* Các nút lọc */}
@@ -341,7 +344,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Tất cả
+              {t('feedback.feedBackProduct.all')}
             </button>
             {[5, 4, 3, 2, 1].map((rating) => (
               <button
@@ -353,7 +356,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {rating} sao
+                {rating} {t('feedback.feedBackProduct.stars')}
               </button>
             ))}
           </div>
@@ -379,7 +382,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">
-                Đánh giá & nhận xét
+                {t('feedback.feedBackProduct.reviewAndComment')}
               </h2>
               <button
                 onClick={() => setShowReviewPopup(false)}
@@ -395,16 +398,16 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                 {productImage && (
                   <img
                     src={productImage}
-                    alt={productName || "Sản phẩm"}
+                    alt={productName || t('feedback.feedBackProduct.product')}
                     className="w-16 h-16 object-cover rounded-lg"
                   />
                 )}
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {productName || "Sản phẩm"}
+                    {productName || t('feedback.feedBackProduct.product')}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Chia sẻ trải nghiệm của bạn
+                    {t('feedback.feedBackProduct.shareYourExperience')}
                   </p>
                 </div>
               </div>
@@ -422,7 +425,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
               {/* Overall Rating */}
               <div className="mb-8">
                 <h3 className="font-semibold text-gray-900 mb-4 text-lg">
-                  Đánh giá chung
+                  {t('feedback.feedBackProduct.overallRating')}
                 </h3>
                 <div className="flex justify-center">
                   <StarRating
@@ -434,11 +437,11 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                 </div>
                 {overallRating > 0 && (
                   <p className="text-center text-sm text-gray-600 mt-2">
-                    {overallRating === 5 && "Tuyệt vời"}
-                    {overallRating === 4 && "Tốt"}
-                    {overallRating === 3 && "Bình thường"}
-                    {overallRating === 2 && "Tệ"}
-                    {overallRating === 1 && "Rất Tệ"}
+                    {overallRating === 5 && t('productFeedback.rating.excellent')}
+                    {overallRating === 4 && t('productFeedback.rating.good')}
+                    {overallRating === 3 && t('productFeedback.rating.average')}
+                    {overallRating === 2 && t('productFeedback.rating.bad')}
+                    {overallRating === 1 && t('productFeedback.rating.veryBad')}
                   </p>
                 )}
               </div>
@@ -446,7 +449,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
               {/* Review Text */}
               <div className="mb-6">
                 <label className="block font-semibold text-gray-900 mb-2">
-                  Viết đánh giá của bạn
+                  {t('productFeedback.writeReview')}
                 </label>
                 <textarea
                   value={reviewText}
@@ -454,13 +457,13 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                     setReviewText(e.target.value);
                     setError("");
                   }}
-                  placeholder="Xin mời chia sẻ một số cảm nhận về sản phẩm (nhập tối thiểu 15 kí tự)"
+                  placeholder={t('productFeedback.reviewPlaceholder')}
                   className="w-full h-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-400"
                   maxLength={500}
                   disabled={submitting}
                 />
                 <p className="text-sm text-gray-500 mt-1 text-right">
-                  {reviewText.length}/500 ký tự
+                  {reviewText.length}/500 {t('productFeedback.characters')}
                 </p>
               </div>
             </div>
@@ -471,7 +474,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                 onClick={() => setShowReviewPopup(false)}
                 className="px-6 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
-                Hủy
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSubmit}
@@ -482,7 +485,7 @@ const ProductFeedback = ({ productId, productName, productImage }) => {
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                {submitting ? "Đang gửi..." : "GỬI ĐÁNH GIÁ"}
+                {submitting ? t('productFeedback.submitting') : t('productFeedback.submitReview')}
               </button>
             </div>
           </div>
