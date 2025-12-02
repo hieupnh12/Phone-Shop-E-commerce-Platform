@@ -64,8 +64,10 @@ const Loading = ({ type = 'spinner', size = 'md', message = 'Loading...', fullSc
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-        {loadingComponent}
+      <div className="fixed inset-0 bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-gray-900/90 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-gray-800/50">
+          {loadingComponent}
+        </div>
       </div>
     );
   }

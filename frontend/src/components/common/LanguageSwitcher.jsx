@@ -2,20 +2,32 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Globe } from 'lucide-react';
 
-const LanguageSwitcher = () => {
+const LanguageSwitcher = ({ variant = 'dark' }) => {
   const { currentLanguage, changeLanguage, languages } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+
+  const isLight = variant === 'light';
 
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700/60 transition-all duration-300 hover:scale-105 group"
+        className={`flex items-center gap-2 px-3 py-2 sm:px-3 sm:py-2.5 rounded-xl transition-all duration-300 hover:scale-105 group ${
+          isLight 
+            ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' 
+            : 'bg-slate-800/50 hover:bg-slate-700/60'
+        }`}
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300 group-hover:text-cyan-400 transition-colors" />
-        <span className="hidden sm:inline text-white font-medium text-sm">
+        <Globe className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
+          isLight 
+            ? 'text-gray-600 group-hover:text-blue-600' 
+            : 'text-slate-300 group-hover:text-cyan-400'
+        }`} />
+        <span className={`hidden sm:inline font-medium text-sm ${
+          isLight ? 'text-gray-700' : 'text-white'
+        }`}>
           {currentLanguage.toUpperCase()}
         </span>
       </button>

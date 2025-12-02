@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Star, Trash2, Edit2, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
+import { useAuthFullOptions } from '../../contexts/AuthContext';
 
-const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: externalSelectedRating }) => {
+const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: externalSelectedRating, showActions = true }) => {
   const { t } = useLanguage();
+  const { user } = useAuthFullOptions();
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -169,7 +171,14 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
                   </div>
                 </div>
               </div>
-              {(onEdit || handleDelete) && (
+              {/* Chỉ hiển thị nút xóa/edit khi showActions = true và review đó là của chính user đó */}
+              {showActions && user && (
+                (String(feedback.customer_id) === String(user.customerId)) ||
+                (String(feedback.customer_id) === String(user.id)) ||
+                (String(feedback.customerId) === String(user.customerId)) ||
+                (String(feedback.customerId) === String(user.id)) ||
+                (String(feedback.user_id) === String(user.id))
+              ) && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   {onEdit && (
                     <button

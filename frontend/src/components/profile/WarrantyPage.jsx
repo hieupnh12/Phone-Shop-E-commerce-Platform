@@ -286,7 +286,7 @@ const WarrantyPage = () => {
                         {getStatusBadge(request.status)}
                       </div>
                       <p className="text-sm text-gray-600">
-                        {t('orderDetail.order')}:{" "}
+                        {t('orders.orderDetail.order')}:{" "}
                         <span className="font-medium">#{request.orderId}</span>
                       </p>
                       {request.productName && (
