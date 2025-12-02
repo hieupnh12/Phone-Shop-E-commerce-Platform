@@ -101,6 +101,18 @@ const ChangesModal = ({ isOpen, onClose, log }) => {
                                 {format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm:ss', { locale: vi })}
                             </span>
                         </div>
+                        {log.ipAddress && (
+                            <div className="flex gap-4">
+                                <span className="text-green-400">IP_ADDRESS:</span>
+                                <span className="text-gray-300">{log.ipAddress}</span>
+                            </div>
+                        )}
+                        {log.userAgent && (
+                            <div className="flex gap-4 flex-wrap">
+                                <span className="text-green-400">USER_AGENT:</span>
+                                <span className="text-gray-300 break-all">{log.userAgent}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Divider */}
@@ -177,20 +189,79 @@ const AuditLogPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLog, setSelectedLog] = useState(null); // State cho Modal xem chi tiết
 
+    // Filter states
+    const [filters, setFilters] = useState({
+        employeeId: '',
+        employeeName: '',
+        tableName: '',
+        startDate: '',
+        endDate: ''
+    });
+
+    // Danh sách các bảng có thể filter
+    // Lưu ý: tableName trong database lưu tên class (Order, Employee, Role, Product, Customer)
+    // chứ không phải tên bảng trong database (orders, employees, roles, products, customers)
+    const tableOptions = [
+        { value: '', label: 'Tất cả bảng' },
+        { value: 'Order', label: 'Order' },
+        { value: 'Role', label: 'Role' },
+        { value: 'Employee', label: 'Employee' },
+        { value: 'Product', label: 'Product' },
+        { value: 'Customer', label: 'Customer' }
+    ];
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [toast, setToast] = useState({ message: '', type: 'success' });
 
 
     // --- LOGIC FETCH DỮ LIỆU ---
-    const fetchAuditLogs = async (currentPage = pagination.page, currentSize = pagination.size, search = searchTerm) => {
+    const fetchAuditLogs = useCallback(async (currentPage = 0, currentSize = pagination.size, search = searchTerm, currentFilters = filters) => {
         try {
             setIsLoading(true);
             setError(null);
 
-            const response = await api.get(API_ENDPOINT, {
-                params: { page: currentPage, size: currentSize, search: search }
-            });
+            // Build params object
+            const params = {
+                page: currentPage,
+                size: currentSize
+            };
+
+            // Add search if exists (for backward compatibility)
+            if (search && search.trim()) {
+                params.search = search;
+            }
+
+            // Add filter params if they have values
+            if (currentFilters.employeeId && currentFilters.employeeId.trim()) {
+                const empIdValue = parseInt(currentFilters.employeeId.trim());
+                if (!isNaN(empIdValue) && empIdValue >= 0) {
+                    params.employeeId = empIdValue;
+                }
+            }
+            if (currentFilters.employeeName && currentFilters.employeeName.trim()) {
+                params.employeeName = currentFilters.employeeName.trim();
+            }
+            if (currentFilters.tableName && currentFilters.tableName.trim()) {
+                params.tableName = currentFilters.tableName.trim();
+            }
+            if (currentFilters.startDate && currentFilters.startDate.trim()) {
+                // Convert date to ISO format
+                const startDate = new Date(currentFilters.startDate);
+                if (!isNaN(startDate.getTime())) {
+                    params.startDate = startDate.toISOString();
+                }
+            }
+            if (currentFilters.endDate && currentFilters.endDate.trim()) {
+                // Convert date to ISO format and set to end of day
+                const endDate = new Date(currentFilters.endDate);
+                if (!isNaN(endDate.getTime())) {
+                    endDate.setHours(23, 59, 59, 999);
+                    params.endDate = endDate.toISOString();
+                }
+            }
+
+            const response = await api.get(API_ENDPOINT, { params });
 
             const result = response.data.result;
 
@@ -209,22 +280,80 @@ const AuditLogPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const fetchLogsCallback = useCallback(fetchAuditLogs, [pagination.size]);
+    }, [pagination.size, searchTerm, filters]);
 
     useEffect(() => {
-        fetchLogsCallback(0); // Luôn reset về trang 0 khi searchTerm thay đổi
-    }, [searchTerm, fetchLogsCallback]);
+        fetchAuditLogs(0, pagination.size, searchTerm, filters); // Luôn reset về trang 0 khi searchTerm hoặc filters thay đổi
+    }, [searchTerm, filters, fetchAuditLogs, pagination.size]);
 
 
     const handleSearch = (e) => {
         setSearchTerm(e.target.value);
     };
 
+    const handleFilterChange = (filterName, value) => {
+        setFilters(prev => {
+            const newFilters = {
+                ...prev,
+                [filterName]: value
+            };
+            
+            // Validation: endDate không được là ngày trong tương lai
+            if (filterName === 'endDate' && value) {
+                const endDate = new Date(value);
+                const now = new Date();
+                if (endDate > now) {
+                    setToast({ message: 'Ngày kết thúc không được là ngày trong tương lai', type: 'error' });
+                    return prev; // Giữ nguyên giá trị cũ
+                }
+            }
+            
+            // Validation: startDate không được lớn hơn endDate
+            if (filterName === 'startDate' && value && newFilters.endDate) {
+                const startDate = new Date(value);
+                const endDate = new Date(newFilters.endDate);
+                if (startDate > endDate) {
+                    setToast({ message: 'Ngày bắt đầu không được lớn hơn ngày kết thúc', type: 'error' });
+                    return prev;
+                }
+            }
+            
+            // Validation: endDate không được nhỏ hơn startDate
+            if (filterName === 'endDate' && value && newFilters.startDate) {
+                const startDate = new Date(newFilters.startDate);
+                const endDate = new Date(value);
+                if (endDate < startDate) {
+                    setToast({ message: 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu', type: 'error' });
+                    return prev;
+                }
+            }
+            
+            return newFilters;
+        });
+    };
+
+    const handleEmployeeIdChange = (e) => {
+        const value = e.target.value;
+        // Chỉ cho phép số dương (không cho nhập âm, không cho nhập chữ)
+        if (value === '' || /^\d+$/.test(value)) {
+            handleFilterChange('employeeId', value);
+        }
+    };
+
+    const handleClearFilters = () => {
+        setFilters({
+            employeeId: '',
+            employeeName: '',
+            tableName: '',
+            startDate: '',
+            endDate: ''
+        });
+        setSearchTerm('');
+    };
+
     const handlePageChange = (newPage) => {
         if (newPage >= 0 && newPage < pagination.totalPages) {
-            fetchAuditLogs(newPage, pagination.size, searchTerm);
+            fetchAuditLogs(newPage, pagination.size, searchTerm, filters);
         }
     };
 
@@ -269,7 +398,7 @@ const AuditLogPage = () => {
                             </div>
                         </div>
                         <button
-                            onClick={() => fetchAuditLogs(0, pagination.size, searchTerm)}
+                            onClick={() => fetchAuditLogs(0, pagination.size, searchTerm, filters)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all font-medium text-sm"
                             title="Làm mới dữ liệu"
                         >
@@ -287,20 +416,107 @@ const AuditLogPage = () => {
                     </div>
                 )}
 
-                {/* Search and Stats */}
+                {/* Search and Filters */}
                 <div className="bg-white rounded-2xl shadow-lg p-5 mb-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="relative w-full sm:w-96">
+                    {/* General Search */}
+                    <div className="mb-4">
+                        <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                                placeholder="Tìm kiếm theo Bảng, Action, Employee ID, Record ID..."
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm chung (Bảng, Action, IP, User Agent...)"
                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            value={searchTerm}
-                            onChange={handleSearch}
-                        />
+                                value={searchTerm}
+                                onChange={handleSearch}
+                            />
                         </div>
-                        <div className="flex items-center gap-4">
+                    </div>
+
+                    {/* Filter Section */}
+                    <div className="border-t pt-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-semibold text-gray-700">Bộ lọc nâng cao</h3>
+                            <button
+                                onClick={handleClearFilters}
+                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                Xóa bộ lọc
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Employee ID Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">ID Nhân viên</label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    placeholder="Nhập ID nhân viên"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    value={filters.employeeId}
+                                    onChange={handleEmployeeIdChange}
+                                    min="0"
+                                />
+                            </div>
+
+                            {/* Employee Name Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Tên Nhân viên</label>
+                                <input
+                                    type="text"
+                                    placeholder="Nhập tên nhân viên"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    value={filters.employeeName}
+                                    onChange={(e) => handleFilterChange('employeeName', e.target.value)}
+                                />
+                            </div>
+
+                            {/* Table Name Filter - Dropdown */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Bảng tác động</label>
+                                <select
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                                    value={filters.tableName}
+                                    onChange={(e) => handleFilterChange('tableName', e.target.value)}
+                                >
+                                    {tableOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Start Date Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Từ ngày</label>
+                                <input
+                                    type="datetime-local"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    value={filters.startDate}
+                                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                                    max={filters.endDate || new Date().toISOString().slice(0, 16)}
+                                />
+                            </div>
+
+                            {/* End Date Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Đến ngày</label>
+                                <input
+                                    type="datetime-local"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    value={filters.endDate}
+                                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                                    max={new Date().toISOString().slice(0, 16)}
+                                    min={filters.startDate || undefined}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center justify-end">
                             <div className="text-right">
                                 <p className="text-sm text-gray-500">Tổng số log</p>
                                 <p className="text-xl font-bold text-gray-800">{pagination.totalElements}</p>

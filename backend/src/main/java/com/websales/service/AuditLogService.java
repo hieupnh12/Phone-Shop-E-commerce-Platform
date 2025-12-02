@@ -45,6 +45,27 @@ public class AuditLogService {
         return logPage.map(auditLogMapper::toResponse);
     }
 
+    public Page<AuditLogResponse> getAllLogsWithFilters(
+            int page, 
+            int size, 
+            Long employeeId,
+            String employeeName,
+            String tableName,
+            LocalDateTime startDate,
+            LocalDateTime endDate) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<AuditLog> logPage = auditLogRepository.findByFilters(
+                employeeId,
+                employeeName,
+                tableName,
+                startDate,
+                endDate,
+                pageable);
+
+        return logPage.map(auditLogMapper::toResponse);
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveAuditLog(AuditLog log) {
         auditLogRepository.save(log);
