@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Star, Trash2, Edit2, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { Star, Trash2, Edit2, ChevronLeft, ChevronRight, MessageCircle, Eye } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 import { useAuthFullOptions } from '../../contexts/AuthContext';
 
 const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: externalSelectedRating, showActions = true }) => {
   const { t } = useLanguage();
   const { user } = useAuthFullOptions();
+  const navigate = useNavigate();
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -202,6 +204,19 @@ const FeedbackList = ({ productId, onEdit, refreshTrigger, selectedRating: exter
             </div>
 
             <p className="text-gray-700 text-sm leading-relaxed">{feedback.content}</p>
+            
+            {/* Button Xem sản phẩm - chỉ hiển thị khi có productId từ feedback */}
+            {(feedback.product_id || feedback.productId || productId) && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <button
+                  onClick={() => navigate(`/user/products/${feedback.product_id || feedback.productId || productId}`)}
+                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  {t('feedback.viewProduct') || 'Xem sản phẩm'}
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

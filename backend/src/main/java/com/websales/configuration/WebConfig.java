@@ -20,13 +20,12 @@ public class WebConfig implements WebMvcConfigurer {
     public void addViewControllers(ViewControllerRegistry registry) {
         // Forward non-API, non-static routes to index.html for React Router
         // Important: Do NOT forward /api/** routes - they should be handled by Spring controllers
+        // Only forward routes that don't match API or static resource patterns
+        // Note: In development mode, frontend runs on port 3000 separately
+        // This config is mainly for production when frontend is built into backend static resources
         
-        // Forward /feedbacks, /profile, /orders, etc. to index.html
-        // But NOT /api/feedbacks, /api/orders, etc.
-        
+        // Only forward if it's not an API route and not a static resource
         registry.addViewController("/{path:[^\\.]*}")
-                .setViewName("forward:/index.html");
-        registry.addViewController("/**/{path:[^\\.]*}")
                 .setViewName("forward:/index.html");
         
         // Set order so API routes are handled first (before view controllers)

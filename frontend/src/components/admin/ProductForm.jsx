@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Upload } from "lucide-react";
+import { Upload, Sparkles, Loader2 } from "lucide-react";
 import Button from "../common/Button";
 import InputField from "../common/InputField";
-import Modal from "../common/Modal";
 import Toast from "../common/Toast";
 import VersionForm from "./VersionForm";
 import productService from "../../services/productService";
+import chatsApi from "../../services/chatBotService";
 import { useLanguage } from "../../contexts/LanguageContext";
 
 /**
@@ -59,6 +59,12 @@ useEffect(() => {
   const [imagePreview, setImagePreview] = useState(null);
   const [toast, setToast] = useState(null);
   const [isInitializing, setIsInitializing] = useState(!product);
+  
+  // AI Input states
+  const [aiImageFile, setAiImageFile] = useState(null);
+  const [aiImagePreview, setAiImagePreview] = useState(null);
+  const [aiProductName, setAiProductName] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Khởi tạo sản phẩm nếu là thêm mới
   useEffect(() => {
@@ -180,6 +186,214 @@ useEffect(() => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // AI Image upload handler
+  const handleAiImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        setToast({ type: "error", message: t('admin.productForm.errors.selectImageFile') });
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setToast({
+          type: "error",
+          message: t('admin.productForm.errors.imageTooLarge'),
+        });
+        return;
+      }
+
+      setAiImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAiImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Find ID from name in dropdown lists
+  const findBrandIdByName = (brandName) => {
+    if (!brandName) return "";
+    const brand = brandList.find(
+      (b) => b.nameBrand?.toLowerCase() === brandName.toLowerCase()
+    );
+    return brand ? String(brand.idBrand) : "";
+  };
+
+  const findOriginIdByName = (originName) => {
+    if (!originName) return "";
+    const origin = originList.find(
+      (o) => o.nameOrigin?.toLowerCase() === originName.toLowerCase()
+    );
+    return origin ? String(origin.idOrigin) : "";
+  };
+
+  const findOsIdByName = (osName) => {
+    if (!osName) return "";
+    const os = operatingSystemList.find(
+      (o) => o.nameOS?.toLowerCase() === osName.toLowerCase()
+    );
+    return os ? String(os.idOS) : "";
+  };
+
+  const findWarehouseIdByName = (warehouseName) => {
+    if (!warehouseName) return "";
+    const warehouse = warehouseList.find(
+      (w) => w.nameWarehouse?.toLowerCase() === warehouseName.toLowerCase()
+    );
+    return warehouse ? String(warehouse.idWarehouse) : "";
+  };
+
+  const findCategoryIdByName = (categoryName) => {
+    if (!categoryName) return "";
+    const category = categoryList.find(
+      (c) => c.nameCategory?.toLowerCase() === categoryName.toLowerCase()
+    );
+    return category ? String(category.idCategory) : "";
+  };
+
+  const findRamIdByName = (ramName) => {
+    if (!ramName) return "";
+    const ram = ramList.find(
+      (r) => r.nameRam?.toLowerCase() === ramName.toLowerCase()
+    );
+    return ram ? String(ram.idRam) : "";
+  };
+
+  const findRomIdByName = (romName) => {
+    if (!romName) return "";
+    const rom = romList.find(
+      (r) => r.nameRom?.toLowerCase() === romName.toLowerCase()
+    );
+    return rom ? String(rom.idRom) : "";
+  };
+
+  const findColorIdByName = (colorName) => {
+    if (!colorName) return "";
+    const color = colorList.find(
+      (c) => c.nameColor?.toLowerCase() === colorName.toLowerCase()
+    );
+    return color ? String(color.idColor) : "";
+  };
+
+  // Analyze product image with AI
+  const handleAnalyzeWithAI = async () => {
+    if (!aiImageFile && !aiProductName.trim()) {
+      setToast({
+        type: "error",
+        message: "Vui lòng chọn ảnh hoặc nhập tên sản phẩm",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await chatsApi.analyzeProductImage(
+        aiImageFile,
+        null,
+        aiProductName || null
+      );
+
+      if (!response) {
+        setToast({
+          type: "error",
+          message: "Không nhận được phản hồi từ AI",
+        });
+        return;
+      }
+
+      const productInfo = response.productInfo || response;
+      
+      if (!productInfo) {
+        setToast({
+          type: "error",
+          message: response.message || "AI không thể phân tích ảnh này",
+        });
+        return;
+      }
+
+      // Map product data to form
+      const mappedData = {
+        ...formData,
+        nameProduct: productInfo.nameProduct || formData.nameProduct || "",
+        battery: productInfo.battery || formData.battery || "",
+        scanFrequency: productInfo.scanFrequency || formData.scanFrequency || "",
+        screenSize: productInfo.screenSize || formData.screenSize || "",
+        screenResolution: productInfo.screenResolution || formData.screenResolution || "",
+        screenTech: productInfo.screenTech || formData.screenTech || "",
+        chipset: productInfo.chipset || formData.chipset || "",
+        rearCamera: productInfo.rearCamera || formData.rearCamera || "",
+        frontCamera: productInfo.frontCamera || formData.frontCamera || "",
+        warrantyPeriod: productInfo.warrantyPeriod || formData.warrantyPeriod || "",
+        brandId: productInfo.brandName
+          ? findBrandIdByName(productInfo.brandName)
+          : formData.brandId || "",
+        originId: productInfo.originName
+          ? findOriginIdByName(productInfo.originName)
+          : formData.originId || "",
+        operatingSystemId: productInfo.operatingSystemName
+          ? findOsIdByName(productInfo.operatingSystemName)
+          : formData.operatingSystemId || "",
+        warehouseAreaId: productInfo.warehouseAreaName
+          ? findWarehouseIdByName(productInfo.warehouseAreaName)
+          : formData.warehouseAreaId || "",
+        categoryId: productInfo.categoryName
+          ? findCategoryIdByName(productInfo.categoryName)
+          : formData.categoryId || "",
+      };
+
+      setFormData(mappedData);
+
+      // Set product image if available
+      if (productInfo.image && productInfo.image.startsWith("http")) {
+        setImagePreview(productInfo.image);
+      } else if (aiImageFile) {
+        setImageFile(aiImageFile);
+        setImagePreview(aiImagePreview);
+      }
+
+      // Map versions if available
+      if (
+        productInfo.productVersionResponses &&
+        productInfo.productVersionResponses.length > 0
+      ) {
+        const mappedVersions = productInfo.productVersionResponses.map((v) => ({
+          idRam: v.ramName ? findRamIdByName(v.ramName) : "",
+          idRom: v.romName ? findRomIdByName(v.romName) : "",
+          idColor: v.colorName ? findColorIdByName(v.colorName) : "",
+          importPrice: v.importPrice || "",
+          exportPrice: v.exportPrice || "",
+          stockQuantity: v.stockQuantity || "",
+          status: v.status !== undefined ? v.status : true,
+          images: v.images || [],
+        }));
+        setVersions(mappedVersions);
+      }
+
+      setToast({
+        type: "success",
+        message: "Đã phân tích và điền thông tin sản phẩm từ AI!",
+      });
+
+      // Reset AI inputs
+      setAiImageFile(null);
+      setAiImagePreview(null);
+      setAiProductName("");
+    } catch (error) {
+      console.error("Error analyzing product image:", error);
+      setToast({
+        type: "error",
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Lỗi khi phân tích ảnh sản phẩm",
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -378,6 +592,86 @@ useEffect(() => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Nhập Sản Phẩm Bằng AI */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Sparkles className="text-purple-600" size={24} />
+          <h3 className="text-lg font-semibold text-gray-900">
+            Nhập Sản Phẩm Bằng AI
+          </h3>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Upload ảnh sản phẩm và AI sẽ tự động điền thông tin cho bạn
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-purple-300 rounded-lg cursor-pointer hover:bg-purple-50 transition-colors">
+              <div className="text-center">
+                <Upload className="mx-auto mb-2 text-purple-500" size={24} />
+                <p className="text-sm text-gray-700 font-medium">
+                  {aiImageFile ? aiImageFile.name : "Chọn ảnh sản phẩm"}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG, JPG, WEBP (tối đa 5MB)
+                </p>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleAiImageChange}
+                className="hidden"
+                disabled={isAnalyzing}
+              />
+            </label>
+            {aiImagePreview && (
+              <div className="mt-3">
+                <img
+                  src={aiImagePreview}
+                  alt="AI Preview"
+                  className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Tên Sản Phẩm (Tùy chọn)
+              </label>
+              <input
+                type="text"
+                value={aiProductName}
+                onChange={(e) => setAiProductName(e.target.value)}
+                placeholder="VD: iPhone 15 Pro Max"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                disabled={isAnalyzing}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAnalyzeWithAI}
+              disabled={isAnalyzing || (!aiImageFile && !aiProductName.trim())}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="animate-spin" size={20} />
+                  Đang phân tích...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={20} />
+                  Phân Tích Bằng AI
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Thông Tin Cơ Bản */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">

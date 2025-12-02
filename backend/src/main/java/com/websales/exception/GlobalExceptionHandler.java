@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import jakarta.servlet.ServletException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -213,6 +215,33 @@ public class GlobalExceptionHandler {
                 .message(message)
                 .build();
 
+        return ResponseEntity
+                .status(errorCode.getStatusCode())
+                .body(apiResponse);
+    }
+
+    // Xử lý lỗi không tìm thấy handler (404) - bao gồm "No static resource index.html"
+    @ExceptionHandler({NoHandlerFoundException.class, ServletException.class})
+    public ResponseEntity<ApiResponse> handleNoHandlerFoundException(Exception ex) {
+        // Ignore "No static resource index.html" error silently
+        // This happens in development when frontend runs separately
+        if (ex.getMessage() != null && ex.getMessage().contains("No static resource")) {
+            log.debug("Static resource not found (likely in development mode): {}", ex.getMessage());
+            // Return empty response or 404 without showing error to user
+            ApiResponse apiResponse = ApiResponse.builder()
+                    .code(404)
+                    .message("Resource not found")
+                    .build();
+            return ResponseEntity.status(404).body(apiResponse);
+        }
+        
+        // For other ServletException, log and return generic error
+        log.error("Servlet exception: ", ex);
+        ErrorCode errorCode = ErrorCode.UNCATEGORIZE_EXCEPTION;
+        ApiResponse apiResponse = ApiResponse.builder()
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
+                .build();
         return ResponseEntity
                 .status(errorCode.getStatusCode())
                 .body(apiResponse);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuthFullOptions } from '../../contexts/AuthContext';
-import { Star, MessageCircle, Trash2, Edit2, Check, X, ChevronLeft, ChevronRight, PenLine } from 'lucide-react';
+import { Star, MessageCircle, Trash2, Edit2, Check, X, ChevronLeft, ChevronRight, PenLine, Eye } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 import orderService from '../../services/orderService';
 import FeedbackForm from '../../components/feedback/FeedbackForm';
@@ -36,7 +37,8 @@ const FeedbackCard = ({
   onCancel,
   onEdit,
   onDelete,
-  t
+  t,
+  navigate
 }) => (
   <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:bg-slate-800/70 transition-all duration-200">
     {isEditing ? (
@@ -112,6 +114,20 @@ const FeedbackCard = ({
           {renderStarsStatic(feedback.rate)}
         </div>
         <p className="text-slate-300 text-sm leading-relaxed">{feedback.content}</p>
+        
+        {/* Button Xem sản phẩm */}
+        {(feedback.product_id || feedback.productId) && (
+          <div className="mt-3 pt-3 border-t border-slate-700/50">
+            <button
+              onClick={() => navigate(`/user/products/${feedback.product_id || feedback.productId}`)}
+              className="flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              {t('feedback.viewProduct') || 'Xem sản phẩm'}
+            </button>
+          </div>
+        )}
+        
         {showEdit && (
           <div className="flex gap-2 mt-4 pt-3 border-t border-slate-700/50">
             <button
@@ -182,6 +198,7 @@ const EmptyState = ({ message, t }) => (
 // ========== MAIN COMPONENT ==========
 const MyFeedbacksPage = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const authContext = useAuthFullOptions();
   const user = authContext?.user;
   const [toast, setToast] = useState(null);
@@ -343,7 +360,7 @@ const MyFeedbacksPage = () => {
   );
 
   // All Feedbacks Section - dùng chung cho cả guest và user
-  const AllFeedbacksSection = ({ showHeader = true }) => (
+  const AllFeedbacksSection = ({ showHeader = true, navigate }) => (
     <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden">
       {showHeader && (
         <div className="px-6 py-4 border-b border-slate-700/50 bg-slate-800/50">
@@ -369,7 +386,7 @@ const MyFeedbacksPage = () => {
         ) : (
           <div className="space-y-3">
             {allFeedbacks.map((feedback) => (
-              <FeedbackCard key={feedback.feedback_id} feedback={feedback} t={t} />
+              <FeedbackCard key={feedback.feedback_id} feedback={feedback} t={t} navigate={navigate} />
             ))}
           </div>
         )}
@@ -407,7 +424,7 @@ const MyFeedbacksPage = () => {
           </div>
 
           {/* All Feedbacks */}
-          <AllFeedbacksSection />
+          <AllFeedbacksSection navigate={navigate} />
         </div>
         {toast && <Toast {...toast} onClose={() => setToast(null)} />}
       </div>
@@ -487,6 +504,7 @@ const MyFeedbacksPage = () => {
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                         t={t}
+                        navigate={navigate}
                       />
                     ))}
                   </div>
@@ -499,7 +517,7 @@ const MyFeedbacksPage = () => {
 
           {/* All Feedbacks - Right Column */}
           <div className="lg:col-span-2">
-            <AllFeedbacksSection />
+            <AllFeedbacksSection navigate={navigate} />
           </div>
         </div>
       </div>

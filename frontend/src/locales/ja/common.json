@@ -204,6 +204,7 @@
     "deleteSuccess": "レビューが正常に削除されました！",
     "deleteError": "レビューの削除エラー",
     "confirmDelete": "このレビューを削除してもよろしいですか？",
+    "viewProduct": "商品を見る",
     "productFeedback": {
       "writeReview": "レビューを書く",
       "reviewPlaceholder": "製品についての感想を共有してください（最低15文字）",

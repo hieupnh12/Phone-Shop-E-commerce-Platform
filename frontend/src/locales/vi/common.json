@@ -195,6 +195,7 @@
     "deleteSuccess": "Xóa đánh giá thành công!",
     "deleteError": "Lỗi khi xóa đánh giá",
     "confirmDelete": "Bạn chắc chắn muốn xóa đánh giá này?",
+    "viewProduct": "Xem sản phẩm",
     "productFeedback": {
       "writeReview": "Viết đánh giá của bạn",
       "reviewPlaceholder": "Xin mời chia sẻ một số cảm nhận về sản phẩm (nhập tối thiểu 15 kí tự)",
