@@ -165,23 +165,81 @@ const orderService = {
      * @param {string} productName - Tên sản phẩm
      * @param {number} page - Trang (mặc định 0)
      * @param {number} size - Số lượng kết quả (mặc định 20)
+     * @param {Object} filters - Các bộ lọc (ramName, romName, colorName)
      * @returns {Promise<Array>} Danh sách sản phẩm
      */
-    searchProducts: async (productName, page = 0, size = 20) => {
-        if (!productName || productName.trim().length < 2) {
+    searchProducts: async (productName, page = 0, size = 20, filters = {}) => {
+        // Cho phép search với productName rỗng nếu có filters
+        const hasProductName = productName && productName.trim().length > 0;
+        const hasBasicFilters = filters && (
+            (filters.ramName && filters.ramName.trim()) ||
+            (filters.romName && filters.romName.trim()) ||
+            (filters.colorName && filters.colorName.trim()) ||
+            (filters.brandName && filters.brandName.trim())
+        );
+        const hasPriceFilter = filters && (
+            (filters.priceRange && filters.priceRange !== "all") ||
+            (filters.customMinPrice && filters.customMinPrice.trim()) ||
+            (filters.customMaxPrice && filters.customMaxPrice.trim())
+        );
+        const hasFilters = hasBasicFilters || hasPriceFilter;
+        
+        if (!hasProductName && !hasFilters) {
             return [];
         }
 
         try {
+            const params = {
+                page,
+                size,
+            };
+
+            // Chỉ thêm productName nếu có giá trị
+            if (hasProductName) {
+                params.productName = productName.trim();
+            }
+
+            // Thêm các filters nếu có
+            if (filters.ramName && filters.ramName.trim()) {
+                params.ramName = filters.ramName.trim();
+            }
+            if (filters.romName && filters.romName.trim()) {
+                // Backend query: r.nameRom LIKE CONCAT(:romName, 'GB') OR r.nameRom LIKE CONCAT(:romName, ' GB')
+                // Backend tự thêm "GB" vào, nên cần extract chỉ số từ ROM name
+                // VD: "128GB" -> "128", "128 GB" -> "128", "128" -> "128"
+                let romValue = filters.romName.trim();
+                // Loại bỏ "GB" hoặc " GB" ở cuối (case-insensitive)
+                romValue = romValue.replace(/\s*GB\s*$/i, '').trim();
+                // Chỉ gửi số, loại bỏ mọi ký tự không phải số
+                const numberOnly = romValue.replace(/\D/g, '');
+                if (numberOnly) {
+                    params.romName = numberOnly;
+                }
+            }
+            if (filters.colorName && filters.colorName.trim()) {
+                params.colorName = filters.colorName.trim();
+            }
+            if (filters.brandName && filters.brandName.trim()) {
+                params.brandName = filters.brandName.trim();
+            }
+
+            // Thêm price range filters
+            if (filters.priceRange && filters.priceRange !== "all") {
+                params.priceRange = filters.priceRange;
+            }
+            // Chỉ gửi custom price khi priceRange là "custom"
+            if (filters.priceRange === "custom") {
+                if (filters.customMinPrice && filters.customMinPrice.trim()) {
+                    params.customMinPrice = filters.customMinPrice.trim();
+                }
+                if (filters.customMaxPrice && filters.customMaxPrice.trim()) {
+                    params.customMaxPrice = filters.customMaxPrice.trim();
+                }
+            }
+
             const response = await axiosClient.get(
                 "/productVersion/searchVersionFULLVIP",
-                {
-                    params: {
-                        productName: productName.trim(),
-                        page,
-                        size,
-                    },
-                }
+                { params }
             );
             return parseProductResponse(response);
         } catch (error) {

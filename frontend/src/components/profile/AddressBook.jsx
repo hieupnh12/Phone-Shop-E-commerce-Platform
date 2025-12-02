@@ -179,11 +179,11 @@ const AddressBook = () => {
 
         if (addresses.length === 0) {
             return (
-                <div className="flex flex-col items-center justify-center py-8 text-center text-gray-500">
+                <div className="flex flex-col items-center justify-center py-8 text-center text-gray-500 bg-gray-100">
                     <img
-                        src="https://via.placeholder.com/150/FFDDC1/FF6B6B?text=No+Address"
+                        src="/image/nofound.png"
                         alt="No Address"
-                        className="w-40 h-40 mb-4 object-contain"
+                        className="w-auto h-auto scale-200 object-contain"
                     />
                     <p>{t('profile.addressBook.noAddresses')}</p>
                 </div>

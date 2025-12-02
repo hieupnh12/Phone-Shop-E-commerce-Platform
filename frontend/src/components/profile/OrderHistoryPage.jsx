@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Search, Calendar, ChevronRight, Shield, Clock, CheckCircle, XCircle, RefreshCw, AlertCircle } from 'lucide-react';
 import {profileService, warrantyRequestService} from "../../services/api"
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { useLanguage } from "../../contexts/LanguageContext";
 import Toast from "../common/Toast";
 import Pagination from "../common/Pagination";
@@ -13,6 +13,7 @@ const OrderHistoryPage = () => {
     const { t } = useLanguage();
     const { customerInfo } = useOutletContext();
     const customerId = customerInfo?.customerId;
+    const navigate = useNavigate();
 
     const orderTabs = [
         { id: 'all', label: t('common.all') },
@@ -389,7 +390,10 @@ const OrderHistoryPage = () => {
                     />
                     <p className="text-lg mb-3">{t('orders.orderHistoryEmpty.noOrders')}</p>
                     <p className="text-sm mb-6">{t('orders.orderHistoryEmpty.exploreProducts')}</p>
-                    <button className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors">
+                    <button 
+                        onClick={() => navigate('/user/products')}
+                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors"
+                    >
                         {t('orders.exploreNow')}
                     </button>
                 </div>

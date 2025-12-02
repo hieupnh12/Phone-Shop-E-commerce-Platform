@@ -94,10 +94,10 @@ public class CustomerAuthenticationService {
 //            throw new AppException(ErrorCode.OTP_SEND_LIMIT);
 //        }
 
-        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
-        if(!sent) {
-            throw new RuntimeException("Gửi OTP thất bại");
-        }
+//        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
+//        if(!sent) {
+//            throw new RuntimeException("Gửi OTP thất bại");
+//        }
         otpReq.setOtpHash(passwordEncoder.encode(otp));
         otpReq.setExpiresAt(LocalDateTime.now().plusMinutes(1));
         otpReq.setLastSentAt(LocalDateTime.now());
@@ -206,6 +206,7 @@ public class CustomerAuthenticationService {
         }
     }
 
+    @Transactional
     public CompleteProfileResponse cusAuthUpdate(CusAuthUpdateRequest request) {
         var context = SecurityContextHolder.getContext();
 
@@ -219,20 +220,106 @@ public class CustomerAuthenticationService {
         );
         String normalizedPhone = PhoneUtils.normalize(request.getPhoneNumber());
 
-        customer.setPhoneNumber(normalizedPhone);
-        if (request.getFullName() != null) {
-            customer.setFullName(request.getFullName());
+        var existingCustomerWithPhone = customerRepo.getCustomerByPhoneNumber(normalizedPhone);
+        
+        Long targetCustomerId = customerId; // Customer ID cuối cùng sẽ được sử dụng
+        boolean isMerged = false;
+        
+        if (existingCustomerWithPhone.isPresent()) {
+            Customer existingCustomer = existingCustomerWithPhone.get();
+            
+            if (existingCustomer.getCustomerId().equals(customerId)) {
+            }
+            else {
+                boolean hasGoogleAuth = authRepo.existsByCustomerIdAndProvider(
+                    existingCustomer.getCustomerId(), "google");
+                
+                if (hasGoogleAuth) {
+                    throw new AppException(ErrorCode.PHONE_ALREADY_LINKED_TO_GOOGLE);
+                } else {
+                    var googleAuthOptional = authRepo.findByCustomerIdAndProvider(customerId, "google");
+                    
+                    if (googleAuthOptional.isPresent()) {
+                        CustomerAuth googleAuth = googleAuthOptional.get();
+                        
+                        googleAuth.setCustomerId(existingCustomer.getCustomerId());
+                        authRepo.save(googleAuth);
+                        
+                        if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
+                            existingCustomer.setFullName(request.getFullName());
+                        }
+                        if (request.getEmail() != null && !request.getEmail().trim().isEmpty() &&
+                            (existingCustomer.getEmail() == null || existingCustomer.getEmail().isEmpty())) {
+                            var emailOwner = customerRepo.findCustomerByEmail(request.getEmail().trim().toLowerCase());
+                            if (emailOwner.isEmpty() || emailOwner.get().getCustomerId().equals(customerId)) {
+                                existingCustomer.setEmail(request.getEmail().trim().toLowerCase());
+                            }
+                        }
+                        if (request.getBirthDate() != null) {
+                            existingCustomer.setBirthDate(request.getBirthDate());
+                        }
+                        
+                        customerRepo.save(existingCustomer);
+                        
+                        var otherAuths = authRepo.findByCustomerIdAndProvider(customerId, "phone");
+                        if (otherAuths.isEmpty()) {
+                            customerRepo.deleteById(customerId);
+                            log.info("Deleted Google customer (customerId: {}) after merging with phone account", customerId);
+                        }
+                        
+                        targetCustomerId = existingCustomer.getCustomerId();
+                        isMerged = true;
+                        
+                        log.info("Merged Google account (customerId: {}) with phone account (customerId: {})", 
+                                customerId, existingCustomer.getCustomerId());
+                    } else {
+                        customer.setPhoneNumber(normalizedPhone);
+                        if (request.getFullName() != null) {
+                            customer.setFullName(request.getFullName());
+                        }
+                        if (request.getEmail() != null && !request.getEmail().trim().isEmpty() &&
+                            (customer.getEmail() == null || customer.getEmail().isEmpty())) {
+                            var emailOwner = customerRepo.findCustomerByEmail(request.getEmail().trim().toLowerCase());
+                            if (emailOwner.isEmpty()) {
+                                customer.setEmail(request.getEmail().trim().toLowerCase());
+                            }
+                        }
+                        if (request.getBirthDate() != null) {
+                            customer.setBirthDate(request.getBirthDate());
+                        }
+                        customerRepo.save(customer);
+                        targetCustomerId = customerId;
+                    }
+                }
+            }
         }
-        if (request.getBirthDate() != null) {
-            customer.setBirthDate(request.getBirthDate());
+        
+        if (!isMerged) {
+            customer.setPhoneNumber(normalizedPhone);
+            if (request.getFullName() != null) {
+                customer.setFullName(request.getFullName());
+            }
+            if (request.getEmail() != null && !request.getEmail().trim().isEmpty() &&
+                (customer.getEmail() == null || customer.getEmail().isEmpty())) {
+                var emailOwner = customerRepo.findCustomerByEmail(request.getEmail().trim().toLowerCase());
+                if (emailOwner.isEmpty()) {
+                    customer.setEmail(request.getEmail().trim().toLowerCase());
+                }
+            }
+            if (request.getBirthDate() != null) {
+                customer.setBirthDate(request.getBirthDate());
+            }
+            customerRepo.save(customer);
         }
-      Customer cus =  customerRepo.save(customer);
+        
+        Customer finalCustomer = customerRepo.findById(targetCustomerId).orElseThrow(
+                () -> new AppException(ErrorCode.ACCOUNT_NOT_EXIST)
+        );
+        
         return CompleteProfileResponse.builder()
-                .token(generateCustomerToken(customer.getCustomerId()))
-                .customerResponse(customerMapper.toCustomerResponse(cus))
+                .token(generateCustomerToken(targetCustomerId))
+                .customerResponse(customerMapper.toCustomerResponse(finalCustomer))
                 .build();
-
-
     }
 
 }

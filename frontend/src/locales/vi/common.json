@@ -697,7 +697,7 @@
     },
     "cancelled": "Đã hủy",
     "orderSuccess": "Đặt hàng thành công",
-    "defaultAddress": "Địa chỉ mặc định",
+    "defaultAddress": "Địa chỉ",
     "noAddress": "Chưa có",
     "updating": "Đang cập nhật",
     "detailedAddress": "Địa chỉ chi tiết (Số nhà, đường)",
