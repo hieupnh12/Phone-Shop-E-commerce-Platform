@@ -415,7 +415,7 @@ public class ChatService {
                         1. Phân tích ảnh để xác định xem có phải điện thoại không.
                         2. Nếu người dùng cung cấp tên sản phẩm gợi ý, hãy ưu tiên sử dụng tên đó để tìm thông tin chính xác hơn.
                         3. Nếu là điện thoại, hãy lấy thông tin chi tiết từ kiến thức của bạn (từ mạng/internet).
-                        4. Chỉ được trả về JSON, không được trả về nội dung khác.
+                        4. Chỉ được trả về JSON trong các thuộc tính chỉ có giá trị vd ("battery": "5000 mAh) không ghi gì thêm nữa.
                         5. Nếu không phải điện thoại, trả về isPhone = false và message giải thích.
                         
                         YÊU CẦU OUTPUT (BẮT BUỘC):
@@ -443,7 +443,6 @@ public class ChatService {
                         
                         LƯU Ý:
                         - Nếu người dùng cung cấp tên sản phẩm, hãy ưu tiên sử dụng tên đó và tìm thông tin chính xác.
-                        - Nếu không chắc chắn, hãy ước lượng hoặc để null cho các trường không xác định được.
                         - nameProduct phải là tên đầy đủ và chính xác.
                         - brandName chỉ chứa tên hãng, không bao gồm model.
                         - warrantyPeriod tính bằng tháng (thường là 12 hoặc 24).
