@@ -160,6 +160,8 @@
     "outOfStockWarning": "There are out of stock items in your cart",
     "adjustQuantityBeforePayment": "Please adjust quantity or remove out of stock items before checkout",
     "maxQuantity": "Maximum quantity is {{max}}",
+    "maxQuantityExceeded": "Maximum quantity per product is {{max}}",
+    "insufficientStockMessage": "Product \"{{productName}}\" only has {{stockQuantity}} items in stock. Cannot increase quantity to {{requestedQuantity}}.",
     "freeshipReached": "You've qualified for free shipping!",
     "buyMore": "Buy {{amount}} more for free shipping",
     "achieved": "Achieved",
@@ -249,11 +251,17 @@
     "noOrders": "No orders found",
     "orderCode": "Order Code",
     "noProductDetails": "No product details",
-    "otherProducts": "and {count} other products",
+    "otherProducts": "and {{count}} other products",
     "orderInfo": "Order Information",
     "received": "Received",
     "product": "Product",
-    "orderHistory": {
+    "cannotLoadOrderHistory": "Unable to load order history.",
+    "loadingOrders": "Loading orders...",
+    "myOrders": "My Orders",
+    "searchPlaceholder": "Search by order name, order code or product name",
+    "totalOrders": "total {{count}} orders",
+    "exploreNow": "Explore Now",
+    "orderHistoryEmpty": {
       "noOrders": "You don't have any orders yet",
       "exploreProducts": "Explore thousands of products at FShop!"
     },
@@ -559,6 +567,19 @@
   "productContainer": {
     "showingProducts": "Showing {{count}} products"
   },
+  "productList": {
+    "loading": "Loading products...",
+    "retry": "Retry",
+    "searchError": "Unable to search products. Please try again later.",
+    "noResults": "No products found matching the filters",
+    "discount": "{{discount}}% off",
+    "authentic": "Genuine",
+    "contact": "Contact",
+    "smemberDiscount": "Smember discount up to {{amount}},000đ",
+    "productFeatures": "trusted products - high quality - affordable prices - warranty support up to 12 months",
+    "favorite": "Favorite",
+    "page": "Page {{current}} / {{total}}"
+  },
   "common": {
     "loading": "Loading...",
     "error": "Error",
@@ -795,5 +816,64 @@
       "decreaseQuantity": "Decrease quantity",
       "increaseQuantity": "Increase quantity",
     "removeItem": "Remove item"
+  },
+  "contact": {
+    "hero": {
+      "support24_7": "Always ready to support 24/7"
+    },
+    "hotline": {
+      "title": "Hotline",
+      "description": "Support hotline"
+    },
+    "address": {
+      "title": "Address",
+      "location": "FShop, FPT City",
+      "district": "Ngu Hanh Son, Da Nang"
+    },
+    "email": {
+      "title": "Email",
+      "description": "Response within 24h"
+    },
+    "businessHours": {
+      "title": "Business Hours",
+      "weekdays": "Mon-Fri",
+      "weekends": "Sat-Sun"
+    },
+    "map": {
+      "title": "FShop Location"
+    },
+    "aboutUs": {
+      "title": "About FShop",
+      "tagline": "FShop - Technology for Life",
+      "sections": {
+        "aboutUs": {
+          "title": "About Us",
+          "content": "FShop is a retail store specializing in high-quality mobile phones from major brands, with diverse models and the most optimal prices for customers."
+        },
+        "quality": {
+          "title": "Quality and Reputation",
+          "content": "FShop is committed to providing genuine, high-quality products with reputable warranty policies and attentive customer service, bringing customers absolute peace of mind when shopping for technology products."
+        },
+        "customer": {
+          "title": "Customer-Centric",
+          "content": "Serving customers is always the top priority. FShop always focuses on improving service quality, training enthusiastic, honest, and sincere staff, bringing maximum benefits and satisfaction to customers."
+        }
+      }
+    },
+    "policies": {
+      "prefix": "Policy ",
+      "privacy": {
+        "title": "Privacy Policy",
+        "content": "CUSTOMER INFORMATION PRIVACY POLICY\n\n1. Purpose of Information Collection\nFShop collects customer information for the following purposes:\n• Process orders and deliver to customer-requested addresses\n• Provide information about products, services, and promotional programs\n• Support customers with questions or complaints\n• Improve service quality and shopping experience\n\n2. Scope of Collection\nWe collect personal information when customers:\n• Register an account on the website\n• Place orders and make payments\n• Contact customer service department\n\n3. Privacy Commitment\n• Do not share, sell, or rent personal information to third parties\n• Apply advanced security measures to protect data\n• Only authorized staff have access to customer information\n• Strictly comply with legal regulations on personal data protection"
+      },
+      "warranty": {
+        "title": "Warranty Policy",
+        "content": "PRODUCT WARRANTY POLICY\n\n1. Warranty Period\n• Genuine phones: Varies by product line\n• Genuine accessories: 6-12 months depending on product type\n• Batteries and chargers: 6 months\n\n2. Warranty Conditions\n• Product is still within warranty period\n• Warranty seal and warranty card are intact\n• Defects from manufacturer, not from user\n\n3. Non-Warranty Cases\n• Product has expired warranty\n• Damage from impact, drop, water ingress\n• Unauthorized disassembly or external repair\n• Incorrect use or installation of non-genuine software\n\n4. Warranty Process\n• Step 1: Create warranty request on website from order\n• Step 2: Wait for confirmation from warranty department\n• Step 3: Receive warranty appointment and bring product to store\n• Step 4: Product inspection and warranty\n• Step 5: Return product to customer"
+      },
+      "shipping": {
+        "title": "Shipping Policy",
+        "content": "SHIPPING POLICY\n\n1. Shipping Scope\n• Nationwide shipping through reputable carriers\n• Da Nang inner city: Same-day delivery\n• Other provinces: 2-5 business days\n\n2. Shipping Fees\n• Free shipping for orders from 2,000,000 VND\n• Da Nang inner city: Free\n• Nearby districts: 30,000 VND\n• Other provinces: According to shipping rate table\n\n3. Payment Methods\n• Cash on delivery (COD)\n• Bank transfer\n• Payment via VNPay e-wallet\n\n4. Product Inspection on Receipt\n• Customers have the right to inspect products before payment\n• Record unboxing video as evidence if there are issues\n• Refuse delivery if product is incorrect or damaged"
+      }
+    }
   }
 }

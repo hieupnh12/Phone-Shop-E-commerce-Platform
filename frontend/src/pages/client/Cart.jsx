@@ -158,7 +158,7 @@ export default function ShoppingCart() {
     // Kiểm tra giới hạn tối thiểu và tối đa
     if (newQuantity < 1) return;
     if (newQuantity > MAX_QUANTITY) {
-      const errorMsg = `Số lượng tối đa cho mỗi sản phẩm là ${MAX_QUANTITY}`;
+      const errorMsg = t('cart.maxQuantityExceeded', { max: MAX_QUANTITY });
       setErr(errorMsg);
       setToast({
         type: 'error',
@@ -169,7 +169,11 @@ export default function ShoppingCart() {
 
     // Kiểm tra số lượng tồn kho
     if (item.stockQuantity !== undefined && newQuantity > item.stockQuantity) {
-      const errorMessage = `Sản phẩm "${item.productName}" chỉ còn ${item.stockQuantity} sản phẩm trong kho. Không thể tăng số lượng lên ${newQuantity}.`;
+      const errorMessage = t('cart.insufficientStockMessage', { 
+        productName: item.productName, 
+        stockQuantity: item.stockQuantity, 
+        requestedQuantity: newQuantity 
+      });
       console.warn('⚠️ Số lượng sản phẩm không đủ:', {
         productName: item.productName,
         requestedQuantity: newQuantity,
@@ -415,7 +419,7 @@ export default function ShoppingCart() {
                     <Square className="w-5 h-5 text-slate-400" />
                   )}
                   <span className="font-semibold text-slate-900">
-                    Chọn tất cả ({selectedItems.size}/{items.length})
+                    {t('cart.selectAll', { selected: selectedItems.size, total: items.length })}
                   </span>
                 </button>
               </div>

@@ -154,7 +154,9 @@
     "selectAtLeastOne": "Vui lòng chọn ít nhất một sản phẩm để thanh toán",
     "outOfStockWarning": "Có sản phẩm không đủ hàng trong giỏ của bạn",
     "adjustQuantityBeforePayment": "Vui lòng điều chỉnh số lượng hoặc xóa sản phẩm hết hàng trước khi thanh toán",
-    "maxQuantity": "Số lượng tối đa là {{max}}"
+    "maxQuantity": "Số lượng tối đa là {{max}}",
+    "maxQuantityExceeded": "Số lượng tối đa cho mỗi sản phẩm là {{max}}",
+    "insufficientStockMessage": "Sản phẩm \"{{productName}}\" chỉ còn {{stockQuantity}} sản phẩm trong kho. Không thể tăng số lượng lên {{requestedQuantity}}."
   },
   "feedback": {
     "title": "Đánh giá sản phẩm",
@@ -227,6 +229,7 @@
   },
   "orders": {
     "title": "Lịch sử đơn hàng",
+    "orderHistory": "Lịch sử đơn hàng",
     "status": "Trạng thái",
     "pending": "Chờ xác nhận",
     "completed": "Hoàn thành",
@@ -239,11 +242,17 @@
     "noOrders": "Không có đơn hàng nào",
     "orderCode": "Mã đơn hàng",
     "noProductDetails": "Không có chi tiết sản phẩm",
-    "otherProducts": "Cùng {count} sản phẩm khác",
+    "otherProducts": "Cùng {{count}} sản phẩm khác",
     "orderInfo": "Thông tin đơn hàng",
     "received": "Đã nhận hàng",
     "product": "Sản phẩm",
-    "orderHistory": {
+    "cannotLoadOrderHistory": "Không thể tải lịch sử đơn hàng.",
+    "loadingOrders": "Đang tải đơn hàng...",
+    "myOrders": "Đơn hàng của tôi",
+    "searchPlaceholder": "Tìm theo tên đơn, mã đơn hoặc tên sản phẩm",
+    "totalOrders": "tổng số {{count}} đơn hàng",
+    "exploreNow": "Khám phá ngay",
+    "orderHistoryEmpty": {
       "noOrders": "Bạn chưa có đơn hàng nào",
       "exploreProducts": "Cùng khám phá hàng ngàn sản phẩm tại FShop nhé!"
     },
@@ -547,6 +556,19 @@
   "productContainer": {
     "showingProducts": "Hiển thị {{count}} sản phẩm"
   },
+  "productList": {
+    "loading": "Đang tải sản phẩm...",
+    "retry": "Thử lại",
+    "searchError": "Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.",
+    "noResults": "Không tìm thấy sản phẩm phù hợp với bộ lọc",
+    "discount": "Giảm {{discount}}%",
+    "authentic": "Chính hãng",
+    "contact": "Liên hệ",
+    "smemberDiscount": "Smember giảm đến {{amount}}.000đ",
+    "productFeatures": "sản phẩm uy tín  - chất lượng cao - giá cả phải chăng - hỗ trợ bảo hành  đến 12 tháng",
+    "favorite": "Yêu thích",
+    "page": "Trang {{current}} / {{total}}"
+  },
   "common": {
     "loading": "Đang tải...",
     "error": "Lỗi",
@@ -783,5 +805,64 @@
       "decreaseQuantity": "Giảm số lượng",
       "increaseQuantity": "Tăng số lượng",
     "removeItem": "Xóa sản phẩm"
+  },
+  "contact": {
+    "hero": {
+      "support24_7": "Luôn sẵn sàng hỗ trợ 24/7"
+    },
+    "hotline": {
+      "title": "Hotline",
+      "description": "Tổng đài hỗ trợ"
+    },
+    "address": {
+      "title": "Địa Chỉ",
+      "location": "FShop, FPT City",
+      "district": "Ngũ Hành Sơn, Đà Nẵng"
+    },
+    "email": {
+      "title": "Email",
+      "description": "Phản hồi trong 24h"
+    },
+    "businessHours": {
+      "title": "Giờ Làm Việc",
+      "weekdays": "T2-T6",
+      "weekends": "T7-CN"
+    },
+    "map": {
+      "title": "Vị trí FShop"
+    },
+    "aboutUs": {
+      "title": "Giới thiệu về FShop",
+      "tagline": "FShop - Công nghệ cho cuộc sống",
+      "sections": {
+        "aboutUs": {
+          "title": "Về chúng tôi",
+          "content": "FShop là cửa hàng chuyên bán lẻ các sản phẩm điện thoại di động chất lượng cao đến từ các thương hiệu lớn, với mẫu mã đa dạng và mức giá tối ưu nhất cho khách hàng."
+        },
+        "quality": {
+          "title": "Chất lượng và Uy tín",
+          "content": "FShop cam kết cung cấp các sản phẩm chính hãng, chất lượng cao với chính sách bảo hành uy tín và dịch vụ chăm sóc khách hàng chu đáo, nhằm đem đến cho khách hàng sự an tâm tuyệt đối khi mua sắm các sản phẩm công nghệ."
+        },
+        "customer": {
+          "title": "Khách hàng là trọng tâm",
+          "content": "Phục vụ khách hàng luôn là ưu tiên số 1. FShop luôn chú trọng hoàn thiện chất lượng dịch vụ, bồi dưỡng đội ngũ nhân viên nhiệt tình, trung thực, chân thành, mang lại lợi ích và sự hài lòng tối đa cho khách hàng."
+        }
+      }
+    },
+    "policies": {
+      "prefix": "Chính sách ",
+      "privacy": {
+        "title": "Chính sách bảo mật",
+        "content": "CHÍNH SÁCH BẢO MẬT THÔNG TIN KHÁCH HÀNG\n\n1. Mục đích thu thập thông tin\nFShop thu thập thông tin khách hàng nhằm mục đích:\n• Xử lý đơn hàng và giao hàng đến địa chỉ khách hàng yêu cầu\n• Cung cấp thông tin về sản phẩm, dịch vụ và chương trình khuyến mãi\n• Hỗ trợ khách hàng khi có thắc mắc hoặc khiếu nại\n• Nâng cao chất lượng dịch vụ và trải nghiệm mua sắm\n\n2. Phạm vi thu thập\nChúng tôi thu thập các thông tin cá nhân khi khách hàng:\n• Đăng ký tài khoản trên website\n• Đặt hàng và thanh toán\n• Liên hệ với bộ phận chăm sóc khách hàng\n\n3. Cam kết bảo mật\n• Không chia sẻ, bán hoặc cho thuê thông tin cá nhân cho bên thứ ba\n• Áp dụng các biện pháp bảo mật tiên tiến để bảo vệ dữ liệu\n• Chỉ nhân viên được ủy quyền mới có quyền truy cập thông tin khách hàng\n• Tuân thủ nghiêm ngặt quy định pháp luật về bảo vệ dữ liệu cá nhân"
+      },
+      "warranty": {
+        "title": "Chính sách bảo hành",
+        "content": "CHÍNH SÁCH BẢO HÀNH SẢN PHẨM\n\n1. Thời gian bảo hành\n• Điện thoại chính hãng: Tùy theo từng dòng sản phẩm\n• Phụ kiện chính hãng: 6-12 tháng tùy loại sản phẩm\n• Pin và sạc: 6 tháng\n\n2. Điều kiện bảo hành\n• Sản phẩm còn trong thời hạn bảo hành\n• Tem bảo hành, phiếu bảo hành còn nguyên vẹn\n• Lỗi do nhà sản xuất, không phải do người dùng\n\n3. Trường hợp không được bảo hành\n• Sản phẩm hết hạn bảo hành\n• Hư hỏng do va đập, rơi vỡ, vào nước\n• Tự ý tháo lắp, sửa chữa bên ngoài\n• Sử dụng sai cách hoặc cài đặt phần mềm không chính thống\n\n4. Quy trình bảo hành\n• Bước 1: Tạo yêu cầu bảo hành trên website từ đơn hàng\n• Bước 2: Chờ xác nhận từ bộ phận bảo hành\n• Bước 3: Nhận lịch hẹn bảo hành và mang sản phẩm đến cửa hàng\n• Bước 4: Kiểm tra sản phẩm và bảo hành\n• Bước 5: Giao lại sản phẩm cho khách hàng"
+      },
+      "shipping": {
+        "title": "Chính sách giao hàng",
+        "content": "CHÍNH SÁCH GIAO HÀNG\n\n1. Phạm vi giao hàng\n• Giao hàng toàn quốc qua các đơn vị vận chuyển uy tín\n• Nội thành Đà Nẵng: Giao hàng trong ngày\n• Các tỉnh thành khác: 2-5 ngày làm việc\n\n2. Phí giao hàng\n• Miễn phí giao hàng cho đơn từ 2.000.000đ\n• Nội thành Đà Nẵng: Miễn phí\n• Các quận/huyện lân cận: 30.000đ\n• Tỉnh thành khác: Theo bảng giá vận chuyển\n\n3. Hình thức thanh toán\n• Thanh toán khi nhận hàng (COD)\n• Chuyển khoản ngân hàng\n• Thanh toán qua ví điện tử VNPay\n\n4. Kiểm tra hàng khi nhận\n• Khách hàng có quyền kiểm tra sản phẩm trước khi thanh toán\n• Quay video unbox để làm bằng chứng nếu có sự cố\n• Từ chối nhận hàng nếu sản phẩm không đúng hoặc bị hư hỏng"
+      }
+    }
   }
 }

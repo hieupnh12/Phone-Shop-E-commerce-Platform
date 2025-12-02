@@ -112,7 +112,7 @@ const OrderDetailPage = () => {
                 setError(null);
             } catch (err) {
                 console.error("Lỗi khi tải chi tiết đơn hàng:", err);
-                setError(t('orderDetail.cannotLoadOrder'));
+                setError(t('orders.orderDetail.cannotLoadOrder'));
                 setOrderData(null);
             } finally {
                 setIsLoading(false);
@@ -232,8 +232,8 @@ const OrderDetailPage = () => {
                 
                 await fetchDetail();
                 const statusMessage = newStatus === 'RETURNED' 
-                    ? t('orderDetail.returnSuccess') 
-                    : t('orderDetail.cancelSuccess');
+                    ? t('orders.orderDetail.returnSuccess') 
+                    : t('orders.orderDetail.cancelSuccess');
                 setToast({
                     type: 'success',
                     message: statusMessage
@@ -244,14 +244,14 @@ const OrderDetailPage = () => {
             } else {
                 setToast({
                     type: 'error',
-                    message: response?.message || t('orderDetail.cannotCancel')
+                    message: response?.message || t('orders.orderDetail.cannotCancel')
                 });
             }
         } catch (err) {
             console.error("Lỗi khi hủy đơn hàng:", err);
             setToast({
                 type: 'error',
-                message: err.response?.data?.message || err.message || t('orderDetail.cannotCancel')
+                message: err.response?.data?.message || err.message || t('orders.orderDetail.cannotCancel')
             });
         } finally {
             setIsCancelling(false);
@@ -321,7 +321,7 @@ const OrderDetailPage = () => {
         if (success) {
             setToast({
                 type: 'success',
-                message: t('orderDetail.warrantyRequestSuccess')
+                message: t('orders.orderDetail.warrantyRequestSuccess')
             });
             // Refresh warranty requests sau khi tạo thành công
             try {
@@ -364,7 +364,7 @@ const OrderDetailPage = () => {
         if (!product.productVersionId) {
             setToast({
                 type: 'error',
-                message: t('orderDetail.productNotFound')
+                message: t('orders.orderDetail.productNotFound')
             });
             return;
         }
@@ -379,7 +379,7 @@ const OrderDetailPage = () => {
             console.error("Lỗi khi thêm vào giỏ hàng:", err);
             setToast({
                 type: 'error',
-                message: err.response?.data?.message || err.message || t('orderDetail.cannotAddToCart')
+                message: err.response?.data?.message || err.message || t('orders.orderDetail.cannotAddToCart')
             });
         }
     };
@@ -406,9 +406,9 @@ const OrderDetailPage = () => {
         const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : SHIPPING_FEE;
         const totalAmount = passedTotalAmount ?? subtotal + shippingFee;
         const defaultCustomer = {
-            name: customerData?.fullName || t('orderDetail.customer'),
-            phone: formatPhoneNumber(customerData?.phoneNumber) || t('orderDetail.updating'),
-            address: customerData?.address || t('orderDetail.noAddress'),
+            name: customerData?.fullName || t('orders.orderDetail.customer'),
+            phone: formatPhoneNumber(customerData?.phoneNumber) || t('orders.orderDetail.updating'),
+            address: customerData?.address || t('orders.orderDetail.noAddress'),
             note: '-',
         };
 
@@ -538,9 +538,9 @@ const OrderDetailPage = () => {
                 vatIncluded: true,
             },
             customer: defaultCustomer,
-            paymentMethod: paymentMethod === 'cod' ? t('orderDetail.paymentMethodCOD') : t('orderDetail.paymentMethodPayOS'),
+            paymentMethod: paymentMethod === 'cod' ? t('orders.orderDetail.paymentMethodCOD') : t('orders.orderDetail.paymentMethodPayOS'),
             supportInfo: {
-                storeAddress: '244 Nam Kì khởi Nghĩa , P. Hoà Quí, Q. Ngữ Hành Sơn, Đà Nẵng', storePhone: '0909696999',
+                storeAddress: 'FShop, FPT City, Ngũ Hành Sơn, Đà Nẵng', storePhone: '0705432115',
             },
             timeline: timeline,
         };
@@ -554,7 +554,7 @@ const OrderDetailPage = () => {
         return (
             <div className="bg-white p-8 rounded-xl shadow-lg min-h-[500px] flex items-center justify-center">
                 <Loader2 size={32} className="animate-spin text-red-500" />
-                <p className="ml-3 text-lg text-gray-600">{t('orderDetail.loadingOrder')} {orderId}...</p>
+                <p className="ml-3 text-lg text-gray-600">{t('orders.orderDetail.loadingOrder')} {orderId}...</p>
             </div>
         );
     }
@@ -562,7 +562,7 @@ const OrderDetailPage = () => {
     if (error || !orderData) {
         return (
             <div className="bg-white p-8 rounded-xl shadow-lg min-h-[500px] flex items-center justify-center">
-                <p className="text-xl text-red-500">{t('common.error')}: {error || t('orderDetail.orderNotFound', { orderId })}</p>
+                <p className="text-xl text-red-500">{t('common.error')}: {error || t('orders.orderDetail.orderNotFound', { orderId })}</p>
             </div>
         );
     }
@@ -580,13 +580,13 @@ const OrderDetailPage = () => {
 
     const CustomerInfoCard = () => (
         <div className="p-3 bg-white rounded-xl border border-gray-100 h-full">
-            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orderDetail.customerInfo')}</h4>
+            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orders.orderDetail.customerInfo')}</h4>
             <div className="space-y-3">
                 <InfoRow label={t('profile.personalInfo.fullName')} value={orderData.customer.name} />
                 <InfoRow label={t('common.phone')} value={orderData.customer.phone} />
                 <InfoRow label={t('common.address')} value={orderData.customer.address} />
-                <InfoRow label={t('orderDetail.email')} value={customerInfo?.email || 'N/A'} />
-                <InfoRow label={t('orderDetail.note')} value={orderData.customer.note} />
+                <InfoRow label={t('orders.orderDetail.email')} value={customerInfo?.email || 'N/A'} />
+                <InfoRow label={t('orders.orderDetail.note')} value={orderData.customer.note} />
             </div>
         </div>
     );
@@ -597,14 +597,14 @@ const OrderDetailPage = () => {
         
         return (
         <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
-            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orderDetail.paymentInfo')}</h4>
+            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orders.orderDetail.paymentInfo')}</h4>
             <div className="space-y-2">
                 <InfoRow label={t('common.products')} value={totalQuantity} note={t('common.quantityNote')} />
-                <InfoRow label={t('orderDetail.subtotal')} value={orderData.summary.subtotal} currency />
-                <InfoRow label={t('orderDetail.discount')} value={-orderData.summary.discount} currency highlight />
+                <InfoRow label={t('orders.orderDetail.subtotal')} value={orderData.summary.subtotal} currency />
+                <InfoRow label={t('orders.orderDetail.discount')} value={-orderData.summary.discount} currency highlight />
                 <InfoRow
-                    label={t('orderDetail.shippingFee')}
-                    value={orderData.summary.shippingFee === 0 ? t('orderDetail.free') : orderData.summary.shippingFee}
+                    label={t('orders.orderDetail.shippingFee')}
+                    value={orderData.summary.shippingFee === 0 ? t('orders.orderDetail.free') : orderData.summary.shippingFee}
                     currency={orderData.summary.shippingFee > 0}
                 />
 
@@ -612,7 +612,7 @@ const OrderDetailPage = () => {
 
             <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
                 <InfoRow
-                    label={t('orderDetail.totalAmount')}
+                    label={t('orders.orderDetail.totalAmount')}
                     value={orderData.summary.totalAmountPaid}
                     currency
                     highlight
@@ -625,7 +625,7 @@ const OrderDetailPage = () => {
                     highlight
                 />
             </div>
-            <p className="mt-3 text-xs text-gray-500">{t('orderDetail.paymentMethod')}: {orderData.paymentMethod}</p>
+            <p className="mt-3 text-xs text-gray-500">{t('orders.orderDetail.paymentMethod')}: {orderData.paymentMethod}</p>
         </div>
         );
     };
@@ -638,7 +638,7 @@ const OrderDetailPage = () => {
 
         return (
             <div className="my-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-x-auto">
-                <h4 className="font-bold text-gray-800 mb-4">{t('orderDetail.orderProgress')}</h4>
+                <h4 className="font-bold text-gray-800 mb-4">{t('orders.orderDetail.orderProgress')}</h4>
                 <div className="flex justify-between items-center relative w-full min-w-[600px] pb-6 pt-3">
                     {steps.map((step, index) => (
                         <div key={index} className="flex flex-col items-center flex-1 relative z-10">
@@ -680,13 +680,13 @@ const OrderDetailPage = () => {
             <nav className="text-sm text-gray-500 flex items-center space-x-2">
                 <Link to="/user/profile/order" className="hover:text-red-500">{t('orders.orderHistory')}</Link>
                 <ChevronRight size={16} />
-                <span className="font-semibold text-gray-800">{t('orderDetail.orderDetail')}</span>
+                <span className="font-semibold text-gray-800">{t('orders.orderDetail.orderDetail')}</span>
             </nav>
 
             {/* Khối Tổng quan và Sản phẩm */}
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-800">{t('orderDetail.overview')}</h3>
+                    <h3 className="text-xl font-bold text-gray-800">{t('orders.orderDetail.overview')}</h3>
                     <div className="flex items-center gap-3">
                         {canCancelOrder() && (
                             <button
@@ -697,24 +697,24 @@ const OrderDetailPage = () => {
                                 {isCancelling ? (
                                     <>
                                         <Loader2 size={16} className="animate-spin" />
-                                        {t('orderDetail.cancelling')}
+                                        {t('orders.orderDetail.cancelling')}
                                     </>
                                 ) : (
                                     <>
                                         <XCircle size={16} />
-                                        {t('orderDetail.cancelOrder')}
+                                        {t('orders.orderDetail.cancelOrder')}
                                     </>
                                 )}
                             </button>
                         )}
-                        <span className="text-red-500 text-sm hover:underline cursor-pointer">{t('orderDetail.viewVATInvoice')}</span>
+                        <span className="text-red-500 text-sm hover:underline cursor-pointer">{t('orders.orderDetail.viewVATInvoice')}</span>
                     </div>
                 </div>
 
                 {/* Thông tin Mã đơn hàng và Ngày đặt */}
                 <div className="flex items-center justify-between text-sm text-gray-600 border-b pb-4 mb-4">
-                    <p>{t('orderDetail.order')}: <span className="font-semibold text-gray-800">{orderData.orderCode}</span></p>
-                    <p>{t('orderDetail.orderDate')}: {orderData.date}</p>
+                    <p>{t('orders.orderDetail.order')}: <span className="font-semibold text-gray-800">{orderData.orderCode}</span></p>
+                    <p>{t('orders.orderDetail.orderDate')}: {orderData.date}</p>
                     <span className="text-green-600 font-medium">{orderData.status}</span>
                 </div>
 
@@ -730,7 +730,7 @@ const OrderDetailPage = () => {
                             <div className="flex-grow">
                                 <p className="font-semibold text-gray-800 mb-1">{product.name}</p>
                                 <p className="text-sm text-gray-600">{formatCurrency(product.price)}</p>
-                                <p className="text-xs text-gray-500">{t('orderDetail.warrantyUntil')}: {product.warrantyEnd}</p>
+                                <p className="text-xs text-gray-500">{t('orders.orderDetail.warrantyUntil')}: {product.warrantyEnd}</p>
                                 <Link to={`/user/warranty/${product.id}`} className="text-xs text-blue-500 hover:text-blue-700 font-medium mt-1 inline-block">Xem</Link>
                             </div>
                             <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
@@ -758,7 +758,7 @@ const OrderDetailPage = () => {
                                                     className="flex items-center gap-1 bg-blue-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                                                 >
                                                     <Shield size={14} />
-                                                    {t('orderDetail.warranty')}
+                                                    {t('orders.orderDetail.warranty')}
                                                 </button>
                                             );
                                         }
@@ -768,7 +768,7 @@ const OrderDetailPage = () => {
                                             onClick={() => handleRepurchase(product)}
                                             className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
                                         >
-                                            {t('orderDetail.repurchase')}
+                                            {t('orders.orderDetail.repurchase')}
                                         </button>
                                     )}
                                 </div>
@@ -797,20 +797,20 @@ const OrderDetailPage = () => {
                 {/* Cột 3: Thông tin Hỗ trợ */}
                 <div className="lg:col-span-1">
                     <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
-                        <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orderDetail.supportInfo')}</h4>
+                        <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orders.orderDetail.supportInfo')}</h4>
                         <div className="space-y-3">
                             <div className="flex items-start text-sm">
                                 <Home size={18} className="text-red-500 mr-3 mt-1 flex-shrink-0" />
                                 <div>
-                                    <p className="font-medium">{t('orderDetail.storeAddress')}:</p>
+                                    <p className="font-medium">{t('orders.orderDetail.storeAddress')}:</p>
                                     <p className="text-gray-700">{orderData.supportInfo.storeAddress}</p>
                                 </div>
                             </div>
                             <div className="flex items-center text-sm">
                                 <Phone size={18} className="text-red-500 mr-3" />
-                                <p>{t('orderDetail.supportPhone')}: {orderData.supportInfo.storePhone}</p>
+                                <p>{t('orders.orderDetail.supportPhone')}: {orderData.supportInfo.storePhone}</p>
                                 <button className="ml-auto text-xs text-white bg-red-500 px-3 py-1 rounded-full hover:bg-red-600 transition-colors">
-                                    {t('orderDetail.contact')}
+                                    {t('orders.orderDetail.contact')}
                                 </button>
                             </div>
                         </div>
@@ -824,9 +824,9 @@ const OrderDetailPage = () => {
             {showCancelConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">{t('orderDetail.confirmCancel')}</h3>
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">{t('orders.orderDetail.confirmCancel')}</h3>
                         <p className="text-gray-600 mb-6">
-                            {t('orderDetail.confirmCancelMessage')}
+                            {t('orders.orderDetail.confirmCancelMessage')}
                         </p>
                         <div className="flex justify-end gap-3">
                             <button
@@ -840,7 +840,7 @@ const OrderDetailPage = () => {
                                 disabled={isCancelling}
                                 className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
                             >
-                                {isCancelling ? t('orderDetail.processing') : t('orderDetail.confirmCancelButton')}
+                                {isCancelling ? t('orders.orderDetail.processing') : t('orders.orderDetail.confirmCancelButton')}
                             </button>
                         </div>
                     </div>

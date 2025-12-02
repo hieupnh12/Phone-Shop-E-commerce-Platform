@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Mail, Phone, MapPin, Clock, Smartphone, Shield, Users, ChevronRight, Sparkles, Lock, Truck } from "lucide-react";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 // Typing Effect Component với khả năng reset
 const TypingEffect = ({ text, speed = 20, onComplete, resetKey }) => {
@@ -92,114 +93,52 @@ const PolicyTypingEffect = ({ text, speed = 20, resetKey }) => {
   );
 };
 
-// Policies Content
-const policiesContent = [
-  {
-    id: 'privacy',
-    title: 'Chính sách bảo mật',
-    icon: Lock,
-    content: `CHÍNH SÁCH BẢO MẬT THÔNG TIN KHÁCH HÀNG
-
-1. Mục đích thu thập thông tin
-FShop thu thập thông tin khách hàng nhằm mục đích:
-• Xử lý đơn hàng và giao hàng đến địa chỉ khách hàng yêu cầu
-• Cung cấp thông tin về sản phẩm, dịch vụ và chương trình khuyến mãi
-• Hỗ trợ khách hàng khi có thắc mắc hoặc khiếu nại
-• Nâng cao chất lượng dịch vụ và trải nghiệm mua sắm
-
-2. Phạm vi thu thập
-Chúng tôi thu thập các thông tin cá nhân khi khách hàng:
-• Đăng ký tài khoản trên website
-• Đặt hàng và thanh toán
-• Liên hệ với bộ phận chăm sóc khách hàng
-
-3. Cam kết bảo mật
-• Không chia sẻ, bán hoặc cho thuê thông tin cá nhân cho bên thứ ba
-• Áp dụng các biện pháp bảo mật tiên tiến để bảo vệ dữ liệu
-• Chỉ nhân viên được ủy quyền mới có quyền truy cập thông tin khách hàng
-• Tuân thủ nghiêm ngặt quy định pháp luật về bảo vệ dữ liệu cá nhân`
-  },
-  {
-    id: 'warranty',
-    title: 'Chính sách bảo hành',
-    icon: Shield,
-    content: `CHÍNH SÁCH BẢO HÀNH SẢN PHẨM
-
-1. Thời gian bảo hành
-• Điện thoại chính hãng: Tùy theo từng dòng sản phẩm
-• Phụ kiện chính hãng: 6-12 tháng tùy loại sản phẩm
-• Pin và sạc: 6 tháng
-
-2. Điều kiện bảo hành
-• Sản phẩm còn trong thời hạn bảo hành
-• Tem bảo hành, phiếu bảo hành còn nguyên vẹn
-• Lỗi do nhà sản xuất, không phải do người dùng
-
-3. Trường hợp không được bảo hành
-• Sản phẩm hết hạn bảo hành
-• Hư hỏng do va đập, rơi vỡ, vào nước
-• Tự ý tháo lắp, sửa chữa bên ngoài
-• Sử dụng sai cách hoặc cài đặt phần mềm không chính thống
-
-4. Quy trình bảo hành
-• Bước 1: Tạo yêu cầu bảo hành trên website từ đơn hàng
-• Bước 2: Chờ xác nhận từ bộ phận bảo hành
-• Bước 3: Nhận lịch hẹn bảo hành và mang sản phẩm đến cửa hàng
-• Bước 4: Kiểm tra sản phẩm và bảo hành
-• Bước 5: Giao lại sản phẩm cho khách hàng`
-  },
-  {
-    id: 'shipping',
-    title: 'Chính sách giao hàng',
-    icon: Truck,
-    content: `CHÍNH SÁCH GIAO HÀNG
-
-1. Phạm vi giao hàng
-• Giao hàng toàn quốc qua các đơn vị vận chuyển uy tín
-• Nội thành Đà Nẵng: Giao hàng trong ngày
-• Các tỉnh thành khác: 2-5 ngày làm việc
-
-2. Phí giao hàng
-• Miễn phí giao hàng cho đơn từ 2.000.000đ
-• Nội thành Đà Nẵng: Miễn phí
-• Các quận/huyện lân cận: 30.000đ
-• Tỉnh thành khác: Theo bảng giá vận chuyển
-
-3. Hình thức thanh toán
-• Thanh toán khi nhận hàng (COD)
-• Chuyển khoản ngân hàng
-• Thanh toán qua ví điện tử VNPay
-
-4. Kiểm tra hàng khi nhận
-• Khách hàng có quyền kiểm tra sản phẩm trước khi thanh toán
-• Quay video unbox để làm bằng chứng nếu có sự cố
-• Từ chối nhận hàng nếu sản phẩm không đúng hoặc bị hư hỏng`
-  }
-];
-
-// About Us Content
-const aboutUsContent = {
-  title: "Giới thiệu về FShop",
-  sections: [
-    {
-      icon: Smartphone,
-      title: "Về chúng tôi",
-      content: "FShop là cửa hàng chuyên bán lẻ các sản phẩm điện thoại di động chất lượng cao đến từ các thương hiệu lớn, với mẫu mã đa dạng và mức giá tối ưu nhất cho khách hàng."
-    },
-    {
-      icon: Shield,
-      title: "Chất lượng và Uy tín",
-      content: "FShop cam kết cung cấp các sản phẩm chính hãng, chất lượng cao với chính sách bảo hành uy tín và dịch vụ chăm sóc khách hàng chu đáo, nhằm đem đến cho khách hàng sự an tâm tuyệt đối khi mua sắm các sản phẩm công nghệ."
-    },
-    {
-      icon: Users,
-      title: "Khách hàng là trọng tâm",
-      content: "Phục vụ khách hàng luôn là ưu tiên số 1. FShop luôn chú trọng hoàn thiện chất lượng dịch vụ, bồi dưỡng đội ngũ nhân viên nhiệt tình, trung thực, chân thành, mang lại lợi ích và sự hài lòng tối đa cho khách hàng."
-    }
-  ]
-};
-
 const Contact = () => {
+  const { t } = useLanguage();
+
+  // Policies Content
+  const policiesContent = [
+    {
+      id: 'privacy',
+      title: t('contact.policies.privacy.title'),
+      icon: Lock,
+      content: t('contact.policies.privacy.content')
+    },
+    {
+      id: 'warranty',
+      title: t('contact.policies.warranty.title'),
+      icon: Shield,
+      content: t('contact.policies.warranty.content')
+    },
+    {
+      id: 'shipping',
+      title: t('contact.policies.shipping.title'),
+      icon: Truck,
+      content: t('contact.policies.shipping.content')
+    }
+  ];
+
+  // About Us Content
+  const aboutUsContent = {
+    title: t('contact.aboutUs.title'),
+    sections: [
+      {
+        icon: Smartphone,
+        title: t('contact.aboutUs.sections.aboutUs.title'),
+        content: t('contact.aboutUs.sections.aboutUs.content')
+      },
+      {
+        icon: Shield,
+        title: t('contact.aboutUs.sections.quality.title'),
+        content: t('contact.aboutUs.sections.quality.content')
+      },
+      {
+        icon: Users,
+        title: t('contact.aboutUs.sections.customer.title'),
+        content: t('contact.aboutUs.sections.customer.content')
+      }
+    ]
+  };
   const [showSections, setShowSections] = useState([true, false, false]); // Section đầu hiển thị ngay
   const [resetKey, setResetKey] = useState(0);
   
@@ -246,7 +185,7 @@ const Contact = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full">
             <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-cyan-400 text-sm font-medium">Luôn sẵn sàng hỗ trợ 24/7</span>
+            <span className="text-cyan-400 text-sm font-medium">{t('contact.hero.support24_7')}</span>
           </div>
           {/* <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             Liên Hệ <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">FShop</span>
@@ -267,11 +206,11 @@ const Contact = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto">
                 <Phone className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Hotline</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{t('contact.hotline.title')}</h3>
               <a href="tel:0705432115" className="text-xl font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
                 0705 432 115
               </a>
-              <p className="text-slate-500 text-sm mt-2">Tổng đài hỗ trợ</p>
+              <p className="text-slate-500 text-sm mt-2">{t('contact.hotline.description')}</p>
             </div>
           </div>
 
@@ -282,9 +221,9 @@ const Contact = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto">
                 <MapPin className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Địa Chỉ</h3>
-              <p className="text-slate-300 font-medium">FShop, FPT City</p>
-              <p className="text-slate-500 text-sm mt-1">Ngũ Hành Sơn, Đà Nẵng</p>
+              <h3 className="text-lg font-bold text-white mb-2">{t('contact.address.title')}</h3>
+              <p className="text-slate-300 font-medium">{t('contact.address.location')}</p>
+              <p className="text-slate-500 text-sm mt-1">{t('contact.address.district')}</p>
             </div>
           </div>
 
@@ -295,11 +234,11 @@ const Contact = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto">
                 <Mail className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Email</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{t('contact.email.title')}</h3>
               <a href="mailto:support@fshop.com" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
                 support@fshop.com
               </a>
-              <p className="text-slate-500 text-sm mt-2">Phản hồi trong 24h</p>
+              <p className="text-slate-500 text-sm mt-2">{t('contact.email.description')}</p>
             </div>
           </div>
 
@@ -310,10 +249,10 @@ const Contact = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto">
                 <Clock className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Giờ Làm Việc</h3>
+              <h3 className="text-lg font-bold text-white mb-2">{t('contact.businessHours.title')}</h3>
               <div className="space-y-1">
-                <p className="text-slate-300 text-sm"><span className="text-slate-500">T2-T6:</span> 08:00 - 17:30</p>
-                <p className="text-slate-300 text-sm"><span className="text-slate-500">T7-CN:</span> 09:00 - 17:00</p>
+                <p className="text-slate-300 text-sm"><span className="text-slate-500">{t('contact.businessHours.weekdays')}:</span> 08:00 - 17:30</p>
+                <p className="text-slate-300 text-sm"><span className="text-slate-500">{t('contact.businessHours.weekends')}:</span> 09:00 - 17:00</p>
               </div>
             </div>
           </div>
@@ -329,7 +268,7 @@ const Contact = () => {
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
               </div>
-              <span className="ml-4 text-slate-400 text-sm font-medium">Vị trí FShop</span>
+              <span className="ml-4 text-slate-400 text-sm font-medium">{t('contact.map.title')}</span>
             </div>
             <div className="pt-12">
               <iframe
@@ -354,7 +293,7 @@ const Contact = () => {
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
               </div>
-              <span className="ml-4 text-slate-400 text-sm font-medium">Giới thiệu về FShop</span>
+              <span className="ml-4 text-slate-400 text-sm font-medium">{t('contact.aboutUs.title')}</span>
             </div>
             
             <div className="pt-12 p-6 h-[400px] overflow-y-auto custom-scrollbar">
@@ -401,7 +340,7 @@ const Contact = () => {
               <div className="mt-6 pt-6 border-t border-slate-700/50">
                 <div className="flex items-center gap-2 text-cyan-400 text-sm">
                   <Sparkles className="w-4 h-4" />
-                  <span className="font-medium">FShop - Công nghệ cho cuộc sống</span>
+                  <span className="font-medium">{t('contact.aboutUs.tagline')}</span>
                 </div>
               </div>
             </div>
@@ -426,7 +365,7 @@ const Contact = () => {
                 >
                   <Icon className="w-5 h-5" />
                   <span className="hidden sm:inline">{policy.title}</span>
-                  <span className="sm:hidden text-xs">{policy.title.replace('Chính sách ', '')}</span>
+                  <span className="sm:hidden text-xs">{policy.title.replace(t('contact.policies.prefix'), '')}</span>
                 </button>
               );
             })}
