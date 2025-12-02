@@ -74,7 +74,9 @@ export default function RevenueStatistic() {
     queryFn: () =>
       statisticApi.getRevenue({ ...filters, search: debouncedSearch }),
     staleTime: 0,
-    placeholderData: (prev) => prev, // tương đương keepPreviousData
+    placeholderData: (prev) => prev,
+    refetchOnWindowFocus: true,
+    refetchInterval: 1000,
   });
 
   const goToPage = (newPage) => {
@@ -266,7 +268,11 @@ export default function RevenueStatistic() {
                 type="date"
                 onClick={() => setTimeRange("")}
                 value={filters.startDate}
-                max={filters.endDate || new Date().toISOString().split("T")[0]} // không cho chọn sau endDate
+                max={
+                  filters.endDate && filters.endDate < new Date().toISOString().split("T")[0]
+                    ? filters.endDate
+                    : new Date().toISOString().split("T")[0]
+                } // không cho chọn sau endDate hoặc quá hôm nay
                 onChange={(e) =>
                   setFilters((prev) => ({
                     ...prev,
@@ -288,7 +294,7 @@ export default function RevenueStatistic() {
                 onClick={() => setTimeRange("")}
                 value={filters.endDate}
                 min={filters.startDate || undefined} // không cho chọn trước startDate
-                max={new Date().toISOString().split("T")[0]}
+                max={new Date().toISOString().split("T")[0]} // không cho chọn quá hôm nay
                 onChange={(e) =>
                   setFilters((prev) => ({
                     ...prev,

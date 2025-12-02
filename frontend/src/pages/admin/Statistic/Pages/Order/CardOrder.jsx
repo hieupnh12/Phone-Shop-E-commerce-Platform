@@ -6,8 +6,8 @@ export default function CardOrder({dataSumOrder, isLoading}) {
       const orderStats = [
     { label: 'Chờ xử lý', value: dataSumOrder?.pendingOrders, icon: Package, color: 'from-cyan-500 to-blue-500', percent: '' },
     { label: 'Đã thanh toán', value: dataSumOrder?.paidOrders, icon: Clock, color: 'from-amber-400 to-orange-500', percent: '' },
-    { label: 'Đã gửi', value: dataSumOrder?.shippedOrders, icon: Truck, color: 'from-blue-400 to-cyan-500', percent: '' },
-    { label: 'Đang giao', value: dataSumOrder?.deliveredOrders, icon: CheckCircle, color: 'from-emerald-400 to-green-500', percent: '' },
+    { label: 'Đang giao', value: dataSumOrder?.shippedOrders, icon: Truck, color: 'from-blue-400 to-cyan-500', percent: '' },
+    { label: 'Đã hoàn tất', value: dataSumOrder?.deliveredOrders, icon: CheckCircle, color: 'from-emerald-400 to-green-500', percent: '' },
     { label: 'Đã hủy', value: dataSumOrder?.canceledOrders, icon: XCircle, color: 'from-rose-400 to-red-500', percent: '' },
     { label: 'Trả lại', value: dataSumOrder?.returnedOrders, icon: XCircle, color: 'from-rose-400 to-red-500', percent: '' },
   ];

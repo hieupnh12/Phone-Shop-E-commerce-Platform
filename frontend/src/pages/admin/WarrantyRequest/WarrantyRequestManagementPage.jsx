@@ -3,7 +3,6 @@ import {
   Shield,
   Search,
   Filter,
-  RefreshCw,
   Edit,
   UserCheck,
   Lock,
@@ -37,6 +36,9 @@ const WarrantyRequestManagementPage = () => {
   const [pageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [dateFilterError, setDateFilterError] = useState("");
 
   // State for employee's assigned requests
   const [myAssignedRequests, setMyAssignedRequests] = useState([]);
@@ -54,6 +56,7 @@ const WarrantyRequestManagementPage = () => {
     adminNote: "",
     appointmentDate: "",
   });
+  const [appointmentDateError, setAppointmentDateError] = useState("");
 
   // Use useQuery for automatic refetching with staleTime = 0
   // Chỉ query khi có quyền VIEW_ALL
@@ -62,13 +65,22 @@ const WarrantyRequestManagementPage = () => {
     isLoading: requestsLoading,
     refetch: refetchRequests,
   } = useQuery({
-    queryKey: ["warranty-requests", currentPage, pageSize, statusFilter],
+    queryKey: [
+      "warranty-requests",
+      currentPage,
+      pageSize,
+      statusFilter,
+      startDate,
+      endDate,
+    ],
     queryFn: async () => {
       const response = await warrantyRequestService.getAllRequests(
         currentPage,
         pageSize,
         "requestId,desc",
-        statusFilter || null
+        statusFilter || null,
+        startDate || null,
+        endDate || null
       );
       return response;
     },
@@ -106,28 +118,43 @@ const WarrantyRequestManagementPage = () => {
   useEffect(() => {
     if (requestsData) {
       if (requestsData.content && Array.isArray(requestsData.content)) {
+        // Case 1: Direct Page object
         setRequests(requestsData.content);
         setTotalPages(requestsData.totalPages || 0);
         setTotalElements(requestsData.totalElements || 0);
+        console.log("✅ Parsed as Page object:", {
+          content: requestsData.content.length,
+          totalPages: requestsData.totalPages,
+          totalElements: requestsData.totalElements,
+        });
       } else if (Array.isArray(requestsData)) {
+        // Case 2: Direct array (fallback - không có pagination)
         setRequests(requestsData);
         setTotalPages(1);
         setTotalElements(requestsData.length);
+        console.warn("⚠️ Received array instead of Page object");
       } else if (requestsData.result) {
+        // Case 3: Wrapped in result
         const pageData = requestsData.result;
         if (pageData.content && Array.isArray(pageData.content)) {
           setRequests(pageData.content);
           setTotalPages(pageData.totalPages || 0);
           setTotalElements(pageData.totalElements || 0);
+          console.log("✅ Parsed as result.Page object:", {
+            content: pageData.content.length,
+            totalPages: pageData.totalPages,
+            totalElements: pageData.totalElements,
+          });
         } else if (Array.isArray(pageData)) {
           setRequests(pageData);
           setTotalPages(1);
           setTotalElements(pageData.length);
+          console.warn("⚠️ Received array in result instead of Page object");
         }
       }
       setLoading(false);
     }
-  }, [requestsData]);
+  }, [requestsData, currentPage, pageSize]);
 
   // Update my assigned requests state from query data
   useEffect(() => {
@@ -213,6 +240,67 @@ const WarrantyRequestManagementPage = () => {
     setCurrentPage(0);
   };
 
+  // Validate date filters
+  const validateDateFilters = (start, end) => {
+    if (!start && !end) {
+      return { valid: true, message: "" };
+    }
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+
+    if (start) {
+      const startDateObj = new Date(start);
+      if (startDateObj > today) {
+        return {
+          valid: false,
+          message: "Từ ngày không được là ngày trong tương lai",
+        };
+      }
+    }
+
+    if (end) {
+      const endDateObj = new Date(end);
+      endDateObj.setHours(23, 59, 59, 999);
+      if (endDateObj > today) {
+        return {
+          valid: false,
+          message: "Đến ngày không được là ngày trong tương lai",
+        };
+      }
+    }
+
+    if (start && end) {
+      const startDateObj = new Date(start);
+      const endDateObj = new Date(end);
+      endDateObj.setHours(23, 59, 59, 999);
+      if (startDateObj > endDateObj) {
+        return {
+          valid: false,
+          message: "Từ ngày không được sau đến ngày",
+        };
+      }
+    }
+
+    return { valid: true, message: "" };
+  };
+
+  const handleStartDateChange = (e) => {
+    const value = e.target.value;
+    const validation = validateDateFilters(value, endDate);
+    setDateFilterError(validation.valid ? "" : validation.message);
+    setStartDate(value);
+    setCurrentPage(0);
+  };
+
+  const handleEndDateChange = (e) => {
+    const value = e.target.value;
+    const validation = validateDateFilters(startDate, value);
+    setDateFilterError(validation.valid ? "" : validation.message);
+    setEndDate(value);
+    setCurrentPage(0);
+  };
+
   // Client-side filtering chỉ cho search (tùy chọn, không ảnh hưởng pagination)
   // Note: Phân trang dựa trên dữ liệu từ backend, không dựa trên filtered data
   const filteredRequests = requests.filter((request) => {
@@ -279,6 +367,33 @@ const WarrantyRequestManagementPage = () => {
       month: "2-digit",
       day: "2-digit",
     });
+  };
+
+  // Validate appointment date: không được quá khứ và phải trong giờ làm việc (8h-17h)
+  const validateAppointmentDate = (dateTimeString) => {
+    if (!dateTimeString) return { valid: true, message: "" };
+
+    const selectedDate = new Date(dateTimeString);
+    const now = new Date();
+
+    // Không được chọn quá khứ
+    if (selectedDate < now) {
+      return {
+        valid: false,
+        message: "Ngày hẹn không được là thời gian trong quá khứ",
+      };
+    }
+
+    // Kiểm tra giờ làm việc (8h-17h)
+    const hour = selectedDate.getHours();
+    if (hour < 8 || hour >= 17) {
+      return {
+        valid: false,
+        message: "Giờ hẹn phải trong thời gian làm việc (8:00 - 17:00)",
+      };
+    }
+
+    return { valid: true, message: "" };
   };
 
   const handleAssignRequest = async (request) => {
@@ -368,6 +483,7 @@ const WarrantyRequestManagementPage = () => {
         ? new Date(request.appointmentDate).toISOString().slice(0, 16)
         : "",
     });
+    setAppointmentDateError("");
     setShowUpdateModal(true);
   };
 
@@ -438,6 +554,19 @@ const WarrantyRequestManagementPage = () => {
       });
       setShowUpdateModal(false);
       return;
+    }
+
+    // Validate appointment date if provided
+    if (updateForm.appointmentDate) {
+      const validation = validateAppointmentDate(updateForm.appointmentDate);
+      if (!validation.valid) {
+        setToast({
+          type: "error",
+          message: validation.message,
+        });
+        setAppointmentDateError(validation.message);
+        return;
+      }
     }
 
     // Check if status transition is allowed
@@ -575,312 +704,336 @@ const WarrantyRequestManagementPage = () => {
 
       {/* Filters - Chỉ hiển thị nếu có quyền VIEW_ALL */}
       {hasViewAllPermission && (
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo mã, tên khách hàng, sản phẩm..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div className="space-y-4">
+            {/* First Row: Search and Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo mã, tên khách hàng, sản phẩm..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-          {/* Status Filter */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <select
-              value={statusFilter}
-              onChange={handleStatusFilterChange}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="PENDING">Đang chờ</option>
-              <option value="ACCEPTED">Đã chấp nhận</option>
-              <option value="REJECTED">Đã từ chối</option>
-              <option value="IN_PROGRESS">Đang xử lý</option>
-              <option value="COMPLETED">Đã hoàn thành</option>
-            </select>
-          </div>
+              {/* Status Filter */}
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  value={statusFilter}
+                  onChange={handleStatusFilterChange}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                >
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="PENDING">Đang chờ</option>
+                  <option value="ACCEPTED">Đã chấp nhận</option>
+                  <option value="REJECTED">Đã từ chối</option>
+                  <option value="IN_PROGRESS">Đang xử lý</option>
+                  <option value="COMPLETED">Đã hoàn thành</option>
+                </select>
+              </div>
+            </div>
 
-          {/* Refresh Button */}
-          <button
-            onClick={() => {
-              refetchRequests();
-              refetchMyAssigned();
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <RefreshCw className="w-5 h-5" />
-            Làm mới
-          </button>
+            {/* Second Row: Date Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Từ ngày
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={handleStartDateChange}
+                  max={
+                    endDate && endDate < new Date().toISOString().split("T")[0]
+                      ? endDate
+                      : new Date().toISOString().split("T")[0]
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    dateFilterError
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300"
+                  }`}
+                />
+              </div>
+
+              {/* End Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Đến ngày
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={handleEndDateChange}
+                  min={startDate || undefined}
+                  max={new Date().toISOString().split("T")[0]}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    dateFilterError
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300"
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {dateFilterError && (
+              <div className="text-sm text-red-600">{dateFilterError}</div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* All Requests Table (Common) - Chỉ hiển thị nếu có quyền VIEW_ALL */}
       {hasViewAllPermission && (
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Danh sách yêu cầu chung
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">Chọn yêu cầu để xử lý</p>
-          {totalElements > 0 && (
-            <p className="text-xs text-gray-400 mt-1">
-              Hiển thị{" "}
-              <span className="font-semibold">
-                {requests.length > 0 ? currentPage * pageSize + 1 : 0}
-              </span>{" "}
-              -{" "}
-              <span className="font-semibold">
-                {Math.min((currentPage + 1) * pageSize, totalElements)}
-              </span>{" "}
-              trong tổng số{" "}
-              <span className="font-semibold">{totalElements}</span> yêu cầu
-              {searchTerm && searchTerm.trim() !== "" && (
-                <span className="ml-2 text-blue-600">
-                  (Đang lọc: "{searchTerm}")
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mã yêu cầu
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                    Đơn hàng
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Khách hàng
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                    Sản phẩm
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                    Thời hạn bảo hành
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                    Người xử lý
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
-                    Ngày tạo
-                  </th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {requestsLoading ? (
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Danh sách yêu cầu chung
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Chọn yêu cầu để xử lý</p>
+          </div>
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td
-                      colSpan="9"
-                      className="px-6 py-12 text-center text-gray-500"
-                    >
-                      Đang tải...
-                    </td>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mã yêu cầu
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                      Đơn hàng
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Khách hàng
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Sản phẩm
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      Thời hạn bảo hành
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Trạng thái
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      Người xử lý
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                      Ngày tạo
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thao tác
+                    </th>
                   </tr>
-                ) : displayRequests.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan="9"
-                      className="px-6 py-12 text-center text-gray-500"
-                    >
-                      {searchTerm && searchTerm.trim() !== ""
-                        ? "Không tìm thấy yêu cầu nào phù hợp"
-                        : "Không có yêu cầu nào"}
-                    </td>
-                  </tr>
-                ) : (
-                  displayRequests.map((request) => {
-                    const canEdit = canEditRequest(request);
-                    const isAssigned =
-                      request.employeeId &&
-                      request.employeeId !== currentEmployeeId;
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {requestsLoading ? (
+                    <tr>
+                      <td
+                        colSpan="9"
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        Đang tải...
+                      </td>
+                    </tr>
+                  ) : displayRequests.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="9"
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
+                        {searchTerm && searchTerm.trim() !== ""
+                          ? "Không tìm thấy yêu cầu nào phù hợp"
+                          : "Không có yêu cầu nào"}
+                      </td>
+                    </tr>
+                  ) : (
+                    displayRequests.map((request) => {
+                      const canEdit = canEditRequest(request);
+                      const isAssigned =
+                        request.employeeId &&
+                        request.employeeId !== currentEmployeeId;
 
-                    return (
-                      <tr key={request.requestId} className="hover:bg-gray-50">
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          <div className="flex flex-col">
-                            <span>#{request.requestId}</span>
-                            <span className="text-xs text-gray-500 sm:hidden">
-                              ĐH: #{request.orderId}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
-                          #{request.orderId}
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          <div className="flex flex-col">
-                            <span>{request.customerName || "N/A"}</span>
-                            <span
-                              className="text-xs text-gray-500 md:hidden truncate max-w-[150px]"
-                              title={request.productName || "N/A"}
-                            >
-                              {request.productName || "N/A"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
-                          <div>
-                            <div
-                              className="font-medium max-w-xs truncate"
-                              title={request.productName || "N/A"}
-                            >
-                              {request.productName || "N/A"}
+                      return (
+                        <tr
+                          key={request.requestId}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <div className="flex flex-col">
+                              <span>#{request.requestId}</span>
+                              <span className="text-xs text-gray-500 sm:hidden">
+                                ĐH: #{request.orderId}
+                              </span>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {request.productVersionId}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden sm:table-cell">
+                            #{request.orderId}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <div className="flex flex-col">
+                              <span>{request.customerName || "N/A"}</span>
+                              <span
+                                className="text-xs text-gray-500 md:hidden truncate max-w-[150px]"
+                                title={request.productName || "N/A"}
+                              >
+                                {request.productName || "N/A"}
+                              </span>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
-                          {request.warrantyExpiryDate ? (
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
                             <div>
-                              <div className="font-medium">
-                                {formatDateOnly(request.warrantyExpiryDate)}
+                              <div
+                                className="font-medium max-w-xs truncate"
+                                title={request.productName || "N/A"}
+                              >
+                                {request.productName || "N/A"}
                               </div>
-                              {request.warrantyPeriod && (
-                                <div className="text-xs text-gray-500">
-                                  ({request.warrantyPeriod} tháng)
+                              <div className="text-xs text-gray-500">
+                                {request.productVersionId}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                            {request.warrantyExpiryDate ? (
+                              <div>
+                                <div className="font-medium">
+                                  {formatDateOnly(request.warrantyExpiryDate)}
                                 </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">
-                              {request.warrantyPeriod
-                                ? `N/A (${request.warrantyPeriod} tháng)`
-                                : "N/A"}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(request.status)}
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
-                          {request.employeeName ? (
-                            <div className="flex items-center gap-2">
-                              <UserCheck className="w-4 h-4 text-blue-600" />
-                              <span>{request.employeeName}</span>
-                              {isAssigned && (
-                                <Lock className="w-4 h-4 text-red-500" />
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">Chưa có</span>
-                          )}
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden xl:table-cell">
-                          {formatDate(request.createdAt)}
-                        </td>
-                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
-                            {!request.employeeId ? (
-                              hasUpdatePermission ? (
-                                <button
-                                  onClick={() => handleAssignRequest(request)}
-                                  className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium text-xs sm:text-sm"
-                                >
-                                  <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  <span className="hidden sm:inline">
-                                    Chọn xử lý
+                                {request.warrantyPeriod && (
+                                  <div className="text-xs text-gray-500">
+                                    ({request.warrantyPeriod} tháng)
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">
+                                {request.warrantyPeriod
+                                  ? `N/A (${request.warrantyPeriod} tháng)`
+                                  : "N/A"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(request.status)}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
+                            {request.employeeName ? (
+                              <div className="flex items-center gap-2">
+                                <UserCheck className="w-4 h-4 text-blue-600" />
+                                <span>{request.employeeName}</span>
+                                {isAssigned && (
+                                  <Lock className="w-4 h-4 text-red-500" />
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Chưa có</span>
+                            )}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden xl:table-cell">
+                            {formatDate(request.createdAt)}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                              {!request.employeeId ? (
+                                hasUpdatePermission ? (
+                                  <button
+                                    onClick={() => handleAssignRequest(request)}
+                                    className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium text-xs sm:text-sm"
+                                  >
+                                    <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <span className="hidden sm:inline">
+                                      Chọn xử lý
+                                    </span>
+                                    <span className="sm:hidden">Chọn</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-400 text-xs sm:text-sm">
+                                    Không có quyền
                                   </span>
-                                  <span className="sm:hidden">Chọn</span>
+                                )
+                              ) : canEdit &&
+                                hasUpdatePermission &&
+                                canEditRequestStatus(request) ? (
+                                <button
+                                  onClick={() => handleOpenUpdateModal(request)}
+                                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-xs sm:text-sm"
+                                >
+                                  <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span className="hidden sm:inline">
+                                    Cập nhật
+                                  </span>
+                                  <span className="sm:hidden">Sửa</span>
+                                </button>
+                              ) : isAdmin &&
+                                hasUpdatePermission &&
+                                !isFinalStatus(request.status) ? (
+                                <button
+                                  onClick={() => handleUnassignRequest(request)}
+                                  className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-medium text-xs sm:text-sm"
+                                  title="Admin: Hủy xử lý từ nhân viên khác"
+                                >
+                                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span className="hidden sm:inline">
+                                    Hủy xử lý
+                                  </span>
+                                  <span className="sm:hidden">Hủy</span>
                                 </button>
                               ) : (
                                 <span className="text-gray-400 text-xs sm:text-sm">
-                                  Không có quyền
+                                  {isFinalStatus(request.status)
+                                    ? "Đã kết thúc"
+                                    : "Đã khóa"}
                                 </span>
-                              )
-                            ) : canEdit &&
-                              hasUpdatePermission &&
-                              canEditRequestStatus(request) ? (
-                              <button
-                                onClick={() => handleOpenUpdateModal(request)}
-                                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium text-xs sm:text-sm"
-                              >
-                                <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                                <span className="hidden sm:inline">
-                                  Cập nhật
-                                </span>
-                                <span className="sm:hidden">Sửa</span>
-                              </button>
-                            ) : isAdmin &&
-                              hasUpdatePermission &&
-                              !isFinalStatus(request.status) ? (
-                              <button
-                                onClick={() => handleUnassignRequest(request)}
-                                className="flex items-center gap-1 text-orange-600 hover:text-orange-800 font-medium text-xs sm:text-sm"
-                                title="Admin: Hủy xử lý từ nhân viên khác"
-                              >
-                                <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                                <span className="hidden sm:inline">
-                                  Hủy xử lý
-                                </span>
-                                <span className="sm:hidden">Hủy</span>
-                              </button>
-                            ) : (
-                              <span className="text-gray-400 text-xs sm:text-sm">
-                                {isFinalStatus(request.status)
-                                  ? "Đã kết thúc"
-                                  : "Đã khóa"}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-600">
-                Hiển thị{" "}
-                <span className="font-semibold">
-                  {requests.length > 0 ? currentPage * pageSize + 1 : 0}
-                </span>{" "}
-                -{" "}
-                <span className="font-semibold">
-                  {Math.min((currentPage + 1) * pageSize, totalElements)}
-                </span>{" "}
-                trong tổng số{" "}
-                <span className="font-semibold">{totalElements}</span>{" "}
-                {searchTerm && searchTerm.trim() !== ""
-                  ? "kết quả tìm kiếm"
-                  : "yêu cầu"}
-              </div>
-              <Pagination
-                currentPage={currentPage + 1}
-                totalPages={totalPages}
-                onPageChange={(page) => setCurrentPage(page - 1)}
-                maxVisiblePages={5}
-                size="md"
-              />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Pagination */}
+          {totalPages > 0 && (
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600">
+                  Hiển thị{" "}
+                  <span className="font-semibold">
+                    {requests.length > 0 ? currentPage * pageSize + 1 : 0}
+                  </span>{" "}
+                  -{" "}
+                  <span className="font-semibold">
+                    {Math.min((currentPage + 1) * pageSize, totalElements)}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-semibold">{totalElements}</span>{" "}
+                  {searchTerm && searchTerm.trim() !== ""
+                    ? "kết quả tìm kiếm"
+                    : "yêu cầu"}
+                </div>
+                <Pagination
+                  currentPage={currentPage + 1}
+                  totalPages={totalPages}
+                  onPageChange={(page) => setCurrentPage(page - 1)}
+                  maxVisiblePages={5}
+                  size="md"
+                />
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* My Assigned Requests Table */}
@@ -893,16 +1046,6 @@ const WarrantyRequestManagementPage = () => {
             <p className="text-sm text-gray-500 mt-1">
               Tổng số: {myAssignedTotalElements}
             </p>
-            {myAssignedTotalElements > 0 && (
-              <p className="text-xs text-gray-400 mt-1">
-                Hiển thị {myAssignedCurrentPage * pageSize + 1} -{" "}
-                {Math.min(
-                  (myAssignedCurrentPage + 1) * pageSize,
-                  myAssignedTotalElements
-                )}{" "}
-                trong tổng số {myAssignedTotalElements} yêu cầu
-              </p>
-            )}
           </div>
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <div className="inline-block min-w-full align-middle">
@@ -1067,7 +1210,7 @@ const WarrantyRequestManagementPage = () => {
           </div>
 
           {/* Pagination */}
-          {myAssignedTotalPages > 1 && (
+          {myAssignedTotalPages > 0 && (
             <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-600">
@@ -1230,14 +1373,33 @@ const WarrantyRequestManagementPage = () => {
                   <input
                     type="datetime-local"
                     value={updateForm.appointmentDate}
-                    onChange={(e) =>
+                    min={new Date().toISOString().slice(0, 16)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const validation = validateAppointmentDate(value);
+                      setAppointmentDateError(
+                        validation.valid ? "" : validation.message
+                      );
                       setUpdateForm({
                         ...updateForm,
-                        appointmentDate: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        appointmentDate: value,
+                      });
+                    }}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      appointmentDateError
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300"
+                    }`}
                   />
+                  {appointmentDateError && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {appointmentDateError}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Giờ làm việc: 8:00 - 17:00. Không được chọn thời gian trong
+                    quá khứ.
+                  </p>
                 </div>
               </div>
 

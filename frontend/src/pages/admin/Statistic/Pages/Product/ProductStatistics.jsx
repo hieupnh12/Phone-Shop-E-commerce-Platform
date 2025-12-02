@@ -24,31 +24,39 @@ const ProductStatistics = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-const { data: apiData, isLoading } = useQuery({
-  queryKey: ["products", dateFrom, dateTo],
-  queryFn: async () => {
-    const params = {};
-    if (dateFrom) params.startDate = dateFrom;
-    if (dateTo) params.endDate = dateTo;
+  const {
+    data: apiData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["products", dateFrom, dateTo],
+    queryFn: async () => {
+      const params = {};
+      if (dateFrom) params.startDate = dateFrom;
+      if (dateTo) params.endDate = dateTo;
 
-    const res = await statisticApi.getProducts(params);
-    return res.result;
-  },
-  staleTime: 0,
-  keepPreviousData: true, // <- phải đặt ở đây
-});
+      const res = await statisticApi.getProducts(params);
+      return res?.result || null;
+    },
+    staleTime: 0,
+    keepPreviousData: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: 1000,
+  });
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     return new Date(dateStr).toLocaleDateString("vi-VN");
   };
 
-  if (isLoading || !apiData) {
-    return <Loading/>;
-  }
-
-  const { topProduct, totalQuantity, inventoryProduct, topProducts, byBrand } =
-    apiData;
+  // Default values để tránh lỗi khi apiData undefined
+  const {
+    topProduct = { name: "", soldQuantity: 0, stockQuantity: 0 },
+    totalQuantity = 0,
+    inventoryProduct = { name: "", soldQuantity: 0, stockQuantity: 0 },
+    topProducts = [],
+    byBrand = [],
+  } = apiData || {};
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 p-4 sm:p-6">
@@ -72,6 +80,11 @@ const { data: apiData, isLoading } = useQuery({
                   <input
                     type="date"
                     value={dateFrom}
+                    max={
+                      dateTo && dateTo < new Date().toISOString().split("T")[0]
+                        ? dateTo
+                        : new Date().toISOString().split("T")[0]
+                    } // không cho chọn sau dateTo hoặc quá hôm nay
                     onChange={(e) => setDateFrom(e.target.value)}
                     className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -81,6 +94,8 @@ const { data: apiData, isLoading } = useQuery({
                   <input
                     type="date"
                     value={dateTo}
+                    min={dateFrom || undefined} // không cho chọn trước dateFrom
+                    max={new Date().toISOString().split("T")[0]} // không cho chọn quá hôm nay
                     onChange={(e) => setDateTo(e.target.value)}
                     className="text-sm border border-slate-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -121,22 +136,6 @@ const { data: apiData, isLoading } = useQuery({
             </div>
             <div className="text-slate-500 text-xs sm:text-sm">Sản phẩm</div>
           </div>
-
-          {/* Inventory Product */}
-          {/* <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 border-l-4 border-green-500 transform transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-slate-600 text-xs sm:text-sm font-medium">
-                Sản phẩm tồn
-              </div>
-              <DollarSign className="text-green-500" size={20} />
-            </div>
-            <div className="text-lg sm:text-2xl font-bold text-slate-800 mb-1">
-              {inventoryProduct.name}
-            </div>
-            <div className="text-slate-500 text-xs sm:text-sm">
-              Tồn: {inventoryProduct.stockQuantity}
-            </div>
-          </div> */}
         </div>
 
         {/* Charts */}
@@ -166,7 +165,11 @@ const { data: apiData, isLoading } = useQuery({
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Bar dataKey="soldQuantity" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="soldQuantity"
+                  fill="#3b82f6"
+                  radius={[8, 8, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -183,15 +186,20 @@ const { data: apiData, isLoading } = useQuery({
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent, index }) =>
-                    `${byBrand[index].brand} ${(percent * 100).toFixed(0)}%`
-                  }
+                  label={({ name, percent, index }) => {
+                    const entry = byBrand[index];
+                    if (!entry || !entry.brand) return "";
+                    return `${entry.brand} ${(percent * 100).toFixed(0)}%`;
+                  }}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="quantity"
                 >
                   {byBrand.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip
