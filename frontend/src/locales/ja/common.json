@@ -160,6 +160,8 @@
     "outOfStockWarning": "カートに在庫切れの商品があります",
     "adjustQuantityBeforePayment": "チェックアウト前に数量を調整するか、在庫切れの商品を削除してください",
     "maxQuantity": "最大数量は{{max}}です",
+    "maxQuantityExceeded": "商品あたりの最大数量は{{max}}です",
+    "insufficientStockMessage": "商品「{{productName}}」の在庫は{{stockQuantity}}個のみです。数量を{{requestedQuantity}}に増やすことはできません。",
     "freeshipReached": "送料無料の条件を満たしました！",
     "buyMore": "あと{{amount}}購入で送料無料",
     "achieved": "達成",
@@ -249,11 +251,17 @@
     "noOrders": "注文が見つかりません",
     "orderCode": "注文コード",
     "noProductDetails": "商品の詳細がありません",
-    "otherProducts": "他の{count}製品",
+    "otherProducts": "他の{{count}}製品",
     "orderInfo": "注文情報",
     "received": "受け取りました",
     "product": "製品",
-    "orderHistory": {
+    "cannotLoadOrderHistory": "注文履歴を読み込めませんでした。",
+    "loadingOrders": "注文を読み込み中...",
+    "myOrders": "私の注文",
+    "searchPlaceholder": "注文名、注文コード、または商品名で検索",
+    "totalOrders": "合計{{count}}件の注文",
+    "exploreNow": "今すぐ探索",
+    "orderHistoryEmpty": {
       "noOrders": "まだ注文がありません",
       "exploreProducts": "FShopで何千もの製品を探索しましょう！"
     },
@@ -559,6 +567,19 @@
   "productContainer": {
     "showingProducts": "{{count}}件の製品を表示"
   },
+  "productList": {
+    "loading": "製品を読み込み中...",
+    "retry": "再試行",
+    "searchError": "製品を検索できませんでした。後でもう一度お試しください。",
+    "noResults": "フィルターに一致する製品が見つかりませんでした",
+    "discount": "{{discount}}%オフ",
+    "authentic": "正規品",
+    "contact": "お問い合わせ",
+    "smemberDiscount": "Smember割引最大{{amount}},000đ",
+    "productFeatures": "信頼できる製品 - 高品質 - 手頃な価格 - 最大12ヶ月の保証サポート",
+    "favorite": "お気に入り",
+    "page": "ページ {{current}} / {{total}}"
+  },
   "common": {
     "loading": "読み込み中...",
     "error": "エラー",
@@ -795,5 +816,64 @@
       "decreaseQuantity": "数量を減らす",
       "increaseQuantity": "数量を増やす",
     "removeItem": "アイテムを削除"
+  },
+  "contact": {
+    "hero": {
+      "support24_7": "24時間365日サポート対応"
+    },
+    "hotline": {
+      "title": "ホットライン",
+      "description": "サポートホットライン"
+    },
+    "address": {
+      "title": "住所",
+      "location": "FShop, FPT City",
+      "district": "五行山、ダナン"
+    },
+    "email": {
+      "title": "メール",
+      "description": "24時間以内に返信"
+    },
+    "businessHours": {
+      "title": "営業時間",
+      "weekdays": "月-金",
+      "weekends": "土-日"
+    },
+    "map": {
+      "title": "FShopの場所"
+    },
+    "aboutUs": {
+      "title": "FShopについて",
+      "tagline": "FShop - 生活のためのテクノロジー",
+      "sections": {
+        "aboutUs": {
+          "title": "私たちについて",
+          "content": "FShopは、大手ブランドの高品質な携帯電話を専門に販売する小売店で、多様なモデルと顧客にとって最適な価格を提供しています。"
+        },
+        "quality": {
+          "title": "品質と信頼性",
+          "content": "FShopは、信頼できる保証ポリシーと丁寧な顧客サービスを備えた正規品の高品質製品を提供することを約束し、テクノロジー製品を購入する際に顧客に絶対的な安心感をもたらします。"
+        },
+        "customer": {
+          "title": "顧客中心",
+          "content": "顧客へのサービスは常に最優先事項です。FShopは常にサービス品質の向上に焦点を当て、熱心で誠実なスタッフを育成し、顧客に最大限の利益と満足をもたらします。"
+        }
+      }
+    },
+    "policies": {
+      "prefix": "ポリシー ",
+      "privacy": {
+        "title": "プライバシーポリシー",
+        "content": "顧客情報プライバシーポリシー\n\n1. 情報収集の目的\nFShopは、以下の目的で顧客情報を収集します：\n• 注文の処理と顧客が要求した住所への配送\n• 製品、サービス、プロモーションプログラムに関する情報の提供\n• 質問や苦情がある顧客のサポート\n• サービス品質とショッピング体験の向上\n\n2. 収集範囲\n顧客が以下の場合に個人情報を収集します：\n• ウェブサイトでアカウントを登録\n• 注文と支払い\n• カスタマーサービス部門への連絡\n\n3. プライバシーの約束\n• 個人情報を第三者と共有、販売、または貸与しない\n• データを保護するための高度なセキュリティ対策を適用\n• 承認されたスタッフのみが顧客情報にアクセスできる\n• 個人データ保護に関する法的規制を厳守"
+      },
+      "warranty": {
+        "title": "保証ポリシー",
+        "content": "製品保証ポリシー\n\n1. 保証期間\n• 正規品の携帯電話：製品ラインによって異なる\n• 正規品のアクセサリー：製品タイプに応じて6-12ヶ月\n• バッテリーと充電器：6ヶ月\n\n2. 保証条件\n• 製品が保証期間内であること\n• 保証シールと保証カードが無傷であること\n• ユーザーではなく製造元の欠陥であること\n\n3. 保証対象外の場合\n• 保証期間が切れた製品\n• 衝撃、落下、水の侵入による損傷\n• 無許可の分解または外部修理\n• 誤った使用または非正規ソフトウェアのインストール\n\n4. 保証プロセス\n• ステップ1：注文からウェブサイトで保証リクエストを作成\n• ステップ2：保証部門からの確認を待つ\n• ステップ3：保証予約を受け取り、製品を店舗に持参\n• ステップ4：製品検査と保証\n• ステップ5：顧客に製品を返却"
+      },
+      "shipping": {
+        "title": "配送ポリシー",
+        "content": "配送ポリシー\n\n1. 配送範囲\n• 信頼できる運送業者による全国配送\n• ダナン市内：当日配送\n• その他の県：営業日2-5日\n\n2. 配送料\n• 2,000,000 VND以上の注文は配送無料\n• ダナン市内：無料\n• 近隣の地区：30,000 VND\n• その他の県：配送料金表に従う\n\n3. 支払い方法\n• 代金引換（COD）\n• 銀行振込\n• VNPay電子ウォレット経由の支払い\n\n4. 受領時の製品検査\n• 顧客は支払い前に製品を検査する権利があります\n• 問題がある場合は開封動画を証拠として記録\n• 製品が正しくないか損傷している場合は配送を拒否"
+      }
+    }
   }
 }

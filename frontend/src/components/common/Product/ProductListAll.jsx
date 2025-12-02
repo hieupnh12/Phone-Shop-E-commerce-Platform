@@ -144,7 +144,7 @@ if (!hasFilters) {
     }
   } catch (err) {
     console.error('Lỗi tìm kiếm sản phẩm:', err);
-    setError('Không thể tìm kiếm sản phẩm. Vui lòng thử lại sau.');
+    setError(t('productList.searchError'));
     setFilteredProducts([]);
     setTotalCount(0);
     props.onProductsCountChange?.(0);
@@ -262,7 +262,7 @@ if (!hasFilters) {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-400 mx-auto mb-4"></div>
-          <p className="text-cyan-100 text-lg">Đang tải sản phẩm...</p>
+          <p className="text-cyan-100 text-lg">{t('productList.loading')}</p>
         </div>
       </div>
     );
@@ -278,7 +278,7 @@ if (error) {
           onClick={loadAllProducts}
           className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow-lg shadow-cyan-500/30"
         >
-          Thử lại
+          {t('productList.retry')}
         </button>
       </div>
     </div>
@@ -291,7 +291,7 @@ if (!error && noResults && hasFilters) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900">
       <div className="text-center">
         <p className="text-yellow-400 text-lg mb-4">
-          Không tìm thấy sản phẩm phù hợp với bộ lọc
+          {t('productList.noResults')}
         </p>
         {/* Không có nút Thử lại */}
       </div>
@@ -339,7 +339,7 @@ if (!error && noResults && hasFilters) {
                   {/* Discount Badge */}
                   {discount > 0 && (
                     <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-red-600 to-pink-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-lg">
-                      Giảm {discount}%
+                      {t('productList.discount', { discount })}
                     </div>
                   )}
 
@@ -372,14 +372,14 @@ if (!error && noResults && hasFilters) {
                       }}
                       className="text-base font-semibold text-gray-800 mb-2 line-clamp-2 min-h-[40px] hover:text-cyan-600 transition-colors text-left"
                     >
-                      {product.name} | Chính hãng                 
+                      {product.name} | {t('productList.authentic')}                 
                     </button>
 
                     {/* Price */}
                     <div className="mb-3">
                       <div className="flex items-baseline gap-2">
                         <p className="text-xl font-bold text-cyan-600">
-                          {product.price ? formatPrice(product.price) : 'Liên hệ'}
+                          {product.price ? formatPrice(product.price) : t('productList.contact')}
                         </p>
                         {discount > 0 && (
                           <p className="text-xs text-gray-400 line-through">
@@ -402,13 +402,13 @@ if (!error && noResults && hasFilters) {
                     {/* Smember Promotion */}
                       {product.discount > 0 && (
                       <div className="bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 text-xs px-3 py-2 rounded-lg mb-3 border border-cyan-200 font-medium">
-                        Smember giảm đến {Math.round(product.price * 0.01)}.000đ
+                        {t('productList.smemberDiscount', { amount: Math.round(product.price * 0.01) })}
                       </div>
                     )}
 
                     {/* Installment Info */}
                     <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                      sản phẩm uy tín  - chất lượng cao - giá cả phải chăng - hỗ trợ bảo hành  đến 12 tháng
+                      {t('productList.productFeatures')}
                     </p>
 
                     {/* Rating & Favorite */}
@@ -428,7 +428,7 @@ if (!error && noResults && hasFilters) {
                         <Heart 
                           className={`w-5 h-5 transition-all ${isFavorite ? 'fill-red-500 text-red-500 scale-110' : 'text-cyan-600'}`}
                         />
-                        <span className="text-sm font-medium">Yêu thích</span>
+                        <span className="text-sm font-medium">{t('productList.favorite')}</span>
                       </button>
                     </div>
                   </div>
@@ -448,7 +448,7 @@ if (!error && noResults && hasFilters) {
             </button>
             
             <span className="px-6 py-3 bg-white rounded-full shadow-lg font-semibold text-gray-800 border border-gray-200">
-              Trang {Math.min(currentPage + 1, totalPages)} / {totalPages}
+              {t('productList.page', { current: Math.min(currentPage + 1, totalPages), total: totalPages })}
             </span>
             
             <button 
