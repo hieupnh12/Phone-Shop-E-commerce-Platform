@@ -52,7 +52,17 @@
     "hotProductsTitle": "Best Sellers",
     "hotProductsSubtitle": "Top most loved phones",
     "viewAllProducts": "View All Products",
-    "buyNow": "Buy Now"
+    "buyNow": "Buy Now",
+    "hotProducts": "Hot Products",
+    "hotProductsDescription": "Top best-selling and most loved products right now",
+    "failedToFetchHotProducts": "Failed to fetch top products.",
+    "retry": "Retry",
+    "badgeHot": "HOT",
+    "badgeNew": "NEW",
+    "sold": "sold",
+    "reviews": "reviews",
+    "viewDetails": "View Details",
+    "videoNotSupported": "Your browser does not support background video."
   },
   "common": {
     "viewDetails": "View Details"
@@ -735,6 +745,7 @@
       "emailPlaceholder": "Enter email address",
       "dateOfBirth": "Date of Birth",
       "saveChanges": "Save Changes",
+      "update": "Update",
       "updateError": "Error: Unable to update information. Please try again.",
       "contactToChangePhone": "Contact customer service to change phone number",
       "addressPlaceholder": "Enter address",
@@ -748,6 +759,23 @@
     },
     "addressForm": {
       "fillAllFields": "Please fill in all address information"
+    },
+    "supportPage": {
+      "contactInfo": "Contact Information",
+      "phone": "Phone Number",
+      "support24_7": "24/7 Support",
+      "storeAddress": "Store Address",
+      "businessHours": "Business Hours",
+      "businessHoursDesc": "Monday - Sunday: 8:00 AM - 10:00 PM",
+      "services": "Support Services",
+      "servicesDesc": "We are always ready to support you with the following services:",
+      "service1": "Product consultation and answering questions",
+      "service2": "Technical support and repair",
+      "service3": "Complaint handling and feedback",
+      "service4": "Product usage guidance",
+      "service5": "Post-sales customer care",
+      "feedback": "Your Feedback",
+      "feedbackDesc": "We greatly appreciate feedback from our customers to improve service quality. Please contact us by phone or visit our store directly."
     }
   },
   "productDetail": {
@@ -776,7 +804,8 @@
       "version": "Version",
       "rom": "ROM",
       "color": "Color",
-      "versionNotAvailable": "Version not available! Please try another selection."
+      "versionNotAvailable": "Version not available! Please try another selection.",
+      "notFound": "Product not found"
     },
   "notFound": {
     "title": "Page Not Found",
