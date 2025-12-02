@@ -35,8 +35,10 @@ import java.security.Key;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -150,7 +152,13 @@ public class CustomerAuthenticationService {
     public String generateCustomerToken(Long customerId) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
 
+
+
         String jwtId = UUID.randomUUID().toString();
+
+        List<String> scopes = new ArrayList<>();
+        scopes.add("CUSTOMER_UPDATE_BASIC");
+        
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(customerId.toString())
                 .issuer("PHONESHOP")
@@ -158,6 +166,7 @@ public class CustomerAuthenticationService {
                 .expirationTime(new Date(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS).toEpochMilli()))
                 .jwtID(jwtId)
                 .claim("role", "USER")
+                .claim("scopes", scopes)
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
