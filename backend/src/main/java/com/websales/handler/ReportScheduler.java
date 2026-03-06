@@ -85,8 +85,7 @@ public class ReportScheduler {
     }
 
     //second minute hour day-of-month month day-of-week
-    // Chạy lúc 20:10 mỗi ngày
-    @Scheduled(cron = "0 0 9 * * *")
+    @Scheduled(cron = "0 0 10 * * *")
     @Transactional(readOnly = true)
     public void checkLowStockAndSend() {
         try {

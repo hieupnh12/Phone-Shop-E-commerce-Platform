@@ -94,10 +94,10 @@ public class CustomerAuthenticationService {
 //            throw new AppException(ErrorCode.OTP_SEND_LIMIT);
 //        }
 
-//        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
-//        if(!sent) {
-//            throw new RuntimeException("Gửi OTP thất bại");
-//        }
+        boolean sent = speedSmsService.sendVerificationCode(phone, otp);
+        if(!sent) {
+            throw new RuntimeException("Gửi OTP thất bại");
+        }
         otpReq.setOtpHash(passwordEncoder.encode(otp));
         otpReq.setExpiresAt(LocalDateTime.now().plusMinutes(1));
         otpReq.setLastSentAt(LocalDateTime.now());
