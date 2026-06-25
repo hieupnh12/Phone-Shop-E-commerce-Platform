@@ -1,0 +1,90 @@
+# Chạy trên GCP VM — pull image từ Docker Hub + Let's Encrypt
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: group1-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${DOCKERHUB_USER:-hieupnh12}/group1-backend:${IMAGE_TAG:-latest}
+    container_name: group1-backend
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+      APP_CORS_ALLOWED_ORIGINS: "${APP_CORS_ALLOWED_ORIGINS:-https://maclenin.io.vn,https://www.maclenin.io.vn}"
+      APP_PUBLIC_URL: "${APP_PUBLIC_URL:-https://maclenin.io.vn}"
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
+      GOOGLE_OAUTH2_REDIRECT_URI: "${GOOGLE_OAUTH2_REDIRECT_URI:-https://maclenin.io.vn/phoneShop/login/oauth2/code/google}"
+      JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      SPEEDSMS_ACCESS_TOKEN: ${SPEEDSMS_ACCESS_TOKEN:-}
+      SPRING_AI_OPENAI_API_KEY: ${SPRING_AI_OPENAI_API_KEY:-}
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    expose:
+      - "8080"
+
+  frontend:
+    image: ${DOCKERHUB_USER:-hieupnh12}/group1-frontend:${IMAGE_TAG:-latest}
+    container_name: group1-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-maclenin.io.vn}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+
+  certbot:
+    image: certbot/certbot:latest
+    profiles: [manual]
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+
+  certbot-renew:
+    image: certbot/certbot:latest
+    container_name: group1-certbot
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: /bin/sh
+    command: -c "trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $$!; done;"
+
+volumes:
+  redis_data:
+  backend_uploads:
+  backend_logs:
+  certbot-etc:
+  certbot-webroot:

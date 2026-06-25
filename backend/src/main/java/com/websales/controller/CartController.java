@@ -13,6 +13,8 @@ import com.websales.repository.CustomerRepo;
 import com.websales.repository.PaymentMethodRepository;
 import com.websales.repository.PaymentTransactionRepository;
 import com.websales.repository.ProductVersionRepository;
+import com.websales.exception.AppException;
+import com.websales.exception.ErrorCode;
 import com.websales.service.OrderService;
 import com.websales.service.PayOSService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,12 +62,18 @@ public class CartController {
         this.customerRepo = customerRepo;
     }
 
+    private Long requireCustomerId(Jwt jwt) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        return Long.valueOf(jwt.getSubject());
+    }
+
     // --- GET GIỎ HÀNG ---
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Transactional(readOnly = true)
     public ResponseEntity<?> getCart(@AuthenticationPrincipal Jwt jwt) {
-        // Lấy customerId từ JWT token
-        Long customerId = Long.valueOf(jwt.getSubject());
+        Long customerId = requireCustomerId(jwt);
 
         // Lấy cart ACTIVE của customer với cart items được eager fetch
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatusWithItems(customerId, true);
@@ -136,8 +144,7 @@ public class CartController {
     public ResponseEntity<?> addToCart(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody CartItemRequest request) {
-        // Lấy customerId từ JWT token
-        Long customerId = Long.valueOf(jwt.getSubject());
+        Long customerId = requireCustomerId(jwt);
 
         String productVersionId = request.getProductVersionId();
         if (productVersionId == null || productVersionId.isBlank()) {
@@ -203,8 +210,7 @@ public class CartController {
     public ResponseEntity<?> updateQuantity(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody Map<String, Object> request) {
-        // Lấy customerId từ JWT token
-        Long customerId = Long.valueOf(jwt.getSubject());
+        Long customerId = requireCustomerId(jwt);
 
         String productVersionId = (String) request.get("productVersionId");
         Integer quantity = (Integer) request.get("quantity");
@@ -260,8 +266,7 @@ public class CartController {
     public ResponseEntity<?> removeCartItem(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody CartItemRequest request) {
-        // Lấy customerId từ JWT token
-        Long customerId = Long.valueOf(jwt.getSubject());
+        Long customerId = requireCustomerId(jwt);
 
         String productVersionId = request.getProductVersionId();
         if (productVersionId == null || productVersionId.isBlank()) {
@@ -295,8 +300,7 @@ public class CartController {
             @RequestBody Map<String, Object> orderData,
             HttpServletRequest request) {
         try {
-            // Lấy customerId từ JWT token
-            Long customerId = Long.valueOf(jwt.getSubject());
+            Long customerId = requireCustomerId(jwt);
 
             // Lấy cart active của customer
             Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);
@@ -374,8 +378,7 @@ public class CartController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody Map<String, Object> orderData,
             HttpServletRequest request) {
-        // Lấy customerId từ JWT token
-        Long customerId = Long.valueOf(jwt.getSubject());
+        Long customerId = requireCustomerId(jwt);
 
         // Lấy cart active của customer
         Optional<Cart> cartOpt = cartRepository.findFirstByCustomerIdAndStatus(customerId, true);

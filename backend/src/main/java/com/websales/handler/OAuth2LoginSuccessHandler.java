@@ -1,75 +1,51 @@
 package com.websales.handler;
 
-
-
 import com.websales.service.CustomOAuth2User;
 import com.websales.service.CustomerAuthenticationService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-@Component
 
+@Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     CustomerAuthenticationService customerAuthService;
 
-    private final String FRONTEND_BASE_URL = "http://localhost:3000";
+    @Value("${app.public-url:http://localhost:3000}")
+    private String frontendBaseUrl;
 
-    private final String PROFILE_UPDATE_PATH = "/update";
-
-    private final String MAIN_APP_CALLBACK_PATH = "/oauth-callback";
-
-
+    private static final String PROFILE_UPDATE_PATH = "/update";
 
     @Autowired
-
     public void setCustomerAuthService(CustomerAuthenticationService customerAuthService) {
-
         this.customerAuthService = customerAuthService;
-
     }
 
     @Override
+    public void onAuthenticationSuccess(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
 
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-
-        if (!(authentication.getPrincipal() instanceof CustomOAuth2User)) {
-
+        if (!(authentication.getPrincipal() instanceof CustomOAuth2User customUser)) {
             throw new IllegalStateException("Principal không phải là CustomOAuth2User.");
-
         }
 
-        CustomOAuth2User customUser = (CustomOAuth2User) authentication.getPrincipal();
+        String base = frontendBaseUrl.replaceAll("/$", "");
 
         if (customUser.isRequiresProfileUpdate()) {
-
-
             String tempToken = customerAuthService.generateTemporaryToken(customUser.getCustomerId());
-
-            String redirectUrl = FRONTEND_BASE_URL + PROFILE_UPDATE_PATH + "?tempToken=" + tempToken;
-
-            response.sendRedirect(redirectUrl);
-
+            response.sendRedirect(base + PROFILE_UPDATE_PATH + "?tempToken=" + tempToken);
         } else {
-
             String jwtToken = customerAuthService.generateCustomerToken(customUser.getCustomerId());
-
-            String redirectUrl = FRONTEND_BASE_URL + "?token=" + jwtToken;
-
-            response.sendRedirect(redirectUrl);
-
+            response.sendRedirect(base + "/?token=" + jwtToken);
         }
-
-
-
     }
-
-
-
 }

@@ -4,6 +4,7 @@ package com.websales.configuration;
 import com.websales.handler.OAuth2LoginSuccessHandler;
 import com.websales.service.GoogleAuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,7 +32,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final String[]  PUBLIC_ENDPOINTS =
-            {"/employee/auth", "/customer/auth","/role", "/employee/auth_set_password","/employee/auth_refresh",
+            {"/employee/auth", "/employee/forgot", "/customer/auth","/role", "/employee/auth_set_password","/employee/auth_refresh",
                     "/customer/auth_verify_otp", "/employee/auth_check_valid",
                     "/payment/success", "/payment/cancel", "/payment/payos/webhook",
                     "/customer/auth_verify_otp", "/employee/auth_check_valid", "/product", "/product/count",
@@ -48,6 +49,9 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler loginSuccessHandler;
     private final GoogleAuthService googleAuthService;
     CustomJwtDecoder customJwtDecoder;
+
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    private String corsAllowedOrigins;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)
             throws Exception {
@@ -56,7 +60,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests ->
                             requests.requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                                     .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                                    .requestMatchers("/api/**").authenticated()  // All /api/** require authentication
+                                    .requestMatchers("/api/**").authenticated()
+                                    .requestMatchers("/cart/**").authenticated()
                                 .anyRequest().permitAll());  // Everything else is public (for React routing)
 
         httpSecurity.oauth2Login(oauth2 -> oauth2.loginPage("/customer-login")
@@ -85,9 +90,14 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowCredentials(true); // <== QUAN TRỌNG nếu có gửi cookie/token
-        config.addAllowedOrigin("http://localhost:3000"); // không có path
-        config.addAllowedHeader("*"); // hoặc chi tiết: "Authorization", "Content-Type"
+        config.setAllowCredentials(true);
+        for (String origin : corsAllowedOrigins.split(",")) {
+            String trimmed = origin.trim();
+            if (!trimmed.isEmpty()) {
+                config.addAllowedOrigin(trimmed);
+            }
+        }
+        config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

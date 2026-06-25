@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, User, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Cookie from "js-cookie";
 import cartService from "../../services/cartService";
 import { useAuthFullOptions } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -22,6 +23,10 @@ const HeaderV2 = () => {
   }, []);
 
   const loadCartCount = async () => {
+    if (!Cookie.get("token")) {
+      setCartCount(0);
+      return;
+    }
     try {
       const data = await cartService.getCart();
       if (data?.success) {
@@ -39,7 +44,7 @@ const HeaderV2 = () => {
     const onCartUpdated = () => loadCartCount();
     window.addEventListener("cartUpdated", onCartUpdated);
     return () => window.removeEventListener("cartUpdated", onCartUpdated);
-  }, []);
+  }, [user]);
 
   const navItems = useMemo(() => [
     {

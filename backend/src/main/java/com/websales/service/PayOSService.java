@@ -50,11 +50,24 @@ public class PayOSService {
         try {
             // PayOS nhận amount trực tiếp bằng VND (đồng), không cần nhân 1000
             long amountLong = amount.longValue();
+            String finalDescription = (description != null && !description.isBlank())
+                    ? description
+                    : "DH " + orderCode;
 
+// Giới hạn 25 ký tự theo PayOS
+            if (finalDescription.length() > 25) {
+                finalDescription = finalDescription.substring(14, 30);
+            }
+            // 👉 LOG Ở ĐÂY
+            log.info("PayOS request - orderCode: {}, amount: {}, description: '{}', length: {}",
+                    orderCode,
+                    amountLong,
+                    finalDescription,
+                    finalDescription.length());
             CreatePaymentLinkRequest.CreatePaymentLinkRequestBuilder builder = CreatePaymentLinkRequest.builder()
                     .orderCode(orderCode)
                     .amount(amountLong)
-                    .description(description != null ? description : "Thanh toán đơn hàng")
+                    .description(finalDescription)
                     .returnUrl(returnUrl)
                     .cancelUrl(cancelUrl);
 
@@ -65,7 +78,7 @@ public class PayOSService {
             } else {
                 // Tạo item mặc định nếu không có items
                 PaymentLinkItem defaultItem = PaymentLinkItem.builder()
-                        .name("Đơn hàng #" + orderCode)
+                        .name("DH" + orderCode)
                         .quantity(1)
                         .price(amountLong)
                         .build();

@@ -78,7 +78,7 @@ export default function HomeAdmin() {
           <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
             <p className="text-sm text-gray-700 text-center">
               <strong>⚠️ Lưu ý:</strong> PhoneStore không có đại lý, cộng tác viên hay bán hàng qua Facebook cá nhân. 
-              Mọi giao dịch vui lòng thực hiện tại cửa hàng hoặc website chính thức <strong>http://localhost:3000/.vn</strong>
+              Mọi giao dịch vui lòng thực hiện tại cửa hàng hoặc website chính thức <strong>{window.location.origin}</strong>
             </p>
           </div>
         </div>

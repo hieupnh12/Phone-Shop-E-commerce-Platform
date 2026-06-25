@@ -20,6 +20,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 import Toast from "../../components/common/Toast";
 import constants from "../../constants/index.js";
+import { getGoogleOAuthUrl } from "../../api";
 
 // Constants
 const PHONE_PATTERN = /^84(3|5|7|8|9)[0-9]{8}$/;
@@ -257,8 +258,8 @@ const Login = () => {
   }, [loginMethod, formData, verifyOtp, loginEmployee, navigate]);
 
   // Social login handler
-  const handleSocialLogin = useCallback((provider) => {
-    window.location.href = "http://localhost:8080/phoneShop/oauth2/authorization/google";
+  const handleSocialLogin = useCallback(() => {
+    window.location.href = getGoogleOAuthUrl();
   }, []);
 
   // Reset form when switching login method

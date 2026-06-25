@@ -9,25 +9,38 @@ import com.websales.repository.PermissionRepo;
 import com.websales.repository.RoleRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DatabaseSeeder implements CommandLineRunner {
 
+    private static final String DEFAULT_ADMIN_EMAIL = "sinhnnde180169@fpt.edu.vn";
+    private static final String DEFAULT_ADMIN_PASSWORD = "999999999";
+
     private final PermissionRepo permissionRepository;
     private final RoleRepo roleRepository;
     private final EmployeeRepo employeeRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @NonFinal
+    @Value("${app.admin.email:}")
+    private String bootstrapAdminEmail;
+
+    @NonFinal
+    @Value("${app.admin.password:}")
+    private String bootstrapAdminPassword;
 
     @Override
     @Transactional
@@ -41,6 +54,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         log.info("Đã tạo hoặc đảm bảo Role ADMIN tồn tại với {} quyền.", adminRole.getRolePermissions().size());
 
         seedDefaultAdminUser(adminRole);
+        resetAdminPasswordFromEnv(adminRole);
         log.info("Đã đảm bảo tài khoản Admin mặc định tồn tại.");
     }
 
@@ -102,17 +116,50 @@ public class DatabaseSeeder implements CommandLineRunner {
 
 
     private void seedDefaultAdminUser(Role adminRole) {
-        final String DEFAULT_ADMIN_EMAIL = "sinhnnde180169@fpt.edu.vn";
-
         if (employeeRepository.findByEmail(DEFAULT_ADMIN_EMAIL).isEmpty()) {
-            Employee admin = Employee.builder()
+            employeeRepository.save(Employee.builder()
                     .email(DEFAULT_ADMIN_EMAIL)
                     .fullName("Quản trị viên Hệ thống")
-                    .passwordHash(passwordEncoder.encode("999999999"))
+                    .passwordHash(passwordEncoder.encode(DEFAULT_ADMIN_PASSWORD))
                     .isActive(true)
                     .employeeRoles(Set.of(adminRole))
-                    .build();
-            employeeRepository.save(admin);
+                    .build());
+            log.info("Đã tạo admin mặc định: {}", DEFAULT_ADMIN_EMAIL);
+        }
+    }
+
+    /** Cập nhật mật khẩu admin khi set APP_ADMIN_EMAIL + APP_ADMIN_PASSWORD trong .env */
+    private void resetAdminPasswordFromEnv(Role adminRole) {
+        if (bootstrapAdminEmail == null || bootstrapAdminEmail.isBlank()
+                || bootstrapAdminPassword == null || bootstrapAdminPassword.isBlank()) {
+            return;
+        }
+
+        String email = bootstrapAdminEmail.trim().toLowerCase();
+        try {
+            Optional<Employee> existing = employeeRepository.findByEmail(email);
+            if (existing.isEmpty()) {
+                existing = employeeRepository.findByEmail(bootstrapAdminEmail.trim());
+            }
+
+            if (existing.isPresent()) {
+                Employee admin = existing.get();
+                admin.setPasswordHash(passwordEncoder.encode(bootstrapAdminPassword));
+                admin.setIsActive(true);
+                // Không gán lại employeeRoles — CascadeType.ALL trên ManyToMany dễ gây lỗi khi save
+                employeeRepository.save(admin);
+            } else {
+                employeeRepository.save(Employee.builder()
+                        .email(email)
+                        .fullName("Quản trị viên")
+                        .passwordHash(passwordEncoder.encode(bootstrapAdminPassword))
+                        .isActive(true)
+                        .employeeRoles(Set.of(adminRole))
+                        .build());
+            }
+            log.info("Đã cập nhật mật khẩu admin: {}", email);
+        } catch (Exception e) {
+            log.error("Không thể reset mật khẩu admin từ env (backend vẫn tiếp tục chạy): {}", email, e);
         }
     }
 }

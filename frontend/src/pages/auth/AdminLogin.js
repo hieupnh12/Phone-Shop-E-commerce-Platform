@@ -105,25 +105,31 @@ const AdminLogin = () => {
     setIsSendingReset(true);
     try {
       const response = await api.post("/employee/forgot", {
-        email: forgotPasswordEmail.trim(),
+        email: forgotPasswordEmail.trim().toLowerCase(),
       });
 
       setToast({
         message:
           response.data?.message ||
-          "Email khôi phục đã được gửi! Vui lòng kiểm tra hộp thư của bạn.",
+          "Email khôi phục đã được gửi! Vui lòng kiểm tra hộp thư.",
         type: "success",
       });
       setShowForgotPassword(false);
       setForgotPasswordEmail("");
     } catch (err) {
       console.error("Lỗi gửi email đặt lại mật khẩu:", err);
-      const errorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại sau.";
+      const code = err?.response?.data?.code;
+      const backendMessage = err?.response?.data?.message;
+      let message = backendMessage || err?.message || "Không thể gửi email đặt lại mật khẩu.";
+
+      if (code === 1002) {
+        message = "Email không tồn tại trong hệ thống nhân viên.";
+      } else if (code === 1024) {
+        message = "Link đặt lại mật khẩu vẫn còn hiệu lực. Vui lòng kiểm tra email cũ.";
+      }
+
       setToast({
-        message: errorMessage,
+        message,
         type: "error",
       });
     } finally {

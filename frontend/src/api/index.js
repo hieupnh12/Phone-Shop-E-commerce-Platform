@@ -3,9 +3,20 @@ import queryString  from "query-string"
 import Cookie from "js-cookie"
 
 const env = process.env.NODE_ENV;
-const BASE_URL = !env || env === "development" ? 
-    (process.env.REACT_APP_API_URL_LOCAL || 'http://localhost:8080/phoneShop') : 
-    (process.env.REACT_APP_API_URL || 'http://localhost:8080/phoneShop');
+const BASE_URL = !env || env === "development"
+    ? (process.env.REACT_APP_API_URL_LOCAL || 'http://localhost:8080/phoneShop')
+    : (process.env.REACT_APP_API_URL || '/phoneShop');
+
+export const getApiBaseUrl = () => BASE_URL;
+
+export const getGoogleOAuthUrl = () => {
+    const base = getApiBaseUrl();
+    const path = `${base.replace(/\/$/, '')}/oauth2/authorization/google`;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+    return `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}`;
+};
 
 const axiosClient = axios.create({
     baseURL: BASE_URL,
