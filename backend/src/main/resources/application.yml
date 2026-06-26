@@ -68,12 +68,12 @@ spring:
 
   ai:
     openai:
-      api-key: AIzaSyBrTipp-3SITKxs3t7cN3eP2crvOG9edfs
+      api-key: ${SPRING_AI_OPENAI_API_KEY:}
       chat:
         base-url: https://generativelanguage.googleapis.com
         completions-path: /v1beta/openai/chat/completions
         options:
-          model: gemini-2.0-flash
+          model: ${SPRING_AI_OPENAI_MODEL:gemini-2.5-flash}
 
 jwt:
   signerKey: "4fenEIft8k/ii3gdEbIEiNzAz8A6SHw4gmq98FuMVbYffeCwLUFwKkcx8g7mZqWV0ZtPMFzEw1yKfF3pHoREXOznR2a/4PCFQWQxUTH3Zrb1QT1sBqenm3/UdM1PWAFS"

@@ -433,4 +433,39 @@ export const warrantyRequestService = {
       .then((res) => res.data.result || res.data),
 };
 
+export const supportMessageService = {
+  createConversation: (data) =>
+    api.post("/support-conversations", data).then((res) => res.data?.result || res.data),
+
+  getMyConversations: () =>
+    api.get("/support-conversations/me").then((res) => res.data?.result || res.data),
+
+  getConversations: (page = 0, size = 20) => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    return api
+      .get(`/support-conversations?${params}`)
+      .then((res) => res.data?.result || res.data);
+  },
+
+  getConversationDetail: (conversationId) =>
+    api
+      .get(`/support-conversations/${conversationId}`)
+      .then((res) => res.data?.result || res.data),
+
+  sendMessage: (conversationId, content) =>
+    api
+      .post(`/support-conversations/${conversationId}/messages`, { content })
+      .then((res) => res.data?.result || res.data),
+
+  claimConversation: (conversationId) =>
+    api
+      .post(`/support-conversations/${conversationId}/claim`)
+      .then((res) => res.data?.result || res.data),
+
+  updateConversation: (conversationId, data) =>
+    api
+      .put(`/support-conversations/${conversationId}`, data)
+      .then((res) => res.data?.result || res.data),
+};
+
 export default api;

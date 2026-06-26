@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { usePermission } from "../hooks/usePermission";
+import { hasRole } from "../utils/permissionUtils";
 import Loading from "../components/common/Loading";
 
 /**
@@ -13,7 +14,8 @@ import Loading from "../components/common/Loading";
 export default function PermissionRoute({ 
   requiredPermission, 
   children, 
-  fallbackPath = "/admin" 
+  fallbackPath = "/admin",
+  allowAdmin = false,
 }) {
   const { hasPermission, hasAnyPermission, isEmployee } = usePermission();
 
@@ -24,12 +26,13 @@ export default function PermissionRoute({
 
   // Check permission
   let hasAccess = false;
-  if (Array.isArray(requiredPermission)) {
+  if (allowAdmin && hasRole("ROLE_ADMIN")) {
+    hasAccess = true;
+  } else if (Array.isArray(requiredPermission)) {
     hasAccess = hasAnyPermission(requiredPermission);
   } else if (requiredPermission) {
     hasAccess = hasPermission(requiredPermission);
   } else {
-    // Nếu không có requiredPermission, cho phép truy cập
     hasAccess = true;
   }
 

@@ -100,10 +100,8 @@ public class RecommendService {
                             p.getScreenSize(),
                             p.getScreenResolution(),
                             p.getChipset(),
-                            p.getImage(),
                             p.getOperatingSystemName(),
                             p.getOriginName(),
-                            p.getIdProduct(),
                             versions
                     );
                 })

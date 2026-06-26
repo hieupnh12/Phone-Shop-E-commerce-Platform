@@ -61,6 +61,7 @@ import Employee from "./pages/admin/Employee";
 import Role from "./pages/admin/Role";
 import AuditLogPage from "./pages/admin/Employee/AuditLogPage";
 import WarrantyRequestManagementPage from "./pages/admin/WarrantyRequest/WarrantyRequestManagementPage";
+import MessageManagementPage from "./pages/admin/Messages/MessageManagementPage";
 import PermissionRoute from "./routes/PermissionRoute";
 import { PERMISSIONS } from "./hooks/usePermission";
 
@@ -186,6 +187,10 @@ const router = createBrowserRouter(
                   <WarrantyRequestManagementPage />
                 </PermissionRoute>
               )
+            },
+            { 
+              path: "messages", 
+              element: <MessageManagementPage />
             },
 
             {

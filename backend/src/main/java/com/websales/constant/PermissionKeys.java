@@ -42,6 +42,10 @@ public final class PermissionKeys {
     public static final String SCOPE_WARRANTY_VIEW_ALL = "WARRANTY_VIEW_ALL";
     public static final String SCOPE_WARRANTY_UPDATE_BASIC  = "WARRANTY_UPDATE_BASIC";
 
+    // MESSAGE / SUPPORT
+    public static final String SCOPE_MESSAGE_VIEW_ALL = "MESSAGE_VIEW_ALL";
+    public static final String SCOPE_MESSAGE_REPLY_BASIC = "MESSAGE_REPLY_BASIC";
+
 
 
 
@@ -60,7 +64,9 @@ public final class PermissionKeys {
             SCOPE_REPORT_VIEW_SALES,
             SCOPE_ORDER_VIEW_DETAIL,
             SCOPE_WARRANTY_VIEW_ALL,
-            SCOPE_WARRANTY_UPDATE_BASIC
+            SCOPE_WARRANTY_UPDATE_BASIC,
+            SCOPE_MESSAGE_VIEW_ALL,
+            SCOPE_MESSAGE_REPLY_BASIC
 
     };
 

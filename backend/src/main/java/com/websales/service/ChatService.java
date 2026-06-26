@@ -81,7 +81,7 @@ public class ChatService {
 
                     // Chuỗi main product
                     return String.format(
-                            "idProduct %s, Brand: %s, Pin: %s, Camera: %s/%s, Màn hình: %s (%s), Chipset: %s, OS: %s, Origin: %s, Versions: %s",
+                            "idProduct %s, %s - Brand: %s, Pin: %s, Camera: %s/%s, Màn hình: %s (%s), Chipset: %s, OS: %s, Origin: %s, Versions: %s",
                             p.getIdProduct(),
                             p.getNameProduct(),
                             p.getBrandName(),
@@ -91,7 +91,6 @@ public class ChatService {
                             p.getScreenSize(),
                             p.getScreenResolution(),
                             p.getChipset(),
-                            p.getImage(),
                             p.getOperatingSystemName(),
                             p.getOriginName(),
                             versions
