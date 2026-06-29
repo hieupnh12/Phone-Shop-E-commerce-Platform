@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.6.3, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
 public class AuditLogMapperImpl implements AuditLogMapper {
@@ -20,15 +20,15 @@ public class AuditLogMapperImpl implements AuditLogMapper {
 
         AuditLogResponse.AuditLogResponseBuilder auditLogResponse = AuditLogResponse.builder();
 
-        auditLogResponse.id( auditLog.getId() );
-        auditLogResponse.employeeId( auditLog.getEmployeeId() );
         auditLogResponse.action( auditLog.getAction() );
-        auditLogResponse.tableName( auditLog.getTableName() );
-        auditLogResponse.recordId( auditLog.getRecordId() );
         auditLogResponse.changes( auditLog.getChanges() );
-        auditLogResponse.ipAddress( auditLog.getIpAddress() );
-        auditLogResponse.userAgent( auditLog.getUserAgent() );
         auditLogResponse.createdAt( auditLog.getCreatedAt() );
+        auditLogResponse.employeeId( auditLog.getEmployeeId() );
+        auditLogResponse.id( auditLog.getId() );
+        auditLogResponse.ipAddress( auditLog.getIpAddress() );
+        auditLogResponse.recordId( auditLog.getRecordId() );
+        auditLogResponse.tableName( auditLog.getTableName() );
+        auditLogResponse.userAgent( auditLog.getUserAgent() );
 
         AuditLogResponse auditLogResponseResult = auditLogResponse.build();
 

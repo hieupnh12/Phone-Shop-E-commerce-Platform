@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.6.3, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
 public class CustomerMapperImpl implements CustomerMapper {
@@ -21,12 +21,12 @@ public class CustomerMapperImpl implements CustomerMapper {
 
         Customer.CustomerBuilder customer = Customer.builder();
 
-        customer.fullName( request.getFullName() );
-        customer.phoneNumber( request.getPhoneNumber() );
-        customer.email( request.getEmail() );
-        customer.gender( request.getGender() );
-        customer.birthDate( request.getBirthDate() );
         customer.address( request.getAddress() );
+        customer.birthDate( request.getBirthDate() );
+        customer.email( request.getEmail() );
+        customer.fullName( request.getFullName() );
+        customer.gender( request.getGender() );
+        customer.phoneNumber( request.getPhoneNumber() );
 
         return customer.build();
     }
@@ -39,14 +39,14 @@ public class CustomerMapperImpl implements CustomerMapper {
 
         CustomerResponse.CustomerResponseBuilder customerResponse = CustomerResponse.builder();
 
-        customerResponse.customerId( customer.getCustomerId() );
-        customerResponse.fullName( customer.getFullName() );
-        customerResponse.phoneNumber( customer.getPhoneNumber() );
-        customerResponse.email( customer.getEmail() );
-        customerResponse.gender( customer.getGender() );
-        customerResponse.birthDate( customer.getBirthDate() );
         customerResponse.address( customer.getAddress() );
+        customerResponse.birthDate( customer.getBirthDate() );
         customerResponse.createAt( customer.getCreateAt() );
+        customerResponse.customerId( customer.getCustomerId() );
+        customerResponse.email( customer.getEmail() );
+        customerResponse.fullName( customer.getFullName() );
+        customerResponse.gender( customer.getGender() );
+        customerResponse.phoneNumber( customer.getPhoneNumber() );
         customerResponse.updateAt( customer.getUpdateAt() );
 
         return customerResponse.build();

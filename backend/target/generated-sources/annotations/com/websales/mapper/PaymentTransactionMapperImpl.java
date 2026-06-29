@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.6.3, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
 public class PaymentTransactionMapperImpl implements PaymentTransactionMapper {
@@ -21,13 +21,13 @@ public class PaymentTransactionMapperImpl implements PaymentTransactionMapper {
 
         PaymentTransaction.PaymentTransactionBuilder paymentTransaction = PaymentTransaction.builder();
 
-        paymentTransaction.transactionCode( request.getTransactionCode() );
-        paymentTransaction.orderId( request.getOrderId() );
-        paymentTransaction.amountUsed( request.getAmountUsed() );
-        paymentTransaction.paymentStatus( request.getPaymentStatus() );
-        paymentTransaction.transactionType( request.getTransactionType() );
-        paymentTransaction.responseMessage( request.getResponseMessage() );
         paymentTransaction.address( request.getAddress() );
+        paymentTransaction.amountUsed( request.getAmountUsed() );
+        paymentTransaction.orderId( request.getOrderId() );
+        paymentTransaction.paymentStatus( request.getPaymentStatus() );
+        paymentTransaction.responseMessage( request.getResponseMessage() );
+        paymentTransaction.transactionCode( request.getTransactionCode() );
+        paymentTransaction.transactionType( request.getTransactionType() );
 
         return paymentTransaction.build();
     }
@@ -41,15 +41,15 @@ public class PaymentTransactionMapperImpl implements PaymentTransactionMapper {
         PaymentTransactionResponse.PaymentTransactionResponseBuilder paymentTransactionResponse = PaymentTransactionResponse.builder();
 
         paymentTransactionResponse.paymentMethod( mapPaymentMethodToResponse( transaction.getPaymentMethod() ) );
-        paymentTransactionResponse.transactionId( transaction.getTransactionId() );
-        paymentTransactionResponse.transactionCode( transaction.getTransactionCode() );
-        paymentTransactionResponse.orderId( transaction.getOrderId() );
-        paymentTransactionResponse.paymentTime( transaction.getPaymentTime() );
-        paymentTransactionResponse.amountUsed( transaction.getAmountUsed() );
-        paymentTransactionResponse.paymentStatus( transaction.getPaymentStatus() );
-        paymentTransactionResponse.transactionType( transaction.getTransactionType() );
-        paymentTransactionResponse.responseMessage( transaction.getResponseMessage() );
         paymentTransactionResponse.address( transaction.getAddress() );
+        paymentTransactionResponse.amountUsed( transaction.getAmountUsed() );
+        paymentTransactionResponse.orderId( transaction.getOrderId() );
+        paymentTransactionResponse.paymentStatus( transaction.getPaymentStatus() );
+        paymentTransactionResponse.paymentTime( transaction.getPaymentTime() );
+        paymentTransactionResponse.responseMessage( transaction.getResponseMessage() );
+        paymentTransactionResponse.transactionCode( transaction.getTransactionCode() );
+        paymentTransactionResponse.transactionId( transaction.getTransactionId() );
+        paymentTransactionResponse.transactionType( transaction.getTransactionType() );
 
         return paymentTransactionResponse.build();
     }
@@ -60,12 +60,12 @@ public class PaymentTransactionMapperImpl implements PaymentTransactionMapper {
             return;
         }
 
-        transaction.setTransactionCode( request.getTransactionCode() );
-        transaction.setOrderId( request.getOrderId() );
-        transaction.setAmountUsed( request.getAmountUsed() );
-        transaction.setPaymentStatus( request.getPaymentStatus() );
-        transaction.setTransactionType( request.getTransactionType() );
-        transaction.setResponseMessage( request.getResponseMessage() );
         transaction.setAddress( request.getAddress() );
+        transaction.setAmountUsed( request.getAmountUsed() );
+        transaction.setOrderId( request.getOrderId() );
+        transaction.setPaymentStatus( request.getPaymentStatus() );
+        transaction.setResponseMessage( request.getResponseMessage() );
+        transaction.setTransactionCode( request.getTransactionCode() );
+        transaction.setTransactionType( request.getTransactionType() );
     }
 }

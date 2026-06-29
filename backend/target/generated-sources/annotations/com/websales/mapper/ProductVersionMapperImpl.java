@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.6.3, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
 public class ProductVersionMapperImpl implements ProductVersionMapper {
@@ -32,10 +32,10 @@ public class ProductVersionMapperImpl implements ProductVersionMapper {
 
         ProductVersion.ProductVersionBuilder productVersion = ProductVersion.builder();
 
-        productVersion.importPrice( request.getImportPrice() );
         productVersion.exportPrice( request.getExportPrice() );
-        productVersion.stockQuantity( request.getStockQuantity() );
+        productVersion.importPrice( request.getImportPrice() );
         productVersion.status( request.getStatus() );
+        productVersion.stockQuantity( request.getStockQuantity() );
 
         return productVersion.build();
     }
@@ -48,10 +48,10 @@ public class ProductVersionMapperImpl implements ProductVersionMapper {
 
         ProductVersion.ProductVersionBuilder productVersion = ProductVersion.builder();
 
-        productVersion.importPrice( request.getImportPrice() );
         productVersion.exportPrice( request.getExportPrice() );
-        productVersion.stockQuantity( request.getStockQuantity() );
+        productVersion.importPrice( request.getImportPrice() );
         productVersion.status( request.getStatus() );
+        productVersion.stockQuantity( request.getStockQuantity() );
 
         return productVersion.build();
     }
@@ -84,11 +84,11 @@ public class ProductVersionMapperImpl implements ProductVersionMapper {
         productVersionResponse.productName( productVersionProductNameProduct( productVersion ) );
         productVersionResponse.images( mapImagesList( productVersion.getImages() ) );
         productVersionResponse.imei( mapProductItemsToImei( productVersion.getProductItems() ) );
+        productVersionResponse.exportPrice( productVersion.getExportPrice() );
         productVersionResponse.idVersion( productVersion.getIdVersion() );
         productVersionResponse.importPrice( productVersion.getImportPrice() );
-        productVersionResponse.exportPrice( productVersion.getExportPrice() );
-        productVersionResponse.stockQuantity( productVersion.getStockQuantity() );
         productVersionResponse.status( productVersion.getStatus() );
+        productVersionResponse.stockQuantity( productVersion.getStockQuantity() );
 
         return productVersionResponse.build();
     }
@@ -111,11 +111,11 @@ public class ProductVersionMapperImpl implements ProductVersionMapper {
         newVersionResponse.productName( productVersionProductNameProduct( productVersion ) );
         newVersionResponse.images( mapImagesList( productVersion.getImages() ) );
         newVersionResponse.imei( mapProductItemsToImei( productVersion.getProductItems() ) );
+        newVersionResponse.exportPrice( productVersion.getExportPrice() );
         newVersionResponse.idVersion( productVersion.getIdVersion() );
         newVersionResponse.importPrice( productVersion.getImportPrice() );
-        newVersionResponse.exportPrice( productVersion.getExportPrice() );
-        newVersionResponse.stockQuantity( productVersion.getStockQuantity() );
         newVersionResponse.status( productVersion.getStatus() );
+        newVersionResponse.stockQuantity( productVersion.getStockQuantity() );
 
         return newVersionResponse.build();
     }

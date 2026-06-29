@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    comments = "version: 1.6.3, compiler: javac, environment: Java 24.0.1 (Oracle Corporation)"
+    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
 public class ProductMapperImpl implements ProductMapper {
@@ -41,24 +41,24 @@ public class ProductMapperImpl implements ProductMapper {
 
         Product.ProductBuilder product = Product.builder();
 
-        product.nameProduct( request.getNameProduct() );
         if ( request.getBattery() != null ) {
             product.battery( String.valueOf( request.getBattery() ) );
         }
-        product.scanFrequency( request.getScanFrequency() );
-        if ( request.getScreenSize() != null ) {
-            product.screenSize( String.valueOf( request.getScreenSize() ) );
-        }
-        product.screenResolution( request.getScreenResolution() );
-        product.screenTech( request.getScreenTech() );
         if ( request.getChipset() != null ) {
             product.chipset( String.valueOf( request.getChipset() ) );
         }
-        product.rearCamera( request.getRearCamera() );
         product.frontCamera( request.getFrontCamera() );
-        product.warrantyPeriod( request.getWarrantyPeriod() );
-        product.stockQuantity( request.getStockQuantity() );
+        product.nameProduct( request.getNameProduct() );
+        product.rearCamera( request.getRearCamera() );
+        product.scanFrequency( request.getScanFrequency() );
+        product.screenResolution( request.getScreenResolution() );
+        if ( request.getScreenSize() != null ) {
+            product.screenSize( String.valueOf( request.getScreenSize() ) );
+        }
+        product.screenTech( request.getScreenTech() );
         product.status( request.getStatus() );
+        product.stockQuantity( request.getStockQuantity() );
+        product.warrantyPeriod( request.getWarrantyPeriod() );
 
         return product.build();
     }
@@ -102,20 +102,20 @@ public class ProductMapperImpl implements ProductMapper {
         productResponse.operatingSystemName( productOperatingSystemNameOS( product ) );
         productResponse.brandName( productBrandNameBrand( product ) );
         productResponse.warehouseAreaName( productWarehouseAreaNameWarehouseArea( product ) );
-        productResponse.idProduct( product.getIdProduct() );
-        productResponse.nameProduct( product.getNameProduct() );
-        productResponse.image( product.getImage() );
         productResponse.battery( product.getBattery() );
-        productResponse.scanFrequency( product.getScanFrequency() );
-        productResponse.screenSize( product.getScreenSize() );
-        productResponse.screenResolution( product.getScreenResolution() );
-        productResponse.screenTech( product.getScreenTech() );
         productResponse.chipset( product.getChipset() );
-        productResponse.rearCamera( product.getRearCamera() );
         productResponse.frontCamera( product.getFrontCamera() );
-        productResponse.warrantyPeriod( product.getWarrantyPeriod() );
-        productResponse.stockQuantity( product.getStockQuantity() );
+        productResponse.idProduct( product.getIdProduct() );
+        productResponse.image( product.getImage() );
+        productResponse.nameProduct( product.getNameProduct() );
+        productResponse.rearCamera( product.getRearCamera() );
+        productResponse.scanFrequency( product.getScanFrequency() );
+        productResponse.screenResolution( product.getScreenResolution() );
+        productResponse.screenSize( product.getScreenSize() );
+        productResponse.screenTech( product.getScreenTech() );
         productResponse.status( product.getStatus() );
+        productResponse.stockQuantity( product.getStockQuantity() );
+        productResponse.warrantyPeriod( product.getWarrantyPeriod() );
 
         return productResponse.build();
     }
@@ -134,20 +134,20 @@ public class ProductMapperImpl implements ProductMapper {
         productFULLResponse.warehouseAreaName( productWarehouseAreaNameWarehouseArea( product ) );
         productFULLResponse.categoryName( productCategoryNameCategory( product ) );
         productFULLResponse.productVersionResponses( productVersionListToProductVersionResponseList( product.getProductVersion() ) );
-        productFULLResponse.idProduct( product.getIdProduct() );
-        productFULLResponse.nameProduct( product.getNameProduct() );
-        productFULLResponse.image( product.getImage() );
         productFULLResponse.battery( product.getBattery() );
-        productFULLResponse.scanFrequency( product.getScanFrequency() );
-        productFULLResponse.screenSize( product.getScreenSize() );
-        productFULLResponse.screenResolution( product.getScreenResolution() );
-        productFULLResponse.screenTech( product.getScreenTech() );
         productFULLResponse.chipset( product.getChipset() );
-        productFULLResponse.rearCamera( product.getRearCamera() );
         productFULLResponse.frontCamera( product.getFrontCamera() );
-        productFULLResponse.warrantyPeriod( product.getWarrantyPeriod() );
-        productFULLResponse.stockQuantity( product.getStockQuantity() );
+        productFULLResponse.idProduct( product.getIdProduct() );
+        productFULLResponse.image( product.getImage() );
+        productFULLResponse.nameProduct( product.getNameProduct() );
+        productFULLResponse.rearCamera( product.getRearCamera() );
+        productFULLResponse.scanFrequency( product.getScanFrequency() );
+        productFULLResponse.screenResolution( product.getScreenResolution() );
+        productFULLResponse.screenSize( product.getScreenSize() );
+        productFULLResponse.screenTech( product.getScreenTech() );
         productFULLResponse.status( product.getStatus() );
+        productFULLResponse.stockQuantity( product.getStockQuantity() );
+        productFULLResponse.warrantyPeriod( product.getWarrantyPeriod() );
 
         return productFULLResponse.build();
     }
@@ -175,17 +175,17 @@ public class ProductMapperImpl implements ProductMapper {
 
         if ( request != null ) {
             product.setStatus( request.getStatus() );
-            product.setNameProduct( request.getNameProduct() );
             product.setBattery( request.getBattery() );
-            product.setScanFrequency( request.getScanFrequency() );
-            product.setScreenSize( request.getScreenSize() );
-            product.setScreenResolution( request.getScreenResolution() );
-            product.setScreenTech( request.getScreenTech() );
             product.setChipset( request.getChipset() );
-            product.setRearCamera( request.getRearCamera() );
             product.setFrontCamera( request.getFrontCamera() );
-            product.setWarrantyPeriod( request.getWarrantyPeriod() );
+            product.setNameProduct( request.getNameProduct() );
+            product.setRearCamera( request.getRearCamera() );
+            product.setScanFrequency( request.getScanFrequency() );
+            product.setScreenResolution( request.getScreenResolution() );
+            product.setScreenSize( request.getScreenSize() );
+            product.setScreenTech( request.getScreenTech() );
             product.setStockQuantity( request.getStockQuantity() );
+            product.setWarrantyPeriod( request.getWarrantyPeriod() );
         }
         product.setOrigin( origin );
         product.setOperatingSystem( os );
@@ -199,41 +199,41 @@ public class ProductMapperImpl implements ProductMapper {
             return;
         }
 
-        if ( request.getNameProduct() != null ) {
-            product.setNameProduct( request.getNameProduct() );
-        }
         if ( request.getBattery() != null ) {
             product.setBattery( request.getBattery() );
-        }
-        if ( request.getScanFrequency() != null ) {
-            product.setScanFrequency( request.getScanFrequency() );
-        }
-        if ( request.getScreenSize() != null ) {
-            product.setScreenSize( request.getScreenSize() );
-        }
-        if ( request.getScreenResolution() != null ) {
-            product.setScreenResolution( request.getScreenResolution() );
-        }
-        if ( request.getScreenTech() != null ) {
-            product.setScreenTech( request.getScreenTech() );
         }
         if ( request.getChipset() != null ) {
             product.setChipset( request.getChipset() );
         }
-        if ( request.getRearCamera() != null ) {
-            product.setRearCamera( request.getRearCamera() );
-        }
         if ( request.getFrontCamera() != null ) {
             product.setFrontCamera( request.getFrontCamera() );
         }
-        if ( request.getWarrantyPeriod() != null ) {
-            product.setWarrantyPeriod( request.getWarrantyPeriod() );
+        if ( request.getNameProduct() != null ) {
+            product.setNameProduct( request.getNameProduct() );
+        }
+        if ( request.getRearCamera() != null ) {
+            product.setRearCamera( request.getRearCamera() );
+        }
+        if ( request.getScanFrequency() != null ) {
+            product.setScanFrequency( request.getScanFrequency() );
+        }
+        if ( request.getScreenResolution() != null ) {
+            product.setScreenResolution( request.getScreenResolution() );
+        }
+        if ( request.getScreenSize() != null ) {
+            product.setScreenSize( request.getScreenSize() );
+        }
+        if ( request.getScreenTech() != null ) {
+            product.setScreenTech( request.getScreenTech() );
+        }
+        if ( request.getStatus() != null ) {
+            product.setStatus( request.getStatus() );
         }
         if ( request.getStockQuantity() != null ) {
             product.setStockQuantity( request.getStockQuantity() );
         }
-        if ( request.getStatus() != null ) {
-            product.setStatus( request.getStatus() );
+        if ( request.getWarrantyPeriod() != null ) {
+            product.setWarrantyPeriod( request.getWarrantyPeriod() );
         }
     }
 
