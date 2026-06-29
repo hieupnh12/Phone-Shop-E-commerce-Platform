@@ -7,6 +7,7 @@ import com.websales.enums.PaymentStatus;
 import com.websales.repository.CartRepository;
 import com.websales.repository.OrderRepository;
 import com.websales.repository.PaymentTransactionRepository;
+import com.websales.service.MobileNotificationTriggerService;
 import com.websales.service.OrderService;
 import com.websales.service.PayOSService;
 import lombok.AccessLevel;
@@ -30,6 +31,7 @@ public class PayOSWebhookController {
     PaymentTransactionRepository paymentTransactionRepository;
     CartRepository cartRepository;
     OrderService orderService;
+    MobileNotificationTriggerService mobileNotificationTriggerService;
 
     /**
      * Webhook handler từ PayOS
@@ -94,6 +96,7 @@ public class PayOSWebhookController {
             // payOSStatus đã được lấy ở trên
             
             if ("PAID".equals(payOSStatus)) {
+                OrderStatus previousStatus = order.getStatus();
                 // Thanh toán thành công
                 order.setStatus(OrderStatus.PAID);
                 order.setIsPaid(true);
@@ -123,6 +126,17 @@ public class PayOSWebhookController {
                 }
                 
                 log.info("Order {} payment successful via PayOS", orderId);
+                orderRepository.save(order);
+                paymentTransactionRepository.save(transaction);
+                if (previousStatus != OrderStatus.PAID) {
+                    mobileNotificationTriggerService.triggerOrderStatus(orderId, OrderStatus.PAID.name(), false);
+                }
+
+                return ResponseEntity.ok(Map.of(
+                        "error", 0,
+                        "message", "success",
+                        "data", Map.of("orderCode", orderCode)
+                ));
             } else if ("CANCELLED".equals(payOSStatus)) {
                 // Thanh toán bị hủy - xóa order nếu chưa thanh toán
                 if (!Boolean.TRUE.equals(order.getIsPaid()) && order.getStatus() == OrderStatus.PENDING) {
@@ -149,22 +163,26 @@ public class PayOSWebhookController {
                     transaction.setResponseMessage("Thanh toán bị hủy. Order Code: " + orderCode);
                     
                     log.info("Order {} payment cancelled via PayOS (order already paid or not PENDING)", orderId);
-                    
-                    // Lưu thay đổi
+
                     orderRepository.save(order);
                     paymentTransactionRepository.save(transaction);
+                    mobileNotificationTriggerService.triggerOrderStatus(orderId, OrderStatus.CANCELED.name(), false);
+
+                    return ResponseEntity.ok(Map.of(
+                            "error", 0,
+                            "message", "success",
+                            "data", Map.of("orderCode", orderCode)
+                    ));
                 }
             } else {
                 // Các trạng thái khác (PENDING, etc.)
                 transaction.setResponseMessage("Trạng thái: " + payOSStatus + ". Order Code: " + orderCode);
                 log.info("Order {} payment status: {}", orderId, payOSStatus);
+                paymentTransactionRepository.save(transaction);
             }
 
-            // Lưu thay đổi
             orderRepository.save(order);
-            paymentTransactionRepository.save(transaction);
 
-            // Trả về response cho PayOS
             return ResponseEntity.ok(Map.of(
                     "error", 0,
                     "message", "success",

@@ -40,6 +40,7 @@ public class PaymentTransactionService {
     PaymentMethodService paymentMethodService;
     OrderRepository orderRepository;
     CartRepository cartRepository;
+    MobileNotificationTriggerService mobileNotificationTriggerService;
 
     @Transactional
     public PaymentTransactionResponse createPaymentTransaction(PaymentTransactionRequest request) {
@@ -184,12 +185,17 @@ public class PaymentTransactionService {
             Order order = orderRepository.findById(transaction.getOrderId())
                     .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
             
+            OrderStatus previousStatus = order.getStatus();
             order.setStatus(OrderStatus.PAID);
             order.setIsPaid(true);
             order.setEndDatetime(LocalDateTime.now());
-            orderRepository.save(order);
-            
-            log.info("Order {} status updated to PAID after successful payment", order.getOrderId());
+            Order savedOrder = orderRepository.save(order);
+
+            if (previousStatus != OrderStatus.PAID) {
+                mobileNotificationTriggerService.triggerOrderStatus(savedOrder.getOrderId(), OrderStatus.PAID.name(), false);
+            }
+
+            log.info("Order {} status updated to PAID after successful payment", savedOrder.getOrderId());
             
             // Xóa cart items sau khi thanh toán thành công
             if (order.getCustomerId() != null && order.getCustomerId().getCustomerId() != null) {

@@ -112,6 +112,9 @@ app:
   admin:
     default-email: admin@websales.com
     default-password: admin123
+  mobile-notification:
+    enabled: ${MOBILE_NOTIFICATION_ENABLED:true}
+    trigger-url: ${MOBILE_NOTIFICATION_TRIGGER_URL:https://maclenin.io.vn/mobile/notifications/triggers/order-status}
 
 
 cloudinary:
