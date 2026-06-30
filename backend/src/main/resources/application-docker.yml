@@ -40,6 +40,9 @@ app:
     password: ${APP_ADMIN_PASSWORD:}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  mobile-notification:
+    enabled: ${MOBILE_NOTIFICATION_ENABLED:true}
+    trigger-url: ${MOBILE_NOTIFICATION_TRIGGER_URL:https://maclenin.io.vn/mobile/notifications/triggers/order-status}
 
 logging:
   level:

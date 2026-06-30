@@ -37,6 +37,7 @@ public class OrderService {
     CustomerRepo customerRepo;
     EmployeeRepo employeeRepo;
     PaymentTransactionRepository paymentTransactionRepository;
+    MobileNotificationTriggerService mobileNotificationTriggerService;
 
 
     public List<Order> getOrdersByCustomer(Long  customerId) {
@@ -135,62 +136,21 @@ public class OrderService {
                 order.setEndDatetime(java.time.LocalDateTime.now());
             }
             
+            boolean codPaymentConfirmed = false;
+
             // Nếu chuyển sang DELIVERED và là đơn COD, tự động set isPaid = true
             if (status == OrderStatus.DELIVERED && oldStatus != OrderStatus.DELIVERED) {
-                List<com.websales.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByOrderId(orderId);
-                log.info("Checking payment transactions for order {}: found {} transactions", orderId, transactions.size());
-                
-                // Kiểm tra xem có phải đơn COD không
-                boolean isCOD = false;
-                
-                if (transactions.isEmpty()) {
-                    // Nếu không có payment transaction, mặc định coi là COD (đơn tại cửa hàng)
-                    log.info("No payment transaction found for order {}, defaulting to COD", orderId);
-                    isCOD = true;
-                } else {
-                    // Kiểm tra từ payment transactions
-                    isCOD = transactions.stream()
-                            .anyMatch(transaction -> {
-                                String transactionCode = transaction.getTransactionCode();
-                                log.info("Checking transaction {} with code: {}", transaction.getTransactionId(), transactionCode);
-                                
-                                // Kiểm tra transaction code
-                                if (transactionCode != null && transactionCode.startsWith("CODE-")) {
-                                    log.info("Found COD transaction by transaction code: {}", transactionCode);
-                                    return true;
-                                }
-                                
-                                // Kiểm tra payment method type
-                                if (transaction.getPaymentMethod() != null) {
-                                    String paymentMethodType = transaction.getPaymentMethod().getPaymentMethodType();
-                                    log.info("Payment method type: {}", paymentMethodType);
-                                    if (paymentMethodType != null && 
-                                        ("cod".equalsIgnoreCase(paymentMethodType) || "COD".equalsIgnoreCase(paymentMethodType))) {
-                                        log.info("Found COD transaction by payment method type: {}", paymentMethodType);
-                                        return true;
-                                    }
-                                }
-                                
-                                // Kiểm tra nếu không phải PayOS thì mặc định là COD
-                                if (transactionCode == null || !transactionCode.startsWith("PAYOS-")) {
-                                    log.info("Transaction is not PayOS, defaulting to COD");
-                                    return true;
-                                }
-                                
-                                return false;
-                            });
-                }
-                
+                boolean isCOD = isCodOrder(orderId);
                 log.info("Order {} is COD: {}, current isPaid: {}", orderId, isCOD, order.getIsPaid());
-                
-                // Nếu là COD, set isPaid = true khi chuyển sang DELIVERED
+
                 if (isCOD && !Boolean.TRUE.equals(order.getIsPaid())) {
                     order.setIsPaid(true);
+                    codPaymentConfirmed = true;
                     log.info("Setting isPaid = true for COD order {} when status changed to DELIVERED", orderId);
-                } else if (!isCOD) {
-                    log.info("Order {} is not COD, skipping isPaid update", orderId);
+                } else if (isCOD) {
+                    codPaymentConfirmed = true;
                 } else {
-                    log.info("Order {} isPaid already true, skipping update", orderId);
+                    log.info("Order {} is not COD, skipping isPaid update", orderId);
                 }
             }
             
@@ -199,9 +159,40 @@ public class OrderService {
                 restoreStockFromOrder(orderId);
             }
 
-            return Optional.of(orderRepository.save(order));
+            Order savedOrder = orderRepository.save(order);
+            mobileNotificationTriggerService.notifyAfterOrderStatusChange(savedOrder, oldStatus, codPaymentConfirmed);
+            return Optional.of(savedOrder);
         }
         return Optional.empty();
+    }
+
+    private boolean isCodOrder(Integer orderId) {
+        List<com.websales.entity.PaymentTransaction> transactions = paymentTransactionRepository.findByOrderId(orderId);
+        log.info("Checking payment transactions for order {}: found {} transactions", orderId, transactions.size());
+
+        if (transactions.isEmpty()) {
+            log.info("No payment transaction found for order {}, defaulting to COD", orderId);
+            return true;
+        }
+
+        return transactions.stream().anyMatch(transaction -> {
+            String transactionCode = transaction.getTransactionCode();
+            log.info("Checking transaction {} with code: {}", transaction.getTransactionId(), transactionCode);
+
+            if (transactionCode != null && transactionCode.startsWith("CODE-")) {
+                return true;
+            }
+
+            if (transaction.getPaymentMethod() != null) {
+                String paymentMethodType = transaction.getPaymentMethod().getPaymentMethodType();
+                if (paymentMethodType != null &&
+                        ("cod".equalsIgnoreCase(paymentMethodType) || "COD".equalsIgnoreCase(paymentMethodType))) {
+                    return true;
+                }
+            }
+
+            return transactionCode == null || !transactionCode.startsWith("PAYOS-");
+        });
     }
 
     /**
