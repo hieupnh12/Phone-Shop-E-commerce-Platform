@@ -1,6 +1,5 @@
 package com.websales.entity;
 
-
 import com.websales.enums.ItemStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,7 +16,7 @@ import lombok.experimental.FieldDefaults;
 public class ProductItem {
 
     @Id
-    @Column(name ="imei", unique = true)
+    @Column(name = "imei", length = 255)
     String imei;
 
 
@@ -26,11 +25,10 @@ public class ProductItem {
     @ToString.Exclude
     ProductVersion versionId;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name ="order_detail_id")
-//    @ToString.Exclude
-//    OrderDetail orderDetail;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="order_detail_id")
+    @ToString.Exclude
+    OrderDetail orderDetail;
 
 
     @Enumerated(EnumType.STRING)

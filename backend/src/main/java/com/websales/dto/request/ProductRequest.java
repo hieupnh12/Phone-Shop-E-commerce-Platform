@@ -18,7 +18,7 @@ public class ProductRequest {
     @UniqueName(entity = Product.class, fieldName = "nameProduct")
     String nameProduct;
 
-    String image;
+//    String image;
 
           Long idOrigin;
 

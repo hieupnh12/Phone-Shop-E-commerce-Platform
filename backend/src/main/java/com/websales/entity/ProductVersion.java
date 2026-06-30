@@ -1,64 +1,70 @@
 package com.websales.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Builder                 // Tạo builder pattern giúp tạo đối tượng dễ dàng, linh hoạt
-@Entity                  // Đánh dấu class này là entity, ánh xạ tới bảng trong DB
-@Data                    // Tự sinh getter, setter, toString, equals, hashCode
-@NoArgsConstructor       // Tạo constructor không tham số (mặc định)
-@AllArgsConstructor      // Tạo constructor với tất cả các tham số
+@Builder // Tạo builder pattern giúp tạo đối tượng dễ dàng, linh hoạt
+@Entity // Đánh dấu class này là entity, ánh xạ tới bảng trong DB
+@Data // Tự sinh getter, setter, toString, equals, hashCode
+@NoArgsConstructor // Tạo constructor không tham số (mặc định)
+@AllArgsConstructor // Tạo constructor với tất cả các tham số
 @Table(name = "product_versions") // Đặt tên bảng trong DB là "product"
 @FieldDefaults(level = AccessLevel.PRIVATE) // Mặc định các biến thành private, không cần khai báo riêng
 public class ProductVersion {
     @Id
-//    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name="product_version_id")
+    // @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "product_version_id")
     String idVersion;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name ="product_id")
-           Product product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    @JsonBackReference
+    Product product;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rom_id")
+    Rom rom;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name ="rom_id")
-          Rom rom;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ram_id")
+    Ram ram;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "color_id")
+    Color color;
 
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name="ram_id")
-          Ram ram;
-
-
-          @ManyToOne(fetch = FetchType.LAZY)
-          @JoinColumn(name="color_id")
-          Color color;
-
-
-    @Column(name ="importPrice")
+    @Column(name = "importPrice")
     BigDecimal importPrice;
 
-
-    @Column(name ="exportPrice")
+    @Column(name = "exportPrice")
     BigDecimal exportPrice;
 
-    @Column(name ="stock_quantity")
+    @Column(name = "stock_quantity")
     Integer stockQuantity;
+
+
+    @Column(name ="picture")
+    String image ;
+
+    @OneToMany(mappedBy = "productVersionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<ProductVersionImage> images;
 
 
     @Column(name="status")
     Boolean status;
+    
 
-//
-//    @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//     List<ProductItem> productItems;
+
+    @OneToMany(mappedBy = "versionId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+     List<ProductItem> productItems;
 
 
     static final Map<String, String> PRODUCT_CODE_MAPPING = new HashMap<>();
@@ -114,7 +120,7 @@ public class ProductVersion {
 
         if (idVersion == null) {
             String productCode = generateProductCode();
-            String ramValue = ram != null ? ram.getNameRame() : "0";
+            String ramValue = ram != null ? ram.getNameRam() : "0";
             String romValue = rom != null ? rom.getNameRom(): "0";
             String colorValue = color != null ? color.getNameColor().toUpperCase() : "UNKNOWN";
             this.idVersion = String.format("%s_%s_%s_%s", productCode, ramValue, romValue, colorValue);
@@ -145,6 +151,5 @@ public class ProductVersion {
         String result = code.toString().toUpperCase();
         return result.length() > 10 ? result.substring(0, 10) : result;
     }
-
 
 }

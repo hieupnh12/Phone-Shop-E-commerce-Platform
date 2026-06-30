@@ -1,0 +1,201 @@
+package com.websales.service;
+
+import com.websales.entity.ProductVersion;
+import com.websales.exception.AppException;
+import com.websales.exception.ErrorCode;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
+public class EmailService   {
+    JavaMailSender mailSender;
+
+    public void sendPasswordResetEmail(String to, String resetLink) {
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setTo(to);
+            helper.setSubject("Khôi PHỤC MẬT KHẨU");
+            String content = """
+            <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+                <p>Xin chào </p> 
+                               
+                <p>Vui lòng nhấn vào link bên dưới để đặt  mật khẩu:</p>
+                
+                <p style="text-align: center; margin: 20px;">
+                                <a href="%s" style="color: #007BFF; text-decoration: underline;">
+                                    Đặt lại mật khẩu
+                                </a>
+                            </p>
+
+                <p><b>Lưu ý:</b> Liên kết này sẽ hết hạn sau <b>5 phút</b> kể từ khi email được gửi.</p>
+
+                <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</p>
+                <hr/>
+                <p>Nếu có bất kỳ thắc mắc hoặc cần hỗ trợ, xin vui lòng liên hệ bộ phận Hỗ trợ Kỹ thuật qua email: <a href=\"mailto:sinhnnde180169@gmail.com\">sinhnnde180169@gmail.com</a></p>
+                <p>Trân trọng,<br/>Đội ngũ Hỗ trợ Kỹ thuật</p>
+            </div>
+        """.formatted(resetLink);
+
+            helper.setText(content, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("Lỗi khi gửi email đặt lại mật khẩu cho {}: {}", to, e.getMessage());
+            throw new AppException(ErrorCode.TOKEN_STILL_VALID);
+        }
+    }
+    public void sendUserNamePassword(String to, String userName, String password) {
+        MimeMessage message = mailSender.createMimeMessage();
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(to);
+            helper.setSubject("THÔNG TIN TÀI KHOẢN TRUY CẬP HỆ THỐNG");
+            String content =
+                    "<html>" +
+                            "<body style=\"font-family: Arial, sans-serif; line-height: 1.8; color: #333;\">" +
+                            "<p>Xin chào quý khách,</p>" +
+
+                            "<p>Hệ thống xin gửi đến quý khách thông tin tài khoản truy cập:</p>" +
+
+                            "<table style=\"border-collapse: collapse; border: 1px solid #ddd;\">" +
+                            "<tr>" +
+                            "<td style=\"padding: 8px 12px; border: 1px solid #ddd;\"><strong>Tên đăng nhập</strong></td>" +
+                            "<td style=\"padding: 8px 12px; border: 1px solid #ddd;\">" + userName + "</td>" +
+                            "</tr>" +
+                            "<tr>" +
+                            "<td style=\"padding: 8px 12px; border: 1px solid #ddd;\"><strong>Mật khẩu</strong></td>" +
+                            "<td style=\"padding: 8px 12px; border: 1px solid #ddd;\">" + password + "</td>" +
+                            "</tr>" +
+                            "</table>" +
+
+                            "<p><strong>Lưu ý:</strong> Vì lý do bảo mật, quý khách vui lòng thay đổi mật khẩu ngay sau lần đăng nhập đầu tiên.</p>" +
+                            "<hr/>" +
+                            "<p>Nếu có bất kỳ thắc mắc hoặc cần hỗ trợ, xin vui lòng liên hệ bộ phận Hỗ trợ Kỹ thuật qua email: <a href=\"mailto:sinhnnde180169@gmail.com\">sinhnnde180169@gmail.com</a></p>" +
+
+                            "<p>Trân trọng,<br/>Đội ngũ Hỗ trợ Kỹ thuật</p>" +
+                            "</body>" +
+                            "</html>";
+            helper.setText(content, true); // true: gửi nội dung HTML
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("Lỗi khi gửi email cho {}: {}", to, e.getMessage());
+            throw new AppException(ErrorCode.TOKEN_STILL_VALID);
+        }
+    }
+
+    public void sendReportExcel(String subject, List<String> toEmails, ByteArrayInputStream excelFile)
+            throws MessagingException, IOException {
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8"); // true = multipart, UTF-8
+
+        // ---- Người nhận ----
+        helper.setTo(toEmails.toArray(new String[0]));
+
+        // ---- Tiêu đề ----
+        helper.setSubject(subject);
+
+        // ---- Nội dung HTML chuyên nghiệp ----
+        String htmlContent = """
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #1a73e8;">Báo cáo doanh thu tự động</h2>
+                <p>Kính gửi Quý khách hàng / Nhân viên,</p>
+
+                <p>Hệ thống đã tạo báo cáo doanh thu mới nhất và đính kèm trong email này dưới dạng file Excel. 
+                Vui lòng tải xuống và xem chi tiết các số liệu để phục vụ công tác quản lý và kiểm soát doanh thu.</p>
+
+                <p><strong>Lưu ý:</strong></p>
+                <ul>
+                    <li>File Excel chứa đầy đủ các bảng số liệu theo ngày/tuần/tháng.</li>
+                    <li>Báo cáo được tự động sinh ra từ hệ thống, đảm bảo dữ liệu chính xác.</li>
+                    <li>Xin vui lòng không chỉnh sửa định dạng của file để đảm bảo tính toàn vẹn dữ liệu.</li>
+                </ul>
+
+                <p>Chúng tôi khuyến nghị quý khách lưu trữ file báo cáo vào hệ thống quản lý nội bộ.</p>
+
+                <p>Trân trọng,</p>
+                <p><em>Đội ngũ quản lý hệ thống</em></p>
+            </div>
+        </body>
+        </html>
+        """;
+
+        helper.setText(htmlContent, true); // true = HTML
+
+        // ---- Đính kèm file Excel ----
+        helper.addAttachment("OrderReport.xlsx",
+                new ByteArrayResource(excelFile.readAllBytes()));
+
+        // ---- Gửi email ----
+        mailSender.send(message);
+
+        System.out.println(">>> Email đã gửi thành công đến: " + toEmails);
+    }
+
+    public void sendLowStockAlert(List<ProductVersion> products, List<String> toEmails) {
+        if (products.isEmpty() || toEmails.isEmpty()) return;
+
+        MimeMessage message = mailSender.createMimeMessage();
+        String subject = "⚠️ Cảnh báo tồn kho: Sản phẩm gần hết hàng";
+
+        // Tạo nội dung HTML
+        String header = "<tr style='background-color: #f2f2f2;'>" +
+                "<th>ID</th><th>Loại</th><th>RAM</th><th>ROM</th><th>Màu</th><th>Tồn kho</th></tr>";
+
+        String rows = products.stream()
+                .map(p -> {
+                    String ramName = (p.getRam() != null) ? p.getRam().getNameRam() : "N/A";
+                    String romName = (p.getRom() != null) ? p.getRom().getNameRom() : "N/A";
+                    String colorName = (p.getColor() != null) ? p.getColor().getNameColor() : "N/A";
+                    return String.format(
+                            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
+                            p.getIdVersion() != null ? p.getIdVersion() : "N/A",
+                            p.getImportPrice() != null ? p.getImportPrice() : "N/A",
+                            ramName,
+                            romName,
+                            colorName,
+                            p.getStockQuantity() != null ? p.getStockQuantity() : 0
+                    );
+                })
+                .collect(Collectors.joining());
+
+        String content = String.format(
+                "<html><body><h3>Các sản phẩm gần hết hàng:</h3>" +
+                        "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse;'>%s%s</table>" +
+                        "<p>Vui lòng kiểm tra và nhập thêm hàng kịp thời để tránh hết tồn kho.</p></body></html>",
+                header, rows
+        );
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            // Gửi cho nhiều người nhận
+            helper.setTo(toEmails.toArray(new String[0]));
+            helper.setSubject(subject);
+            helper.setText(content, true); // true = HTML
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("Lỗi khi gửi email cho {}: {}", toEmails, e.getMessage());
+            throw new AppException(ErrorCode.TOKEN_STILL_VALID);
+        }
+    }
+
+}

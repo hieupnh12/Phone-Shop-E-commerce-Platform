@@ -17,11 +17,10 @@ public class WarehouseAreaRequest {
 
 
     @Size(min = 3, message = "WAREHOUSE_INVALID") //cho chiều dài chuổi la  3 kí tự
-    @UniqueName(entity = WarehouseArea.class, fieldName = "name")
-    String nameWarehouse;
+    String nameWarehouseArea;
 
-//    String note;
-//
-//    boolean status;
+    String note;
+
+    boolean status;
 
 }

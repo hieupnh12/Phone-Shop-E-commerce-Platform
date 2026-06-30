@@ -12,13 +12,13 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Table(name = "operating_systems" )
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OperatingSystem {
+public class OperatingSystem extends AuditableEntity {
        @Id
        @GeneratedValue(strategy = GenerationType.IDENTITY)
        @Column(name ="operating_system_id")
        Long idOS;
 
-       @Column(name="operating_system_name")
+       @Column(name="operating_system_name",unique=true)
        String nameOS;
 //
 //       @Column

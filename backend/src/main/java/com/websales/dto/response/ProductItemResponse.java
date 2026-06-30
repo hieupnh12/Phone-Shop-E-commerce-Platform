@@ -16,10 +16,7 @@ public class ProductItemResponse {
 
     String productVersionId;
 
-    String importId;
-
-
-    String exportId;
+    Integer order_id;
 
     boolean status;
 

@@ -26,7 +26,7 @@ public class RomService {
     public Rom createRom(RomRequest request) {
         Rom rom = Rom.builder()
                 .nameRom(request.getNameRom())
-                .status(request.getStatus())
+//                .status(request.getStatus())
                 .build();
         return romRepo.save(rom);
     }

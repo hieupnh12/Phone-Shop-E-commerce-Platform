@@ -1,0 +1,168 @@
+package com.websales.controller;
+
+import com.websales.dto.request.*;
+import com.websales.dto.response.*;
+import com.websales.service.CustomerAuthenticationService;
+import com.websales.service.CustomerService;
+import jakarta.validation.Valid;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/customer")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class CustomerController {
+    CustomerService customerService;
+    CustomerAuthenticationService cusAuthService;
+    @PostMapping
+    public ApiResponse<CustomerResponse> createCustomer(@RequestBody CustomerCreateRequest request) {
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.createCustomer(request))
+                .build();
+    }
+     @PostMapping("/auth")
+    public ApiResponse<String> sendOtp(@RequestBody SendOtpRequest request ) {
+        return  ApiResponse.<String>builder()
+                .result(cusAuthService.sendOtp(request))
+                .build();
+     }
+    @PostMapping("/auth_verify_otp")
+     public ApiResponse<String> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        return   ApiResponse.<String>builder()
+                 .result(cusAuthService.verifyOtp(request))
+                 .build();
+     }
+    @PutMapping("/update/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_UPDATE_BASIC') or hasRole('SCOPE_CUSTOMER_MANAGE_ACCOUNT')")
+    public ApiResponse<CustomerResponse> updateCustomer(
+            @PathVariable Long id, 
+            @Valid @RequestBody CustomerUpdateRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        // Resource-based authorization: Customer chỉ sửa được thông tin của chính mình
+        // Employee với CUSTOMER_MANAGE_ACCOUNT có thể sửa tất cả
+        try {
+            Long jwtCustomerId = Long.valueOf(jwt.getSubject());
+            // Kiểm tra nếu là customer token và không có quyền MANAGE_ACCOUNT
+            // Lưu ý: Trong JWT, scope được lưu KHÔNG có prefix "SCOPE_"
+            boolean hasManageAccount = jwt.getClaims().containsKey("scopes") && 
+                jwt.getClaims().get("scopes") != null &&
+                ((List<?>) jwt.getClaims().get("scopes")).stream()
+                    .anyMatch(s -> s.toString().equals("CUSTOMER_MANAGE_ACCOUNT"));
+            
+            if (!hasManageAccount && !jwtCustomerId.equals(id)) {
+                return ApiResponse.<CustomerResponse>builder()
+                        .code(403)
+                        .message("Bạn chỉ có thể cập nhật thông tin của chính mình")
+                        .build();
+            }
+        } catch (NumberFormatException e) {
+            // Nếu subject không phải là số, có thể là employee token (subject là fullName)
+            // Employee với CUSTOMER_MANAGE_ACCOUNT có thể sửa tất cả, không cần check
+        }
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.updateCustomer(id,request))
+                .build();
+     }
+
+     @GetMapping("/me")
+     public ApiResponse<CustomerResponse> getCustomer() {
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.getCustomer())
+                .build();
+     }
+
+     @PutMapping("/me")
+     public ApiResponse<CustomerResponse> updateMyProfile(
+             @Valid @RequestBody CustomerUpdateRequest request,
+             @AuthenticationPrincipal Jwt jwt) {
+        // Customer chỉ có thể update profile của chính mình
+        // Lấy customerId từ JWT token
+        Long customerId = Long.valueOf(jwt.getSubject());
+        return ApiResponse.<CustomerResponse>builder()
+                .result(customerService.updateCustomer(customerId, request))
+                .build();
+     }
+
+     @PutMapping("/complete-profile")
+    public ApiResponse<CompleteProfileResponse> cusAuthUpdate(@RequestBody @Valid CusAuthUpdateRequest request) {
+        return ApiResponse.<CompleteProfileResponse>builder()
+                .result(cusAuthService.cusAuthUpdate(request))
+                .build();
+     }
+
+     @GetMapping("/total_orders/{id}")
+    public ApiResponse<CustomerCountOrders> customerCountOrders(@PathVariable Long id) {
+        return ApiResponse.<CustomerCountOrders>builder()
+                .result(customerService.countCustomers(id))
+                .build();
+     }
+     @GetMapping("/order/{id}")
+     public ApiResponse<List<ListOrderResponse>> getALlOrders(@PathVariable Long id) {
+        return ApiResponse.<List<ListOrderResponse>>builder()
+                .result(customerService.findOrderByCustomerId(id))
+                .build();
+     }
+
+     @GetMapping("/order_detail/{id}")
+    public ApiResponse<List<ListOrderDetailResponse>> getAllOrders(@PathVariable Integer id) {
+        return ApiResponse.<List<ListOrderDetailResponse>>builder()
+                .result(customerService.getListOrderDetails(id))
+                .build();
+     }
+
+    @GetMapping("/search")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_VIEW_ALL')")
+    public ApiResponse<Page<CustomerResponse>> search(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CustomerResponse> result = customerService.searchCustomers(keyword,pageable);
+
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .message("Search successfully")
+                .result(result)
+                .build();
+    }
+
+    // Endpoint mới để tìm kiếm theo số điện thoại hoặc email (KHÔNG ảnh hưởng endpoint cũ)
+    @GetMapping("/search/phone-or-email")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_VIEW_ALL')")
+    public ApiResponse<Page<CustomerResponse>> searchByPhoneOrEmail(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<CustomerResponse> result = customerService.searchCustomersByPhoneOrEmail(keyword, page, size);
+        return ApiResponse.<Page<CustomerResponse>>builder()
+                .message("Search successfully")
+                .result(result)
+                .build();
+    }
+
+    // Endpoint để lấy gợi ý khách hàng khi gõ 4 số đầu
+    @GetMapping("/suggestions/phone")
+    @PreAuthorize("hasAuthority('SCOPE_CUSTOMER_VIEW_ALL')")
+    public ApiResponse<List<CustomerResponse>> getPhoneSuggestions(
+            @RequestParam String prefix
+    ) {
+        List<CustomerResponse> suggestions = customerService.getCustomerSuggestionsByPhonePrefix(prefix);
+        return ApiResponse.<List<CustomerResponse>>builder()
+                .message("Suggestions retrieved successfully")
+                .result(suggestions)
+                .build();
+    }
+}
+

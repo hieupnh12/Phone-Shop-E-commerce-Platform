@@ -14,7 +14,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RamRequest {
 
-    @UniqueName(entity = Ram.class, fieldName = "name")
+//    @UniqueName(entity = Ram.class, fieldName = "name")
     String nameRam;
 
     Boolean status;

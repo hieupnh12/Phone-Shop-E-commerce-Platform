@@ -1,0 +1,165 @@
+package com.websales.configuration;
+
+import com.websales.constant.PermissionKeys;
+import com.websales.entity.Employee;
+import com.websales.entity.Permission;
+import com.websales.entity.Role;
+import com.websales.repository.EmployeeRepo;
+import com.websales.repository.PermissionRepo;
+import com.websales.repository.RoleRepo;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class DatabaseSeeder implements CommandLineRunner {
+
+    private static final String DEFAULT_ADMIN_EMAIL = "sinhnnde180169@fpt.edu.vn";
+    private static final String DEFAULT_ADMIN_PASSWORD = "999999999";
+
+    private final PermissionRepo permissionRepository;
+    private final RoleRepo roleRepository;
+    private final EmployeeRepo employeeRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @NonFinal
+    @Value("${app.admin.email:}")
+    private String bootstrapAdminEmail;
+
+    @NonFinal
+    @Value("${app.admin.password:}")
+    private String bootstrapAdminPassword;
+
+    @Override
+    @Transactional
+    public void run(String... args) throws Exception {
+        log.info("Bắt đầu khởi tạo dữ liệu mặc định (Seeding)...");
+
+        Set<Permission> allPermissions = seedPermissions();
+        log.info("Đã tạo hoặc đảm bảo {} Permissions tồn tại.", allPermissions.size());
+
+        Role adminRole = seedRoleAdmin(allPermissions);
+        log.info("Đã tạo hoặc đảm bảo Role ADMIN tồn tại với {} quyền.", adminRole.getRolePermissions().size());
+
+        seedDefaultAdminUser(adminRole);
+        resetAdminPasswordFromEnv(adminRole);
+        log.info("Đã đảm bảo tài khoản Admin mặc định tồn tại.");
+    }
+
+
+    private Set<Permission> seedPermissions() {
+        Set<Permission> createdPermissions = new HashSet<>();
+
+        for (String permKey : PermissionKeys.ALL_PERMISSIONS) {
+            // Parse format mới: PRODUCT_VIEW_ALL -> module: PRODUCT, action: VIEW, resource: ALL
+            // Format: MODULE_ACTION_RESOURCE (với underscore)
+            String[] parts = permKey.split("_");
+
+            // Cần ít nhất 3 phần: MODULE_ACTION_RESOURCE
+            // Ví dụ: PRODUCT_VIEW_ALL -> [PRODUCT, VIEW, ALL]
+            //        STAFF_MANAGE_ROLES -> [STAFF, MANAGE, ROLES]
+            if (parts.length < 3) {
+                log.warn("Permission key không đúng format (cần ít nhất 3 phần): {}", permKey);
+                continue;
+            }
+
+            // Phần đầu là MODULE
+            String module = parts[0];
+            // Phần thứ 2 là ACTION
+            String action = parts[1];
+            // Phần còn lại (từ phần 3 trở đi) là RESOURCE, nối lại bằng underscore
+            String resource = String.join("_", Arrays.copyOfRange(parts, 2, parts.length));
+
+            Permission existingPerm = permissionRepository
+                    .findByModuleAndActionAndResource(module, action, resource)
+                    .orElseGet(() -> {
+                        Permission newPerm = Permission.builder()
+                                .module(module)
+                                .action(action)
+                                .resource(resource)
+                                .build();
+                        return permissionRepository.save(newPerm);
+                    });
+
+            createdPermissions.add(existingPerm);
+        }
+        return createdPermissions;
+    }
+
+
+    private Role seedRoleAdmin(Set<Permission> allPermissions) {
+        final String ADMIN_ROLE_NAME = "ADMIN";
+
+        Role adminRole = roleRepository.findByName(ADMIN_ROLE_NAME)
+                .orElseGet(() -> {
+                    return roleRepository.save(Role.builder()
+                            .name(ADMIN_ROLE_NAME)
+                            .description("Quản trị viên toàn hệ thống...")
+                            .build());
+                });
+
+        adminRole.setRolePermissions(allPermissions);
+        return roleRepository.save(adminRole);
+    }
+
+
+    private void seedDefaultAdminUser(Role adminRole) {
+        if (employeeRepository.findByEmail(DEFAULT_ADMIN_EMAIL).isEmpty()) {
+            employeeRepository.save(Employee.builder()
+                    .email(DEFAULT_ADMIN_EMAIL)
+                    .fullName("Quản trị viên Hệ thống")
+                    .passwordHash(passwordEncoder.encode(DEFAULT_ADMIN_PASSWORD))
+                    .isActive(true)
+                    .employeeRoles(Set.of(adminRole))
+                    .build());
+            log.info("Đã tạo admin mặc định: {}", DEFAULT_ADMIN_EMAIL);
+        }
+    }
+
+    /** Cập nhật mật khẩu admin khi set APP_ADMIN_EMAIL + APP_ADMIN_PASSWORD trong .env */
+    private void resetAdminPasswordFromEnv(Role adminRole) {
+        if (bootstrapAdminEmail == null || bootstrapAdminEmail.isBlank()
+                || bootstrapAdminPassword == null || bootstrapAdminPassword.isBlank()) {
+            return;
+        }
+
+        String email = bootstrapAdminEmail.trim().toLowerCase();
+        try {
+            Optional<Employee> existing = employeeRepository.findByEmail(email);
+            if (existing.isEmpty()) {
+                existing = employeeRepository.findByEmail(bootstrapAdminEmail.trim());
+            }
+
+            if (existing.isPresent()) {
+                Employee admin = existing.get();
+                admin.setPasswordHash(passwordEncoder.encode(bootstrapAdminPassword));
+                admin.setIsActive(true);
+                // Không gán lại employeeRoles — CascadeType.ALL trên ManyToMany dễ gây lỗi khi save
+                employeeRepository.save(admin);
+            } else {
+                employeeRepository.save(Employee.builder()
+                        .email(email)
+                        .fullName("Quản trị viên")
+                        .passwordHash(passwordEncoder.encode(bootstrapAdminPassword))
+                        .isActive(true)
+                        .employeeRoles(Set.of(adminRole))
+                        .build());
+            }
+            log.info("Đã cập nhật mật khẩu admin: {}", email);
+        } catch (Exception e) {
+            log.error("Không thể reset mật khẩu admin từ env (backend vẫn tiếp tục chạy): {}", email, e);
+        }
+    }
+}

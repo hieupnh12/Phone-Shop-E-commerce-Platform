@@ -1,22 +1,17 @@
 package com.websales.dto.response;
 
 import java.math.BigDecimal;
+import lombok.*;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.FieldDefaults;
-
-// @Data
+@Data
 @Builder
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class StatisticSummaryResponse {
-    String date;
-    int orders;
-    BigDecimal revenue;
-    BigDecimal cost;
-    BigDecimal benefit;
-    String topProduct;
+    private String date;
+    private Long orders;
+    private BigDecimal revenue;
+    private BigDecimal cost;
+    private BigDecimal benefit;
+    private String topProduct;
 }

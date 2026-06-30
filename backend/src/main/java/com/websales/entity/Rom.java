@@ -23,8 +23,8 @@ public class Rom {
     String nameRom ;
 
 
-    @Column
-    Boolean status;
+//    @Column
+//    Boolean status;
 
 
 

@@ -1,6 +1,4 @@
 package com.websales.dto.response;
-
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -10,7 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor      // Tạo constructor với tất cả các tham số
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ColorResponse {
-    Long id ;
-    String name;
+    Long idColor ;
+    String nameColor;
     Boolean status;
 }

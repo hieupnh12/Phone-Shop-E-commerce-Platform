@@ -1,5 +1,6 @@
 package com.websales.dto.request;
 
+import com.websales.enums.ItemStatus;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -17,5 +18,5 @@ public class ProductItemRequest {
     String idProductVersion;
 
     @Builder.Default
-    boolean status = false; // Default status set to false (equivalent to 0)
+    ItemStatus status = ItemStatus.IN_STOCK;
 }

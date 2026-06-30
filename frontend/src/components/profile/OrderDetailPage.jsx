@@ -1,0 +1,873 @@
+import React, { useState, useEffect } from 'react';
+import {useParams, Link, useOutletContext, useLocation, useNavigate} from 'react-router-dom';
+import { CheckCircle, Clock, Loader2, ChevronRight,  Package, Truck, Home, Phone, ShoppingCart, Info, Edit3, Heart, XCircle, Shield, RefreshCw, AlertCircle } from 'lucide-react';
+import {useAuthFullOptions} from "../../contexts/AuthContext";
+import { profileService, orderService, warrantyRequestService } from "../../services/api";
+import api from "../../services/api";
+import cartService from "../../services/cartService";
+import { useLanguage } from "../../contexts/LanguageContext";
+import Toast from "../common/Toast";
+import { formatPhoneNumber } from "../../utils/phoneUtils";
+import WarrantyRequestModal from "../common/WarrantyRequestModal";
+
+
+
+const OrderDetailPage = () => {
+    const { t } = useLanguage();
+    const { orderId } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [orderData, setOrderData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [warrantyModal, setWarrantyModal] = useState({ isOpen: false, product: null });
+    const [warrantyRequests, setWarrantyRequests] = useState([]);
+    const { getCurrentUser } = useAuthFullOptions();
+    const { customerInfo } = useOutletContext();
+
+
+    // Fetch warranty requests for this order
+    useEffect(() => {
+        const fetchWarrantyRequests = async () => {
+            if (!orderId) return;
+            try {
+                const response = await warrantyRequestService.getMyRequests();
+                const requests = Array.isArray(response) ? response : (response?.result || []);
+                // Filter requests for this order
+                const orderRequests = requests.filter(req => req.orderId === parseInt(orderId));
+                setWarrantyRequests(orderRequests);
+            } catch (err) {
+                console.error('Error fetching warranty requests:', err);
+            }
+        };
+        fetchWarrantyRequests();
+    }, [orderId]);
+
+    useEffect(() => {
+        const fetchDetail = async () => {
+            if (!orderId) return;
+
+            try {
+                setIsLoading(true);
+                // Lấy order details, order info và payment transactions song song
+                const [apiResult, orderInfo, paymentTransactions] = await Promise.all([
+                    profileService.getOrderDetail(orderId),
+                    orderService.getOrder(orderId).catch(() => null),
+                    api.get(`/payment/transaction/order/${orderId}`)
+                        .then(res => res.data?.result || [])
+                        .catch(() => [])
+                ]);
+
+                // Lấy payment method từ transaction đầu tiên (mới nhất)
+                // Kiểm tra transactionCode để xác định chính xác: PAYOS- là PayOS, CODE- là COD
+                let paymentMethod = 'cod'; // Mặc định là COD
+                if (paymentTransactions && paymentTransactions.length > 0) {
+                    const transaction = paymentTransactions[0];
+                    const transactionCode = transaction?.transactionCode || '';
+                    const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+                    
+                    console.log('Payment Transaction Debug:', {
+                        transactionCode,
+                        paymentMethodType,
+                        transaction
+                    });
+                    
+                    // Nếu transactionCode bắt đầu bằng "PAYOS-" thì là PayOS
+                    if (transactionCode.startsWith('PAYOS-')) {
+                        paymentMethod = 'bank'; // PayOS
+                    } else if (transactionCode.startsWith('CODE-')) {
+                        // CODE- là COD
+                        paymentMethod = 'cod';
+                    } else {
+                        // Fallback: kiểm tra paymentMethodType
+                        // Nếu là 'bank' thì là PayOS, còn lại là COD
+                        paymentMethod = (paymentMethodType === 'bank') ? 'bank' : 'cod';
+                    }
+                } else {
+                    // Nếu không có transaction, thử lấy từ location.state
+                    paymentMethod = location.state?.paymentMethod || 'cod';
+                }
+                
+                console.log('Final payment method:', paymentMethod);
+                console.log('API Result (Order Details):', apiResult);
+
+                const normalizedData = normalizeOrderDetail(
+                    apiResult,
+                    orderId,
+                    customerInfo,
+                    orderInfo?.result?.totalAmount || location.state?.totalAmount,
+                    {
+                        createDatetime: orderInfo?.result?.createDatetime || location.state?.createDatetime,
+                        endDateTime: orderInfo?.result?.endDatetime || location.state?.endDateTime,
+                        status: orderInfo?.result?.status || location.state?.status,
+                        isPaid: orderInfo?.result?.isPaid,
+                        paymentMethod: paymentMethod
+                    }
+                );
+
+                setOrderData(normalizedData);
+                setError(null);
+            } catch (err) {
+                console.error("Lỗi khi tải chi tiết đơn hàng:", err);
+                setError(t('orders.orderDetail.cannotLoadOrder'));
+                setOrderData(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchDetail();
+    }, [orderId, customerInfo]);
+
+    // Hàm mở dialog xác nhận hủy đơn hàng
+    const handleCancelOrderClick = () => {
+        setShowCancelConfirm(true);
+    };
+
+    // Hàm hủy đơn hàng
+    const handleCancelOrder = async () => {
+        if (!orderId) return;
+        
+        setShowCancelConfirm(false);
+
+        try {
+            setIsCancelling(true);
+            setError(null);
+            
+            // Xác định status dựa trên payment method và isPaid
+            // Lấy payment method và isPaid từ API
+            let paymentMethod = 'cod'; // Mặc định là COD
+            let isPaid = false;
+            
+            try {
+                // Lấy payment transactions và order info song song
+                const [paymentTransactions, orderInfo] = await Promise.all([
+                    api.get(`/payment/transaction/order/${orderId}`)
+                        .then(res => res.data?.result || [])
+                        .catch(() => []),
+                    orderService.getOrder(orderId).catch(() => null)
+                ]);
+                
+                // Xác định payment method từ transaction
+                if (paymentTransactions && paymentTransactions.length > 0) {
+                    const transaction = paymentTransactions[0];
+                    const transactionCode = transaction?.transactionCode || '';
+                    const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+                    
+                    if (transactionCode.startsWith('PAYOS-')) {
+                        paymentMethod = 'bank';
+                    } else if (transactionCode.startsWith('CODE-')) {
+                        paymentMethod = 'cod';
+                    } else {
+                        paymentMethod = (paymentMethodType === 'bank') ? 'bank' : 'cod';
+                    }
+                }
+                
+                // Lấy isPaid từ order info
+                isPaid = orderInfo?.result?.isPaid || false;
+            } catch (err) {
+                console.error("Error fetching payment info:", err);
+            }
+            
+            // Xác định status: COD → CANCELED, PayOS (đã thanh toán) → RETURNED
+            let newStatus = 'CANCELED'; // Mặc định là CANCELED cho COD
+            if (paymentMethod === 'bank' && isPaid) {
+                newStatus = 'RETURNED'; // PayOS đã thanh toán → hoàn trả
+            }
+            
+            // Gọi API để hủy đơn hàng
+            // Lưu ý: Backend cần tự động cộng lại số lượng sản phẩm vào kho khi status được cập nhật sang CANCELED hoặc RETURNED
+            const response = await orderService.updateOrderStatus(orderId, newStatus);
+            
+            if (response?.result) {
+                // Cập nhật lại dữ liệu đơn hàng
+                const fetchDetail = async () => {
+                    try {
+                        const [apiResult, orderInfo, paymentTransactions] = await Promise.all([
+                            profileService.getOrderDetail(orderId),
+                            orderService.getOrder(orderId).catch(() => null),
+                            api.get(`/payment/transaction/order/${orderId}`)
+                                .then(res => res.data?.result || [])
+                                .catch(() => [])
+                        ]);
+
+                        let paymentMethod = 'cod';
+                        if (paymentTransactions && paymentTransactions.length > 0) {
+                            const transaction = paymentTransactions[0];
+                            const transactionCode = transaction?.transactionCode || '';
+                            const paymentMethodType = transaction?.paymentMethod?.paymentMethodType || '';
+                            
+                            if (transactionCode.startsWith('PAYOS-')) {
+                                paymentMethod = 'bank';
+                            } else if (transactionCode.startsWith('CODE-')) {
+                                paymentMethod = 'cod';
+                            } else {
+                                paymentMethod = (paymentMethodType === 'bank') ? 'bank' : 'cod';
+                            }
+                        } else {
+                            paymentMethod = location.state?.paymentMethod || 'cod';
+                        }
+
+                        const normalizedData = normalizeOrderDetail(
+                            apiResult,
+                            orderId,
+                            customerInfo,
+                            orderInfo?.result?.totalAmount || location.state?.totalAmount,
+                            {
+                                createDatetime: orderInfo?.result?.createDatetime || location.state?.createDatetime,
+                                endDateTime: orderInfo?.result?.endDatetime || location.state?.endDateTime,
+                                status: orderInfo?.result?.status || location.state?.status,
+                                isPaid: orderInfo?.result?.isPaid,
+                                paymentMethod: paymentMethod
+                            }
+                        );
+
+                        setOrderData(normalizedData);
+                    } catch (err) {
+                        console.error("Lỗi khi tải lại chi tiết đơn hàng:", err);
+                    }
+                };
+                
+                await fetchDetail();
+                const statusMessage = newStatus === 'RETURNED' 
+                    ? t('orders.orderDetail.returnSuccess') 
+                    : t('orders.orderDetail.cancelSuccess');
+                setToast({
+                    type: 'success',
+                    message: statusMessage
+                });
+                
+                // Chuyển hướng về trang lịch sử đơn hàng sau khi hủy thành công
+                navigate('/user/profile/order');
+            } else {
+                setToast({
+                    type: 'error',
+                    message: response?.message || t('orders.orderDetail.cannotCancel')
+                });
+            }
+        } catch (err) {
+            console.error("Lỗi khi hủy đơn hàng:", err);
+            setToast({
+                type: 'error',
+                message: err.response?.data?.message || err.message || t('orders.orderDetail.cannotCancel')
+            });
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    // Helper function to normalize status
+    const getNormalizedStatus = () => {
+        if (!orderData) return '';
+        
+        const statusFromState = location.state?.status;
+        const statusFromData = orderData.status;
+        
+        let statusNormalized = '';
+        if (statusFromState) {
+            statusNormalized = (statusFromState || '').toUpperCase();
+        } else if (statusFromData) {
+            const statusText = (statusFromData || '').toLowerCase();
+            const statusMap = {
+                'đang xử lý': 'PENDING',
+                'đã thanh toán': 'PAID',
+                'đang vận chuyển': 'SHIPPED',
+                'đã giao hàng': 'DELIVERED',
+                'đã hủy': 'CANCELED',
+                'hoàn trả': 'RETURNED'
+            };
+            statusNormalized = statusMap[statusText] || statusText.toUpperCase();
+        }
+        
+        return statusNormalized;
+    };
+
+    // Kiểm tra xem đơn hàng có thể hủy không
+    const canCancelOrder = () => {
+        const statusNormalized = getNormalizedStatus();
+        
+        // Không thể hủy nếu status là SHIPPED, DELIVERED, CANCELED, CANCELLED, hoặc RETURNED
+        const nonCancellableStatuses = ['SHIPPED', 'DELIVERED', 'CANCELED', 'CANCELLED', 'RETURNED'];
+        if (statusNormalized && nonCancellableStatuses.includes(statusNormalized)) {
+            return false;
+        }
+        
+        // Có thể hủy nếu đơn hàng ở trạng thái: PENDING, PAID (nhưng chưa SHIPPED)
+        return statusNormalized === 'PENDING' || statusNormalized === 'PAID';
+    };
+
+    // Kiểm tra xem đơn hàng đã được giao chưa (để hiển thị nút bảo hành)
+    const isOrderDelivered = () => {
+        const statusNormalized = getNormalizedStatus();
+        return statusNormalized === 'DELIVERED';
+    };
+
+    // Mở modal bảo hành
+    const handleOpenWarrantyModal = (product) => {
+        setWarrantyModal({
+            isOpen: true,
+            product: product
+        });
+    };
+
+    // Đóng modal bảo hành
+    const handleCloseWarrantyModal = async (success = false) => {
+        setWarrantyModal({
+            isOpen: false,
+            product: null
+        });
+        if (success) {
+            setToast({
+                type: 'success',
+                message: t('orders.orderDetail.warrantyRequestSuccess')
+            });
+            // Refresh warranty requests sau khi tạo thành công
+            try {
+                const response = await warrantyRequestService.getMyRequests();
+                const requests = Array.isArray(response) ? response : (response?.result || []);
+                const orderRequests = requests.filter(req => req.orderId === parseInt(orderId));
+                setWarrantyRequests(orderRequests);
+            } catch (err) {
+                console.error('Error refreshing warranty requests:', err);
+            }
+        }
+    };
+
+    // Lấy warranty request cho một sản phẩm cụ thể
+    const getWarrantyRequestForProduct = (productVersionId) => {
+        return warrantyRequests.find(req => req.productVersionId === productVersionId);
+    };
+
+    // Hiển thị badge trạng thái yêu cầu bảo hành
+    const getWarrantyStatusBadge = (status) => {
+        const statusMap = {
+            'PENDING': { label: t('profile.warrantyRequests.status.pending'), color: 'bg-yellow-100 text-yellow-800', icon: Clock },
+            'ACCEPTED': { label: t('profile.warrantyRequests.status.accepted'), color: 'bg-blue-100 text-blue-800', icon: CheckCircle },
+            'REJECTED': { label: t('profile.warrantyRequests.status.rejected'), color: 'bg-red-100 text-red-800', icon: XCircle },
+            'IN_PROGRESS': { label: t('profile.warrantyRequests.status.inProgress'), color: 'bg-purple-100 text-purple-800', icon: RefreshCw },
+            'COMPLETED': { label: t('profile.warrantyRequests.status.completed'), color: 'bg-green-100 text-green-800', icon: CheckCircle }
+        };
+        const statusInfo = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-800', icon: AlertCircle };
+        const Icon = statusInfo.icon;
+        return (
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                <Icon size={12} />
+                {statusInfo.label}
+            </span>
+        );
+    };
+
+    // Hàm xử lý mua lại sản phẩm
+    const handleRepurchase = async (product) => {
+        if (!product.productVersionId) {
+            setToast({
+                type: 'error',
+                message: t('orders.orderDetail.productNotFound')
+            });
+            return;
+        }
+
+        try {
+            // Thêm sản phẩm vào giỏ hàng với số lượng từ đơn hàng
+            await cartService.addToCart(product.productVersionId, product.quantity);
+            
+            // Chuyển hướng đến trang giỏ hàng
+            navigate('/user/cart');
+        } catch (err) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", err);
+            setToast({
+                type: 'error',
+                message: err.response?.data?.message || err.message || t('orders.orderDetail.cannotAddToCart')
+            });
+        }
+    };
+
+    const normalizeOrderDetail = (apiProducts, id, customerData, passedTotalAmount, orderInfo) => {
+        console.log('Normalizing products, first product:', apiProducts?.[0]);
+        const products = apiProducts.map(p => {
+            console.log('Product data:', p, 'quantity field:', p.quantity, 'getQuantity:', p.getQuantity);
+            return {
+                id: p.productId,
+                productVersionId: p.productVersionId,
+                name: p.productName,
+                image: p.picture,
+                price: p.unitPriceAfter,
+                quantity: p.quantity ?? p.getQuantity?.() ?? 1,
+                warrantyEnd: '23/03/2026',
+                canRepurchase: true,
+            };
+        });
+
+        const subtotal = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+        const FREE_SHIP_LIMIT = 1000;
+        const SHIPPING_FEE = 30000;
+        const shippingFee = subtotal >= FREE_SHIP_LIMIT ? 0 : SHIPPING_FEE;
+        const totalAmount = passedTotalAmount ?? subtotal + shippingFee;
+        const defaultCustomer = {
+            name: customerData?.fullName || t('orders.orderDetail.customer'),
+            phone: formatPhoneNumber(customerData?.phoneNumber) || t('orders.orderDetail.updating'),
+            address: customerData?.address || t('orders.orderDetail.noAddress'),
+            note: '-',
+        };
+
+        // Tạo timeline dựa trên dữ liệu thực từ API
+        const createDate = orderInfo?.createDatetime ? new Date(orderInfo.createDatetime) : new Date();
+        const endDate = orderInfo?.endDateTime ? new Date(orderInfo.endDateTime) : null;
+        const orderStatus = orderInfo?.status || 'pending';
+        const isPaid = orderInfo?.isPaid || false;
+        const paymentMethod = orderInfo?.paymentMethod || 'cod'; // 'cod' hoặc 'bank' (PayOS)
+
+        // Format ngày giờ
+        const formatDateTime = (date) => {
+            if (!date) return { date: '', time: '' };
+            const dateStr = date.toLocaleDateString('vi-VN');
+            const timeStr = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            return { date: dateStr, time: timeStr };
+        };
+
+        const createDateTime = formatDateTime(createDate);
+        const endDateTime = endDate ? formatDateTime(endDate) : null;
+
+        // Tạo timeline dựa trên status (giống code mẫu)
+        const timeline = [];
+        
+        // Normalize status: backend trả về uppercase (PENDING, PAID, SHIPPED, DELIVERED, CANCELED, RETURNED, COMPLETED)
+        const statusNormalized = (orderStatus || '').toUpperCase();
+        const statusLower = statusNormalized.toLowerCase();
+        
+        // Bước 1: Đặt hàng thành công (luôn có)
+        timeline.push({
+            status: t('profile.orderSuccess') || 'Đặt hàng thành công',
+            date: createDateTime.date,
+            time: createDateTime.time,
+            completed: true
+        });
+
+        // Bước 2: Đang xử lý (nếu status là PENDING hoặc đã qua PENDING)
+        if (statusNormalized === 'PENDING' || statusNormalized === 'PAID' || statusNormalized === 'SHIPPED' || 
+            statusNormalized === 'DELIVERED' || statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED') {
+            timeline.push({
+                status: t('profile.processing') || 'Đang xử lý',
+                date: createDateTime.date,
+                time: createDateTime.time,
+                completed: statusNormalized !== 'PENDING'
+            });
+        }
+
+        // Bước 3: Đang vận chuyển (nếu status là SHIPPED hoặc DELIVERED)
+        if (statusNormalized === 'SHIPPED' || statusNormalized === 'DELIVERED' || 
+            statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED') {
+            timeline.push({
+                status: t('profile.shipping') || 'Đang vận chuyển',
+                date: createDateTime.date,
+                time: createDateTime.time,
+                completed: statusNormalized === 'DELIVERED' || statusNormalized === 'RETURNED' || statusNormalized === 'COMPLETED'
+            });
+        }
+
+        // Bước 4: Đã giao hàng (nếu status là DELIVERED và có endDateTime)
+        if (statusNormalized === 'DELIVERED' && endDateTime) {
+            timeline.push({
+                status: t('profile.delivered') || 'Đã giao hàng',
+                date: endDateTime.date,
+                time: endDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu bị hủy
+        if (statusNormalized === 'CANCELED' || statusNormalized === 'CANCELLED') {
+            timeline.push({
+                status: t('profile.cancelled') || 'Đơn hàng đã hủy',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu đã hoàn trả
+        if (statusNormalized === 'RETURNED') {
+            timeline.push({
+                status: t('profile.returned') || 'Hoàn trả',
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Nếu đã hoàn thành (COMPLETED)
+        if (statusNormalized === 'COMPLETED') {
+            timeline.push({
+                status: t('profile.warrantyRequests.status.completed'),
+                date: endDateTime?.date || createDateTime.date,
+                time: endDateTime?.time || createDateTime.time,
+                completed: true
+            });
+        }
+
+        // Map status để hiển thị
+        const statusMap = {
+            'pending': t('profile.processing') || 'Đang xử lý',
+            'paid': t('profile.paid') || 'Đã thanh toán',
+            'shipped': t('profile.shipping') || 'Đang vận chuyển',
+            'delivered': t('profile.delivered') || 'Đã giao hàng',
+            'canceled': t('profile.cancelled') || 'Đã hủy',
+            'cancelled': t('profile.cancelled') || 'Đã hủy',
+            'returned': t('profile.returned') || 'Hoàn trả',
+            'completed': t('profile.warrantyRequests.status.completed')
+        };
+
+        // Tính "Đã thanh toán trước": COD = 0, PayOS = totalAmount nếu đã thanh toán
+        const paidBefore = paymentMethod === 'cod' ? 0 : (isPaid ? totalAmount : 0);
+
+        return {
+            id: id,
+            orderCode: `#${id}`,
+            date: createDateTime.date,
+            status: statusMap[(orderStatus || '').toLowerCase()] || statusMap['pending'] || 'Đang xử lý',
+            products: products,
+            summary: {
+                subtotal: subtotal,
+                discount: 0,
+                shippingFee: shippingFee,
+                totalPaid: totalAmount,
+                totalAmountPaid: totalAmount,
+                paidBefore: paidBefore, // Số tiền đã thanh toán trước
+                vatIncluded: true,
+            },
+            customer: defaultCustomer,
+            paymentMethod: paymentMethod === 'cod' ? t('orders.orderDetail.paymentMethodCOD') : t('orders.orderDetail.paymentMethodPayOS'),
+            supportInfo: {
+                storeAddress: 'FShop, FPT City, Ngũ Hành Sơn, Đà Nẵng', storePhone: '0705432115',
+            },
+            timeline: timeline,
+        };
+    };
+
+    const formatCurrency = (amount) => {
+        return amount?.toLocaleString('vi-VN') + 'đ';
+    };
+
+    if (isLoading) {
+        return (
+            <div className="bg-white p-8 rounded-xl shadow-lg min-h-[500px] flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-red-500" />
+                <p className="ml-3 text-lg text-gray-600">{t('orders.orderDetail.loadingOrder')} {orderId}...</p>
+            </div>
+        );
+    }
+
+    if (error || !orderData) {
+        return (
+            <div className="bg-white p-8 rounded-xl shadow-lg min-h-[500px] flex items-center justify-center">
+                <p className="text-xl text-red-500">{t('common.error')}: {error || t('orders.orderDetail.orderNotFound', { orderId })}</p>
+            </div>
+        );
+    }
+    // --- Components Con cho Bố cục ---
+
+    const InfoRow = ({ label, value, currency = false, highlight = false, note = '' }) => (
+        <div className="flex justify-between items-center py-2 text-sm border-b border-gray-100 last:border-b-0">
+            <span className="text-gray-600">{label}</span>
+            <span className={`font-medium ${highlight ? 'text-red-500 font-bold text-base' : 'text-gray-800'}`}>
+                {currency ? formatCurrency(value) : value}
+                {note && <span className="text-xs text-gray-500 ml-1">({note})</span>}
+            </span>
+        </div>
+    );
+
+    const CustomerInfoCard = () => (
+        <div className="p-3 bg-white rounded-xl border border-gray-100 h-full">
+            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orders.orderDetail.customerInfo')}</h4>
+            <div className="space-y-3">
+                <InfoRow label={t('profile.personalInfo.fullName')} value={orderData.customer.name} />
+                <InfoRow label={t('common.phone')} value={orderData.customer.phone} />
+                <InfoRow label={t('common.address')} value={orderData.customer.address} />
+                <InfoRow label={t('orders.orderDetail.email')} value={customerInfo?.email || 'N/A'} />
+                <InfoRow label={t('orders.orderDetail.note')} value={orderData.customer.note} />
+            </div>
+        </div>
+    );
+
+    const PaymentInfoCard = () => {
+        // Tính tổng số lượng sản phẩm (tổng quantity của tất cả sản phẩm)
+        const totalQuantity = orderData.products.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        
+        return (
+        <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
+            <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orders.orderDetail.paymentInfo')}</h4>
+            <div className="space-y-2">
+                <InfoRow label={t('common.products')} value={totalQuantity} note={t('common.quantityNote')} />
+                <InfoRow label={t('orders.orderDetail.subtotal')} value={orderData.summary.subtotal} currency />
+                <InfoRow label={t('orders.orderDetail.discount')} value={-orderData.summary.discount} currency highlight />
+                <InfoRow
+                    label={t('orders.orderDetail.shippingFee')}
+                    value={orderData.summary.shippingFee === 0 ? t('orders.orderDetail.free') : orderData.summary.shippingFee}
+                    currency={orderData.summary.shippingFee > 0}
+                />
+
+            </div>
+
+            <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
+                <InfoRow
+                    label={t('orders.orderDetail.totalAmount')}
+                    value={orderData.summary.totalAmountPaid}
+                    currency
+                    highlight
+                    note={orderData.summary.vatIncluded ? t('profile.included') : ''}
+                />
+                <InfoRow
+                    label={t('profile.paidBefore')}
+                    value={orderData.summary.paidBefore}
+                    currency
+                    highlight
+                />
+            </div>
+            <p className="mt-3 text-xs text-gray-500">{t('orders.orderDetail.paymentMethod')}: {orderData.paymentMethod}</p>
+        </div>
+        );
+    };
+
+    const OrderTimeline = () => {
+        const steps = orderData.timeline;
+        const totalSteps = steps.length;
+
+        if (totalSteps === 0) return null;
+
+        return (
+            <div className="my-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-x-auto">
+                <h4 className="font-bold text-gray-800 mb-4">{t('orders.orderDetail.orderProgress')}</h4>
+                <div className="flex justify-between items-center relative w-full min-w-[600px] pb-6 pt-3">
+                    {steps.map((step, index) => (
+                        <div key={index} className="flex flex-col items-center flex-1 relative z-10">
+                            {/* Icon/Dot */}
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500
+                                ${step.completed ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-200 text-gray-500'}`}
+                            >
+                                {step.completed ? <CheckCircle size={16} /> : <Clock size={16} />}
+                            </div>
+
+                            {/* Line nối */}
+                            {index < totalSteps - 1 && (
+                                <div className={`absolute h-1 top-4 left-1/2 w-full transition-colors duration-500
+                                    ${steps[index + 1]?.completed ? 'bg-red-600' : 'bg-gray-200'} z-0`}
+                                     style={{ width: 'calc(100% - 2rem)', transform: 'translateX(1rem)' }}>
+                                </div>
+                            )}
+
+                            {/* Text */}
+                            <div className="mt-3 text-center max-w-[120px]">
+                                <p className={`text-sm font-medium ${step.completed ? 'text-red-700' : 'text-gray-500'}`}>
+                                    {step.status}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">{step.date}</p>
+                                <p className="text-xs text-gray-400">{step.time}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+
+    return (
+        <div className="space-y-6">
+
+            {/* Thanh điều hướng Breadcrumb */}
+            <nav className="text-sm text-gray-500 flex items-center space-x-2">
+                <Link to="/user/profile/order" className="hover:text-red-500">{t('orders.orderHistory')}</Link>
+                <ChevronRight size={16} />
+                <span className="font-semibold text-gray-800">{t('orders.orderDetail.orderDetail')}</span>
+            </nav>
+
+            {/* Khối Tổng quan và Sản phẩm */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-gray-800">{t('orders.orderDetail.overview')}</h3>
+                    <div className="flex items-center gap-3">
+                        {canCancelOrder() && (
+                            <button
+                                onClick={handleCancelOrderClick}
+                                disabled={isCancelling}
+                                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+                            >
+                                {isCancelling ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        {t('orders.orderDetail.cancelling')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <XCircle size={16} />
+                                        {t('orders.orderDetail.cancelOrder')}
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        {/*<span className="text-red-500 text-sm hover:underline cursor-pointer">{t('orders.orderDetail.viewVATInvoice')}</span>*/}
+                    </div>
+                </div>
+
+                {/* Thông tin Mã đơn hàng và Ngày đặt */}
+                <div className="flex items-center justify-between text-sm text-gray-600 border-b pb-4 mb-4">
+                    <p>{t('orders.orderDetail.order')}: <span className="font-semibold text-gray-800">{orderData.orderCode}</span></p>
+                    <p>{t('orders.orderDetail.orderDate')}: {orderData.date}</p>
+                    <span className="text-green-600 font-medium">{orderData.status}</span>
+                </div>
+
+                {/* Danh sách Sản phẩm */}
+                <div className="space-y-4">
+                    {orderData.products.map(product => (
+                        <div key={product.id} className="flex items-start border-b pb-4 last:border-b-0">
+                            <img
+                                src={product.image}
+                                alt={product.name}
+                                className="w-16 h-16 object-cover rounded mr-4 flex-shrink-0"
+                            />
+                            <div className="flex-grow">
+                                <p className="font-semibold text-gray-800 mb-1">{product.name}</p>
+                                <p className="text-sm text-gray-600">{formatCurrency(product.price)}</p>
+                                <p className="text-xs text-gray-500">{t('orders.orderDetail.warrantyUntil')}: {product.warrantyEnd}</p>
+                                {/*<Link to={`/user/warranty/${product.id}`} className="text-xs text-blue-500 hover:text-blue-700 font-medium mt-1 inline-block">Xem</Link>*/}
+                            </div>
+                            <div className="flex flex-col items-end flex-shrink-0 ml-4 space-y-2">
+                                <p className="text-sm text-gray-600">{t('common.quantity')}: {product.quantity}</p>
+                                <div className="flex flex-col items-end gap-2">
+                                    {isOrderDelivered() && product.productVersionId && (() => {
+                                        const warrantyRequest = getWarrantyRequestForProduct(product.productVersionId);
+                                        if (warrantyRequest) {
+                                            // Đã có yêu cầu bảo hành, hiển thị trạng thái
+                                            return (
+                                                <div className="flex flex-col items-end gap-1">
+                                                    {getWarrantyStatusBadge(warrantyRequest.status)}
+                                                    {warrantyRequest.adminNote && (
+                                                        <p className="text-xs text-gray-500 max-w-[200px] text-right">
+                                                            {warrantyRequest.adminNote}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        } else {
+                                            // Chưa có yêu cầu, hiển thị nút tạo mới
+                                            return (
+                                                <button 
+                                                    onClick={() => handleOpenWarrantyModal(product)}
+                                                    className="flex items-center gap-1 bg-blue-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                                >
+                                                    <Shield size={14} />
+                                                    {t('orders.orderDetail.warranty')}
+                                                </button>
+                                            );
+                                        }
+                                    })()}
+                                    {product.canRepurchase && (
+                                        <button 
+                                            onClick={() => handleRepurchase(product)}
+                                            className="bg-red-500 text-white text-sm px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                                        >
+                                            {t('orders.orderDetail.repurchase')}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Thanh tiến trình đơn hàng */}
+            <OrderTimeline />
+
+            {/* Thông tin Khách hàng & Thanh toán & Hỗ trợ (2 Cột) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Cột 1: Thông tin khách hàng */}
+                <div className="lg:col-span-1">
+                    <CustomerInfoCard />
+                </div>
+
+                {/* Cột 2: Thông tin thanh toán */}
+                <div className="lg:col-span-1">
+                    <PaymentInfoCard />
+                </div>
+
+                {/* Cột 3: Thông tin Hỗ trợ */}
+                <div className="lg:col-span-1">
+                    <div className="p-5 bg-white rounded-xl border border-gray-100 h-full">
+                        <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">{t('orders.orderDetail.supportInfo')}</h4>
+                        <div className="space-y-3">
+                            <div className="flex items-start text-sm">
+                                <Home size={18} className="text-red-500 mr-3 mt-1 flex-shrink-0" />
+                                <div>
+                                    <p className="font-medium">{t('orders.orderDetail.storeAddress')}:</p>
+                                    <p className="text-gray-700">{orderData.supportInfo.storeAddress}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center text-sm">
+                                <Phone size={18} className="text-red-500 mr-3" />
+                                <p>{t('orders.orderDetail.supportPhone')}: {orderData.supportInfo.storePhone}</p>
+                                <button className="ml-auto text-xs text-white bg-red-500 px-3 py-1 rounded-full hover:bg-red-600 transition-colors">
+                                    {t('orders.orderDetail.contact')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Có thể thêm khu vực Đánh giá sản phẩm tại đây nếu đơn hàng đã hoàn tất */}
+
+            {/* Confirmation Dialog */}
+            {showCancelConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">{t('orders.orderDetail.confirmCancel')}</h3>
+                        <p className="text-gray-600 mb-6">
+                            {t('orders.orderDetail.confirmCancelMessage')}
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCancelConfirm(false)}
+                                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                onClick={handleCancelOrder}
+                                disabled={isCancelling}
+                                className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                            >
+                                {isCancelling ? t('orders.orderDetail.processing') : t('orders.orderDetail.confirmCancelButton')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
+
+            {/* Warranty Request Modal */}
+            {warrantyModal.isOpen && warrantyModal.product && (
+                <WarrantyRequestModal
+                    isOpen={warrantyModal.isOpen}
+                    onClose={handleCloseWarrantyModal}
+                    orderId={parseInt(orderId)}
+                    productVersionId={warrantyModal.product.productVersionId}
+                    productName={warrantyModal.product.name}
+                />
+            )}
+        </div>
+    );
+};
+
+export default OrderDetailPage;

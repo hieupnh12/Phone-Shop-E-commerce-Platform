@@ -15,7 +15,7 @@ import lombok.experimental.FieldDefaults;
 public class OriginRequest {
 
 
-    @UniqueName(entity = Origin.class, fieldName = "name")
+//    @UniqueName(entity = Origin.class, fieldName = "origin_name")
     String nameOrigin;
 
     boolean status;

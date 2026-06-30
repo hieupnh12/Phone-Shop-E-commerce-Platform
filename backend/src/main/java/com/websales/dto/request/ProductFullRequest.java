@@ -18,5 +18,5 @@ public class ProductFullRequest {
     ProductExtraRequest products ;
 
     //them danh sach cac phien ban san pham
-     List<ProductVersionRequest> versions;
+    List<ProductVersionRequest> versions;
 }

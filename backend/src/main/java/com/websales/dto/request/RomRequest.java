@@ -14,7 +14,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RomRequest {
 
-    @UniqueName(entity = Rom.class, fieldName = "rom_size")
+//    @UniqueName(entity = Rom.class, fieldName = "rom_size")
     String nameRom;
     Boolean status;
 }

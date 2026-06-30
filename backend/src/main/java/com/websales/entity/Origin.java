@@ -22,9 +22,9 @@ public class Origin {
       @Column(name ="origin_name")
       String nameOrigin;
 
-      @Column
-      boolean status;
-
+//      @Column
+//      boolean status;
+//
 
 
 }

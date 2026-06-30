@@ -11,7 +11,6 @@
     @Mapper(componentModel = "spring")
     public interface WarehouseAreaMapper {
         WarehouseArea toWarehouseArea(WarehouseAreaRequest request);
-        WarehouseArea toWarehouseAreaUpdate (WarehouseUpdateRequest request);
 
         WarehouseAreaResponse toWarehouseAreaResponse(WarehouseArea warehouseArea);
         void updateWarehouseArea(WarehouseUpdateRequest warehouseUpdateRequest, @MappingTarget WarehouseArea warehouseArea);

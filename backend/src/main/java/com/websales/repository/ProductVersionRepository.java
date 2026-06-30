@@ -1,23 +1,158 @@
 package com.websales.repository;
 
 
+import com.websales.dto.response.ProductVersionResponse;
 import com.websales.entity.Product;
 import com.websales.entity.ProductVersion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ProductVersionRepository extends JpaRepository<ProductVersion, String> {
-//    List<ProductVersion> findByProductId(Long productId);
 
-//    List<ProductVersion> findByProduct(Product product);  // 👈 thêm dòng này
-//
-//    @Query(value = """
-//    select * from product_version where version_id = ?
-//    """,nativeQuery = true)
-//    Optional<ProductVersion> getProductVersionById(String productVersionId);
+    @Query("SELECT pv FROM ProductVersion pv " +
+            "JOIN pv.product p " +
+            "JOIN pv.rom r " +
+            "JOIN pv.ram ra " +
+            "JOIN pv.color c " +
+            "WHERE p.nameProduct = :productName " + // Giả sử Product có trường 'name'
+            "AND r.nameRom = :romName " +
+            "AND ra.nameRam = :ramName " +
+            "AND c.nameColor = :colorName")
+    ProductVersion findByProductVersionByTT(
+            @Param("productName") String productName,
+            @Param("romName") String romName,
+            @Param("ramName") String ramName,
+            @Param("colorName") String colorName);
+
+
+    /// //////////////////////////////////////////////////////////////////////////
+
+
+
+    @Query("SELECT pv FROM ProductVersion pv " +
+            "LEFT JOIN FETCH pv.product p " +
+            "LEFT JOIN FETCH p.origin o " +
+            "LEFT JOIN FETCH p.brand b " +
+            "LEFT JOIN FETCH p.operatingSystem os " +
+            "LEFT JOIN FETCH p.warehouseArea w " +
+//        "LEFT JOIN FETCH p.category c " +
+            "LEFT JOIN FETCH pv.rom r " +
+            "LEFT JOIN FETCH pv.ram ra " +
+            "LEFT JOIN FETCH pv.color col " +
+//        "LEFT JOIN FETCH pv.images i " +
+            "WHERE (:brandName IS NULL OR LOWER(b.nameBrand) LIKE LOWER(CONCAT('%', :brandName, '%')))  " +
+            "AND (:warehouseAreaName IS NULL OR LOWER(w.nameWarehouseArea) LIKE LOWER(CONCAT('%', :warehouseAreaName, '%'))) " +
+            "AND (:originName IS NULL OR LOWER(o.nameOrigin) LIKE LOWER(CONCAT('%', :originName, '%')))" +
+            "AND (:operatingSystemName IS NULL OR LOWER(os.nameOS) LIKE LOWER(CONCAT('%', :operatingSystemName, '%'))) " +
+            "AND (:productName IS NULL OR LOWER(p.nameProduct) LIKE LOWER(CONCAT('%', :productName, '%')))"  +
+//        "AND (:categoryName IS NULL OR LOWER(c.nameCategory) LIKE LOWER(CONCAT('%', :categoryName, '%')))" +
+            "AND (:battery IS NULL OR LOWER(p.battery) LIKE LOWER(CONCAT('%', :battery, '%')))" +  // Giữ LIKE cho exact search, thêm range bên dưới
+            "AND (:scanFrequency IS NULL OR LOWER(p.scanFrequency) LIKE LOWER(CONCAT('%', :scanFrequency, '%')))" +
+            "AND (:screenSize IS NULL OR LOWER(p.screenSize) LIKE LOWER(CONCAT('%', :screenSize, '%')))" +  // Giữ LIKE, thêm range
+            "AND (:screenResolution IS NULL OR LOWER(p.screenResolution) LIKE LOWER(CONCAT('%', :screenResolution, '%')))" +
+            "AND (:screenTech IS NULL OR LOWER(p.screenTech) LIKE LOWER(CONCAT('%', :screenTech, '%')))" +
+            "AND (:chipset IS NULL OR LOWER(p.chipset) LIKE LOWER(CONCAT('%', :chipset, '%')))" +
+            "AND (:rearCamera IS NULL OR LOWER(p.rearCamera) LIKE LOWER(CONCAT('%', :rearCamera, '%')))" +
+            "AND (:frontCamera IS NULL OR LOWER(p.frontCamera) LIKE LOWER(CONCAT('%', :frontCamera, '%')))" +
+//        "AND (:image IS NULL OR LOWER(p.image) LIKE LOWER(CONCAT('%', :image, '%')) OR LOWER(pv.image) LIKE LOWER(CONCAT('%', :image, '%')))" +
+            "AND (:warrantyPeriod IS NULL OR p.warrantyPeriod = :warrantyPeriod)" +
+//        "AND (:stockQuantity IS NULL OR p.stockQuantity = :stockQuantity OR pv.stockQuantity = :stockQuantity)" +
+//        "AND (:status IS NULL OR p.status = :status OR pv.status = :status)" +
+            "AND (:romName IS NULL OR r.nameRom LIKE CONCAT(:romName, 'GB') OR r.nameRom LIKE CONCAT(:romName, ' GB'))" +            "AND (:ramName IS NULL OR LOWER(ra.nameRam) LIKE LOWER(CONCAT('%', :ramName, '%')))" +
+            "AND (:colorName IS NULL OR LOWER(col.nameColor) LIKE LOWER(CONCAT('%', :colorName, '%')))" +
+            "AND (:importPrice IS NULL OR pv.importPrice = :importPrice)" +
+            "AND (:exportPrice IS NULL OR pv.exportPrice = :exportPrice)" +
+            // Thêm range conditions cho price (exportPrice)
+            "AND (:minExportPrice IS NULL OR pv.exportPrice >= :minExportPrice)" +
+            "AND (:maxExportPrice IS NULL OR pv.exportPrice <= :maxExportPrice)" +
+            // Thêm range cho battery (extract số từ String "3500 mAh" hoặc "3200mAh" → CAST với xử lý cả 2 trường hợp
+            "AND (:minBattery IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) WHEN LOCATE('mAh', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE('mAh', p.battery) - 1) ELSE p.battery END, ',', '') AS INTEGER) >= :minBattery)" +
+            "AND (:maxBattery IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE(' ', p.battery) - 1) WHEN LOCATE('mAh', p.battery) > 0 THEN SUBSTRING(p.battery, 1, LOCATE('mAh', p.battery) - 1) ELSE p.battery END, ',', '') AS INTEGER) <= :maxBattery)" +
+            // Thêm range cho screenSize (extract số từ "6.2 inch" hoặc "6.2" → CAST với xử lý cả 2 trường hợp
+            "AND (:minScreenSize IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.screenSize) > 0 THEN SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1) ELSE p.screenSize END, ',', '.') AS DOUBLE) >= :minScreenSize)" +
+            "AND (:maxScreenSize IS NULL OR CAST(REPLACE(CASE WHEN LOCATE(' ', p.screenSize) > 0 THEN SUBSTRING(p.screenSize, 1, LOCATE(' ', p.screenSize) - 1) ELSE p.screenSize END, ',', '.') AS DOUBLE) <= :maxScreenSize)" +
+            "ORDER BY p.idProduct DESC ")
+    Page<ProductVersion> findProductVersionsWithCombinedFilters(
+            // Params cũ giữ nguyên
+            @Param("brandName") String brandName,
+            @Param("warehouseAreaName") String warehouseAreaName,
+            @Param("originName") String originName,
+            @Param("operatingSystemName") String operatingSystemName,
+            @Param("productName") String productName,
+//        @Param("categoryName") String categoryName,
+            @Param("battery") String battery,
+            @Param("scanFrequency") String scanFrequency,
+            @Param("screenSize") String screenSize,
+            @Param("screenResolution") String screenResolution,
+            @Param("screenTech") String screenTech,
+            @Param("chipset") String chipset,
+            @Param("rearCamera") String rearCamera,
+            @Param("frontCamera") String frontCamera,
+//        @Param("image") String image,
+            @Param("warrantyPeriod") Integer warrantyPeriod,
+//        @Param("stockQuantity") Integer stockQuantity,
+//        @Param("status") Boolean status,
+            @Param("romName") String romName,
+            @Param("ramName") String ramName,
+            @Param("colorName") String colorName,
+            @Param("importPrice") BigDecimal importPrice,
+            @Param("exportPrice") BigDecimal exportPrice,
+            // Params mới cho ranges
+            @Param("minExportPrice") BigDecimal minExportPrice,
+            @Param("maxExportPrice") BigDecimal maxExportPrice,
+            @Param("minBattery") Integer minBattery,
+            @Param("maxBattery") Integer maxBattery,
+            @Param("minScreenSize") Double minScreenSize,
+            @Param("maxScreenSize") Double maxScreenSize,
+            Pageable pageable
+    );
+
+
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ProductVersion pv WHERE pv.idVersion = :idVersion")
+    void deleteProductVersionById(String idVersion);
+
+
+
+    /**
+     * Lấy top sản phẩm có số lượng đã bán nhiều nhất trong tuần (7 ngày gần nhất)
+     * Tính tổng số lượng từ order_details (SUM quantity)
+     * Chỉ lấy orders có status DELIVERED và endDatetime trong 7 ngày gần nhất
+     * Chỉ lấy sản phẩm có số lượng bán > 0
+     *
+     * @param status Trạng thái order (DELIVERED)
+     * @param weekStartDate Ngày bắt đầu tuần (7 ngày trước)
+     * @return List<Object[]> với [0]: Product, [1]: Long (tổng số lượng đã bán)
+     */
+    @Query("SELECT p, COALESCE(SUM(od.quantity), 0) as soldQuantity " +
+            "FROM Product p " +
+            "JOIN p.productVersion pv " +
+            "JOIN OrderDetail od ON od.productVersion = pv " +
+            "JOIN od.order o " +
+            "WHERE o.status = :status " +
+            "AND o.endDatetime >= :weekStartDate " +
+            "AND o.endDatetime IS NOT NULL " +
+            "GROUP BY p.idProduct " +
+            "HAVING COALESCE(SUM(od.quantity), 0) > 0 " +
+            "ORDER BY soldQuantity DESC")
+    List<Object[]> findTopProductsByOrderDetailCountInWeek(
+            @Param("status") com.websales.enums.OrderStatus status,
+            @Param("weekStartDate") java.time.LocalDateTime weekStartDate);
+
+
+
+
 }

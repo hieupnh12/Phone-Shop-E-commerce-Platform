@@ -1,0 +1,44 @@
+name: Deploy Group1 (Backend + Frontend)
+
+on:
+  push:
+    branches: ["production"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # LOGIN DOCKER HUB
+      - name: Login DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      # BUILD SPRING
+      - name: Build Spring
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/group1-backend:latest ./backend
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/group1-backend:latest
+
+      # BUILD REACT
+      - name: Build React
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/group1-frontend:latest ./frontend
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/group1-frontend:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH Deploy VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/group_1
+            docker compose -f docker-compose.prod.yml pull backend frontend
+            docker compose -f docker-compose.prod.yml up -d backend frontend

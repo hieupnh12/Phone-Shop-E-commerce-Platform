@@ -1,14 +1,18 @@
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
+
 import React from "react";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
-import Home from "./pages/client/Home";
-// import Products from "./pages/Products";
+import Home from "./pages/client/HomeClient";
 import Login from "./pages/auth/Login";
 import { AuthProvider } from "./contexts/AuthContext";
-import { CartProvider } from "./contexts/CartContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import Payment from "./pages/client/Payment";
 import Signup from "./pages/client/Signup";
 import NotFound from "./pages/client/NotFound";
+import Contact from "./pages/client/Contact";
 import AdminRoute from "./routes/AdminRoute";
 import HomeAdmin from "./pages/admin/HomeAdmin";
 import ProductDetail from "./pages/client/Products/ProductDetail";
@@ -20,94 +24,243 @@ import Overview from "./pages/admin/Statistic/Pages/Users/SubPages/Overview";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProductStatistic from "./pages/admin/Statistic/Pages/Product/ProductStatistics";
 import Chatbot from "./pages/chatbot";
+import ClientHomePage from "./pages/client";
+import Products from "./pages/client/Products";
+import Settings from "./pages/admin/Statistic/Pages/Setting";
+import OrderStatistic from "./pages/admin/Statistic/Pages/Order";
+import RevenueStatistic from "./pages/admin/Statistic/Pages/Revenue";
+import AuthRedirect from "./routes/AuthRedirect";
+import Cart from "./pages/client/Cart";
+import CartLayout from "./components/layout/CartLayout";
+import UpdateInfor from "./pages/auth/UpdateInfor";
+import OrderHistoryPage from "./components/profile/OrderHistoryPage";
+import PersonalInfoForm from "./components/profile/PersonalInfoForm";
+import ProfilePageLayout from "./components/profile/ProfilePageLayout";
+import OrderDetailPage from "./components/profile/OrderDetailPage";
+import WarrantyPage from "./components/profile/WarrantyPage";
+import SupportPage from "./components/profile/SupportPage";
+import ProductDetailPage from "./components/common/Product/ProductDetail";
+import ProductsContainer from "./components/common/Product/ProductContainer";
+import { useUrlTokenHandler } from "./hooks/useUrlTokenHandler";
+import OrderHistory from "./pages/client/OrderHistory";
+import PaymentSuccess from "./pages/client/PaymentSuccess";
+import PaymentCancel from "./pages/client/PaymentCancel";
+import AdminLogin from "./pages/auth/AdminLogin";
+import AddProduct from "./pages/admin/Products/AddProduct";
+import ListProduct from "./pages/admin/Products/ListProduct";
+import EditProduct from "./pages/admin/Products/EditProduct";
+import RoleManagementPage from "./pages/admin/Role/RoleManagementPage";
+import EmployeeManagementPage from "./pages/admin/Employee/EmployeeManagementPage";
+import SetPasswordPage from "./pages/auth/SetPasswordPage";
+import Orders from "./pages/admin/Order";
+import CreateInStoreOrder from "./pages/admin/Order/CreateInStoreOrder";
+import MyFeedbacksPage from "./pages/client/MyFeedbacks";
+import UserHomePage from "./pages/client/UserHomePage";
+import Customers from "./pages/admin/Customer";
+import Employee from "./pages/admin/Employee";
+import Role from "./pages/admin/Role";
+import AuditLogPage from "./pages/admin/Employee/AuditLogPage";
+import WarrantyRequestManagementPage from "./pages/admin/WarrantyRequest/WarrantyRequestManagementPage";
+import MessageManagementPage from "./pages/admin/Messages/MessageManagementPage";
+import PermissionRoute from "./routes/PermissionRoute";
+import { PERMISSIONS } from "./hooks/usePermission";
 
-// Layout chính (Header + Footer)
-function MainLayout() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
-      <main className="flex-grow">
-        <Outlet /> {/* 👈 chỗ render trang con */}
-      </main>
-      <Footer />
-    </div>
-  );
-}
+const RouterInitializer = () => {
+  useUrlTokenHandler();
+  return <ClientHomePage />;
+};
 
 const router = createBrowserRouter(
   [
     {
       path: "/",
-      element: <MainLayout />, // Layout bọc chung
+      element: <RouterInitializer />,
+      children: [{ index: true, element: <Home /> }],
+    },
+
+    {
+      path: "/user",
+      element: <UserHomePage />,
       children: [
-        { index: true, element: <Home /> }, // "/" -> Home
+        { index: true, element: <Home /> },
+        { path: "feedbacks", element: <MyFeedbacksPage /> },
+
         {
           path: "products",
-          // element: <Products />,
-          children: [{ path: ":id", element: <ProductDetail /> }],
+          element: <Products />,
+          children: [
+            { index: true, element: <ProductsContainer /> },
+            { path: ":id", element: <ProductDetailPage /> },
+          ],
         },
-        { path: "login", element: <Login /> },
-        { path: "signup", element: <Signup /> },
+
+        {
+          path: "cart",
+          element: <CartLayout />,
+          children: [{ index: true, element: <Cart /> }],
+        },
+
+        { path: "payment", element: <Payment /> },
+        { path: "payment/success", element: <PaymentSuccess /> },
+        { path: "payment/cancel", element: <PaymentCancel /> },
+        { path: "orders", element: <OrderHistory /> },
+        { path: "contact", element: <Contact /> },
+
+        {
+          path: "profile",
+          element: <ProfilePageLayout />,
+          children: [
+            { index: true, element: <Navigate to="info" replace /> },
+            { path: "info", element: <PersonalInfoForm /> },
+            { path: "order", element: <OrderHistoryPage /> },
+            {
+              path: "order/order-detail/:orderId",
+              element: <OrderDetailPage />,
+            },
+            { path: "warranty", element: <WarrantyPage /> },
+            { path: "support", element: <SupportPage /> },
+          ],
+        },
       ],
     },
+
+    { path: "/set-password", element: <SetPasswordPage /> },
+    { path: "/login", element: <Login /> },
+    { path: "/admin-login", element: <AdminLogin /> },
+    { path: "update", element: <UpdateInfor /> },
+
     {
       path: "/admin",
-      element: <AdminRoute />,
+      element: (
+        <AdminRoute />
+      ),
       children: [
         {
           element: <AdminLayout />,
           children: [
-            { index: true, element: <HomeAdmin /> },
+            { index: true, element: <Navigate to="dashboard" replace /> },
             { path: "dashboard", element: <HomeAdmin /> },
-            // {
-            //   path: "products",
-            //   element: <Products />,
-            //   children: [],
-            // },
-            // { path: "customers", element: <Customers /> },
-            // { path: "staff", element: <Staff /> },
+
+            {
+              path: "products",
+              children: [
+                { index: true, element: <ListProduct /> },
+                { 
+                  path: "create", 
+                  element: (
+                    <PermissionRoute requiredPermission={PERMISSIONS.PRODUCT_CREATE_ALL}>
+                      <AddProduct />
+                    </PermissionRoute>
+                  )
+                },
+                { 
+                  path: ":id/edit", 
+                  element: (
+                    <PermissionRoute requiredPermission={PERMISSIONS.PRODUCT_UPDATE_ALL}>
+                      <EditProduct />
+                    </PermissionRoute>
+                  )
+                },
+              ],
+            },
+
+            { 
+              path: "orders", 
+              element: (
+                <PermissionRoute requiredPermission={[PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL]}>
+                  <Orders />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "orders/create-in-store", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.ORDER_CREATE_ALL}>
+                  <CreateInStoreOrder />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "warranty-requests", 
+              element: (
+                <PermissionRoute requiredPermission={[PERMISSIONS.WARRANTY_VIEW_ALL, PERMISSIONS.WARRANTY_UPDATE_BASIC]}>
+                  <WarrantyRequestManagementPage />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "messages", 
+              element: <MessageManagementPage />
+            },
+
             {
               path: "statistic",
               element: <Statistic />,
               children: [
-                { index: true, element: <DashboardStatistic /> },
+                { index: true, element: <Navigate to="dashboard" replace /> },
                 { path: "dashboard", element: <DashboardStatistic /> },
-                {
-                  path: "users",
-                  element: <UserStatistic />,
-                  children: [{ path: "overview", element: <Overview /> }],
-                },
-                {
-                  path: "products",
-                  element: <ProductStatistic />,
-                  children: [{ path: "overview", element: <Overview /> }],
-                }
+                { path: "products", element: <ProductStatistic /> },
+                { path: "orders", element: <OrderStatistic /> },
+                { path: "revenue", element: <RevenueStatistic /> },
+                { path: "setting", element: <Settings /> },
               ],
+            },
+            { 
+              path: "roles", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.STAFF_MANAGE_ROLES}>
+                  <RoleManagementPage />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "customers", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.CUSTOMER_VIEW_ALL}>
+                  <Customers />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "employee", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.STAFF_VIEW_ALL}>
+                  <EmployeeManagementPage />
+                </PermissionRoute>
+              )
+            },
+            { 
+              path: "audit", 
+              element: (
+                <PermissionRoute requiredPermission={PERMISSIONS.SYSTEM_VIEW_AUDIT}>
+                  <AuditLogPage />
+                </PermissionRoute>
+              )
             },
           ],
         },
       ],
     },
+
     { path: "*", element: <NotFound /> },
   ],
   {
-    future: {
-      v7_startTransition: true,
-    },
+    future: { v7_startTransition: true },
   }
 );
+
 const queryClient = new QueryClient();
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
+    <LanguageProvider>
+      <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
           <Chatbot />
         </QueryClientProvider>
-      </CartProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

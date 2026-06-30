@@ -6,7 +6,9 @@ import com.websales.dto.response.ApiResponse;
 import com.websales.dto.response.OperatingSystemResponse;
 import com.websales.entity.OperatingSystem;
 import com.websales.service.OperatingSystemService;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,13 +18,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/os")
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class OperatingSystemController {
-    private final OperatingSystemService operatingSystemService;
+     OperatingSystemService operatingSystemService;
 
 
     @PostMapping
-    public ApiResponse<OperatingSystem> createOs(OperatingSystemRequest request) {
+    public ApiResponse<OperatingSystem> createOs(@RequestBody OperatingSystemRequest request) {
         return ApiResponse.<OperatingSystem>builder()
                 .result(operatingSystemService.createOs(request))
                 .build();

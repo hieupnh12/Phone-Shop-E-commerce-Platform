@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import jakarta.servlet.ServletException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -45,32 +47,31 @@ public class GlobalExceptionHandler {
     }
 
 
-//    // 4. Xử lý các RuntimeException chưa được phân loại
-//    @ExceptionHandler(RuntimeException.class)
-//    public ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException e) {
-//        log.error("Lỗi không xác định: ", e);
-//        ErrorCode errorCode = ErrorCode.UNCATEGORIZE_EXCEPTION;
-//        ApiResponse apiResponse = new ApiResponse();
-//        apiResponse.setCode(errorCode.getCode());
-//        apiResponse.setMessage(errorCode.getMessage());
-//        return ResponseEntity
-//                .status(errorCode.getStatusCode())
-//                .body(apiResponse);
-//    }
+    // 4. Xử lý các RuntimeException chưa được phân loại
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException e) {
+        log.error("Lỗi không xác định: ", e);
+        ErrorCode errorCode = ErrorCode.UNCATEGORIZE_EXCEPTION;
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(errorCode.getCode());
+        apiResponse.setMessage(errorCode.getMessage());
+        return ResponseEntity
+                .status(errorCode.getStatusCode())
+                .body(apiResponse);
+    }
 
 
 
-    // 3. Xử lý quyền truy cập bị từ chối
-//    @ExceptionHandler(value = AccessDeniedException.class)
-//    ResponseEntity<ApiResponse> handlingAccessDenidedException(AccessDeniedException exception) {
-//        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
-//        return ResponseEntity.status(errorCode.getStatusCode()).body(
-//                ApiResponse.builder()
-//                        .code(errorCode.getCode())
-//                        .message(errorCode.getMessage())
-//                        .build()
-//        );
-//    }
+    @ExceptionHandler(value = AccessDeniedException.class)
+    ResponseEntity<ApiResponse> handlingAccessDenidedException(AccessDeniedException exception) {
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        return ResponseEntity.status(errorCode.getStatusCode()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build()
+        );
+    }
 
 
 
@@ -218,5 +219,33 @@ public class GlobalExceptionHandler {
                 .status(errorCode.getStatusCode())
                 .body(apiResponse);
     }
+
+    // Xử lý lỗi không tìm thấy handler (404) - bao gồm "No static resource index.html"
+    @ExceptionHandler({NoHandlerFoundException.class, ServletException.class})
+    public ResponseEntity<ApiResponse> handleNoHandlerFoundException(Exception ex) {
+        // Ignore "No static resource index.html" error silently
+        // This happens in development when frontend runs separately
+        if (ex.getMessage() != null && ex.getMessage().contains("No static resource")) {
+            log.debug("Static resource not found (likely in development mode): {}", ex.getMessage());
+            // Return empty response or 404 without showing error to user
+            ApiResponse apiResponse = ApiResponse.builder()
+                    .code(404)
+                    .message("Resource not found")
+                    .build();
+            return ResponseEntity.status(404).body(apiResponse);
+        }
+        
+        // For other ServletException, log and return generic error
+        log.error("Servlet exception: ", ex);
+        ErrorCode errorCode = ErrorCode.UNCATEGORIZE_EXCEPTION;
+        ApiResponse apiResponse = ApiResponse.builder()
+                .code(errorCode.getCode())
+                .message(errorCode.getMessage())
+                .build();
+        return ResponseEntity
+                .status(errorCode.getStatusCode())
+                .body(apiResponse);
+    }
+
 
 }

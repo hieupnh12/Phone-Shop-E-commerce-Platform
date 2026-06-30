@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface WarehouseAreaRepository extends JpaRepository<WarehouseArea, Long> {
+public interface WarehouseAreaRepository extends JpaRepository<WarehouseArea, String> {
 
 //    List<WarehouseArea> findByStatusTrue();
 //    @Query(value = "SELECT COUNT(DISTINCT w.area_name) AS mountArea " +

@@ -1,4 +1,4 @@
-package com.websales.dto.response;
+package  com.websales.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;

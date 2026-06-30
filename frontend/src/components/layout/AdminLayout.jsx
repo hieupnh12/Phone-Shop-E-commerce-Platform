@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import {
   Home,
@@ -12,11 +12,26 @@ import {
   User,
   Menu,
   ChartNoAxesCombined,
+  UserPlus,
+  UserCheck,
+  Shield,
+  ShoppingCart,
+  UserMinus,
+  Users2,
+  RefreshCw,
 } from "lucide-react";
+import { useAuthFullOptions } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { usePermission, PERMISSIONS } from "../../hooks/usePermission";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 
 export default function AdminLayout() {
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const { user, logout } = useAuthFullOptions();
+  const { hasPermission } = usePermission();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -24,42 +39,110 @@ export default function AdminLayout() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const handLogout = async () => {
+    const response = await logout();
+    if (response) {
+      navigate("/admin-login", { replace: true });
+    }
+  }
   useEffect(() => {
     if (windowWidth >= 1024) {
       // lg breakpoint
-      setSidebarOpen(true);
+      setSidebarOpen(false);
     } else {
       setSidebarOpen(false);
     }
   }, [windowWidth]);
   const isDesktop = windowWidth >= 1024;
 
-  const menuItems = [
+  const { hasAnyPermission } = usePermission();
+
+  // Menu items với permission requirements
+  // permission có thể là: null (luôn hiển thị), string (một permission), hoặc array (nhiều permissions - chỉ cần một)
+  const allMenuItems = [
     {
       id: "dashboard",
       icon: Home,
-      label: "Dashboard",
+      label: t('admin.dashboard'),
       path: "/admin/dashboard",
+      permission: null, // Dashboard luôn hiển thị cho employee
     },
-    { id: "users", icon: Users, label: "Người dùng", path: "/admin/users" },
-    {
-      id: "messages",
-      icon: MessageSquare,
-      label: "Tin nhắn",
-      path: "/admin/messages",
+    { 
+      id: "products", 
+      icon: Grid, 
+      label: t('admin.products'), 
+      path: "/admin/products",
+      permission: PERMISSIONS.PRODUCT_VIEW_ALL,
     },
-    { id: "products", icon: Grid, label: "Sản phẩm", path: "/admin/products" },
     {
       id: "statistic",
       icon: ChartNoAxesCombined,
-      label: "Thống kê",
+      label: t('admin.statistic'),
       path: "/admin/statistic",
+      permission: PERMISSIONS.REPORT_VIEW_SALES, // Hoặc có thể dùng permission khác
     },
-    { id: "profile", icon: User, label: "Hồ sơ", path: "/admin/profile" },
+    { 
+      id: "orders", 
+      icon: ShoppingCart, 
+      label: t('admin.orders'), 
+      path: "/admin/orders",
+      // Hiển thị nếu có bất kỳ một trong các permissions: ORDER_VIEW_ALL, ORDER_VIEW_DETAIL, hoặc ORDER_CREATE_ALL
+      permission: [PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_DETAIL, PERMISSIONS.ORDER_CREATE_ALL],
+    },
+    { 
+      id: "warranty-requests", 
+      icon: RefreshCw, 
+      label: t('admin.warrantyRequests'), 
+      path: "/admin/warranty-requests",
+      permission: [PERMISSIONS.WARRANTY_VIEW_ALL, PERMISSIONS.WARRANTY_UPDATE_BASIC],
+    },
+    { 
+      id: "messages", 
+      icon: MessageSquare, 
+      label: t('admin.messages'), 
+      path: "/admin/messages",
+      permission: null,
+    },
+    { 
+      id: "roles", 
+      icon: Shield, 
+      label: t('admin.roles'), 
+      path: "/admin/roles",
+      permission: PERMISSIONS.STAFF_MANAGE_ROLES,
+    },
+    { 
+      id: "customers", 
+      icon: Users2, 
+      label: t('admin.customers'), 
+      path: "/admin/customers",
+      permission: PERMISSIONS.CUSTOMER_VIEW_ALL,
+    },
+    { 
+      id: "employee", 
+      icon: UserMinus, 
+      label: t('admin.employee'), 
+      path: "/admin/employee",
+      permission: PERMISSIONS.STAFF_VIEW_ALL,
+    },
   ];
+
+  // Filter menu items dựa trên permission
+  const menuItems = allMenuItems.filter(item => {
+    if (!item.permission) {
+      // Không có permission requirement -> luôn hiển thị
+      return true;
+    }
+    if (Array.isArray(item.permission)) {
+      // Nhiều permissions -> chỉ cần có một trong số đó
+      return hasAnyPermission(item.permission);
+    }
+    // Một permission -> check permission đó
+    return hasPermission(item.permission);
+  });
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
+console.log(user);
 
   // Click outside để đóng sidebar trên mobile
   useEffect(() => {
@@ -75,7 +158,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Navbar */}
-      <nav className="bg-white shadow-sm h-16 flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-30">
+      <nav className="bg-white shadow-md h-16 flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-30">
         <div className="flex items-center justify-center">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -90,11 +173,11 @@ export default function AdminLayout() {
               <Menu  size={24} className="text-gray-700" />
             )}
           </button>
-          <h1 className={`text-xl font-bold text-gray-800 ${!isDesktop? "hidden":""}`}>Admin Dashboard</h1>
+          <h1 className={`text-xl font-bold text-sky-600 underline ${!isDesktop? "hidden":""}`}>{t('admin.dashboardTitle')}</h1>
         </div>
         
         <div className="sm:flex-1 sm:max-w-md sm:mx-4 lg:mx-8">
-          <div className="relative">
+          {/* <div className="relative">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
               size={20}
@@ -104,26 +187,28 @@ export default function AdminLayout() {
               placeholder="Tìm kiếm..."
               className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+          {/* <button className="p-2 rounded-lg hover:bg-gray-100 relative">
             <Bell size={20} />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          </button> */}
+
+          <LanguageSwitcher variant="light" />
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
               A
             </div>
-            <span className="text-sm font-medium hidden sm:block">Admin</span>
+            <span className="text-sm font-medium hidden sm:block">{user?.fullName}</span>
           </div>
         </div>
       </nav>
 
       <div className="flex flex-1 pt-16">
-        <Sidebar sidebarOpen={sidebarOpen} menuItems={menuItems} isDesktop={isDesktop} closeSidebar={closeSidebar}/>
+        <Sidebar sidebarOpen={sidebarOpen} menuItems={menuItems} isDesktop={isDesktop} closeSidebar={closeSidebar} logOut={handLogout}/>
 
         {/* Main Content */}
         <main
